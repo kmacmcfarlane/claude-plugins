@@ -44,3 +44,4 @@ decision 213: The usage-report command (7e8f) is built and green, but the item s
   why ask: your-call — the hold note is yours, and the triage dispatch overrode it without asking
   context: the triage marked 7e8f still real and the builder followed the dispatch; usage-report's item reader already backs dev-cycle's spend check, which this leaves unchanged · you decide whether the hold still stands
   impact: (a) → a report command and finished doc in context-guard now · wait: the review and landing only · reach: context-guard usage-report · undo: revert the merge
+shown 213: 2026-10-14T06:53Z page

@@ -299,3 +299,4 @@ shown 172: 2026-10-08T20:02Z chat
 shown 172: 2026-10-09T06:11Z page
 answer 172: later (answer page HvKDfFHjrqNtygDKziv7ta, rev 2026-10-09T06:00:00Z, at 2026-10-09T06:51:41.984Z; read as: later, default wake = the next Report; the scrub waits, and runs only with the operator watching)
 shown 172: 2026-10-09T08:57Z page
+shown 172: 2026-10-14T06:53Z page

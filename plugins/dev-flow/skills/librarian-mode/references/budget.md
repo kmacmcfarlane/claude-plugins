@@ -3,22 +3,27 @@
 Every librarian on one subscription spends from the same five-hour and weekly windows.
 `scripts/quota_budget.py` measures them and prints the inputs a budgeted idle turn needs.
 It decides nothing. It prints the numbers (used, velocity, allowed rate and reserve per
-window, the binding window, the fresh-claim count) and `next_check`, and nothing else. The
-mode and the concurrency cap N are chosen in F2's idle turn from those numbers, and that
-integration has not landed yet. The reason is the librarian's decision on R1, recorded on
-work item 9882: F2 owns the mode table and the N formula, and the agents policy is about to
+window, the binding window, the fresh-claim count, the spend inputs and the weekly quota
+pressure) and `next_check`, and nothing else. The mode and the concurrency cap N are chosen
+in F2's idle turn from those numbers, and that integration has not landed yet. The reason
+is the librarian's decision on R1, recorded on work item 9882: F2 owns the mode table and the N formula, and the agents policy is about to
 change the librarian count that formula divides by. Computing N here would bake in a
 formula that is about to change. Routing's reader of these numbers: the `dev-cycle`
 skill's `references/model-routing.md` § Below the quota reserve; the review loop's, the
 `dev-cycle` skill's `references/bindings.md` § Decisions, Past the fourth review (§ Rounds
-past the fourth review, below).
+past the fourth review, below); the spend asks' reader of the spend inputs and the quota
+pressure, the `dev-cycle` skill's `references/bindings.md` § Spend budget.
 
 **Who owns what.** This file owns the mechanics: where the store lives, its schema, and how
-the numbers are computed. The **values** belong to the `agents` repo's
-`librarian-budget-policy` series (its item 8ad9): the reserve table, the claim TTLs and the
-absent-signal pool. They are defaults until the operator ratifies them, except where a ruling
-is noted below. A value changes there first and is then copied into the constants at the top
-of the script, never the other way round.
+the numbers are computed. The **values** — the reserve table, the claim TTLs, the
+absent-signal pool, and the spend inputs — are claude-plugins' own: agents decision 0010
+(operator ruling 2026-10-03) moved them here from the `agents` repo's
+`librarian-budget-policy` series, whose decisions 0008 and 0009 keep their history. They
+stay defaults until the operator ratifies them, a ruling recorded in claude-plugins, except
+where a ruling is noted below. A value change is a claude-plugins decision, made in the
+constants at the top of the script, which are the one copy. The measured spend inputs
+(dollars per point, the burst size, each kind's p75) come from claude-analytics once its
+reports exist (§ The numbers, Spend inputs).
 
 ## Running it
 
@@ -162,9 +167,10 @@ idle-turn integration writes.
   away's five-hour reserve is 10, not the 5 that 1222's 00 gave in its F1 section: the
   agents policy resolved that series' F1/F5 disagreement that way.
   done-for-the-day's five-hour reserve is 5, not 0: the operator ruled it on 2026-09-24
-  (the series' Open Question 3). The other values are still the series' defaults. No
-  intent's five-hour reserve is below 5, which agents decision 0008's 5% floor asks for;
-  that floor is still read provisionally.
+  (the series' Open Question 3). The other values are the series' original defaults,
+  kept. No intent's five-hour reserve is below 5, which agents decision 0008's 5% floor
+  asks for (now claude-plugins', decision 0010); that floor is still read provisionally,
+  until the operator ratifies it here.
 
   The weekly column is `R`, the reserve until the last 48 h of the weekly window.
 - **The weekly taper.** Reserve still unused at the weekly reset is wasted, so over the
@@ -181,6 +187,45 @@ idle-turn integration writes.
   `reserves.seven_day` is the untapered `R`. The taper needs nothing from the idle turn
   or a scheduler: it is recomputed from the reading on every call, and `next_check`
   (at most an hour out) already re-reads it through the last 48 h.
+- **Spend inputs** (`spend_inputs`, printed on every call, with or without a signal). Each
+  spend kind's `p75` (its typical phase spend) and `ceiling` (its sanity ceiling), in
+  list-price dollars per phase, from `SPEND_KINDS`: `plan.spike` (the plan of a `spike`),
+  `plan.other`, `build.chore`, `build.bug` and `build.other`. Beside them:
+  `usd_per_point` (`USD_PER_POINT`, list dollars per weekly percentage point),
+  `fable_factor` (`FABLE_FACTOR`, the scale a `model: fable` pin puts on ceiling and
+  `p75`), `burst_per_sqrt_day` (`BURST_PER_SQRT_DAY`, b), `alpha` (`ASK_ALPHA`),
+  `go_on_points` (`GO_ON_POINTS`, the weekly points one go-on covers), `phase_hours`
+  (`PHASE_HOURS`) and `share_floor` (`SHARE_FLOOR`). The values are the constants at the
+  top of the script, never restated here. `source` names where they came from:
+  `"constants"` today. `spend_inputs()` is the one seam: a reader of claude-analytics'
+  reports plugs in there, and nothing that reads the result changes when it does. The
+  p75s, the dollars per point and b are measured defaults, to retune; the ceilings,
+  `alpha`, `go_on_points`, `phase_hours`, `share_floor` and `fable_factor` are the ask
+  rule's design values.
+- **Quota pressure** (`quota_pressure`; `null` with no signal). It reads the weekly window
+  only (`windows.seven_day`); the five-hour window never enters it. With `d` the days to
+  the weekly reset (`hours_to_reset ÷ 24`), the reserve the tapered weekly reserve, and
+  `headroom` the window's `100 − used − reserve`:
+
+  - `burst` (burst room) `= burst_per_sqrt_day × √d`: what a big day may still take. It
+    shrinks toward the reset, where unused quota is lost.
+  - `free` (the free headroom after burst room) `= 100 − used − reserve − burst`.
+  - `before_reset_share = max(share_floor, min(1, hours to the reset ÷ phase_hours))`: the
+    share of a phase's spend expected to land before the reset.
+  - `ask_all` is `free ≤ 0`.
+  - `ask_above_points` is 0 when `ask_all`, else `alpha × free ÷ before_reset_share`;
+    `ask_above_usd = ask_above_points × usd_per_point`. Comparing an expected spend with
+    it is the same as asking whether the share of it before the reset exceeds `alpha ×
+    free`.
+  - `room_usd` (the room above the reserve, in dollars) `= max(0, headroom) ×
+    usd_per_point ÷ before_reset_share`. It ignores burst room.
+
+  It also echoes `days_to_reset`, `used`, `reserve` and `headroom`. Points are rounded to
+  3 places, dollars to 2. The script decides no ask: the caller compares its own expected
+  spend with `ask_above_usd`, and with `room_usd` for the option it recommends (the
+  `dev-cycle` skill's `references/bindings.md` § Spend budget). A concurrency sum, the
+  in-flight items' expected spend weighed against `free` together, is the idle turn's
+  (item c79e) and is not done here.
 - **No signal.** The result is `signal: "none"` with a `reason` when there is no session
   id or sensor record, the record's `v` is not 1, it has no rate limits (an API-key
   session, or no render yet), it lacks either window, it is older than `--stale-after`, it
@@ -247,6 +292,19 @@ runs. An unreadable `at` is never fresh. The count reads `claims/*.json` only, n
                            "velocity_points": 9, "velocity_span_s": 7210.0, "allowed": 51.5},
              "seven_day": {"...": "the same keys"}},
  "binding": "seven_day", "allowed": 0.41,
+ "spend_inputs": {"source": "constants",
+                  "kinds": {"plan": {"spike": {"p75": "<$>", "ceiling": "<$>"},
+                                     "other": {"...": "the same keys"}},
+                            "build": {"chore": {"...": "the same keys"},
+                                      "bug": {"...": "the same keys"},
+                                      "other": {"...": "the same keys"}}},
+                  "usd_per_point": "<$>", "fable_factor": "<x>",
+                  "burst_per_sqrt_day": "<pts>", "alpha": "<share>",
+                  "go_on_points": "<pts>", "phase_hours": "<h>", "share_floor": "<share>"},
+ "quota_pressure": {"days_to_reset": 4.1667, "used": 41.0, "reserve": 15.0,
+                    "headroom": 44.0, "burst": "<pts>", "free": "<pts>",
+                    "before_reset_share": 1.0, "ask_all": false,
+                    "ask_above_points": "<pts>", "ask_above_usd": "<$>", "room_usd": "<$>"},
  "claims": {"repo": "claude-plugins", "path": "...", "written": true, "action": "refreshed",
             "previous": null, "fresh": 2, "fresh_in_flight": 1},
  "next_check": 3600}
@@ -257,9 +315,11 @@ tapered in the last 48 h (agents decision 0008); the flat `R` is `weekly_taper.b
 `weekly_taper` gives the intent's untapered weekly `R` (`base`), the floor, the taper's
 length in hours, and whether the weekly window is inside it now.
 
-With no signal, `windows`, `binding`, `allowed` and `weekly_taper` are `null`. `intent`,
-`reserves` and `claims` are still filled in. Readers ignore keys they do not know. A change
-of meaning to an existing key bumps `v`.
+With no signal, `windows`, `binding`, `allowed`, `weekly_taper` and `quota_pressure` are
+`null`. `intent`, `reserves`, `spend_inputs` and `claims` are still filled in. The
+internal-error object stays minimal and carries neither `spend_inputs` nor
+`quota_pressure`. Readers ignore keys they do not know. A change of meaning to an existing
+key bumps `v`.
 
 ## Rounds past the fourth review
 

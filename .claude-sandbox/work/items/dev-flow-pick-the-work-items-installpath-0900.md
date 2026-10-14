@@ -2,10 +2,11 @@
 id: dev-flow-pick-the-work-items-installpath-0900
 title: "dev-flow: pick the work-items installPath by scope, not [0]"
 type: bug
-status: todo
+status: done
 priority: 3
 created: 2026-09-21
-updated: 2026-09-21
+updated: 2026-10-13
+closed: 2026-10-13
 refs:
   - d8f6 implementer
 ---
@@ -30,3 +31,6 @@ dispatch: implementer opus medium — resume, finish round
 agent: implementer a443ccb5718184cbe round 2 (finish)
 result: DONE finish at 2e42bd76 (one sentence, exact; read by the librarian)
 verdict: CLEAR after 1 finish at 2e42bd76
+
+## Notes
+- 2026-10-13 done
