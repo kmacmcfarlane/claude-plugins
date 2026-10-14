@@ -45,7 +45,7 @@ const out = ds.map(d => {
   if (!bad.length) {
     CARDS = d.cards; REFS = d.refs || {}; FOLLOW = d.follow;
     byN = new Map(CARDS.map(c => [String(c.n), c])); FOLLOW_KEYS = new Set(FOLLOW.map(f => f[0]));
-    cards = CARDS.map(c => ({n: c.n, html: cardHtml(c), table: impactTable(c), parts: parts(c),
+    cards = CARDS.map(c => ({n: c.n, html: cardHtml(c), parts: parts(c),
       more: Object.fromEntries(c.o.map(o => [o[0], optionDetail(c, o[0])])),
       act: Object.fromEntries(c.o.map(o => [o[0], actList(c, o[0])]))}));
   }
@@ -84,12 +84,15 @@ def card(res, n):
 
 
 def secs(html):
-    """Each part with levels: (key, data-max, the HTML of its renditions in order)."""
+    """Each part with levels: (key, data-max, the HTML of its renditions in order). Every part opens
+    at its summary (data-lvl 0) but an option's text in its More, which opens at its fullest."""
     out = []
-    for m in re.finditer(r'<div class="sec" data-n="\d+" data-sec="([^"]+)" data-lvl="0" '
+    for m in re.finditer(r'<div class="sec" data-n="\d+" data-sec="([^"]+)" data-lvl="(\d+)" '
                          r'data-max="(\d+)">', html):
+        start = int(m.group(3)) if m.group(1).startswith("opt-") else 0
+        assert int(m.group(2)) == start, m.group(0)
         body = html[m.end():]
-        out.append((m.group(1), int(m.group(2)), body))
+        out.append((m.group(1), int(m.group(3)), body))
     return out
 
 
@@ -154,8 +157,7 @@ class DecisionPageDepth(unittest.TestCase):
         for c in res["cards"]:
             self.assertNotIn("lvb", c["html"], c["n"])
             self.assertNotIn('class="sec"', c["html"], c["n"])
-            self.assertEqual(c["html"].count(">More</button>"), 2, c["n"])
-        self.assertIn("<td>—</td><td>—</td>", card(res, 43)["table"])
+            self.assertEqual(c["html"].count(">More</button>"), 3, c["n"])
         # with no blocks row, the option detail shows the option's impact as its effect
         self.assertIn("No visual change.", card(res, 43)["more"]["a"])
         self.assertNotIn(">Reach<", card(res, 43)["more"]["a"])
@@ -238,11 +240,14 @@ class DecisionPageDepth(unittest.TestCase):
                 rs = renditions(c["html"], c["n"], key)
                 self.assertEqual(len(rs), mx + 1, (c["n"], key))
                 self.assertEqual(len(c["parts"][key]), mx + 1, (c["n"], key))
-                self.assertEqual([h for h, _ in rs], [False] + [True] * mx, (c["n"], key))
+                # shown: the summary, or an option's fullest level in its More
+                at = mx if key.startswith("opt-") else 0
+                self.assertEqual([h for h, _ in rs], [i != at for i in range(mx + 1)], (c["n"], key))
                 self.assertEqual(rs[0][1], c["parts"][key][0], (c["n"], key))
                 seen.add(key)
         self.assertTrue({"ctx", "imp", "tldr", "rec", "why", "whyask", "ev", "opt-a"} <= seen, seen)
-        # a part with only its summary has no toggle: every part of card 43, any card's Depends on
+        # a part with only its summary has no toggle: every part of card 43, any card's Depends on,
+        # an option's text in its More with no levels ((z)'s)
         self.assertNotIn('class="sec"', card(res, 43)["html"])
         self.assertNotIn('data-sec="dep"', card(res, 42)["html"])
         self.assertNotIn('data-sec="opt-z"', card(res, 41)["html"])
@@ -256,10 +261,12 @@ class DecisionPageDepth(unittest.TestCase):
             for m in re.finditer(r'<button[^>]*class="btn lvb"[^>]*>([^<]*)</button>', html):
                 tag = m.group(0)
                 self.assertTrue(tag.startswith('<button type="button"'), tag)
-                self.assertIn('aria-expanded="false"', tag)
-                self.assertEqual(m.group(1), "more detail")
+                # an option's text in its More opens at its fullest: its button steps to less detail
+                step, exp = (("less detail", "true") if 'data-lv="opt-' in tag else ("more detail", "false"))
+                self.assertIn('aria-expanded="%s"' % exp, tag)
+                self.assertEqual(m.group(1), step)
                 label = re.search(r'data-lbl="([^"]+)"', tag).group(1)
-                self.assertIn('aria-label="%s: more detail"' % label, tag)
+                self.assertIn('aria-label="%s: %s"' % (label, step), tag)
             for ctl in re.findall(r'aria-controls="([^"]+)"', html):
                 self.assertIn('id="%s"' % ctl, html)
         self.assertEqual(len(ids), len(set(ids)), "ids are unique across the page")
@@ -305,24 +312,27 @@ class DecisionPageDepth(unittest.TestCase):
             self.assertLess(r.index("<em>trust</em>"), r.index("Moving the build") if "Moving the build" in r
                             else r.index("Today one person"))
 
-    def test_the_folds_stay_in_order_closed_but_options_in_full_on_a_warn_card(self):
+    def test_the_folds_stay_in_order_and_closed_with_no_options_in_full(self):
+        # the operator (2026-10-14): Options in full repeated each option's More, so it is gone;
+        # Dependencies shows only on a card that depends on something (card 41 does not)
         res = run_page(example())
         for c in res["cards"]:
             panes = re.findall(r'<details class="pane"( open)?><summary>([^<]+)</summary>', c["html"])
-            self.assertEqual([p[1] for p in panes],
-                             ["Background", "Options in full", "Dependencies", "Evidence and unknowns"])
-            self.assertEqual([p[0] for p in panes],
-                             ["", " open" if c["n"] == 42 else "", "", ""], c["n"])
+            want = ["Background"] + (["Dependencies"] if c["n"] != 41 else []) + ["Evidence and unknowns"]
+            self.assertEqual([p[1] for p in panes], want, c["n"])
+            self.assertEqual([p[0] for p in panes], [""] * len(want), c["n"])
+            self.assertNotIn("Options in full", c["html"])
+            self.assertNotIn("<table", c["html"])
 
     def test_the_rendered_order_of_a_card(self):
         res = run_page(example())
         h = card(res, 41)["html"]
         marks = ['data-sec="tldr"', 'data-sec="ctx"', 'data-sec="imp"', "If unanswered:", "<fieldset>",
-                 'id="d41-a"', 'data-omore="a"', 'id="d41-a-more"', 'id="d41-b"', 'data-omore="b"',
-                 'class="act"', 'id="d41-b-more"', 'class="follow"', 'data-sec="rec"',
+                 'id="d41-a"', 'data-omore="a"', 'id="d41-a-more"', 'data-sec="opt-a"', 'id="d41-b"',
+                 'data-omore="b"', 'class="act"', 'id="d41-b-more"', 'data-sec="opt-b"', 'id="d41-z"',
+                 'id="d41-z-more"', 'class="follow"', 'data-sec="rec"',
                  "<summary>Background</summary>", 'data-sec="why"', 'data-sec="whyask"',
-                 "<summary>Options in full</summary>", '<table class="imp">', 'data-sec="opt-a"',
-                 "<summary>Dependencies</summary>", "<summary>Evidence and unknowns</summary>",
+                 "<summary>Evidence and unknowns</summary>",
                  '<span class="lbl">Basis</span>', 'data-sec="ev"', '<span class="lbl">Unknown</span>']
         pos = [h.index(m) for m in marks]
         self.assertEqual(pos, sorted(pos), [m for m, p in zip(marks, pos)])
@@ -342,7 +352,7 @@ class DecisionPageDepth(unittest.TestCase):
 
     # ---- the More button
 
-    def test_more_sits_beside_each_option_but_z_outside_its_label(self):
+    def test_more_sits_beside_each_option_outside_its_label(self):
         res = run_page(example())
         for c in res["cards"]:
             h = c["html"]
@@ -352,16 +362,16 @@ class DecisionPageDepth(unittest.TestCase):
                 self.assertNotIn(">More</button>", lab, c["n"])
             for opt in re.findall(r'<div class="opt(?: isrec)?">.*?(?=<div class="opt[ "]|</div><div class="follow")', h, re.S):
                 k = re.search(r'value="([a-z])"', opt).group(1)
-                if k == "z":
-                    self.assertNotIn("omore", opt)
-                    continue
+                # (z) too, since Options in full went: its text and its impact live there now.
+                # A ⚠ one-way card shows each option but (z) open, as its Impact rows were
+                is_open = c["n"] == 42 and k != "z"  # the example's ⚠ card
                 self.assertEqual(opt.count(">More</button>"), 1, (c["n"], k))
                 btn = re.search(r'<button[^>]*data-omore[^>]*>More</button>', opt).group(0)
-                self.assertTrue(btn.startswith('<button type="button" class="btn omore"'), btn)
+                self.assertTrue(btn.startswith('<button type="button" class="btn omore%s"' % (" on" if is_open else "")), btn)
                 self.assertIn('aria-label="More decision detail on option (%s)"' % k, btn)
-                self.assertIn('aria-expanded="false"', btn)
+                self.assertIn('aria-expanded="%s"' % str(is_open).lower(), btn)
                 self.assertIn('aria-controls="d%s-%s-more"' % (c["n"], k), btn)
-                self.assertIn('<div class="odet" id="d%s-%s-more" hidden>' % (c["n"], k), opt)
+                self.assertIn('<div class="odet" id="d%s-%s-more"%s>' % (c["n"], k, "" if is_open else " hidden"), opt)
                 self.assertLess(opt.index("</label>"), opt.index(btn))
                 self.assertLess(opt.index(btn), opt.index('class="odet"'))
 
@@ -370,16 +380,26 @@ class DecisionPageDepth(unittest.TestCase):
         del d["cards"][0]["blocks"]["a"]["cost"]
         res = run_page(d)
         more = card(res, 41)["more"]
-        self.assertTrue(more["b"].startswith('<div class="lvs"><h4 class="lvh">What happens</h4><ul class="lvl">'
-                                             "<li>Build and publish from CI on every merge to <code>main</code>; "
-                                             "the laptop build stays for previews only."), more["b"][:140])
+        # its text opens at its fullest level, and steps through the rest, so none is lost
+        rs = renditions(more["b"], 41, "opt-b")
+        self.assertEqual([h for h, _ in rs], [True, True, False])
+        self.assertTrue(rs[2][1].startswith('<div><span class="mono ol">(b)</span><div class="lvs"><h4 class="lvh">'
+                                            'What happens</h4><ul class="lvl">'
+                                            "<li>Build and publish from CI on every merge to <code>main</code>; "
+                                            "the laptop build stays for previews only."), rs[2][1][:200])
+        self.assertIn("Build and publish from CI on every merge to main, with the local build kept", rs[0][1])
+        # its impact line, then its blocks row
+        self.assertLess(more["b"].index('<p class="impact">Publishing no longer depends on one machine'),
+                        more["b"].index('<span class="lbl">Effect</span>'))
         pos = [more["b"].index('<span class="lbl">' + f + "</span>") for f in ("Effect", "Reach", "Undo", "Cost")]
         self.assertEqual(pos, sorted(pos))
         self.assertNotIn(">Cost<", more["a"])
-        self.assertEqual(more["z"], "")
+        # (z): its text and its impact, labelled Wait
+        self.assertTrue(more["z"].startswith('<p><span class="mono ol">(z)</span> Decide later.</p>'), more["z"])
+        self.assertIn('<span class="lbl">Wait</span>The local build stays until you answer', more["z"])
         # without detail.o, the option's own text
         d["cards"][0]["detail"].pop("o")
-        self.assertTrue(card(run_page(d), 41)["more"]["a"].startswith("<p>Keep building on a laptop."))
+        self.assertTrue(card(run_page(d), 41)["more"]["a"].startswith('<p><span class="mono ol">(a)</span> Keep building on a laptop.'))
 
     # ---- escaping and links
 
@@ -454,7 +474,7 @@ class DecisionPageDepth(unittest.TestCase):
         c["tldr"][0] += " " + url
         c["impact"]["reach"] += " " + url
         c["o"][0][2] += " " + url          # o[2], static
-        c["blocks"]["a"]["who"] += " " + url  # a table cell, static
+        c["blocks"]["a"]["who"] += " " + url  # a blocks cell: links in More
         c["act"]["b"].append("Read " + url)
         c["detail"]["tldr"][0][0]["t"] += " " + url
         c["detail"]["context"][1][0]["h"] += " " + url        # a heading never links
@@ -471,7 +491,6 @@ class DecisionPageDepth(unittest.TestCase):
         self.assertNotIn("<a ", p["imp"][0])
         self.assertIn('<a href="%s"' % url, p["tldr"][1])
         self.assertIn('<a href="%s"' % url, p["why"][0])
-        self.assertNotIn("<a ", card(res, 41)["table"])
         self.assertNotIn("<a ", card(res, 41)["act"]["b"])
         full = card(res, 41)["html"]
         impact_lines = re.findall(r'<p class="impact">.*?</p>', full)
@@ -563,7 +582,7 @@ class DepthRunner(unittest.TestCase):
         d["cards"][0]["whyask"] = "Who can publish changes."
         d["cards"][2].pop("blocks")
         d["cards"][2]["o"][0][1] = "Keep the blue."
-        out = self.lint(d, "lint: card 43: depth: (a) has no blocks row: give it happens, who, undo and cost",
+        out = self.lint(d, "lint: card 43: depth: (a) has no blocks row: give it happens, who and undo, and cost where it has one",
                         "lint: card 43: depth: (b) has no blocks row")
         # a short part with no levels is a small call's, never thin
         self.assertNotIn("Background is", out)

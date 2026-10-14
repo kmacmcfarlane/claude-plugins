@@ -22,7 +22,7 @@ Every text field is plain text: the page escapes it, and only two marks render: 
 in backticks, and `[[N]]`, a decision slug (a decision on the page, or a `refs` key). Links
 (`https://` only) are clickable in the medium and high levels, in the fold parts at every
 level and in an option's **More** detail; nowhere else (not a heading, a visible part's
-summary, the Impact table, an option's `impact`, `act`, the popup or a slug). `page.doc.url`
+summary, an option's `impact`, `act`, the popup or a slug). `page.doc.url`
 must start `https://`, or it is not shown.
 
 ## Top level
@@ -55,7 +55,7 @@ must start `https://`, or it is not shown.
 | `t` | yes | short name, 2–6 words, a noun phrase |
 | `rev` | yes | non-empty: the UTC time you write it, by convention. New on any change to the card, Context included, since answers given to an old `rev` stop counting |
 | `context` | yes | 1–2 sentences, ~30–60 words: introduces every count, named mode, setting, review, plan, document, item or label the flat part uses; then the resume cue. Does not repeat the TLDR. Its high level holds the facts a cold reader has lost |
-| `impact` | yes | `{effect, wait, reach, undo}` as text, `cost` optional; across all options, favouring none. Write `effect` from the card's own option effects (`blocks`, each option's `impact`), never copying a stored Effect line, which is the recommendation's; under ~10 words, `(a) …; (b) …` where outcomes differ |
+| `impact` | yes | `{effect, wait, reach, undo}` as text, `cost` optional (leave it out when none); across all options, favouring none. Write `effect` from the card's own option effects (`blocks`, each option's `impact`), never copying a stored Effect line, which is the recommendation's; under ~10 words, `(a) …; (b) …` where outcomes differ |
 | `tldr` | yes | 1–2 bullets, each one sentence of about 14 words or fewer: what is decided, what rides on it; never the recommendation |
 | `ifleft` | no | **If left:** on an ask for another round |
 | `roundcosts` | no | **A round costs:** on an ask for another round |
@@ -64,9 +64,9 @@ must start `https://`, or it is not shown.
 | `whyask` | yes | what goes wrong if the recommendation were taken alone |
 | `class` | no | the class that opens Why ask, when the caller names classes |
 | `warn` | no | `true` for ⚠ one-way |
-| `blocks` | expected on every card; required when `warn` | `{letter: {happens, undo, who, cost}}` for every option but `z`, each cell ~5–25 words |
+| `blocks` | expected on every card; required when `warn` | `{letter: {happens, undo, who, cost}}` for every option but `z`, each cell ~5–25 words, `cost` optional; shown in the option's **More** |
 | `act` | when an option asks the operator to act; optional otherwise | `{letter: ["step", …]}`, not `z`; each list non-empty, each step text on one line, no `<placeholder>`; a step names where a secret goes, never its value; a paste text holding an angle-bracketed word, or of more than one line, goes in a file named by its `/…` path |
-| `dep` | no | usually slugs with the answer that matters (`[[41]] (b)`) |
+| `dep` | no | usually slugs with the answer that matters (`[[41]] (b)`); leave it out when there is none |
 | `rec` | yes | an option letter, or `null` |
 | `norec` | when `rec` is null | `your preference — no recommendation`, or `no recommendation — outside my authority` and why |
 | `o` | yes | `[[letter, full, impact, title, oneLine], …]`, `a`… in order, ending `z` (decide later) |
@@ -77,6 +77,13 @@ must start `https://`, or it is not shown.
 | `detail` | no; its levels scale with the decision | the levels, below |
 
 Do not set `what`: it is older data only.
+
+**None is not shown.** A field, facet or `blocks` cell that is blank or says only `none`,
+`n/a`, `nothing` or a dash is left off the page (a `dep`, a `cost`, an `evidence`, a cell, an
+Unknown in the Evidence fold): leave it out rather than write none. The required Impact facets,
+`basis` and the rec line's *unknown: none* are statements, and stay shown. There is no Options
+in full fold: each option's **More** shows its text at its fullest (a click steps through its
+levels), its `impact` and its `blocks` row.
 
 An option: `title` at most six words, verb first; `oneLine` reads after the page's label
 (`because:` on the rec, `not recommended because:` on the others, `if left:` on `z`,

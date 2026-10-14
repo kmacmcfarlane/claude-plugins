@@ -27,6 +27,8 @@ DECISIONS = PLUGIN / "skills" / "decisions"
 END_MARK = "/* ---- end of the page-free part"
 
 NODE = shutil.which("node")
+# what the page's isNone treats as saying nothing (trimmed, any case): the operator's rule of 2026-10-14
+NONE = {"", "none", "none.", "n/a", "n/a.", "nothing", "nothing.", "-", "–", "—"}
 
 
 def setUpModule():
@@ -44,7 +46,8 @@ let views = [];
 if (!bad.length) {
   CARDS = d.cards; REFS = d.refs || {}; FOLLOW = d.follow;
   byN = new Map(CARDS.map(c => [String(c.n), c])); FOLLOW_KEYS = new Set(FOLLOW.map(f => f[0]));
-  views = CARDS.map(c => ({n: c.n, tag: tagEffect(c), line: impactLine(c), table: impactTable(c),
+  views = CARDS.map(c => ({n: c.n, tag: tagEffect(c), line: impactLine(c),
+                           more: Object.fromEntries(c.o.map(o => [o[0], optionDetail(c, o[0])])),
                            card: cardHtml(c)}));
 }
 process.stdout.write(JSON.stringify({bad, views}));
@@ -133,16 +136,17 @@ class DecisionPageImpact(unittest.TestCase):
         del d["cards"][1]["blocks"]["b"]
         self.assert_refused(d, "a ⚠ one-way card needs blocks")
 
-    def test_a_card_without_blocks_still_renders_its_table(self):
+    def test_a_card_without_blocks_still_shows_each_options_effect(self):
         d = example()
         del d["cards"][2]["blocks"]  # older data: blocks is required on a ⚠ card only
         res = run_page(d)
         self.assertEqual(res["bad"], [])
-        table = res["views"][2]["table"]
-        # (a), (b), then the Wait row; the option's impact text stands in as its effect
-        self.assertEqual(table.count("<tr"), 1 + 3)
-        self.assertIn("The site matches the logo", table)
-        self.assertIn("—", table)
+        more = res["views"][2]["more"]
+        # the option's impact text stands in as its effect; the facets it lacks are left out
+        self.assertIn('<span class="lbl">Effect</span>The site matches the logo', more["b"])
+        for k in ("a", "b"):
+            self.assertNotIn(">Reach<", more[k])
+            self.assertNotIn("—", more[k])
 
     def test_impact_line_order_and_tag_size(self):
         res = run_page(example())
@@ -159,18 +163,29 @@ class DecisionPageImpact(unittest.TestCase):
             # the tag shows the effect only; slugs render as plain text there
             self.assertIn(c["impact"]["effect"].split("[[")[0].strip()[:10], v["tag"])
 
-    def test_impact_table_columns_rows_and_rec(self):
-        res = run_page(example())
-        table = res["views"][1]["table"]  # the ⚠ card
-        heads = re.findall(r'<th scope="col">([^<]+)</th>', table)
-        self.assertEqual(heads, ["Impact", "Effect", "Reach", "Undo", "Cost"])
-        rows = re.findall(r"<tr[^>]*>", table)
-        self.assertEqual(len(rows), 1 + 2 + 1)  # header, (a), (b), Wait
-        self.assertIn('<tr class="isrec"><th scope="row">(a) ', table)
-        self.assertIn("(z) Wait", table)
-        self.assertIn("The first CI publish waits for this answer.".lower()[:20],
-                      table.lower())
-        self.assertIn("Twelve lines of redirect config to keep.", table)
+    def test_each_options_more_carries_what_the_impact_table_did(self):
+        # Options in full went (the operator, 2026-10-14): each row of its Impact table is in
+        # its option's More, Effect, Reach, Undo, Cost in that order; the Wait row is the card's
+        # Impact line (later:) and (z)'s More
+        d = example()
+        res = run_page(d)
+        for v, c in zip(res["views"], d["cards"]):
+            for k, row in c["blocks"].items():
+                more = v["more"][k]
+                # a cell that says nothing ("Nothing." on card 43's (a) cost) is left out
+                cells = [(f, x) for f, x in (("Effect", "happens"), ("Reach", "who"), ("Undo", "undo"),
+                                             ("Cost", "cost")) if row[x].strip().lower() not in NONE]
+                pos = [more.index('<span class="lbl">%s</span>' % f) for f, _ in cells]
+                self.assertEqual(pos, sorted(pos), (c["n"], k))
+                for _, x in cells:
+                    self.assertIn(row[x][:20], more, (c["n"], k, x))
+            self.assertIn("<i>later:</i>", v["line"])
+            self.assertIn('<span class="lbl">Wait</span>', v["more"]["z"])
+            self.assertNotIn("Options in full", v["card"])
+            self.assertNotIn("<table", v["card"])
+        warn = res["views"][1]
+        self.assertIn("The first CI publish waits for this answer.", warn["more"]["z"])
+        self.assertIn("Twelve lines of redirect config to keep.", warn["more"]["a"])
 
     def test_impact_text_is_escaped(self):
         d = example()
@@ -178,27 +193,28 @@ class DecisionPageImpact(unittest.TestCase):
         d["cards"][0]["impact"]["reach"] = "<script>x</script>"
         d["cards"][0]["blocks"]["b"]["cost"] = "<b>bold</b>"
         v = run_page(d)["views"][0]
-        for html in (v["tag"], v["line"], v["table"]):
+        for html in (v["tag"], v["line"], v["more"]["b"]):
             self.assertNotIn("<img", html)
             self.assertNotIn("<script>", html)
         self.assertIn("&lt;img", v["tag"])
-        self.assertIn("&lt;b&gt;bold", v["table"])
+        self.assertIn("&lt;b&gt;bold", v["more"]["b"])
 
     def test_the_page_renders_impact_in_every_view(self):
         html = PAGE.read_text()
         hud = html[html.index("function renderHud"):html.index("function renderCards")]
         self.assertIn("tagEffect(c)", hud)
-        # the open card, rendered: its Impact line, the effect on its summary line, and the
-        # Impact table in its Options in full fold
+        # the open card, rendered: its Impact line, the effect on its summary line, and each
+        # option's own effect in its More
         for v in run_page(example())["views"]:
             card = v["card"]
             self.assertIn('class="impline"', card, v["n"])
             self.assertIn(v["line"], card, v["n"])
             summary = card[:card.index("</summary>")]
             self.assertIn('class="eff"', summary, v["n"])
-            full = card[card.index("<summary>Options in full</summary>"):]
-            full = full[:full.index("</details>")]
-            self.assertIn('<table class="imp">', full, v["n"])
+            for k, more in v["more"].items():
+                self.assertIn(more, card, (v["n"], k))
+                if k != "z":
+                    self.assertIn('<span class="lbl">Effect</span>', more, (v["n"], k))
         pop = html[html.index("function fillPop"):html.index("function place(")]
         self.assertIn("tagEffect(c)", pop)
 
