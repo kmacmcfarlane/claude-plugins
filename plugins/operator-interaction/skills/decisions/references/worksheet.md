@@ -161,10 +161,11 @@ how each view shows them are in `references/rendering.md` § Impact.
 | Cost | time, money, quota, the operator's attention, per option | you; the caller's budget, when it keeps one |
 
 **Each option's impact** is written with the option, from the same groups: its effect, the
-reach and undo of that option alone, and its cost; a facet that does not apply is left out,
-but never an Undo that says the option cannot be undone. A card shows it on an italic line under
-the option, a block in its table (`references/rendering.md` § Impact). Write these first: the
-Impact line's Effect is read off them.
+reach and undo of that option alone, and its cost; a facet that does not apply is left out.
+An Undo that says the option cannot be undone, or only at real cost, is never left out; on a
+⚠ decision every option's line carries its undo, as the block's table does. A card shows it
+on an italic line under the option, a block in its table (`references/rendering.md`
+§ Impact). Write these first: the Impact line's Effect is read off them.
 
 Write it when the decision is raised, and store it with the card where the caller keeps one,
 so every later view reads it instead of composing it again.

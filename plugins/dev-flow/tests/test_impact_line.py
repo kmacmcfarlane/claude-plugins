@@ -46,7 +46,8 @@ class ImpactLine(unittest.TestCase):
 
     def test_a_row_showing_the_recommendation_carries_its_own_effect(self):
         flat = " ".join(IDLE.read_text().split())
-        self.assertIn("the recommended option's own, read from its option line", flat)
+        self.assertIn("read from the last card stored for N", flat)
+        self.assertIn("the recommended option's own effect from its option line", flat)
 
 
 if __name__ == "__main__":

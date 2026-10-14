@@ -55,7 +55,7 @@ must start `https://`, or it is not shown.
 | `t` | yes | short name, 2–6 words, a noun phrase |
 | `rev` | yes | non-empty: the UTC time you write it, by convention. New on any change to the card, Context included, since answers given to an old `rev` stop counting |
 | `context` | yes | 1–2 sentences, ~30–60 words: introduces every count, named mode, setting, review, plan, document, item or label the flat part uses; then the resume cue. Does not repeat the TLDR. Its high level holds the facts a cold reader has lost |
-| `impact` | yes | `{effect, wait, reach, undo}` as text, `cost` optional; across all options, favouring none. Write `effect` from the card's own option effects (`blocks`, each option's `impact`), never copying a stored Effect line blind, since an older one may be the recommendation's; under ~10 words, `(a) …; (b) …` where outcomes differ |
+| `impact` | yes | `{effect, wait, reach, undo}` as text, `cost` optional; across all options, favouring none. Write `effect` from the card's own option effects (`blocks`, each option's `impact`), copying a stored Effect only when it names each option's outcome or the card was stored or revised on or after 2026-10-14; otherwise write it from the option effects (the pre-publish check's rec-only lint backs this); under ~10 words, `(a) …; (b) …` where outcomes differ |
 | `tldr` | yes | 1–2 bullets, each one sentence of about 14 words or fewer: what is decided, what rides on it; never the recommendation |
 | `ifleft` | no | **If left:** on an ask for another round |
 | `roundcosts` | no | **A round costs:** on an ask for another round |

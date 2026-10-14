@@ -77,6 +77,27 @@ def check_options(test, where, body):
     return seen
 
 
+def favours_one(effect):
+    """True when an Impact Effect names exactly one option's outcome, `(a) …` alone: it reads
+    as that option's. Two or more letters is the across-the-options form; none is the single
+    sentence of what the decision settles, which rendering.md § Impact also permits."""
+    return len(set(re.findall(r"\(([a-y])\) ", effect))) == 1
+
+
+def check_warn_card(test, where, body):
+    """On a ⚠ card every option's impact line carries its undo, as the block's table does.
+    Returns 1 when the card is ⚠, else 0."""
+    if "⚠" not in body[0]:
+        return 0
+    for k, line in enumerate(body):
+        m = OPTION.match(line)
+        if m:
+            fs = facets(body[k + 1]) if k + 1 < len(body) else None
+            test.assertTrue(fs and any(lab == "undo" for lab, _ in fs[1:]),
+                            f"{where}: ⚠ card, ({m.group(2)}) has no undo")
+    return 1
+
+
 class Templates(unittest.TestCase):
 
     def test_the_card_template_puts_each_options_impact_under_it(self):
@@ -138,8 +159,23 @@ class Checks(unittest.TestCase):
             "- (z) Decide later — *it waits*"]), 2)
 
     def test_an_effect_favouring_one_option_is_caught(self):
-        self.assertIsNone(re.search(r"\(([a-y])\) .*\(([a-y])\) ",
-                                    impact_effect("**Impact:** → the backup finishes · later: x")))
+        one = impact_effect("**Impact:** → (a) the backup finishes · later: x")
+        self.assertTrue(favours_one(one))
+        both = impact_effect("**Impact:** → (a) the backup finishes; (b) no backup · later: x")
+        self.assertFalse(favours_one(both))
+        settles = impact_effect("**Impact:** → sets which units the dashboard shows · later: x")
+        self.assertFalse(favours_one(settles))
+
+    def test_a_warn_card_option_without_its_undo_is_caught(self):
+        card = ["**43 — Remove the old endpoint?** ⚠ one-way",
+                "- (a) Remove it", "  *→ partners break · reach: two partners*",
+                "- **(b) Keep it**", "  *→ nothing breaks · undo: drop the header*",
+                "- (z) Decide later — *it waits*"]
+        with self.assertRaises(AssertionError):
+            check_warn_card(self, "mutant", card)
+        card[2] = "  *→ partners break · reach: two partners · undo: a hotfix, after the outage*"
+        self.assertEqual(check_warn_card(self, "good", card), 1)
+        self.assertEqual(check_warn_card(self, "plain", ["**41 — Resume?**"]), 0)
 
 
 class Gallery(unittest.TestCase):
@@ -157,8 +193,17 @@ class Gallery(unittest.TestCase):
             self.assertIsNotNone(imp, f"gallery.md:{n}: no Impact line")
             effect = impact_effect(imp)
             self.assertTrue(effect, f"gallery.md:{n}: no effect before later:")
-            letters = set(re.findall(r"\(([a-y])\) ", effect))
-            self.assertGreaterEqual(len(letters), 2, f"gallery.md:{n}: the effect favours one option")
+            self.assertFalse(favours_one(effect), f"gallery.md:{n}: the effect favours one option")
+
+    def test_every_warn_card_gives_each_option_its_undo(self):
+        # gallery's ⚠ decisions are shown as blocks on first showing; a ⚠ card, when one
+        # appears, is held to the rule, and the template states it
+        for n, kind, body in views(GALLERY):
+            if kind == "card":
+                check_warn_card(self, f"gallery.md:{n}", body)
+        flat = " ".join(RENDERING.read_text().split())
+        self.assertIn("on a ⚠ decision every option's line carries its undo", flat)
+        self.assertIn("cannot be undone, or only at real cost, is never left out", flat)
 
     def test_every_block_carries_the_facets_in_its_table(self):
         seen = 0

@@ -91,10 +91,11 @@ renders what the operator read instead of composing it again.
   the `basis:` drill-down line is required: they fill the block's Impact table, with
   `cost:` where the option has one. On every card, each option line holds that option's own
   impact — its effect, then `reach:`, `undo:` and `cost:` where they apply, a facet that
-  does not apply left off, but never an undo that says the option cannot be undone — and
-  the card shows it on the italic line under the option, as stored (the `decisions` skill's
-  rendering reference, § Impact). `why ask:` follows `why now:` on every card, one physical
-  line, its reason from `decide-alone.md` § Class names. `context:` follows
+  does not apply left off; an undo that says the option cannot be undone, or only at real
+  cost, is never left off, and on a ⚠ decision every option line carries its undo, as the
+  block's table does — and the card shows it on the italic line under the option, as
+  stored (the `decisions` skill's rendering reference, § Impact). `why ask:` follows
+  `why now:` on every card, one physical line, its reason from `decide-alone.md` § Class names. `context:` follows
   `why ask:` on every card, one physical line, written when the decision is raised. Before
   its first ` — then: ` is the card's Context: the terms the card uses, then the cue last —
   where the operator left it (what they last saw or decided on this subject) · what they
@@ -126,13 +127,13 @@ renders what the operator read instead of composing it again.
   line stored before Effect covered the options (2026-10-14) may give the recommended
   option's effect alone: it is read as written, never rewritten at render time, and is
   rewritten across the options only when the card is revised for another reason. Its Undo
-  names the one-way option's undo whenever any option is one-way, not only the recommended option's. What the decision
-  blocks is its `later:`, so `why now:` drops `blocks:` when the `impact:` line's `later:`
+  names the one-way option's undo whenever any option is one-way, not only the recommended
+  option's. What the decision blocks is its `later:`, so `why now:` drops `blocks:` when the `impact:` line's `later:`
   carries it. It replaces the `stakes:` line, which a card stored
   before it keeps as written. Every view reads it: the Report's `decisions needed:` takes
-  its effect at tag size, the list line its wait, the card the whole line, so the tightest
-  view never opens the options. Where a view shows the recommendation beside the arrow — the
-  list line, the Groom row (`idle-turn.md`) — the arrow carries the recommended option's own
+  its effect at tag size, the list line its wait, the card the whole line, so the report
+  line never has to open the options. Where a view shows the recommendation beside the
+  arrow — the list line, the Groom row (`idle-turn.md`) — the arrow carries the recommended option's own
   effect, read from its option line (with no recommendation, the `impact:` line's effect).
   A card stored without it is backfilled under the rule below, from its option lines and
   its `(z)` line (and an older `stakes:` line, for reach and undo), and written as a revised

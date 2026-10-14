@@ -48,10 +48,11 @@ The smallest view shows Effect; each larger view adds facets in that order:
   order, `*→ effect · reach: … · undo: … · cost: …*`, each facet after the first labelled so
   Reach is never read as more Effect. A facet that is empty or does not apply to that option
   (nobody beyond the work, nothing to undo, no cost worth naming) is left out, so a small
-  option's line may be its effect alone; an Undo that says the option cannot be undone is
-  never left out, since it decides the read-back (`references/replies.md`). (z) keeps its
-  one line: what waiting costs. A block carries the same facets in its table, a row per
-  option. A list line carries none: it stays terse.
+  option's line may be its effect alone. An Undo that says the option cannot be undone, or
+  only at real cost, is never left out, since it decides the read-back
+  (`references/replies.md`); on a ⚠ decision every option's line carries its undo, as the
+  block's table does. (z) keeps its one line: what waiting costs. A block carries the same
+  facets in its table, a row per option. A list line carries none: it stays terse.
 - **Undo replaces the old stakes words** (*reversible, narrow*, *one-way, narrow*): it says
   how, *undo: one edit*, or why not, *undo: none — a deleted snapshot is gone*. The
   ⚠ one-way label stays on a decision that is one-way *and* high impact; its Undo states the
@@ -75,7 +76,7 @@ The smallest view shows Effect; each larger view adds facets in that order:
 ```
 
 When the caller keeps the card in a store, the line is stored with it, and every view reads
-it from there, a caller's tag-size views included, so the tightest view never has to open the
+it from there, a caller's tag-size views included, so the report line never has to open the
 options. A stored card without one is revised before it renders (§ Re-show with what
 changed, From the store). Each option's impact is stored with its option, so the card's
 option lines read from there too.
@@ -84,8 +85,9 @@ option lines read from there too.
 options (2026-10-14) may give the recommended option's effect alone. It renders as stored —
 never recomposed at render time — and the option lines under it show what each option does.
 When such a card is revised for any other reason, its Effect is rewritten across the options
-and stored with the revision. An option stored in the older one-line form, its impact after
-a dash, renders in the new one: its facets on the line under the option.
+and stored with the revision. An option stored on one line, its impact after a dash (a
+caller's store form included), renders in the new one: its facets on the line under the
+option.
 
 ## Context
 

@@ -159,9 +159,10 @@ Smallest to largest, each showing more of the impact in facet order (templates i
 
 - **Tag size** — `46 (→ effect)`, for a caller's tightest views (a row of open items, a
   report line naming numbers, a page's summary list); never in place of a level.
-- **List line** — every decision gets one, with no Context: **bold number and title**, recommendation,
-  `→` Effect, `later:` Wait, its class when the caller names classes, ⚠ one-way when it is,
-  basis, its age and any deadline; a round ask, its justification; a line-only decision, its
+- **List line** — every decision gets one, with no Context: **bold number and title**,
+  recommendation, `→` that option's effect (with no recommendation, the Effect), `later:`
+  Wait, its class when the caller names classes, ⚠ one-way when it is, basis, its age and
+  any deadline; a round ask, its justification; a line-only decision, its
   why ask.
 - **Card** — in the answer page's order: the decision line (the title, then **What:**, what
   is decided), then **Context:**, then an **Impact:** line; then why now, why ask (and a

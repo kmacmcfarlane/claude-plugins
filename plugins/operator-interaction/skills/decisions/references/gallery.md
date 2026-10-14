@@ -69,8 +69,8 @@ Rec **(b)** · basis **partial** — *observed: this week's access log shows 2 p
 
 *Gallery note — layout and order: the cards and the block come first, each opening on its decision line (the title and What), then its Context, then its impact (a line on a card; on the block, the line and then a table), the compact list and the hint last, so the list is what is on screen when the agent stops. Why this order: 41 breaks before you are back; the API cleanup group comes next because it holds a ⚠, with 44 kept beside 43; then 42, which blocks the docs build, before 45, which blocks nothing. 44 and 42 stay list lines: you are warm on both, both are two-way and narrow on a strong basis, 44's options converge and 42 is a template you have seen. 41, 43 and 45 are cold, so each is at least a card; 43 is a block because this is its first showing. Each card and the block carries its Context — the terms it uses, then where you left it — and would carry it for a warm reader too; the block's runs to bullets, its first the card-size Context and the rest what a reader coming back may have lost. The list lines carry none. In each card and the block the options keep their letter order and only the recommended one is bold: 43's (b) stays second, and 45, with no recommendation, bolds none. Each Impact line's effect gives every option's outcome, favouring none — the bold option and the Rec line mark the recommendation — and on a card each option carries its own effect, reach, undo and cost on the italic line under it, a facet that does not apply left out; on the block the table's rows carry them. Every list line carries an effect and what waiting costs, the line-only ones too: the recommended option's after its label, and 45's each option's, since it has no recommendation; no list line carries an option's reach, undo or cost; only 43 has a ⚠ slot, and no line has a stakes word.*
 
-- **41 Resume the paused nightly backup?** — rec **(a) resume** → *the backup finishes in about 15 minutes* · *later: the snapshot is lost at 17:45 and the backup starts over* · basis **strong** · *25 min old, storage lease lapses ~17:45 (90 min from 16:15)*
-- **43 Remove the deprecated `/v1/export` endpoint?** — rec **(b) keep it, with a sunset date** → *nothing breaks; removal announced for 90 days out* · *later: misses Thursday's API cleanup release* · ⚠ one-way · basis **partial** · *6 h old*
+- **41 Resume the paused nightly backup?** — rec **(a) resume** → *the snapshot finishes in about 15 minutes* · *later: the snapshot is lost at 17:45 and the backup starts over* · basis **strong** · *25 min old, storage lease lapses ~17:45 (90 min from 16:15)*
+- **43 Remove the deprecated `/v1/export` endpoint?** — rec **(b) keep it, with a sunset date** → *nothing breaks; every response announces removal in 90 days* · *later: misses Thursday's API cleanup release* · ⚠ one-way · basis **partial** · *6 h old*
 - **44 Deprecation notice: "deprecated" or "scheduled for removal"?** — rec **(a) "deprecated"** → *the notice matches the three before it* · *later: no notice published until you choose* · basis **strong** · *why ask: partners read it, and (b) warns them more plainly* · *50 min old* *(line only)*
 - **42 Clear the docs build cache?** — rec **(a) clear it** → *the docs build runs again* · *later: the docs build stays blocked* · *template: cache reset* · basis **strong** · *why ask: clearing it drops the other branch's cached build too* · *10 min old* *(line only)*
 - **45 Units on the storage dashboard: MiB or MB?** — *your preference, no rec* → *(a) sizes match the OS tools; (b) sizes match the bill* · *later: placeholder units stay* · basis **strong** · *3 h old*
@@ -90,7 +90,7 @@ Rec **(b)** · basis **partial** — *observed: this week's access log shows 2 p
 **Why now:** the design review this afternoon needs the preview.
 **Why ask:** if the retry fails too, the review starts with no preview at all; you may prefer yesterday's build as the sure thing.
 - **(a) Retry now**
-  *→ the preview is up if it succeeds; if it fails, no preview yet · undo: deploy yesterday's build instead · cost: about 4 minutes*
+  *→ preview up in about 4 minutes if it succeeds; if it fails, no preview yet · undo: deploy yesterday's build instead · cost: about 4 minutes*
 - (b) Deploy yesterday's build instead
   *→ the review sees the old page · reach: the design review · undo: retry the deploy later*
 - (z) Decide later — *it waits; no preview until someone deploys*
@@ -108,7 +108,7 @@ Rec **(a)** · basis **strong** — *the deploy log shows a registry timeout, no
 **Why now:** staging storage is at 85% of its quota.
 **Why ask:** the snapshot cannot be recovered once it is deleted.
 - **(a) Delete it**
-  *→ frees 120 GB · reach: staging only · undo: none, it cannot be recovered*
+  *→ frees 120 GB of staging storage · reach: staging only · undo: none, it cannot be recovered*
 - (b) Keep it
   *→ storage stays at 85%; a later snapshot may fail when it fills · undo: delete it later*
 - (z) Decide later — *it waits; storage keeps filling by about 2% a day*
@@ -278,15 +278,15 @@ the list: 41, 43 and 45 are unchanged, so they are not rendered again and their 
 **Why now:** it goes out with the API cleanup release.
 **Why ask:** partners read the notice, and (b) warns them more plainly than the three notices before it.
 - **(a) "deprecated"**
-  *→ matches the three endpoints deprecated before · undo: one edit, before the release*
+  *→ the notice matches the three before it · undo: one edit, before the release*
 - (b) "scheduled for removal"
   *→ says more plainly that it will go; the only notice worded this way · undo: one edit, before the release*
 - (z) Decide later — *it waits; no notice is published until you choose*
 
 Rec **(a)** · basis **strong** — *read the three earlier notices* · unknown: none
 
-- **41 Resume the paused nightly backup?** — rec **(a) resume** → *the backup finishes in about 15 minutes* · *later: the snapshot is lost at 17:45 and the backup starts over* · basis **strong** · *35 min old, storage lease lapses ~17:45 (80 min from 16:25)* *(shown before)*
-- **43 Remove the deprecated `/v1/export` endpoint?** — rec **(b) keep it, with a sunset date** → *nothing breaks; removal announced for 90 days out* · *later: misses Thursday's API cleanup release* · ⚠ one-way · basis **partial** · *6 h old* *(shown before)*
+- **41 Resume the paused nightly backup?** — rec **(a) resume** → *the snapshot finishes in about 15 minutes* · *later: the snapshot is lost at 17:45 and the backup starts over* · basis **strong** · *35 min old, storage lease lapses ~17:45 (80 min from 16:25)* *(shown before)*
+- **43 Remove the deprecated `/v1/export` endpoint?** — rec **(b) keep it, with a sunset date** → *nothing breaks; every response announces removal in 90 days* · *later: misses Thursday's API cleanup release* · ⚠ one-way · basis **partial** · *6 h old* *(shown before)*
 - **44 Deprecation notice: "deprecated" or "scheduled for removal"?** — rec **(a) "deprecated"** → *the notice matches the three before it* · *later: no notice published until you choose* · basis **strong** · *1 h old*
 - **42 Clear the docs build cache?** — rec **(a) clear it** → *the docs build runs again* · *later: the docs build stays blocked* · *template: cache reset* · basis **strong** · *why ask: clearing it drops the other branch's cached build too* · *20 min old* *(line only)*
 - **45 Units on the storage dashboard: MiB or MB?** — *your preference, no rec* → *(a) sizes match the OS tools; (b) sizes match the bill* · *later: placeholder units stay* · basis **strong** · *3 h old* *(shown before)*
@@ -431,7 +431,7 @@ its Impact line and its table; *while it waited* says whether the impact changed
 
 | Impact | Effect | Reach | Undo | Cost |
 |---|---|---|---|---|
-| **(a) Move all workers now** | every worker service reads from the new broker from today | every worker service, and whoever is on call for them | switch each service's config back within the week; after that the old queue is gone | about an hour of config changes |
+| **(a) Move all workers now** | every worker reads from the new broker today | every worker service, and whoever is on call for them | switch each service's config back within the week; after that the old queue is gone | about an hour of config changes |
 | (b) Move one service first | the email worker moves today; the rest follow in two days if it stays quiet | the email worker only, for now | one config change | two more days before the rollout finishes |
 | (z) Wait | the rollout stays paused and the old queue keeps running | the worker rollout | answer any time | the old queue's upkeep |
 
@@ -464,7 +464,7 @@ Rec **(b)** · basis **strong** — *checked the CDN's status history and loaded
 **Why now:** new code is being written against the loose setting, so each week adds more to fix later.
 **Why ask:** it changes how everyone writes new code in the repo, not just this task.
 - **(a) Turn it on**
-  *→ 31 existing warnings to fix · reach: everyone writing code here · undo: turn the setting off, one line · cost: about an hour of my time*
+  *→ 31 warnings fixed, strict checks from now on · reach: everyone writing code here · undo: turn the setting off, one line · cost: about an hour of my time*
 - (b) Leave it off
   *→ no work now; the loosely typed code keeps growing*
 - (z) Decide later — *it waits; the setting stays off*
