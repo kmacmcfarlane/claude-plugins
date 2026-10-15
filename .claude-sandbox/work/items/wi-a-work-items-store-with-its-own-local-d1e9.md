@@ -83,3 +83,6 @@ note: wi commit stages every store path, so in a store two sessions write it swe
 target: an agent worktree off main (390c60c5); wi init create/adopt, own-unrecorded and no-history checks (F3)
 dispatch: implementer opus high — d1e9 F3: init creates or adopts the store's repo (same file and effort as F1/F2)
 agent: implementer a56d080820c81b88a F3 round 1
+result: DONE F3 round 1 at 8712bd83 (init create/adopt via _store_git, --template= empty, env scrub, local hooksPath/fsmonitor; 573/105/762/21 OK; 19 mutants caught; departures: old locations not refused (note instead), a remote does not refuse adoption (plan), test_wi fixtures moved to --track, extra refusals and notices)
+dispatch: reviewer opus high — fresh (rule 4), d1e9 F3 (security-sensitive)
+agent: reviewer a68637230a53cccf7 F3 round 1 at 8712bd83
