@@ -46,3 +46,4 @@ agent: implementer a308b4bc437e8e143 F1 round 1
 result: DONE F1 round 1 at aa37b2e9 (_env helper, notices only from prime/lint/init, help names WORK_ITEMS_ROOT, harness scrub, EnvNamesTest and HelpNamesEnvTest; 391 OK)
 dispatch: reviewer opus high — fresh (rule 4), F1
 agent: reviewer af7353ff071081892 F1 round 1 at aa37b2e9
+verdict: CLEAR F1 round 1 at aa37b2e9 (nits: 'old name is set' wording in format.md:237-244 and SKILL.md:70; test_estate.py:469 env scrub — carried into F2's brief)
