@@ -105,3 +105,38 @@ verbs, capability differences and canonical state mapping are in
   for — respect a conflict.
 - Migration of a repo's TODO.md is a reviewed change (import → review items → write notice
   → commit; the items are in that commit when the store is tracked), never a drive-by.
+
+## Protecting the store
+
+A `.work-items/` store is git-ignored with no remote, and a tracked store's new items are not
+in git until committed: git cannot bring either back, and a lost store takes its decision
+numbers with it. Near a store (the harm, the evidence, observed with git 2.39.5, and
+the full safe forms are in `references/store-safety.md`):
+
+- `git clean`:
+  - Never a doubled `-f` (or `--force` twice) near a store: a doubled force deletes linked
+    worktrees and nested repos even when the store is excluded.
+  - Never `-x` near a store without excluding it. Preview, then exclude:
+    `git clean -n -fdx -e /.work-items/`, then run it without `-n`:
+    `git clean -fdx -e /.work-items/` (one `-f` only).
+  - `-X` is never safe while the clean reaches a store (from the cwd down, or through its
+    pathspec): `-e` and `:!` do not protect it under `-X`. Name only the directories to
+    clean instead: preview with `git clean -n -fdX -- build/ dist/`, then run
+    `git clean -fdX -- build/ dist/`.
+  - A tracked store (`.claude-sandbox/work/`, `.work/`) loses new items to any clean without
+    `-X`: add `-e /<store>/` (under `-X`, name the directories as above).
+  - A plain store that is not ignored is deleted by `git clean -fd` and moved by
+    `git stash -u`.
+- `git stash`: never `--all`/`-a`. Commit, or copy files to the scratchpad, instead.
+- `rm -r`: never on the store, its repo root or any directory above it, and never "delete
+  the checkout and clone again" while it holds a store. Back up first (§ Backing up there).
+- Git inside the store: always `git -C <store> …`, never `cd` into it to run git, and never
+  run git that writes inside one except a commit under its lock (§ Safe forms there). Never
+  `reset`, `checkout`, `switch`, `restore`, `clean`, `stash` or `rm` there.
+- Never remove the store's line from `.gitignore`, `git add -f` it, or `git add` it when it
+  is its own repo (that commits a gitlink, mode 160000, pointing at the store's current
+  commit, which no clone can fetch).
+- A worktree or a fresh clone has no store: point `WORK_ITEMS_ROOT` at the main checkout's
+  (§ Rules), or restore a backup. Never `$WI init` there to make the error go away.
+- Path and key, never value (`references/format.md` § Secret rule): the store's history
+  keeps every past text.

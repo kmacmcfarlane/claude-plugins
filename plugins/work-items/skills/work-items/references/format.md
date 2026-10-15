@@ -292,7 +292,8 @@ reads it.
 ## Moving a store
 
 `wi` has no move command: a store moves once per repo, by one of these recipes,
-run from the main checkout. Before any of them, stop the sessions that use the
+run from the main checkout. Before any of them, back up the store
+(`references/store-safety.md` § Backing up), stop the sessions that use the
 store (their claims and its `.lock`), and update every `WORK_ITEMS_ROOT` (or
 `WI_ROOT`) export that names the old path: briefs, open worktrees. Each recipe
 ends with `wi --root .work-items lint`, and leaves no old directory behind (the
