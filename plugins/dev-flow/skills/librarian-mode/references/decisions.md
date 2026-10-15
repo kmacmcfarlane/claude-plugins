@@ -179,9 +179,8 @@ renders what the operator read instead of composing it again.
   seen, stands, write no `seen N:` line; `shown N:` lines are written as above.
 
   Both lines are column 0, appended, never inside a card, and ride the next store commit
-  like every other record line. The store's commit goes to the repo that holds it (`git -C
-  "$WORK_ITEMS_ROOT"`); when that repo ignores the store (`git -C "$WORK_ITEMS_ROOT"
-  check-ignore -q "$WORK_ITEMS_ROOT"` exits 0), skip this commit. Their shape and how they
+  like every other record line: commit the store with `$WI commit -m "<message>"` (the
+  `dev-cycle` skill's `references/bindings.md`, the store lookup). Their shape and how they
   are read (first and last by position; seen after the last showing by file order, never by
   the times) are the `work-items` skill's format reference, § Shown and seen.
 - **Re-show:** render the last stored card, adding only what the skill allows, and append
@@ -270,10 +269,9 @@ renders what the operator read instead of composing it again.
   ```
 
   `acted` names the commit on main, or the item, that carried the answer out — written when
-  that change lands, in the store commit that records the landing. The store's commit goes
-  to the repo that holds it (`git -C "$WORK_ITEMS_ROOT"`); when that repo ignores the store
-  (`git -C "$WORK_ITEMS_ROOT" check-ignore -q "$WORK_ITEMS_ROOT"` exits 0), skip this
-  commit. The line is appended when the change lands either way. An answer carried out by
+  that change lands, in the store commit that records the landing: commit the store with
+  `$WI commit -m "<message>"` (the `dev-cycle` skill's `references/bindings.md`, the store
+  lookup). The line is appended when the change lands either way. An answer carried out by
   several changes is closed when the last of them lands, and stays answered but not closed
   until then; an answer that changes nothing closes at once as `closed N: acted <the id of
   the item the answer was recorded on>`. `rule` names the file the answer became a standing

@@ -430,10 +430,9 @@ and writes only on a hit: a captured tag this table lists, or a `trade-off` whos
 with one of the eight impacts and a colon. No hit, no write. On a hit it rewrites each matched
 line in place — the tag token and the prefix the row names, every other character as written —
 reads each `ruled-rule-case` and `relay` by hand, skips an item `doing` under another `owner:`
-(that owner's Rehydrate migrates it), stages only the files it rewrote, and commits the store
-once. The store's commit goes to the repo that holds it
-(`git -C "$WORK_ITEMS_ROOT"`); when that repo ignores the store (`git -C "$WORK_ITEMS_ROOT"
-check-ignore -q "$WORK_ITEMS_ROOT"` exits 0), skip this commit.
+(that owner's Rehydrate migrates it), and commits the store once with `$WI commit -m
+"<message>"` (the `dev-cycle` skill's `references/bindings.md`, the store lookup), which
+stages the store's own files itself.
 
 **Removal.** `wi estate` does not parse tags: the removal check is the same captured-tag grep,
 run in each repo's store. The librarian of this marketplace files the removal item when this

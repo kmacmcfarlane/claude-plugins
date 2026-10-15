@@ -1,7 +1,8 @@
 """Tests for a work-item store that is its own git repo (d1e9 F1): telling
 the store's .git apart (own, unrecorded, dedicated, missing, broken, old),
 the hardened store git runner, custody through it, and the store-repo rows
-of `prime` and `lint`.
+of `prime` and `lint`; and `wi commit` (F2), one test group per row of its
+table in format.md § Committing the store.
 
 Every git call here runs in a temp dir: HOME is a temp dir, the global
 config is a temp file (GIT_CONFIG_GLOBAL), GIT_CONFIG_NOSYSTEM=1, and
@@ -749,9 +750,17 @@ class TestChecks(StoreRepoCase):
         self.git(store, "init", "-q", "--template=")
         self.git(store, "add", "-A")
         self.git(store, "commit", "-q", "-m", "init")
+        # the host's ls-files runs with fsmonitor off: a marker fsmonitor in
+        # the host's config fires under plain git (control), never in lint
+        self.git(host, "config", "core.fsmonitor",
+                 str(self.marker("host-fsmonitor")))
+        self.git(host, "ls-files", "-s", "--", ".work-items")
+        self.assertIn("host-fsmonitor", self.marked())
+        self.clear_marks()
         r = self.lint(store, 3)
         self.assertIn("tracks 1 path(s) under .work-items", r.stdout)
         self.assertIn("rm -r -q --cached -- .work-items", r.stdout)
+        self.assertEqual(self.marked(), [])
 
     def test_remote_names_only(self):
         store = self.make_own()
@@ -821,6 +830,467 @@ class TestPathspec(StoreRepoCase):
             ["items", "archive", "README.md", "store.yaml", ".gitignore"])
         self.git(store, "rm", "-r", "-q", "--cached", "archive")
         self.assertNotIn("archive", wi.existing_paths(store, wi.OWN_PATHS))
+
+
+class TestCommit(StoreRepoCase):
+    """d1e9 D5, D5' (F2): `wi commit`, one row of its table per test group."""
+
+    MSG = "chore: work-item store - landed"
+
+    def commit(self, store, *args, code=0, env=None):
+        r = self.wi(["commit", *args], store, env=env)
+        self.assertEqual(r.returncode, code, r.stdout + r.stderr)
+        return r
+
+    def run_main(self, store, *args):
+        """wi in this process (for patches); (exit, stdout, stderr)."""
+        import io
+        out, err = io.StringIO(), io.StringIO()
+        with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
+            code = wi.main(["--root", str(store), "commit", *args])
+        return code, out.getvalue(), err.getvalue()
+
+    def subjects(self, repo):
+        return self.git(repo, "log", "--format=%s").stdout.splitlines()
+
+    def files_in_head(self, repo):
+        return self.git(repo, "show", "--name-only", "--no-renames",
+                        "--format=", "HEAD").stdout.split()
+
+    def edit(self, store, iid="one-aaaa", extra="edit\n"):
+        (store / "items" / f"{iid}.md").write_text(
+            ITEM.format(iid=iid) + extra)
+
+    def lock_free(self, store):
+        with open(store / ".lock", "a") as fh:
+            try:
+                fcntl.flock(fh, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            except OSError:
+                return False
+            fcntl.flock(fh, fcntl.LOCK_UN)
+            return True
+
+    # -- own -------------------------------------------------------------
+
+    def test_own_hand_edit_committed_with_no_archive(self):
+        store = self.make_own()
+        self.assertFalse((store / "archive").exists())
+        self.edit(store)
+        r = self.commit(store, "-m", self.MSG)
+        sha = self.git(store, "rev-parse", "--short", "HEAD").stdout.strip()
+        self.assertEqual(r.stdout, f"committed {sha}\n")
+        self.assertEqual(self.subjects(store)[0], self.MSG)
+        self.assertEqual(self.files_in_head(store), ["items/one-aaaa.md"])
+        self.assertEqual(self.git(store, "status", "--porcelain").stdout, "")
+        self.assertEqual(self.wi(["lint"], store).stderr, "")
+
+    def test_own_default_message(self):
+        store = self.make_own()
+        self.edit(store)
+        self.commit(store)
+        self.assertEqual(self.subjects(store)[0], wi.COMMIT_DEFAULT_MESSAGE)
+
+    def test_own_nothing_to_commit(self):
+        store = self.make_own()
+        before = self.subjects(store)
+        r = self.commit(store, "-m", self.MSG)
+        self.assertEqual(r.stdout, "nothing to commit\n")
+        self.assertEqual(self.subjects(store), before)
+
+    def test_own_new_removed_and_archived_paths(self):
+        store = self.make_own()
+        (store / "items" / "one-aaaa.md").unlink()
+        (store / "items" / "new-cccc.md").write_text(
+            ITEM.format(iid="new-cccc"))
+        (store / "archive" / "2026").mkdir(parents=True)
+        (store / "archive" / "2026" / "one-aaaa.md").write_text(
+            ITEM.format(iid="one-aaaa"))
+        self.commit(store, "-m", self.MSG)
+        self.assertEqual(sorted(self.files_in_head(store)),
+                         ["archive/2026/one-aaaa.md", "items/new-cccc.md",
+                          "items/one-aaaa.md"])
+        self.assertEqual(self.git(store, "status", "--porcelain").stdout, "")
+
+    def test_own_hand_staged_file_stays_staged_and_out(self):
+        store = self.make_own()
+        (store / "scratch.txt").write_text("staged by hand\n")
+        self.git(store, "add", "scratch.txt")
+        self.edit(store)
+        self.commit(store, "-m", self.MSG)
+        self.assertEqual(self.files_in_head(store), ["items/one-aaaa.md"])
+        self.assertEqual(self.git(store, "diff", "--cached",
+                                  "--name-only").stdout.split(),
+                         ["scratch.txt"])
+
+    def test_own_waits_for_the_lock_then_exits_4(self):
+        store = self.make_own()
+        self.edit(store)
+        before = self.subjects(store)
+        with open(store / ".lock", "a") as fh, \
+                mock.patch.object(wi.Lock.__init__, "__defaults__", (0.3,)):
+            fcntl.flock(fh, fcntl.LOCK_EX)
+            code, out, err = self.run_main(store, "-m", self.MSG)
+        self.assertEqual(code, 4, out + err)
+        self.assertIn("lock timeout", err)
+        self.assertEqual(self.subjects(store), before)
+        self.assertIn("items/one-aaaa.md",
+                      self.git(store, "status", "--porcelain").stdout)
+
+    def test_own_runs_no_hook_fsmonitor_or_signing(self):
+        store = self.make_own()
+        hooks = self.tmp / "hooks"
+        hooks.mkdir()
+        for name in ("pre-commit", "commit-msg", "post-commit"):
+            shutil.copy(self.marker(f"global-{name}"), hooks / name)
+        self.git(self.tmp, "config", "--global", "core.hooksPath", str(hooks))
+        self.git(store, "commit", "-q", "--allow-empty", "-m", "control")
+        self.assertIn("global-pre-commit", self.marked())   # control
+        self.clear_marks()
+        (store / ".git" / "hooks").mkdir(exist_ok=True)
+        shutil.copy(self.marker("store-pre-commit"),
+                    store / ".git" / "hooks" / "pre-commit")
+        self.git(store, "config", "core.fsmonitor",
+                 str(self.marker("fsmonitor")))
+        self.git(self.tmp, "config", "--global", "commit.gpgSign", "true")
+        self.git(self.tmp, "config", "--global", "gpg.program",
+                 str(self.tmp / "no-such-gpg"))
+        self.edit(store)
+        self.commit(store, "-m", self.MSG)
+        self.assertEqual(self.subjects(store)[0], self.MSG)
+        self.assertEqual(self.marked(), [])
+
+    def test_own_host_hook_env_does_not_reach_the_host(self):
+        store = self.make_own()
+        host = self.tmp / "host"
+        head = self.git(host, "rev-parse", "HEAD").stdout
+        index = (host / ".git" / "index").read_bytes()
+        self.edit(store)
+        self.commit(store, "-m", self.MSG, env={
+            "GIT_DIR": str(host / ".git"), "GIT_WORK_TREE": str(host),
+            "GIT_INDEX_FILE": str(host / ".git" / "index")})
+        self.assertEqual(self.subjects(store)[0], self.MSG)
+        self.assertEqual(self.git(host, "rev-parse", "HEAD").stdout, head)
+        self.assertEqual((host / ".git" / "index").read_bytes(), index)
+
+    def test_own_identity_fallback(self):
+        store = self.make_own()
+        r = subprocess.run(["git", "var", "GIT_AUTHOR_IDENT"], cwd=store,
+                           env=self.env, capture_output=True)
+        if r.returncode == 0:
+            self.skipTest("git finds an identity on this machine")
+        self.edit(store)
+        self.commit(store, "-m", self.MSG)
+        self.assertEqual(self.git(store, "log", "-1",
+                                  "--format=%an <%ae>|%cn <%ce>").stdout,
+                         "wi <wi@localhost>|wi <wi@localhost>\n")
+        # nothing is written to any config
+        self.assertNotIn("user", (store / ".git" / "config").read_text())
+        self.assertEqual(self.gitconfig.read_text(), "")
+
+    def test_own_identity_from_env_wins(self):
+        store = self.make_own()
+        self.edit(store)
+        self.commit(store, "-m", self.MSG, env={
+            "GIT_AUTHOR_NAME": "Ann", "GIT_AUTHOR_EMAIL": "ann@example.invalid",
+            "GIT_COMMITTER_NAME": "Cy",
+            "GIT_COMMITTER_EMAIL": "cy@example.invalid"})
+        self.assertEqual(self.git(store, "log", "-1",
+                                  "--format=%an|%cn").stdout, "Ann|Cy\n")
+
+    def test_own_index_lock_conflict_retries_then_fails(self):
+        store = self.make_own()
+        lock = store / ".git" / "index.lock"
+        lock.write_text("")
+        self.edit(store)
+        before = self.subjects(store)
+        start = time.monotonic()
+        r = self.commit(store, "-m", self.MSG, code=3)
+        self.assertGreaterEqual(time.monotonic() - start,
+                                wi.INDEX_LOCK_RETRIES * wi.INDEX_LOCK_WAIT)
+        self.assertIn("not committed", r.stderr)
+        self.assertIn("index.lock", r.stderr)
+        self.assertTrue(lock.exists())        # never deleted
+        self.assertEqual(self.subjects(store), before)
+        self.assertTrue(self.lock_free(store))
+
+    def test_own_retry_counts(self):
+        store = self.make_own()
+        self.edit(store)
+        calls = []
+        busy = subprocess.CompletedProcess(
+            [], 128, "", "fatal: Unable to create '/x/.git/index.lock': "
+            "File exists.")
+
+        def fake(root, *args, **kw):
+            if "add" in args:
+                calls.append(args)
+                return busy
+            return real(root, *args, **kw)
+
+        real = wi._store_git
+        with mock.patch.object(wi, "_store_git", fake), \
+                mock.patch.object(wi, "INDEX_LOCK_WAIT", 0.0):
+            code, out, err = self.run_main(store, "-m", self.MSG)
+        self.assertEqual(code, 3)
+        self.assertEqual(len(calls), 1 + wi.INDEX_LOCK_RETRIES)
+
+    def test_own_shared_deadline(self):
+        store = self.make_own()
+        self.edit(store)
+        with mock.patch.object(wi, "COMMIT_DEADLINE", 0.0):
+            code, out, err = self.run_main(store, "-m", self.MSG)
+        self.assertEqual(code, 3, out + err)
+        self.assertIn("not committed: timed out", err)
+        self.assertTrue(self.lock_free(store))
+
+    def test_own_killed_call_names_index_lock(self):
+        store = self.make_own()
+        self.edit(store)
+        real = wi._store_git
+        seen = {}
+
+        def fake(root, *args, **kw):
+            seen.setdefault("timeouts", []).append(kw.get("timeout"))
+            return None if "commit" in args else real(root, *args, **kw)
+
+        with mock.patch.object(wi, "_store_git", fake):
+            code, out, err = self.run_main(store, "-m", self.MSG)
+        self.assertEqual(code, 3, out + err)
+        self.assertIn(f"if {store / '.git' / 'index.lock'} is left, remove "
+                      "it only when no git process runs", err)
+        # every commit step is bounded by what is left of the 5 s deadline
+        steps = seen["timeouts"][-4:]
+        self.assertTrue(all(0 < t <= wi.COMMIT_DEADLINE for t in steps),
+                        steps)
+
+    def test_own_gc_runs_after_the_lock_is_released(self):
+        store = self.make_own()
+        real = wi._store_git
+        gc = []
+
+        def spy(root, *args, **kw):
+            if "gc" in args:
+                gc.append((args, self.lock_free(store)))
+            return real(root, *args, **kw)
+
+        with mock.patch.object(wi, "_store_git", spy):
+            code, out, _ = self.run_main(store, "-m", self.MSG)
+            self.assertEqual(out, "nothing to commit\n")
+            self.assertEqual(gc, [])          # no commit, no gc
+            self.edit(store)
+            code, out, err = self.run_main(store, "-m", self.MSG)
+        self.assertEqual(code, 0, out + err)
+        ((args, free),) = gc
+        self.assertTrue(free)
+        self.assertIn(f"gc.auto={wi.GC_AUTO}", args)
+        self.assertIn("gc.autoDetach=false", args)
+        self.assertEqual(args[-2:], ("--auto", "-q"))
+
+    def test_own_commit_goes_only_through_the_runner(self):
+        store = self.make_own()
+        self.edit(store)
+        plain = []
+        real = wi._git
+
+        def spy(cwd, *args, **kw):
+            plain.append((str(cwd), args))
+            return real(cwd, *args, **kw)
+
+        with mock.patch.object(wi, "_git", spy):
+            code, out, err = self.run_main(store, "-m", self.MSG)
+        self.assertEqual(code, 0, out + err)
+        # plain git only asks for the host around the store, from its parent
+        self.assertTrue(all(os.path.realpath(cwd) != str(store)
+                            and "commit" not in args and "add" not in args
+                            for cwd, args in plain), plain)
+
+    # -- own repos wi did not set up, or cannot trust ---------------------
+
+    def test_unrecorded_is_refused(self):
+        store = self.make_own(own=False)
+        self.edit(store)
+        before = self.subjects(store)
+        r = self.commit(store, "-m", self.MSG, code=1)
+        self.assertIn("is its own git repo, not set up by wi: "
+                      "`wi init --no-track` adopts it", r.stderr)
+        self.assertEqual(self.subjects(store), before)
+
+    def test_missing_is_refused(self):
+        self.make_host()
+        store = self.tmp / "host" / ".work-items"
+        self.store_files(store)
+        r = self.commit(store, code=1)
+        self.assertIn("records `repo: own` in store.yaml but has no .git",
+                      r.stderr)
+
+    def test_broken_is_refused_and_never_reaches_the_host(self):
+        host = self.make_host()
+        store = host / ".work-items"
+        self.store_files(store)
+        (store / ".git").mkdir()
+        head = self.git(host, "rev-parse", "HEAD").stdout
+        r = self.commit(store, code=1)
+        self.assertIn("not a usable store repo", r.stderr)
+        self.assertEqual(self.git(host, "rev-parse", "HEAD").stdout, head)
+        self.assertEqual(self.git(host, "status", "--porcelain").stdout, "")
+
+    def test_attribute_file_is_refused(self):
+        store = self.make_own()
+        (store / "items" / ".gitattributes").write_text("*.md filter=x\n")
+        r = self.commit(store, code=1)
+        self.assertIn("selects git attributes", r.stderr)
+
+    def test_old_location_git_is_refused(self):
+        host = self.make_host()
+        store = host / ".work"
+        self.store_files(store, own=False)
+        self.git(store, "init", "-q", "--template=")
+        r = self.commit(store, code=1)
+        self.assertIn("old location", r.stderr)
+
+    def test_git_not_answering_is_exit_3(self):
+        base = self.tmp / "a:b"
+        base.mkdir()
+        store = base / ".work-items"
+        self.store_files(store)
+        self.git(store, "init", "-q", "--template=")
+        r = self.commit(store, code=3)
+        self.assertIn("git did not answer", r.stderr)
+
+    # -- tracked by the repo that holds it --------------------------------
+
+    def test_host_tracked_store(self):
+        host = self.make_host(ignore=False)
+        store = host / ".work-items"
+        self.store_files(store, own=False)
+        self.git(host, "add", "-A")
+        self.git(host, "commit", "-q", "-m", "store")
+        hook = host / ".git" / "hooks" / "pre-commit"
+        hook.parent.mkdir(exist_ok=True)
+        shutil.copy(self.marker("host-pre-commit"), hook)
+        (host / "src.txt").write_text("staged host change\n")
+        self.git(host, "add", "src.txt")
+        self.edit(store)
+        env = {"GIT_AUTHOR_NAME": "t", "GIT_AUTHOR_EMAIL": "t@t",
+               "GIT_COMMITTER_NAME": "t", "GIT_COMMITTER_EMAIL": "t@t"}
+        r = self.commit(store, "-m", self.MSG, env=env)
+        self.assertTrue(r.stdout.startswith("committed "), r.stdout)
+        self.assertEqual(self.subjects(host)[0], self.MSG)
+        self.assertEqual(self.files_in_head(host),
+                         [".work-items/items/one-aaaa.md"])
+        self.assertEqual(self.git(host, "diff", "--cached",
+                                  "--name-only").stdout.split(), ["src.txt"])
+        self.assertIn("host-pre-commit", self.marked())   # its rules run
+        self.assertFalse((store / ".git").exists())
+
+    def test_host_tracked_hook_refusal_is_exit_3(self):
+        host = self.make_host(ignore=False)
+        store = host / ".work-items"
+        self.store_files(store, own=False)
+        self.git(host, "add", "-A")
+        self.git(host, "commit", "-q", "-m", "store")
+        hook = host / ".git" / "hooks" / "pre-commit"
+        hook.parent.mkdir(exist_ok=True)
+        hook.write_text("#!/bin/sh\necho refused by policy >&2\nexit 1\n")
+        hook.chmod(0o755)
+        self.edit(store)
+        before = self.subjects(host)
+        r = self.commit(store, "-m", self.MSG, code=3, env={
+            "GIT_AUTHOR_NAME": "t", "GIT_AUTHOR_EMAIL": "t@t",
+            "GIT_COMMITTER_NAME": "t", "GIT_COMMITTER_EMAIL": "t@t"})
+        self.assertIn("not committed: refused by policy", r.stderr)
+        self.assertEqual(self.subjects(host), before)
+        self.assertTrue(self.lock_free(store))
+
+    def test_sidecar_store(self):
+        host = self.make_host(ignore=False)
+        (host / ".gitignore").write_text("/.claude-sandbox/\n")
+        sidecar = host / ".claude-sandbox"
+        store = sidecar / "work"
+        self.store_files(store, own=False)
+        self.git(sidecar, "init", "-q")
+        self.git(sidecar, "add", "-A")
+        self.git(sidecar, "commit", "-q", "-m", "sidecar")
+        host_before = self.subjects(host)
+        self.edit(store)
+        r = self.commit(store, "-m", self.MSG, env={
+            "GIT_AUTHOR_NAME": "t", "GIT_AUTHOR_EMAIL": "t@t",
+            "GIT_COMMITTER_NAME": "t", "GIT_COMMITTER_EMAIL": "t@t"})
+        self.assertTrue(r.stdout.startswith("committed "), r.stdout)
+        self.assertEqual(self.subjects(sidecar)[0], self.MSG)
+        self.assertEqual(self.files_in_head(sidecar),
+                         ["work/items/one-aaaa.md"])
+        self.assertEqual(self.subjects(host), host_before)
+
+    def test_dedicated_store_commits_by_its_own_rules(self):
+        store = self.make_own(host=False, own=False)
+        hook = store / ".git" / "hooks" / "pre-commit"
+        hook.parent.mkdir(exist_ok=True)
+        shutil.copy(self.marker("dedicated-pre-commit"), hook)
+        self.edit(store)
+        self.commit(store, "-m", self.MSG, env={
+            "GIT_AUTHOR_NAME": "t", "GIT_AUTHOR_EMAIL": "t@t",
+            "GIT_COMMITTER_NAME": "t", "GIT_COMMITTER_EMAIL": "t@t"})
+        self.assertEqual(self.subjects(store)[0], self.MSG)
+        self.assertIn("dedicated-pre-commit", self.marked())
+
+    # -- ignored, outside git ----------------------------------------------
+
+    def test_ignored_store(self):
+        host = self.make_host()                 # ignores /.work-items/
+        store = host / ".work-items"
+        self.store_files(store, own=False)
+        (store / "store.yaml").write_text("tracking: tracked\n")
+        before = self.subjects(host)
+        r = self.commit(store, "-m", self.MSG)
+        self.assertEqual(r.stdout, f"nothing to commit: {store} is "
+                         f"git-ignored by {host}\n")
+        self.assertEqual(self.subjects(host), before)
+        self.assertFalse((store / ".git").exists())
+
+    def test_recorded_ignored_store(self):
+        host = self.make_host(ignore=False)
+        store = host / ".work-items"
+        self.store_files(store, own=False)
+        (store / "store.yaml").write_text("tracking: ignored\n")
+        before = self.subjects(host)
+        r = self.commit(store)
+        self.assertIn("is recorded git-ignored", r.stdout)
+        self.assertEqual(self.subjects(host), before)
+
+    def test_outside_git(self):
+        store = self.tmp / "loose" / ".work-items"
+        self.store_files(store, own=False)
+        r = self.commit(store)
+        self.assertEqual(r.stdout,
+                         f"nothing to commit: {store} is in no git repo\n")
+
+    def test_git_missing(self):
+        store = self.make_own()
+        self.edit(store)
+        empty = self.tmp / "nobin"
+        empty.mkdir()
+        r = self.commit(store, env={"PATH": str(empty)})
+        self.assertIn("is in no git repo (git not found)", r.stdout)
+
+    # -- the message ---------------------------------------------------------
+
+    def test_secret_message_is_refused(self):
+        store = self.make_own()
+        self.edit(store)
+        before = self.subjects(store)
+        value = "Zq8vN3kLm2Pw7Rt5Xy9B"
+        r = self.commit(store, "-m", f"chore: store - token={value}", code=1)
+        self.assertIn("the message: likely secret value", r.stderr)
+        self.assertIn("nothing committed", r.stderr)
+        self.assertNotIn(value, r.stdout + r.stderr)
+        self.assertEqual(self.subjects(store), before)
+
+    def test_empty_message_is_refused(self):
+        store = self.make_own()
+        self.edit(store)
+        r = self.commit(store, "-m", "  ", code=1)
+        self.assertIn("the message is empty", r.stderr)
 
 
 class TestGitPins(StoreRepoCase):

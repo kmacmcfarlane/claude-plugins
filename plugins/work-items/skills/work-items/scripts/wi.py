@@ -1117,17 +1117,20 @@ UNTRACKED_MIN_ITEMS = 10
 PROBE_ITEM = "items/wi-custody-probe-0000.md"   # a new item's would-be path
 
 
-def _git(cwd, *args, stdin=None):
+def _git(cwd, *args, stdin=None, timeout=GIT_TIMEOUT, extra_env=None):
     """Run git; None when it is missing, the cwd is gone, or it times out.
     Output is decoded here, not by subprocess: -z output is raw bytes (no
     quotePath), and a non-UTF-8 path must neither crash nor depend on the
-    locale; backslashreplace shows such a byte readably, as \\xe9."""
+    locale; backslashreplace shows such a byte readably, as \\xe9.
+    timeout and extra_env serve `wi commit` in a store its host or sidecar
+    repo tracks, whose hooks get longer than a read (d1e9 D5)."""
     env = {k: v for k, v in os.environ.items()
            if k not in ("GIT_DIR", "GIT_WORK_TREE", "GIT_INDEX_FILE")}
+    env.update(extra_env or {})
     try:
         r = subprocess.run(["git"] + list(args), cwd=cwd, env=env,
                            input=None if stdin is None else stdin.encode(),
-                           capture_output=True, timeout=GIT_TIMEOUT)
+                           capture_output=True, timeout=timeout)
         r.stdout = r.stdout.decode("utf-8", "backslashreplace")
         r.stderr = r.stderr.decode("utf-8", "backslashreplace")
         return r
@@ -1564,17 +1567,20 @@ def _kept_by_listing(candidates, listed):
             if any(p == c or p.startswith(c + "/") for p in listed)]
 
 
-def existing_paths(root, candidates):
+def existing_paths(root, candidates, git=None):
     """The candidates that exist on disk, or that the store's index still
     holds (a removal to stage), in order (d1e9 D4'). A pathspec naming
     neither makes `add` and `commit` exit 128. One ls-files call, for the
-    candidates not on disk."""
+    candidates not on disk, through `git(*args)`: the store runner by
+    default; `wi commit` passes its own (a deadline, or the host's git)."""
+    if git is None:
+        def git(*args):
+            return _store_git(root, *args, timeout=GIT_TIMEOUT)
     on_disk = {c for c in candidates if os.path.lexists(Path(root) / c)}
     rest = [c for c in candidates if c not in on_disk]
     kept = set()
     if rest:
-        r = _store_git(root, "ls-files", "-z", "--", *rest,
-                       timeout=GIT_TIMEOUT)
+        r = git("ls-files", "-z", "--", *rest)
         if r is not None and r.returncode == 0:
             kept = set(_kept_by_listing(rest, r.stdout.split("\0")))
     return [c for c in candidates if c in on_disk or c in kept]
@@ -1707,6 +1713,213 @@ def _host_checks(root, host):
                     f"`git -C {host} rm -r -q --cached -- {rel}` (the files "
                     "stay on disk), then commit in the host"))
     return out
+
+
+# d1e9 F2: `wi commit`, the one store-commit verb (format.md § Committing
+# the store). Other plugins' store commits go through it, so every commit
+# into a store's repo is made under the store's lock.
+COMMIT_DEFAULT_MESSAGE = "wi commit: outstanding changes"
+COMMIT_DEADLINE = 5.0          # an own store's commit steps, all together
+INDEX_LOCK_RETRIES = 3         # after the first try, 0.2 s apart
+INDEX_LOCK_WAIT = 0.2
+TRACKED_COMMIT_TIMEOUT = 60.0  # per call in a host or sidecar repo: its hooks
+GC_TIMEOUT = 60.0
+# the runner pins gc.auto=0 so no write starts a gc; `wi commit` runs gc on
+# purpose, at git's documented default threshold
+GC_AUTO = "6700"
+# F-R1: used only when git has no identity (git var fails); never written
+# to any config, and GIT_AUTHOR_* / GIT_COMMITTER_* still win
+WI_IDENT = ("-c", "user.name=wi", "-c", "user.email=wi@localhost")
+_IDENT_CACHE = {}
+
+
+class CommitFailed(Exception):
+    """A store commit that did not happen; str() is the one-line why."""
+
+
+def _why(r):
+    """git's first stderr line (else stdout's), cut to 200 characters."""
+    lines = r.stderr.strip().splitlines() or r.stdout.strip().splitlines()
+    return (lines[0] if lines else f"git exited {r.returncode}")[:200]
+
+
+def _index_lock_conflict(r):
+    """Another git process holds the index (LC_ALL=C in the runner)."""
+    return (r.returncode != 0 and "index.lock" in r.stderr
+            and "File exists" in r.stderr)
+
+
+def _own_runner(root, rs):
+    """`run(*args)` for an own store's commit: the hardened store runner,
+    every call bounded by what is left of one shared deadline (d1e9 D4').
+    Raises CommitFailed when the deadline passes or git does not answer."""
+    end = time.monotonic() + COMMIT_DEADLINE
+
+    def run(*args):
+        left = end - time.monotonic()
+        if left <= 0:
+            raise CommitFailed("timed out")
+        r = _store_git(root, *args, timeout=left)
+        if r is None:
+            if shutil.which("git") is None:
+                raise CommitFailed("git not found")
+            lock = os.path.join(rs.git_dir or str(Path(root) / ".git"),
+                                "index.lock")
+            raise CommitFailed(f"timed out; if {lock} is left, remove it "
+                               "only when no git process runs in the store")
+        return r
+    return run
+
+
+def _tracked_runner(root):
+    """`run(*args)` for a store its host or sidecar repo tracks: plain _git
+    (that repo's hooks and signing are its own rules, never bypassed), no
+    prompt, 60 s a call."""
+    def run(*args):
+        r = _git(root, *args, timeout=TRACKED_COMMIT_TIMEOUT,
+                 extra_env={"GIT_TERMINAL_PROMPT": "0"})
+        if r is None:
+            raise CommitFailed("git not found" if shutil.which("git") is None
+                               else "timed out")
+        return r
+    return run
+
+
+def _fallback_ident(root, run):
+    """WI_IDENT when git has no author or committer identity, else (); asked
+    once per process and store (F-R1)."""
+    key = os.path.realpath(root)
+    if key not in _IDENT_CACHE:
+        _IDENT_CACHE[key] = next(
+            (WI_IDENT for var in ("GIT_AUTHOR_IDENT", "GIT_COMMITTER_IDENT")
+             if run("var", var).returncode != 0), ())
+    return _IDENT_CACHE[key]
+
+
+def _retrying(run, *args):
+    """One git step, retried on an index.lock conflict, never deleting the
+    lock file (F-R2)."""
+    for attempt in range(INDEX_LOCK_RETRIES + 1):
+        r = run(*args)
+        if not _index_lock_conflict(r) or attempt == INDEX_LOCK_RETRIES:
+            return r
+        time.sleep(INDEX_LOCK_WAIT)
+    return r
+
+
+def _commit_own_paths(root, run, message, ident=()):
+    """Stage and commit the store's own paths that exist (d1e9 D4 steps 2-5,
+    D4'): `add -A`, `diff --cached --quiet`, `commit -- <paths>`, all on one
+    pathspec, so a file staged by hand outside it stays staged and out of
+    the commit. The short sha, or None when nothing changed. Raises
+    CommitFailed."""
+    paths = existing_paths(root, OWN_PATHS, git=run)
+    if not paths:
+        return None
+    spec = ("--", *paths)
+    r = _retrying(run, "add", "-A", *spec)
+    if r.returncode != 0:
+        raise CommitFailed(_why(r))
+    r = run("diff", "--cached", "--quiet", "--no-ext-diff", "--no-textconv",
+            "--ignore-submodules=all", *spec)
+    if r.returncode == 0:
+        return None
+    if r.returncode != 1:
+        raise CommitFailed(_why(r))
+    r = _retrying(run, *ident, "commit", "-q", "-m", message, *spec)
+    if r.returncode != 0:
+        raise CommitFailed(_why(r))
+    r = run("rev-parse", "--short", "HEAD")
+    return r.stdout.strip() if r.returncode == 0 else "HEAD"
+
+
+def _gc_after_commit(root):
+    """`git gc --auto` in an own store, in the foreground, after the lock is
+    released, so a slow gc never holds other wi processes. A failure is
+    one stderr line: the commit already stands."""
+    r = _store_git(root, "-c", f"gc.auto={GC_AUTO}", "-c",
+                   "gc.autoDetach=false", "gc", "--auto", "-q",
+                   timeout=GC_TIMEOUT)
+    if r is None or r.returncode != 0:
+        why = "timed out" if r is None else _why(r)
+        print(f"wi: WARNING git gc --auto in {root} did not finish: {why}",
+              file=sys.stderr)
+
+
+def _store_ignored(root, repo):
+    """True when the repo holding a store without its own repo ignores it
+    (`check-ignore` on the store's directory, as the old hand rule asked);
+    raises CommitFailed when git cannot say."""
+    real = os.path.realpath(root)
+    r = _git(real, "check-ignore", "-q", real)
+    if r is None or r.returncode not in (0, 1):
+        why = "git did not answer" if r is None else _why(r)
+        raise CommitFailed(f"cannot tell whether {repo} ignores the store: "
+                           f"{why}")
+    return r.returncode == 0
+
+
+def _commit_refusal(root, rs):
+    """Why `wi commit` refuses a store whose repo wi did not set up, or
+    cannot trust (exit 1, nothing committed)."""
+    if rs.state == "unrecorded":
+        return (f"{root} is its own git repo, not set up by wi: "
+                "`wi init --no-track` adopts it; nothing committed")
+    if rs.state == "missing":
+        return (f"store {root} records `repo: own` in {STORE_FILE} but has "
+                "no .git; nothing committed")
+    if rs.state == "broken":
+        return (f"store {root} has a .git that is not a usable store repo: "
+                f"{rs.reason}; nothing committed")
+    return (f"store {root} holds a git repo at an old location: move "
+            f"the store ({MOVING_A_STORE}); nothing committed")
+
+
+def cmd_commit(args):
+    """Commit the store's own paths into the repo that holds them, under the
+    store's lock (d1e9 D5, D5'). Validation comes before the lock."""
+    message = COMMIT_DEFAULT_MESSAGE if args.message is None else args.message
+    if not message.strip():
+        raise WiError(1, "the message is empty; nothing committed")
+    for _, why in secret_findings(message):
+        # never quote the message: it may hold the secret
+        raise WiError(1, f"the message: {why}; reword it as path and key "
+                         "and re-run; nothing committed")
+    root = resolve_root(args.root)
+    if shutil.which("git") is None:
+        print(f"nothing to commit: {root} is in no git repo (git not found)")
+        return 0
+    rs = store_repo_state(root)
+    try:
+        if rs.state == "own":
+            with Lock(root):
+                run = _own_runner(root, rs)
+                sha = _commit_own_paths(root, run, message,
+                                        _fallback_ident(root, run))
+            if sha:
+                _gc_after_commit(root)
+        elif rs.state in ("plain", "dedicated"):
+            repo = root if rs.state == "dedicated" else _store_repo(root)
+            if repo is None:
+                print(f"nothing to commit: {root} is in no git repo")
+                return 0
+            if read_tracking(root) == "ignored":
+                print(f"nothing to commit: {root} is recorded git-ignored "
+                      f"(tracking: ignored in {STORE_FILE})")
+                return 0
+            if rs.state == "plain" and _store_ignored(root, repo):
+                print(f"nothing to commit: {root} is git-ignored by {repo}")
+                return 0
+            with Lock(root):
+                sha = _commit_own_paths(root, _tracked_runner(root), message)
+        elif rs.state == "unknown":
+            raise CommitFailed("git did not answer in the store's repo")
+        else:
+            raise WiError(1, _commit_refusal(root, rs))
+    except CommitFailed as e:
+        raise WiError(3, f"store {root} not committed: {e}") from None
+    print(f"committed {sha}" if sha else "nothing to commit")
+    return 0
 
 
 def read_raw(path):
@@ -5063,6 +5276,9 @@ def build_parser():
         ("prime", cmd_prime, "budgeted rehydration manifest"): [
             ("--budget", dict(type=int, default=300))],
         ("lint", cmd_lint, "validate every item"): [],
+        ("commit", cmd_commit, "commit the store's own files, under its "
+         "lock, into the repo that holds them"): [
+            ("-m", "--message", {})],
         ("archive", cmd_archive, "move closed items to archive/"): [
             ("--older-than", dict(default="90d"))],
     }

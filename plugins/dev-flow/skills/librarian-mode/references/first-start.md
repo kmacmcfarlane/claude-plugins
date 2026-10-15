@@ -36,9 +36,10 @@ correction is a work item that edits `## Librarian`. `start` commits the opt-in 
 ## First-start dirt at Land
 
 The main checkout must be on `main` and clean before a merge — except first-start dirt (the
-`.gitignore` line `wi init` wrote, and the store itself when it is tracked): commit it with
-the first landed item or leave it for the operator; it never blocks a merge. The store's
-commit goes to the repo that holds it (`git -C "$WORK_ITEMS_ROOT"`); when that repo ignores
-the store (`git -C "$WORK_ITEMS_ROOT" check-ignore -q "$WORK_ITEMS_ROOT"` exits 0), skip
-this commit; then only the `.gitignore` line is dirt. On another branch with uncommitted
-work, stop and raise it as a numbered decision rather than stashing around it.
+`.gitignore` line `wi init` wrote, and, for a store the host tracks, the store itself; a
+store that is its own repo was committed by `init`): commit it with the first landed item or
+leave it for the operator; it never blocks a merge. Commit the store with `$WI commit -m
+"<message>"` (the `dev-cycle` skill's `references/bindings.md`, the store lookup), which
+prints `nothing to commit` for a store the host ignores; then only the `.gitignore` line is
+dirt. On another branch with uncommitted work, stop and raise it as a numbered decision
+rather than stashing around it.

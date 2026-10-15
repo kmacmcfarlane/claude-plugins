@@ -4286,8 +4286,8 @@ class TestHostGitignoreUntouched(WiTestCase):
              "core.excludesFile="] + list(args),
             capture_output=True, text=True, check=check, env=env)
 
-    def wi_in(self, repo, args):
-        r = run(args, "", env=self.AUTO, cwd=repo)
+    def wi_in(self, repo, args, env=None):
+        r = run(args, "", env=dict(self.AUTO, **(env or {})), cwd=repo)
         self.assertEqual(r.returncode, 0, f"{args}: {r.stderr}{r.stdout}")
         return r.stdout
 
@@ -4332,13 +4332,20 @@ class TestHostGitignoreUntouched(WiTestCase):
             ["import", str(repo / "backlog.yaml"), "--format", "backlog-yaml"],
             ["note", iid, "--", "x"],
             ["done", dep], ["archive", "--older-than", "0d"],
+            ["commit", "-m", "store"],
         ]
+        # d1e9 F2: `wi commit` commits in the repo that tracks the store,
+        # with that repo's git, so it gets this class's isolated identity
+        commit_env = dict(GIT_CONFIG_GLOBAL=os.devnull, GIT_CONFIG_NOSYSTEM="1",
+                          GIT_AUTHOR_NAME="t", GIT_AUTHOR_EMAIL="t@t",
+                          GIT_COMMITTER_NAME="t", GIT_COMMITTER_EMAIL="t@t")
         choices = set(next(a for a in wi.build_parser()._actions
                            if a.dest == "command").choices)
         self.assertEqual({s[0] for s in steps} | {"add"}, choices,
                          "every wi subcommand must be exercised here")
         for step in steps:
-            self.wi_in(repo, step)
+            self.wi_in(repo, step,
+                       env=commit_env if step[0] == "commit" else None)
             self.assertEqual(gi_path.read_bytes(), before,
                              f"`wi {' '.join(step)}` changed host .gitignore")
 

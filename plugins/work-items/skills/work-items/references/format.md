@@ -376,14 +376,14 @@ counts even when it is gone from disk. Names are compared case-blind. Such a sto
 broken when it holds a nested repo, since git recursing into one reads that repo's own,
 unpinned config and attributes: a `.git` anywhere below the store's root, or a gitlink (mode
 160000) in its index, with the reason "`<path>` is a nested git repo or gitlink; remove it".
-Every runner call that compares the work tree (`status`, and `diff` when commits come) also
-passes `--ignore-submodules=all`. A dedicated store keeps its attributes: its repo's rules
-are the user's.
+Every runner call that compares the work tree (`status`, and `wi commit`'s `diff --cached`)
+also passes `--ignore-submodules=all`. A dedicated store keeps its attributes: its repo's
+rules are the user's.
 
 **The store runner.** Every git call that acts in a store with its own `.git` (validation,
 the custody check's `check-ignore` and `ls-files`, `git config user.name` for the claimant,
-and the checks below) goes through one runner. The host's own reads (is the store ignored,
-does the host track it) use plain git, since they read the host.
+the checks below, and `wi commit` in an own store) goes through one runner. The host's own
+reads (is the store ignored, does the host track it) use plain git, since they read the host.
 - argv: `git -c core.hooksPath=/dev/null -c core.fsmonitor=false -c commit.gpgSign=false
   -c core.autocrlf=false -c core.safecrlf=false -c gc.auto=0 -c maintenance.auto=false
   -c core.attributesFile=/dev/null -c attr.tree=<the empty tree>`, then the arguments, as a
@@ -431,6 +431,38 @@ never reported; when the lock is busy it skips the check and says so on stderr. 
 check runs inside the store's own repo, where nothing is ignored unless the store's own
 `.gitignore` ignores `items/`, which it then names. Every check is silent when git is
 missing or slow.
+
+## Committing the store: `wi commit [-m <message>]`
+
+`wi commit` is the one way to commit a store: a skill that commits the store runs it, never
+`git` by hand. It commits only the store's own paths that exist (§ The store's own repo,
+Pathspecs), each git step scoped with `--` to them, so a file staged by hand outside them
+stays staged and out of the commit. It always holds the store's lock (a 10 s wait, then
+exit 4), so it never races a `wi` write. The message and the store's state are checked
+before the lock is taken.
+
+| Store | What `wi commit` does | Exit |
+|---|---|---|
+| own | Through the store runner: `add -A`, then `diff --cached --quiet` (no change: no commit), then `commit -q -m <message>`, all sharing one 5 s deadline. An `index.lock` conflict (another git process in the store) is retried three times, 0.2 s apart; `index.lock` is never deleted. With no git identity (`git var GIT_AUTHOR_IDENT` or `GIT_COMMITTER_IDENT` fails) it commits as `wi <wi@localhost>`, written to no config; `GIT_AUTHOR_*` and `GIT_COMMITTER_*`, when set, still win. After a commit, once the lock is released, `git gc --auto` runs in the foreground, bounded at 60 s, at git's default threshold (the runner pins `gc.auto=0` for every other call). | 0; 3 when git fails |
+| tracked by the repo that holds it: a host or sidecar repo, or a dedicated store's own repo | The same steps on the same paths with plain git: that repo's hooks and signing are its own rules, never bypassed. No prompt, 60 s a call; the lock is held that long, so another `wi` waiting on it may exit 4 after its 10 s. | 0; 3 on a failure, a hook's refusal included |
+| ignored by the repo that holds it (`git check-ignore` on the store's directory exits 0), or recorded `tracking: ignored` | Prints `nothing to commit: <root> is git-ignored by <repo>` (or `… is recorded git-ignored …`). | 0 |
+| outside git, or git not found | Prints `nothing to commit: <root> is in no git repo` (adding `(git not found)`). | 0 |
+| own, unrecorded | Refuses: "`<root>` is its own git repo, not set up by wi: `wi init --no-track` adopts it". | 1 |
+| own, missing; broken; a `.git` at an old location | Refuses with the reason `lint` gives. | 1 |
+
+- **Output.** `committed <short sha>`, or `nothing to commit`. A failure is one stderr line,
+  `wi: store <root> not committed: <why>`: git's first error line (200 characters at most),
+  or `timed out`, which for a killed git call adds "if `<git-dir>/index.lock` is left,
+  remove it only when no git process runs in the store".
+- **The message** is the caller's (`chore: work-item store - …` stays as it is); without
+  `-m` it is `wi commit: outstanding changes`. The secret rule applies to it: a message
+  `lint` would flag as a secret is refused, exit 1, never quoted, nothing committed, as
+  `wi note` refuses a line. An empty message is refused too.
+- **Checks before it.** An own store's commit runs no hook, so a caller with pre-commit
+  checks runs them on the store's diff before `wi commit`; a tracked store's commit runs
+  its repo's hooks itself.
+- **An older `wi`** has no `commit` (argparse: `invalid choice: 'commit'`, exit 2); the
+  calling skills name the hand commit under the lock to use there.
 
 ## Editing fields: `wi set <id> <field> <value>`
 
