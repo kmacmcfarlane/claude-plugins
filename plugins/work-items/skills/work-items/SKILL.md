@@ -11,9 +11,10 @@ argument-hint: "[next | show <id> | add | done <id> | import-todo <path>]"
 Work items live beside the repo, in git when the store is tracked — one markdown file each,
 `status:` authoritative, never moved on completion — so they survive sessions (and machines
 and collaborators when tracked), merge cleanly, and cost tokens only one item at a time. The
-whole-file `TODO.md` read this replaces cost ~12K tokens per read; `wi next` costs ~300–500. The file format, resolver rule, deprecation-notice
-template and secret rule are canonical in `references/format.md` — read it before editing an
-item file by hand; this file does not restate it.
+whole-file `TODO.md` read this replaces cost ~12K tokens per read; `wi next` costs ~300–500.
+The file format, resolver rule, deprecation-notice template and secret rule are canonical in
+`references/format.md` — read it before editing an item file by hand; this file does not
+restate it.
 
 ```bash
 WI="python3 ${CLAUDE_PLUGIN_ROOT}/skills/work-items/scripts/wi.py"
@@ -78,7 +79,8 @@ verbs, capability differences and canonical state mapping are in
   `prime`, `lint` and `init` print a one-line `wi: deprecated: …` notice when an old name is
   set and its new name is unset or empty, or when both are set and differ (none when both
   are set to the same value, which is how to export for an older wi too). To tell a wi
-  with these names from an older one, probe `$WI --help`: it names `WORK_ITEMS_ROOT` only in a wi that reads it.
+  with these names from an older one, probe `$WI --help`: it names `WORK_ITEMS_ROOT` only
+  in a wi that reads it.
 - `$WI init` always gets `--track` or `--no-track` from an agent; never rely on the
   no-terminal default. A new store is `.work-items/` at the repo root and is git-ignored:
   pass `--no-track` unless the operator asked for a tracked store. An existing store with no

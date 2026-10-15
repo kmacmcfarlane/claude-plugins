@@ -973,8 +973,15 @@ def _root_and_source(explicit=None):
     return (_auto_root() or Path(DEFAULT_STORE)), True
 
 
+# A linked worktree whose main checkout's path git does not give: its common
+# dir is not named .git (a worktree of a bare repo, or of a
+# --separate-git-dir clone).
+MAIN_UNKNOWN = object()
+
+
 def linked_worktree_main():
     """The main checkout's path when the cwd is in a linked git worktree,
+    MAIN_UNKNOWN when it is one but the main checkout's path is not known,
     else None (the main checkout, outside git, git missing, slow or too old
     for --path-format). One git call; run only on the no-store path."""
     r = _git(".", "rev-parse", "--path-format=absolute", "--git-dir",
@@ -988,12 +995,15 @@ def linked_worktree_main():
     if git_dir == common:
         return None
     common = Path(common)
-    return common.parent if common.name == ".git" else common
+    return common.parent if common.name == ".git" else MAIN_UNKNOWN
 
 
 def _worktree_store(main):
     """The main checkout's store to name: the first location there that
-    holds items/, else the default."""
+    holds items/, else the default; a placeholder path when the main
+    checkout is not known."""
+    if main is MAIN_UNKNOWN:
+        return f"<main checkout>/{DEFAULT_STORE}"
     found = _auto_root(main)
     return found if found is not None else main / DEFAULT_STORE
 
@@ -1007,9 +1017,10 @@ def worktree_init_refusal():
     main = linked_worktree_main()
     if main is None:
         return None
+    where = "" if main is MAIN_UNKNOWN else f" {main}"
     return ("wi init: refusing to create a store in a linked worktree (it "
-            "would be a stray copy); run it in the main checkout "
-            f"{main}, or name the root with --root or WORK_ITEMS_ROOT")
+            f"would be a stray copy); run it in the main checkout{where}, or "
+            "name the root with --root or WORK_ITEMS_ROOT")
 
 
 def old_location(root):

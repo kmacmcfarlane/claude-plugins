@@ -24,8 +24,11 @@ locking, validation and budgeted views on top. Spec of record:
    WORK_ITEMS_ROOT=<main>/<store>`, naming the main checkout's store (the
    first location there holding `items/`, else `.work-items`), and `init`
    refuses, exit 1, nothing written, since a store there would be a stray copy
-   no other session sees. A root named by flag or env skips this check, and
-   so does a git that is missing or fails.
+   no other session sees. When git does not give the main checkout's path
+   (the common dir is not named `.git`: a worktree of a bare repo or of a
+   `--separate-git-dir` clone), the error names `<main checkout>/.work-items`
+   and the refusal says only "run it in the main checkout". A root named by
+   flag or env skips this check, and so does a git that is missing or fails.
 
 **Old locations.** `.claude-sandbox/work/` and `.work/` are deprecated: still
 found, still used. A store whose real path (symlinks followed) is named `.work`,
@@ -292,8 +295,8 @@ reads it.
 run from the main checkout. Before any of them, stop the sessions that use the
 store (their claims and its `.lock`), and update every `WORK_ITEMS_ROOT` (or
 `WI_ROOT`) export that names the old path: briefs, open worktrees. Each recipe
-ends with `wi lint`, and leaves no old directory behind (the two-store warning
-catches one). `<old>` is the old store path, `.claude-sandbox/work` or `.work`.
+ends with `wi --root .work-items lint`, and leaves no old directory behind (the
+two-store warning catches one). `<old>` is the old store path, `.claude-sandbox/work` or `.work`.
 
 - **Tracked → tracked.** `git mv <old> .work-items`, then
   `wi --root .work-items init --track`, then commit.
@@ -311,11 +314,15 @@ catches one). `<old>` is the old store path, `.claude-sandbox/work` or `.work`.
     2. `mv <old> .work-items`;
     3. `wi --root .work-items init --no-track`, which finds the `/.work-items/`
        line already present and records `ignored`;
-    4. `wi lint`.
+    4. `wi --root .work-items lint`.
 
   From then on each clone's ignored store is its own: nothing syncs them. A clone
   with uncommitted edits to tracked store files has its pull refused by git until
   they are committed or stashed.
+- **Git-ignored → git-ignored.** `mv <old> .work-items`, then
+  `wi --root .work-items init --no-track` (it adds `/.work-items/` and records
+  `ignored`), then remove the old store's own ignore line from `.gitignore` if it
+  has one (`/.work/`) and commit that `.gitignore` change. Nothing else is in git.
 - **Sidecar → root.** A store at `.claude-sandbox/work/` in a sidecar layout has
   its history in `.claude-sandbox/.git`. Copy it out (`cp -a .claude-sandbox/work
   .work-items`), `wi --root .work-items init --track` or `--no-track`, then remove

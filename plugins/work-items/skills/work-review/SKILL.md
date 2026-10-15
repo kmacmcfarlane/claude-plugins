@@ -152,9 +152,9 @@ Actions: `wi estate --dir ~/src/other-org --json`, then as above.
   ask which dir holds the checkouts, or use the one the operator named.
 - **A repo is missing from the sweep**: its store is not at `.work-items/`,
   `.claude-sandbox/work/` or `.work/` directly under the repo, the repo is more than one
-  level down, or the repo or store is a symlink leading out of the scanned dir, which the sweep never follows. Or it shares its
-  git repository with another entry that was kept: check `skipped`, which names the entry and
-  why. Name it rather than hunting for it.
+  level down, or the repo or store is a symlink leading out of the scanned dir, which the
+  sweep never follows. Or it shares its git repository with another entry that was kept:
+  check `skipped`, which names the entry and why. Name it rather than hunting for it.
 - **A `problems` entry on a store**: a file that does not parse, an empty file left by an
   interrupted write, or a symlink out of the dir. The rest of that store is still counted.
   Report it; the repair is `wi lint` in that repo's own session.

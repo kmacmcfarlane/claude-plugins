@@ -1627,7 +1627,9 @@ class EnvNamesTest(WiTestCase):
         self.cwd.mkdir()
 
     def wi(self, args, **env):
-        full = _clean_env()
+        # no git discovery above the temp dir: the cwd's auto-resolution
+        # never reaches a real repo's worktree check
+        full = dict(_clean_env(), GIT_CEILING_DIRECTORIES=str(self.tmp))
         full.update(env)
         return subprocess.run([sys.executable, str(WI)] + args, env=full,
                               capture_output=True, text=True,
@@ -5766,6 +5768,32 @@ class StoreMoveTest(StoreLookupCase):
         self.assertIn("lint clean: 3 items", r.stdout)
         self.assertEqual(r.stderr, "")
 
+    def test_ignored_to_ignored_move_keeps_items(self):
+        # the claude-sandbox migration's case: an ignored .work/ moved to
+        # .work-items/; only the .gitignore change is in git
+        d = self.dir("ign", git=True)
+        old = self.store(d, ".work", n_items=2, flag="--no-track")
+        self.assertEqual((d / ".gitignore").read_text(), "/.work/\n")
+        before = {p.name: p.read_bytes() for p in (old / "items").iterdir()}
+        shutil.move(str(old), str(d / ".work-items"))
+        self.wi_ok(["--root", ".work-items", "init", "--no-track"], d)
+        new = d / ".work-items"
+        self.assertEqual(wi.read_tracking(new), "ignored")
+        self.assertEqual(
+            {p.name: p.read_bytes() for p in (new / "items").iterdir()},
+            before)
+        self.assertEqual((d / ".gitignore").read_text(),
+                         "/.work/\n/.work-items/\n")
+        (d / ".gitignore").write_text("/.work-items/\n")
+        self.git(d, "add", ".gitignore")
+        self.assertEqual(self.git(d, "status", "--porcelain").stdout,
+                         "A  .gitignore\n")
+        r = self.wi_ok(["--root", ".work-items", "lint"], d)
+        self.assertIn("lint clean: 2 items", r.stdout)
+        r = self.wi_ok(["prime"], d)
+        self.assertTrue(self.header(r).startswith("wi: .work-items · 2 open"))
+        self.assertNotIn("WARNING", r.stdout)
+
     def test_no_track_writes_the_root_gitignore_line_once(self):
         d = self.dir("once", git=True)
         (d / ".gitignore").write_text("*.pyc\n")
@@ -5840,6 +5868,36 @@ class WorktreeNoStoreTest(StoreLookupCase):
         self.git(main, "add", "README")
         self.git(main, "commit", "-qm", "init")
         self.wi_ok(["init", "--no-track"], main)
+        self.assertTrue((main / ".work-items" / "items").is_dir())
+
+    def test_separate_git_dir_worktree_names_no_main_path(self):
+        # the common dir is not named .git: the main checkout's path is not
+        # known, so the messages name it in words
+        main = self.tmp / "sep-main"
+        self.git(self.tmp, "init", "-q", "--separate-git-dir",
+                 str(self.tmp / "sep.git"), str(main))
+        (main / "README").write_text("x\n")
+        self.git(main, "add", "README")
+        self.git(main, "commit", "-qm", "init")
+        wt = self.tmp / "sep-wt"
+        self.git(main, "worktree", "add", "-q", "-b", "side", str(wt))
+        r = self.wi(["next"], wt)
+        self.assertEqual(r.returncode, 1, r.stdout)
+        self.assertEqual(
+            r.stderr,
+            "wi: no work-item store in this linked worktree; the store lives "
+            "in the main checkout: export WORK_ITEMS_ROOT=<main checkout>/"
+            ".work-items\n")
+        r = self.wi(["init", "--no-track"], wt)
+        self.assertEqual(r.returncode, 1, r.stdout)
+        self.assertEqual(
+            r.stderr,
+            "wi init: refusing to create a store in a linked worktree (it "
+            "would be a stray copy); run it in the main checkout, or name "
+            "the root with --root or WORK_ITEMS_ROOT\n")
+        self.assertFalse((wt / ".work-items").exists())
+        # the main checkout itself is not a linked worktree
+        self.wi_ok(["init", "--track"], main)
         self.assertTrue((main / ".work-items" / "items").is_dir())
 
     def test_without_git_the_worktree_behaves_as_before(self):
