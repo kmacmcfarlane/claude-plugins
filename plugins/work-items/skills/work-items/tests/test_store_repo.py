@@ -1487,10 +1487,9 @@ class TestCommit(StoreRepoCase):
         self.assertIn("the message is empty", r.stderr)
 
 
-class TestInit(StoreRepoCase):
-    """d1e9 D3 (F3): `wi init`'s git-ignored choice gives the store its own
-    repo, new or adopted; the refusals before anything is written; the
-    own-unrecorded and no-history notices it answers."""
+class InitCase(StoreRepoCase):
+    """Helpers for the `wi init` tests (d1e9 F3)."""
+
 
     def init(self, store, *flags, code=0, env=None):
         r = self.wi(["init", *flags], store, env=env)
@@ -1539,6 +1538,22 @@ class TestInit(StoreRepoCase):
         self.assertEqual(r.stderr, "")
 
     NEW_FILES = [".gitignore", "README.md", "store.yaml"]
+
+    def assert_refused(self, store, *flags, says, host=None):
+        host = host or store.parent
+        watched = [host] + ([store] if store.exists() else [])
+        before = self.snapshot(*watched)
+        r = self.init(store, *flags or ("--no-track",), code=1)
+        self.assertIn(says, r.stderr)
+        self.assertIn("nothing written", r.stderr)
+        self.assertEqual(self.snapshot(*watched), before)
+        return r
+
+
+class TestInit(InitCase):
+    """d1e9 D3 (F3): `wi init`'s git-ignored choice gives the store its own
+    repo, new or adopted; the refusals before anything is written; the
+    own-unrecorded and no-history notices it answers."""
 
     # -- a new store -----------------------------------------------------
 
@@ -1624,7 +1639,7 @@ class TestInit(StoreRepoCase):
         self.init(store, "--no-track")
         (store / "items" / "one-aaaa.md").write_text(ITEM.format(iid="one-aaaa"))
         self.init(store, "--no-track")
-        self.assertEqual(self.subjects(store)[0], "wi init: adopted 1 items")
+        self.assertEqual(self.subjects(store)[0], "wi init: adopted 1 item")
         self.assertEqual((host / ".gitignore").read_text(), "/.work-items/\n")
 
     def test_first_commit_falls_back_to_wi_identity(self):
@@ -1690,7 +1705,7 @@ class TestInit(StoreRepoCase):
         self.assertEqual(self.git(store, "symbolic-ref", "HEAD").stdout,
                          "refs/heads/trunk\n")
         self.assertEqual(self.subjects(store),
-                         ["wi init: adopted 1 items", "init"])
+                         ["wi init: adopted 1 item", "init"])
         self.assertEqual(self.git(store, "show", "--name-only", "--format=",
                                   "HEAD").stdout.split(),
                          ["items/one-aaaa.md", "store.yaml"])
@@ -1742,16 +1757,6 @@ class TestInit(StoreRepoCase):
                                  ["tracking: tracked", "repo: own"])
 
     # -- refusals: nothing written ---------------------------------------
-
-    def assert_refused(self, store, *flags, says, host=None):
-        host = host or store.parent
-        watched = [host] + ([store] if store.exists() else [])
-        before = self.snapshot(*watched)
-        r = self.init(store, *flags or ("--no-track",), code=1)
-        self.assertIn(says, r.stderr)
-        self.assertIn("nothing written", r.stderr)
-        self.assertEqual(self.snapshot(*watched), before)
-        return r
 
     def test_refuses_a_broken_git(self):
         host = self.make_host()
@@ -1851,9 +1856,9 @@ class TestInit(StoreRepoCase):
 
     # -- the edges ---------------------------------------------------------
 
-    def test_old_location_keeps_a_plain_ignored_store(self):
-        # a departure from D3's old-location refusal: today's store, and a
-        # note to move it; it never gets a repo
+    def test_new_old_location_store_keeps_a_plain_ignored_store(self):
+        # a store not yet holding items/ is no un-migrated store: --no-track
+        # there makes today's plain ignored store, never a repo
         host = self.make_host(ignore=False)
         store = host / ".work"
         r = self.init(store, "--no-track")
@@ -1989,6 +1994,241 @@ class TestInit(StoreRepoCase):
             code, out, err = self.run_init(store2, "--no-track")
             self.assertEqual(code, 0, out + err)
             self.assertEqual(os.environ["GIT_DIR"], "/nowhere")
+
+
+class TestInitReview(InitCase):
+    """d1e9 F3 review round 1: what may pass for the host's ignore line,
+    where a store's git dir may sit, what a directory may hold before
+    `git init`, includes in an adopted repo's config, and a store that
+    changes while init waits for its lock."""
+
+    def test_store_gitignore_rule_is_not_the_hosts_line(self):
+        for i, rule in enumerate(("items/\n", "*\n")):
+            with self.subTest(rule=rule):
+                host = self.make_host(f"own-gi{i}", ignore=False)
+                store = host / ".work-items"
+                (store / "items").mkdir(parents=True)
+                (store / ".gitignore").write_text(rule)
+                r = self.init(store, "--no-track")
+                self.assertIn("added /.work-items/", r.stdout)
+                self.assertEqual((host / ".gitignore").read_text(),
+                                 "/.work-items/\n")
+                self.git(host, "add", "-A")
+                self.assertNotIn(".work-items", self.git(
+                    host, "ls-files", "-s").stdout)
+
+    def test_lint_does_not_take_a_store_rule_for_the_hosts_line(self):
+        store = self.make_own()
+        host = self.tmp / "host"
+        (host / ".gitignore").write_text("")
+        (store / ".gitignore").write_text(".lock\n*.tmp*\nitems/\n")
+        r = self.wi(["lint"], store)
+        self.assertEqual(r.returncode, 3, r.stdout + r.stderr)
+        self.assertIn(f"the repo at {host} does not ignore store", r.stdout)
+
+    def test_plain_store_ensure_ignored_finds_the_repo_from_the_store(self):
+        # the default path (an old location, no git for a repo): the repo
+        # is found from the store, and a store rule does not count either
+        host = self.make_host(ignore=False)
+        store = host / ".work"
+        (store / "items").mkdir(parents=True)
+        (store / ".gitignore").write_text("items/\n")
+        ok, msg = wi.ensure_ignored(store)
+        self.assertTrue(ok, msg)
+        self.assertEqual(msg, f"added /.work/ to {host / '.gitignore'}")
+        ok, msg = wi.ensure_ignored(store)
+        self.assertIn("already ignored by git (.gitignore:1 '/.work/')", msg)
+
+    def test_git_dir_among_the_stores_own_paths_is_broken(self):
+        host = self.make_host()
+        store = host / ".work-items"
+        self.store_files(store, own=False)
+        self.git(self.tmp, "init", "-q", "--template=",
+                 f"--separate-git-dir={store / 'items' / 'gd'}", str(store))
+        rs = self.state(store)
+        self.assertEqual(rs.state, "broken")
+        self.assertIn(".git points into the store's own path items", rs.reason)
+        self.assert_refused(store, says="points into the store's own path "
+                            "items")
+
+    def test_refuses_a_directory_holding_other_things(self):
+        host = self.make_host()
+        store = host / ".work-items"
+        self.store_files(store, own=False)
+        (store / "notes.txt").write_text("not a store file\n")
+        self.assert_refused(store, says="holds notes.txt, which is not a "
+                            "store file: refusing to give it its own repo")
+        # the lock and a write's tmp file are a store's own
+        (store / "notes.txt").unlink()
+        (store / ".lock").write_text("")
+        (store / "store.yaml.tmpab12").write_text("")
+        self.init(store, "--no-track")
+        self.assertTrue(wi.read_repo_own(store))
+
+    def test_refuses_an_adopted_repo_whose_config_includes_a_file(self):
+        for key in ("include.path", "includeIf.gitdir:/elsewhere/.path"):
+            with self.subTest(key=key):
+                store = self.make_own(own=False)
+                self.git(store, "config", key, str(self.tmp / "inc"))
+                self.assert_refused(store, says="git config includes another "
+                                    "file")
+                shutil.rmtree(self.tmp / "host")
+
+    def test_other_files_in_head_but_not_the_index_are_refused(self):
+        store = self.make_own(own=False)
+        (store / "src").mkdir()
+        (store / "src" / "main.c").write_text("int main;\n")
+        self.git(store, "add", "src/main.c")
+        self.git(store, "commit", "-q", "-m", "code")
+        self.git(store, "rm", "-q", "--cached", "src/main.c")
+        self.assertNotIn("src/main.c",
+                         self.git(store, "ls-files").stdout)
+        self.assert_refused(store, says="holding other files (src/main.c)")
+
+    def test_a_git_that_appears_while_init_waits_is_checked_again(self):
+        host = self.make_host()
+        store = host / ".work-items"
+        self.store_files(store, own=False)
+        (store / "store.yaml").write_text("tracking: ignored\n")
+        wt = self.tmp / "wt"
+        self.git(host, "worktree", "add", "-q", "--detach", str(wt))
+        real_enter = wi.Lock.__enter__
+
+        def enter(lock):
+            # another process plants a .git into another repo meanwhile
+            if not os.path.lexists(store / ".git"):
+                shutil.copy(wt / ".git", store / ".git")
+            return real_enter(lock)
+        with mock.patch.object(wi.Lock, "__enter__", enter):
+            code, out, err = self.run_init(store, "--no-track")
+        self.assertEqual(code, 1, out + err)
+        # refused by the check, before any `git init` runs in it
+        self.assertIn("has a .git that is not a usable store repo: .git "
+                      "points outside the store", err)
+        self.assertNotIn("own repo not set up", err)
+        self.assertEqual(wi.read_tracking(store), "ignored")
+        self.assertFalse(wi.read_repo_own(store))
+
+    def test_adopting_a_repo_with_no_items_says_adopted(self):
+        store = self.make_own(own=False)
+        for p in (store / "items").iterdir():
+            p.unlink()
+        self.git(store, "add", "-A")
+        self.git(store, "commit", "-q", "-m", "empty")
+        self.init(store, "--no-track")
+        self.assertEqual(self.subjects(store)[0], "wi init: adopted 0 items")
+
+
+class TestOldLocationRefusal(InitCase):
+    """The operator's ruling on d1e9 F3: `wi init` refuses while an
+    old-location store (`.work/`, `.claude-sandbox/work/`) holding items/
+    is not yet moved, at the root or beside its repo's top, unless
+    --allow-old-location is passed."""
+
+    FLAG = "--allow-old-location"
+
+    def old_store(self, host, rel=".work", sidecar=False):
+        store = host / rel
+        if sidecar:
+            (host / ".claude-sandbox").mkdir(exist_ok=True)
+            self.git(host / ".claude-sandbox", "init", "-q")
+        self.store_files(store, own=False)
+        return store
+
+    def test_root_at_an_old_location_is_refused(self):
+        host = self.make_host()
+        cases = ((".work", False), (".claude-sandbox/work", False),
+                 (".claude-sandbox/work", True))
+        for i, (rel, sidecar) in enumerate(cases):
+            for flags in (("--track",), ("--no-track",), ()):
+                with self.subTest(rel=rel, sidecar=sidecar, flags=flags):
+                    base = host / f"c{i}"
+                    base.mkdir(exist_ok=True)
+                    store = (base / rel if base.joinpath(rel, "items")
+                             .is_dir() else self.old_store(base, rel,
+                                                           sidecar))
+                    before = self.snapshot(base)
+                    r = self.init(store, *flags, code=1)
+                    self.assertEqual(self.snapshot(base), before)
+                    if sidecar and flags == ("--no-track",):
+                        # 3c06's refusal comes first, its message kept
+                        self.assertIn("a git-ignored store there lands in no "
+                                      "repo; nothing written", r.stderr)
+                        continue
+                    self.assertIn(f"{store}: a work-item store at an old "
+                                  "location, not yet moved to .work-items/; "
+                                  "move it first (the work-items skill's "
+                                  "references/format.md § Moving a store)",
+                                  r.stderr)
+                    self.assertIn("nothing written", r.stderr)
+                    self.assertIn(self.FLAG, r.stderr)
+                    self.assertNotIn("deprecated", r.stderr)
+                    self.assertNotIn("note:", r.stderr)
+
+    def test_an_old_store_beside_a_new_one_is_refused(self):
+        host = self.make_host()
+        old = self.old_store(host, ".claude-sandbox/work")
+        store = host / ".work-items"
+        r = self.init(store, "--no-track", code=1)
+        self.assertIn(f"{old}: a work-item store at an old location", r.stderr)
+        self.assertFalse(store.exists())
+        # with the override, the new store is made as ever
+        self.init(store, "--no-track", self.FLAG)
+        self.assertTrue(wi.read_repo_own(store))
+        # beside the repo's top, for a store below it too
+        deeper = host / "sub" / ".work-items"
+        r = self.init(deeper, "--no-track", code=1)
+        self.assertIn(f"{old}: a work-item store at an old location", r.stderr)
+
+    def test_the_export_sentence_only_when_wi_resolved_the_root(self):
+        host = self.make_host()
+        store = self.old_store(host)
+        r = self.init(store, "--track", code=1)       # WORK_ITEMS_ROOT
+        self.assertIn("change any WORK_ITEMS_ROOT export that names the old "
+                      "path", r.stderr)
+        r = subprocess.run([sys.executable, str(WI), "--root", str(store),
+                            "init", "--track"], env=self.env,
+                           capture_output=True, text=True)
+        self.assertEqual(r.returncode, 1, r.stdout + r.stderr)
+        self.assertNotIn("WORK_ITEMS_ROOT", r.stderr)
+
+    def test_a_store_counts_by_items_only(self):
+        # claude-sandbox's A9: the store already moved away, the sidecar's
+        # .gitignore still naming /work/, an empty .work/ left behind
+        host = self.make_host()
+        (host / ".claude-sandbox").mkdir()
+        self.git(host / ".claude-sandbox", "init", "-q")
+        (host / ".claude-sandbox" / ".gitignore").write_text("/work/\n")
+        (host / ".claude-sandbox" / "work").mkdir()
+        (host / ".work").mkdir()
+        (host / ".work" / "notes").write_text("x\n")
+        store = host / ".work-items"
+        self.init(store, "--no-track")
+        self.assertTrue(wi.read_repo_own(store))
+        # and the override, with nothing old to override, is refused
+        r = self.init(store, "--no-track", self.FLAG, code=1)
+        self.assertIn(f"{self.FLAG} overrides only an old-location store",
+                      r.stderr)
+
+    def test_the_override_at_an_old_location(self):
+        host = self.make_host(ignore=False)
+        store = self.old_store(host)
+        (store / "store.yaml").unlink()
+        r = self.init(store, "--no-track", self.FLAG)
+        self.assertIn("deprecated: store", r.stderr)
+        self.assertIn("gets no repo of its own", r.stderr)
+        self.assertEqual(wi.read_tracking(store), "ignored")
+        self.assertFalse(os.path.lexists(store / ".git"))
+        # never recorded: the next init needs it again
+        self.assertNotIn("allow", (store / "store.yaml").read_text())
+        self.init(store, "--track", code=1)
+        self.init(store, "--track", self.FLAG)
+        self.assertEqual(wi.read_tracking(store), "tracked")
+        self.init(store, self.FLAG)                   # the existing-store path
+        r = self.wi(["prime"], store)
+        self.assertIn("deprecated: store", r.stdout)
+        r = self.wi(["lint"], store)
+        self.assertIn("deprecated: store", r.stderr)
 
 
 class TestGitPins(StoreRepoCase):

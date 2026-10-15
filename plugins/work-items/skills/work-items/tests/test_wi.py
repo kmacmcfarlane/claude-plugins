@@ -4347,6 +4347,10 @@ class TestHostGitignoreUntouched(WiTestCase):
         self.assertEqual({s[0] for s in steps} | {"add"}, choices,
                          "every wi subcommand must be exercised here")
         for step in steps:
+            if step == ["init"]:
+                # the operator's ruling (d1e9 F3): init on an old-location
+                # store that holds items needs the override flag
+                step = ["init", "--allow-old-location"]
             self.wi_in(repo, step,
                        env=commit_env if step[0] == "commit" else None)
             self.assertEqual(gi_path.read_bytes(), before,
@@ -5113,8 +5117,8 @@ class TestInitTracking(unittest.TestCase):
         warn = self.assert_sidecar_warns(store)
         self.assertNotIn("remove the ignore line", warn)
         self.assertNotIn("--no-track", warn)
-        # re-init with --track settles it
-        self.init(store, "--track")
+        # re-init with --track settles it (an old location: the override)
+        self.init(store, "--track", "--allow-old-location")
         prime, lint = self.prime_lint(store)
         self.assertNotIn("WARNING", "\n".join(prime))
         self.assertEqual(lint.returncode, 0, lint.stdout)
@@ -5131,8 +5135,8 @@ class TestInitTracking(unittest.TestCase):
                       ".gitignore:1 '/work/' in the sidecar repo "
                       ".claude-sandbox/", warn)
         # --track alone leaves the line: the tracked warning names it, and
-        # never offers --no-track in a sidecar
-        self.init(store, "--track")
+        # never offers --no-track in a sidecar (an old location: the override)
+        self.init(store, "--track", "--allow-old-location")
         prime, lint = self.prime_lint(store)
         self.assertIn("against its recorded choice", prime[1])
         self.assertIn("'/work/' in the sidecar repo", prime[1])
@@ -5147,7 +5151,7 @@ class TestInitTracking(unittest.TestCase):
         repo, store = self.sidecar("sc-note")
         self.init(store, "--track")
         (store / "store.yaml").unlink()
-        r = self.init(store)
+        r = self.init(store, "--allow-old-location")
         self.assertIn("has no recorded tracking choice; record one with "
                       "`wi init --track`", r.stderr)
         self.assertNotIn("--no-track", r.stderr)
@@ -5574,9 +5578,12 @@ class StoreLookupCase(unittest.TestCase):
             self.git(d, "init", "-q")
         return d
 
-    def store(self, base, rel, n_items=1, flag="--track"):
-        """A store at base/rel made the way wi makes one, with items."""
-        self.wi_ok(["--root", rel, "init", flag], base)
+    def store(self, base, rel, n_items=1, flag="--track", allow=False):
+        """A store at base/rel made the way wi makes one, with items;
+        allow passes the old-location override (d1e9 F3), for a store made
+        beside an old one on purpose."""
+        self.wi_ok(["--root", rel, "init", flag]
+                   + (["--allow-old-location"] if allow else []), base)
         for i in range(n_items):
             self.wi_ok(["--root", rel, "add", f"{rel} item {i}"], base)
         return base / rel
@@ -5636,7 +5643,7 @@ class ResolveOrderTest(StoreLookupCase):
         # .work-items/ beside a leftover .claude-sandbox/work/ wins, warned
         d = self.dir("two", git=True)
         old = self.store(d, ".claude-sandbox/work")
-        new = self.store(d, ".work-items", flag="--no-track")
+        new = self.store(d, ".work-items", flag="--no-track", allow=True)
         want = (f"{self.TWO}{d.resolve()}: using {new.resolve()}, also "
                 f"{d.resolve() / '.claude-sandbox/work'} (move or remove "
                 "the extra one: the work-items skill's "
@@ -5661,7 +5668,7 @@ class ResolveOrderTest(StoreLookupCase):
     def test_explicit_root_two_stores_only_in_prime_and_lint(self):
         d = self.dir("explicit", git=True)
         self.store(d, ".claude-sandbox/work")
-        self.store(d, ".work-items")
+        self.store(d, ".work-items", allow=True)
         for how in ("flag", "env"):
             with self.subTest(how=how):
                 pre, env = ((["--root", ".claude-sandbox/work"], {})
@@ -5719,7 +5726,12 @@ class ResolveOrderTest(StoreLookupCase):
         r = self.wi_ok(["lint"], d)
         self.assertEqual(r.stderr.splitlines(), [notice])
         self.assertNotIn("deprecated", r.stdout)
-        r = self.wi_ok(["init"], d)
+        # d1e9 F3, the operator's ruling: init refuses an old-location
+        # store, with no deprecation line besides; the override gets it
+        r = self.wi(["init"], d)
+        self.assertEqual(r.returncode, 1, r.stdout + r.stderr)
+        self.assertNotIn("deprecated", r.stdout + r.stderr)
+        r = self.wi_ok(["init", "--allow-old-location"], d)
         self.assertIn(notice, r.stderr.splitlines())
         for args in (["ls", "--plain"], ["next", "--plain"]):
             r = self.wi(args, d)

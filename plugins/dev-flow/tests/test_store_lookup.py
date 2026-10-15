@@ -128,6 +128,15 @@ class AssignmentsTest(unittest.TestCase):
         self.assertIn(f'{NEW}="$MAIN/.work-items" {OLD}="$MAIN/.work-items" $WI init',
                       text)
 
+    def test_first_start_stops_on_an_unmoved_old_store(self):
+        # d1e9 F3, the operator's ruling: init refuses while an old-location
+        # store is not yet moved; the librarian routes the move, and never
+        # passes the override by reflex
+        text = " ".join(FIRST_START.read_text(encoding="utf-8").split())
+        self.assertIn("is not yet moved, stop: route the move to the operator", text)
+        self.assertIn("never pass `--allow-old-location` by reflex", text)
+        self.assertIn("§ Moving a store", text)
+
 
 CANONICAL_COMMIT = 'A step that commits the store runs `$WI commit -m "<message>"`'
 FALLBACK_START = "A `wi` without `commit`"

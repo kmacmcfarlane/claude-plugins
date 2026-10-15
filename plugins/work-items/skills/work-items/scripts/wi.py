@@ -1284,7 +1284,10 @@ def _ignore_rule(root, *extra, where=None):
     where=(repo, rel) asks from that repo's top on the store's paths there
     (rel/items, rel/<probe>), so a store that is its own repo is judged by
     the repo around it, not by its own (d1e9 D3 step 4); the source git
-    names is relative to the repo's top either way."""
+    names is relative to the repo's top either way. There a rule from a
+    file inside the store (its own .gitignore holding `items/` or `*`)
+    never counts: the repo around the store must ignore it itself, or its
+    `add -A` stages the store (a gitlink, for a store with its own repo)."""
     if where is None:
         r = _custody_git(root)(root, "check-ignore", "-v", "-z", *extra,
                                "--stdin", stdin=f"items\0{PROBE_ITEM}\0")
@@ -1295,8 +1298,11 @@ def _ignore_rule(root, *extra, where=None):
     if r is None or r.returncode not in (0, 1):
         return False
     fields = r.stdout.split("\0")
+    inside = None if where is None else where[1].rstrip("/") + "/"
     for i in range(0, len(fields) - 3, 4):   # source, linenum, pattern, path
         src, lineno, pattern = fields[i:i + 3]
+        if inside and src.startswith(inside):
+            continue                                  # the store's own rule
         if pattern and not pattern.startswith("!"):   # a negation un-ignores
             return (src, lineno, pattern)
     return None
@@ -1487,6 +1493,12 @@ def _validate_store_git(root):
     for d in (git_dir, common):
         if not _inside(d, real):
             return None, None, f".git points outside the store ({d})"
+        # a git dir among the store's own paths would be committed with them
+        own = next((p for p in OWN_PATHS
+                    if _inside(d, os.path.join(real, p))), None)
+        if own is not None:
+            return None, None, (f".git points into the store's own path "
+                                f"{own} ({d})")
     if top != real:
         return None, None, (f".git makes {top} the top of its repo, not the "
                             "store")
@@ -1758,8 +1770,8 @@ def _host_checks(root, host):
             os.path.realpath(host)).as_posix()
     except ValueError:
         return out
-    r = _git(host, "check-ignore", "-q", "--no-index", f"{rel}/{PROBE_ITEM}")
-    if r is not None and r.returncode == 1:
+    # a rule in the store's own .gitignore does not count (_ignore_rule)
+    if _ignore_rule(root, "--no-index", where=(host, rel)) is None:
         out.append(("problem", f"wi: WARNING the repo at {host} does not "
                     f"ignore store {root}, which is its own repo (the host "
                     "would commit it as a gitlink); fix: `wi init "
@@ -2622,6 +2634,14 @@ STORE_README = ("# Work items\n\nOne markdown file per item, managed by `wi` "
                 "skills/work-items/references/format.md\n")
 STORE_GITIGNORE = ".lock\n*.tmp*\n"
 _DEDICATED = object()   # _own_repo_check: a store at the top of its own repo
+# what a store's directory may hold before `git init` makes it a repo
+STORE_ENTRIES = ("items", "archive", "README.md", STORE_FILE, ".gitignore",
+                 ".lock")
+# the operator's ruling on d1e9 F3: init refuses while an old-location store
+# is not yet moved; this flag is for a project whose `.work/` or
+# `.claude-sandbox/work/` is its own, not a work-item store left behind
+ALLOW_OLD_FLAG = "--allow-old-location"
+OLD_LOCATIONS = STORE_LOCATIONS[1:]
 
 
 @contextlib.contextmanager
@@ -2637,6 +2657,56 @@ def _env_without(names):
 def _is_own_path(path):
     """True for a store-relative path among the store's own paths."""
     return path in OWN_PATH_FILES or path.startswith(("items/", "archive/"))
+
+
+def _foreign_entry(root):
+    """The first name at the store's top that is not a store file (nor the
+    lock or a write's tmp file), else None: `git init` there would make a
+    repo of whatever else the directory holds."""
+    try:
+        names = sorted(os.listdir(root))
+    except OSError:
+        return None
+    return next((n for n in names if n not in STORE_ENTRIES
+                 and not fnmatch.fnmatchcase(n, "*.tmp*")), None)
+
+
+def _unmigrated_stores(root):
+    """The old-location stores init refuses at or beside the root (the
+    operator's ruling on d1e9 F3): the root itself when it is an old location
+    holding items/, and any old location holding items/ beside the top of
+    the repo around the root, or beside the root's own parent directory. A
+    store counts only by its items/ directory, never by name alone or by an
+    ignore line naming it."""
+    real = os.path.realpath(root)
+    found = {}
+    if old_location(root) and (Path(root) / "items").is_dir():
+        found[real] = Path(root)
+    bases = []
+    host = _host_repo(root)
+    if isinstance(host, Path):
+        bases.append(host)
+    parent = _store_parent(Path(real))
+    if parent is not None:
+        bases.append(parent)
+    for base in bases:
+        for rel in OLD_LOCATIONS:
+            cand = Path(base) / rel
+            if (cand / "items").is_dir():
+                found.setdefault(os.path.realpath(cand), cand)
+    return list(found.values())
+
+
+def _old_location_refusal(root, stores, named):
+    """init's refusal while an old-location store is not yet moved."""
+    where = ", ".join(str(s) for s in stores)
+    export = ("" if named else "; then change any WORK_ITEMS_ROOT export "
+              "that names the old path")
+    return (f"{where}: a work-item store at an old location, not yet moved "
+            f"to {DEFAULT_STORE}/; move it first ({MOVING_A_STORE}){export}; "
+            "nothing written. Only if that directory is not a work-item "
+            f"store left behind (this project uses it for its own), rerun "
+            f"with {ALLOW_OLD_FLAG}")
 
 
 def _own_repo_check(root):
@@ -2667,16 +2737,43 @@ def _own_repo_check(root):
             why = "git did not answer" if r is None else _why(r)
             raise WiError(1, f"cannot list the files {root}'s repo tracks "
                              f"({why}); {adopt}")
-        other = next((p for p in r.stdout.split("\0")
-                      if p and not _is_own_path(p)), None)
+        listed = r.stdout.split("\0")
+        # the commit HEAD names too: a file removed from the index only
+        r = _store_git(root, "rev-parse", "-q", "--verify", "HEAD^{commit}")
+        if r is not None and r.returncode == 0:
+            r = _store_git(root, "ls-tree", "-r", "-z", "--name-only", "HEAD")
+            if r is None or r.returncode != 0:
+                why = "git did not answer" if r is None else _why(r)
+                raise WiError(1, f"cannot list the files {root}'s HEAD holds "
+                                 f"({why}); {adopt}")
+            listed += r.stdout.split("\0")
+        other = next((p for p in listed if p and not _is_own_path(p)), None)
         if other is not None:
             raise WiError(1, f"{root} is a git repo holding other files "
                              f"({other}): {adopt}")
+        # an include in its own config can set core.hooksPath over the
+        # /dev/null wi writes, for a hand-run git there; key names print
+        # lowercased (includeIf is includeif)
+        r = _store_git(root, "config", "--local", "--get-regexp",
+                       r"^include(if\..*)?\.path$")
+        if r is None or r.returncode not in (0, 1):
+            why = "git did not answer" if r is None else _why(r)
+            raise WiError(1, f"cannot read {root}'s git config ({why}); "
+                             f"{adopt}")
+        if r.returncode == 0 and r.stdout.strip():
+            raise WiError(1, f"{root}'s git config includes another file "
+                             f"({r.stdout.split()[0]}), which can set its "
+                             f"hooks; remove it: {adopt}")
     elif all(os.path.isdir(root / d) for d in ("objects", "refs")) \
             and os.path.isfile(root / "HEAD"):
         raise WiError(1, f"{root} is a git directory, not a store; nothing "
                          "written")
     else:
+        other = _foreign_entry(root)
+        if other is not None:
+            raise WiError(1, f"{root} holds {other}, which is not a store "
+                             "file: refusing to give it its own repo; "
+                             "nothing written")
         reason = _unsafe_walk(root)
         if reason:
             raise WiError(1, f"{root}: {reason}; refusing to give it its own "
@@ -2744,6 +2841,13 @@ def _init_own(root, host, defaulted):
     adopt = os.path.lexists(root / ".git")
     (root / "items").mkdir(parents=True, exist_ok=True)
     with Lock(root):
+        if os.path.lexists(root / ".git") != adopt:
+            # a .git came or went while init waited for the lock: check again
+            host = _own_repo_check(root)
+            if host is _DEDICATED:
+                raise WiError(1, f"{root} became the top of its own repo "
+                                 "while init waited; run it again")
+            adopt = not adopt
         _create_if_absent(root / "README.md", STORE_README)
         _create_if_absent(root / ".gitignore", STORE_GITIGNORE)
         ok, msg = ensure_ignored(root, host)
@@ -2770,8 +2874,8 @@ def _init_own(root, host, defaulted):
               f"{root / STORE_FILE}): the repo around the store ignores it, "
               "and it keeps its own local history")
         n = len(item_paths(root, archived=True))
-        message = (f"wi init: adopted {n} items" if n
-                   else "wi init: store created")
+        message = (f"wi init: adopted {n} item{'' if n == 1 else 's'}"
+                   if n or adopt else "wi init: store created")
         run = _own_runner(root, store_repo_state(root))
         try:
             sha = _commit_own_paths(root, run, message,
@@ -2805,11 +2909,26 @@ def _init(args):
         print(refusal, file=sys.stderr)
         return 1
     root = resolve_root(args.root, must_exist=False)
-    for notice in location_notices(root):
-        print(notice, file=sys.stderr)
     refusal = _store_outside_repo(root)
     if refusal:
         raise WiError(1, refusal)
+    if args.no_track and sandbox_shape(root)[0] == "sidecar":
+        # 3c06, before the old-location refusal, so it keeps its message
+        raise WiError(1, f"{root} is {SIDECAR_NO_REPO}: a git-ignored store "
+                         "there lands in no repo; nothing written (use "
+                         "`wi init --track`)")
+    old = _unmigrated_stores(root)
+    if old and not args.allow_old_location:
+        # the operator's ruling: move an old-location store before any
+        # init, the no-flag note included; no deprecation line besides
+        raise WiError(1, _old_location_refusal(root, old, bool(args.root)))
+    if args.allow_old_location and not old:
+        raise WiError(1, f"{ALLOW_OLD_FLAG} overrides only an old-location "
+                         f"store ({', '.join(OLD_LOCATIONS)}) holding items/ "
+                         f"at or beside the root, and {root} has none; "
+                         "nothing written")
+    for notice in location_notices(root):
+        print(notice, file=sys.stderr)
     existed = (root / "items").is_dir()
     recorded = read_tracking(root)
     choice = "tracked" if args.track else "ignored" if args.no_track else None
@@ -5592,6 +5711,11 @@ def build_parser():
     track = sub.choices["init"].add_mutually_exclusive_group()
     track.add_argument("--track", action="store_true",
                        help="git tracks the store")
+    sub.choices["init"].add_argument(
+        ALLOW_OLD_FLAG, action="store_true",
+        help="init at, or beside, an old-location directory (.work, "
+             ".claude-sandbox/work) that holds items/ but is not a work-item "
+             "store left behind; never recorded, needed on every such init")
     track.add_argument("--no-track", action="store_true",
                        help="the repo ignores the store (its line added to "
                             ".gitignore), which keeps its own local git "

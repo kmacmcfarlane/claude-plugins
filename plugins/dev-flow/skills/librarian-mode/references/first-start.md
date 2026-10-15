@@ -23,7 +23,12 @@ WORK_ITEMS_ROOT="$MAIN/.work-items" WI_ROOT="$MAIN/.work-items" $WI init --no-tr
 git-ignored by the host repo, so `--no-track`, and `--track` only when the operator asked
 for a tracked store. Relay its output (it explains the host `.gitignore` line it wrote, or
 why none was needed), and add one line: "initialised .work-items/ — first start on this
-repo". `status` never creates a store: with no `## Librarian` section it prints "not opted
+repo". When `init` exits 1 because an old-location store (`.claude-sandbox/work/` or
+`.work/` holding `items/`) is not yet moved, stop: route the move to the operator as a
+numbered decision, or to claude-sandbox's migration where that covers the repo (the
+`work-items` skill's format reference, § Moving a store), and never pass
+`--allow-old-location` by reflex; it is for a repo whose `.work/` is its own, on the
+operator's word. `status` never creates a store: with no `## Librarian` section it prints "not opted
 in; `start` offers opt-in" (`opt-in.md`), otherwise "no store", and stops.
 
 ## What the first Rehydrate reports
