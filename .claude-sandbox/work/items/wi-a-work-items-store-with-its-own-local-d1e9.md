@@ -125,3 +125,7 @@ dispatch: reviewer opus high — resume, F5 round 2
 agent: reviewer a7a477b3d31a6408e F5 round 2 at 66c64d59
 verdict: CLEAR F5 round 2 at 66c64d59 (nits: re-walk before add skips <git-dir>/info/attributes; export refuses any output inside a store)
 declined: nit 1 for this push — the gap needs a write into the store's .git/info inside one command's lock window, by a party that can already write the store's config; filed as a follow-up rather than delaying the push claude-sandbox waits on. nit 2: kept, as the reviewer allows.
+landed: F5 locally f77dab82 (Checks 12/12 OK); F1-F5 all on local main; pre-push scan over main --not --remotes (66 commits): deny-list no hits; phrase hits are git bundle and a Go binary, not Claude Code; no Claude Code version lines; shape hits are our own code
+follow-up: re-walk before add also checks <git-dir>/info/attributes (F5 review nit 1)
+decision 251: push local main (d1e9 F1-F5 and 66 commits) to origin now? — options: (a) push now: ships the nested store repo, lifts claude-sandbox's no-nested-.git hold, and lets its part A start from a smaller diff [recommended] | (b) hold until a time you name | (z) decide later
+  why ask: the librarian said it would put this push to the operator (2026-10-15); claude-sandbox asked for it before its part A
