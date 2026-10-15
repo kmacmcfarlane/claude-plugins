@@ -455,6 +455,9 @@ class TestDocs(unittest.TestCase):
 
     def test_skill_carries_each_rule(self):
         for needle in ("git clean -n -fdx -e /.work-items/",
+                       "never a doubled `-f` (or `--force` twice) near a store: a doubled force "
+                       "deletes linked worktrees and nested repos even when the store is excluded",
+                       "Never `-x` near a store without excluding it",
                        "then run it without `-n`: `git clean -fdx -e /.work-items/` (one `-f` only)",
                        "`-X` is never safe while the clean reaches a store "
                        "(from the cwd down, or through its pathspec)",
@@ -497,9 +500,12 @@ class TestDocs(unittest.TestCase):
                        "commit first under the lock (§ Safe forms)",
                        "The committed items and",
                        "2026-10-15 with git 2.39.5",
-                       "tests/test_store_safety.py"):
+                       "tests/test_store_safety.py",
+                       "(one `-f` only: a doubled force, `-ff` or `--force` twice, deletes linked "
+                       "worktrees and nested repos that the one-`-f` preview skipped, even when "
+                       "the store is excluded)"):
             with self.subTest(needle=needle):
-                self.assertIn(needle, self.safety)
+                self.assertIn(needle, " ".join(self.safety.split()))
 
     def test_identity_fallback_only_when_git_var_fails(self):
         # The fallback identity appears once, in the else branch of the git var check.
@@ -508,6 +514,12 @@ class TestDocs(unittest.TestCase):
                          r'if git -C "\$S" var GIT_AUTHOR_IDENT [^\n]*; then id=\(\); '
                          r'else id=\(-c user\.name=wi -c user\.email=wi@localhost\); fi')
         self.assertNotIn("-c user.name=", self.rules)
+
+    def test_doubled_force_has_no_exclusion_escape(self):
+        # The rule bans a doubled force outright; the old "without excluding
+        # it" escape must not come back.
+        flat = " ".join(self.rules.split())
+        self.assertNotRegex(flat, r"doubled `-f`[^.]*without excluding it")
 
     def test_one_home_per_rule(self):
         # The reference cites the rules, it does not restate them.

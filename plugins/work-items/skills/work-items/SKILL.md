@@ -113,8 +113,10 @@ in git until committed: git cannot bring either back, and a lost store takes its
 numbers with it. Near a store (the harm, the evidence, observed with git 2.39.5, and
 the full safe forms are in `references/store-safety.md`):
 
-- `git clean`: never `-x` or a doubled `-f` near a store without excluding it. Preview, then
-  exclude: `git clean -n -fdx -e /.work-items/`, then run it without `-n`:
+- `git clean`: never a doubled `-f` (or `--force` twice) near a store: a doubled force
+  deletes linked worktrees and nested repos even when the store is excluded. Never `-x` near
+  a store without excluding it. Preview, then exclude: `git clean -n -fdx -e /.work-items/`,
+  then run it without `-n`:
   `git clean -fdx -e /.work-items/` (one `-f` only). `-X` is never safe while the clean
   reaches a store (from the cwd down, or through its pathspec): `-e` and `:!` do not protect
   it under `-X`. Name only the directories to clean instead: preview with

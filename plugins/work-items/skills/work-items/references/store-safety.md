@@ -71,8 +71,9 @@ the next push.
 ## Safe forms
 
 - **Clean, `-x`:** preview with `git clean -n -fdx -e /.work-items/`, then run it without
-  `-n`: `git clean -fdx -e /.work-items/` (one `-f` only; a second `-f` also deletes nested
-  repos, linked worktrees among them, that the preview skipped). A pathspec does the same:
+  `-n`: `git clean -fdx -e /.work-items/` (one `-f` only: a doubled force, `-ff` or
+  `--force` twice, deletes linked worktrees and nested repos that the one-`-f` preview
+  skipped, even when the store is excluded). A pathspec does the same:
   `git clean -fdx -- . ':!.work-items'`. Add one `-e` per other store location the repo holds
   (`-e /.claude-sandbox/work/`).
 - **Clean, `-X`:** exclusions do not protect a store under `-X`, so name only the
