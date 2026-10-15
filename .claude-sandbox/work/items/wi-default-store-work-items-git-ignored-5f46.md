@@ -56,3 +56,4 @@ decision 232: Confirm the relayed rule that every .work-items/ store has its own
 result: DONE F2 round 1 at aa6a228e (lookup order, old-location and two-store notices by real path, worktree guard, estate, init default .work-items, docs incl. § Moving a store; claude-sandbox's three behaviours tested; 413 OK)
 dispatch: reviewer opus high — fresh (rule 4), F2
 agent: reviewer a0fba032061992e48 F2 round 1 at aa6a228e
+answer 232: a, in chat 2026-10-15 after the pitfalls were shown, verbatim (excerpt): "So, let's just stay the course and let the change land to create the embedded origin-free repo for .work-items and run the migration." (read as: (a) confirmed; claude-sandbox's 117 a and 118 a are confirmed here; the nested-repo support lands as a follow-up after F1-F4; this settles 229 (d), 230 (b) and 231)
