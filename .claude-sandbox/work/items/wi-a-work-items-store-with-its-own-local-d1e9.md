@@ -104,3 +104,4 @@ dispatch: implementer opus high — resume, F3 fix round 2
 agent: implementer a56d080820c81b88a F3 round 3
 result: DONE F3 round 3 at 13c9f4ee (read-back of effective hooksPath/fsmonitor without pins; new old-location stores need the flag; 588/106/762/21 OK; 41 mutants; fixed own mutation runner false-catch)
 dispatch: reviewer opus high — resume, F3 round 3
+agent: reviewer a68637230a53cccf7 F3 round 3 at 13c9f4ee
