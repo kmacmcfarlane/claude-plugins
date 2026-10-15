@@ -43,3 +43,6 @@ note: 2026-10-15T02:50Z claude-sandbox's amended migration plan (04) gates on F1
 target: an agent worktree off main (d39e0e7c); work-items wi.py, SKILL.md, format.md, provider-interface.md, test_wi.py, test_estate.py
 dispatch: implementer opus medium — F1, the WORK_ITEMS_ env rename, per the series
 agent: implementer a308b4bc437e8e143 F1 round 1
+result: DONE F1 round 1 at aa37b2e9 (_env helper, notices only from prime/lint/init, help names WORK_ITEMS_ROOT, harness scrub, EnvNamesTest and HelpNamesEnvTest; 391 OK)
+dispatch: reviewer opus high — fresh (rule 4), F1
+agent: reviewer af7353ff071081892 F1 round 1 at aa37b2e9
