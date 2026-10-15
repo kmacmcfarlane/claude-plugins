@@ -23,3 +23,7 @@ budget: waived (operator 2026-10-08); spend measured
 dispatch: planner opus high — plan the nested store repo (answer 232 a)
 agent: planner ac5d8b6d969db2d50 round 1
 note: F-R1..F-R5 from b2df handed to the d1e9 planner (F-R5: landed store commits under flock or wi before stores nest)
+return: planner DONE .claude-sandbox/investigations/wi-a-work-items-store-with-its-own-local-d1e9 (00_initial.md; store.yaml repo: own; hardened store git runner with ceiling and hooksPath=/dev/null; new wi commit verb replacing every landed store-commit site (closes b2df F-R5, two more sites found); init creates or adopts; per-change commits; F1-F5 with F4 a relay; OQ1 names, OQ2 migration waiting)
+baseline: 57b8bc4b87f6de3a6edf8c70a9c585107fbef27fd98b87bdf3eb1699e0848210  00_initial.md f5a5db2660075459e4f2c7aa95a894cef89add67fbdc66632a789305b90c0724  INDEX.md 
+dispatch: reviewer opus high — plan review round 1 (fresh)
+agent: reviewer a3b8f5b2c3a80ea24 plan round 1
