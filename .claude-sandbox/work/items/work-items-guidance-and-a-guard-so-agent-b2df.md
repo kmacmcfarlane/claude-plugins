@@ -25,11 +25,15 @@ agent: planner a2cdd001d65a75437 round 1
 return: planner DONE .claude-sandbox/investigations/work-items-guidance-and-a-guard-so-agent-b2df (00_initial.md; F1 work-items guidance + store-safety.md + tests, F2 dev-flow brief line, F3 new plugin local-data-guard with a PreToolUse deny hook, F4 interim user-settings copy; OQ1-OQ7)
 baseline: 4a58600911b3adc583227e7d97a325d7235640b203d290887c3aa6cccde7b2da  00_initial.md c6852e2c818d11b27cd200c86c42991c827bd634ccff84bd17e3abfaa459cb68  INDEX.md 
 dispatch: reviewer opus high — plan review round 1 (fresh), in parallel with showing the plan to the operator at their request
-decision 233: OQ1 — which guard? — options: (a) a plugin hook only: reaches each session after its next reload | (b) the plugin hook plus an interim copy in your user settings, which running sessions pick up at once; removed by a tracked item once everyone has reloaded [recommended] | (c) guidance only | (z) decide later: guidance lands alone
+decision 233: store guard — build it? — options: (a) build it as the store pack, in the home spike 6e13's OQ1 picks [recommended] | (c) guidance only, no store guard | (z) decide later: guidance stands alone
+  revised: 2026-10-15T07:17Z — home moved to spike 6e13 decision 242, the interim copy to decision 246; whether to build stays here; (b) retired into decision 246; letters kept on purpose so earlier answers and references to (a) and (c) still read
 decision 234: OQ2 — where does the hook live? — options: (a) a new plugin, local-data-guard, whose aim is protecting local-only data from destructive commands [recommended] | (b) inside work-items | (c) inside sandbox, beside its checkout guard | (d) a new plugin under another name | (z) decide later
 decision 235: OQ3 — who installs the interim settings hook? — options: (a) the librarian, on your explicit yes at that moment [recommended] | (b) you, by hand, from a printed snippet | (z) decide later
-decision 236: OQ4 — does the guard deny or ask? — options: (a) deny, with a message naming the safe alternative: unattended sessions never stall [recommended] | (b) ask | (c) deny only total-loss cases, ask the rest | (z) decide later
+decision 236: store pack — deny or ask? — options: (a) deny, with a message naming the safe alternative [recommended] | (b) ask — in a bypass sub-agent an ask likely stalls (anthropics/claude-code#99899, reported) or is denied by the plugin's L1 backstop if experiment X3 confirms L1 fires, so it works against the plugin's aim | (c) deny only total-loss cases, ask the rest — its ask half has the same problem | (z) decide later
+  revised: 2026-10-15T07:17Z — applies to the store pack; the ask options' bypass-sub-agent effect stated, both premises unverified (X3)
+  basis: the stall is reported (#99899), not documented; L1's deny is unverified until X3
 decision 237: OQ5 — what does it protect? — options: (a) work-item stores and any folder holding one [recommended] | (b) also every nested repo in a checkout | (c) also a configurable list | (z) decide later
+  revised: 2026-10-15T07:17Z — applies to the store pack
 decision 238: OQ6 — backups? — options: (a) a copy inside the repo's .git directory now [recommended] | (b) also an off-machine copy | (c) a wi backup command later | (z) decide later
 decision 239: OQ7 — reaching running sessions with the guidance now? — options: (a) a peer message to live sessions plus a relay to claude-sandbox for its container CLAUDE.md [recommended] | (b) the peer message only | (c) neither | (z) decide later
 agent: reviewer a465a62b18f0b778d plan round 1
@@ -77,3 +81,4 @@ agent: implementer a1f08393bdfff79d7 F1 round 3 (finish)
 result: DONE F1 finish at 8ef47e27 (three exact; SKILL.md bullet split; read by the librarian)
 verdict: CLEAR F1 after 2 fix rounds, 1 finish at 8ef47e27
 correction: 2026-10-15T05:42Z pushed 529f076f..63f7c0d2 in the same command as the unpushed scan, before reading it and before the Report (scan was clean: git-bundle prose only; same slip as 1b6a and 50c2)
+closed 235: superseded by 246
