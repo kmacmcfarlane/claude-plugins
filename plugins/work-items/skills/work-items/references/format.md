@@ -40,25 +40,27 @@ problem, the exit is unchanged) and `init` (stderr), at most once per run:
 A root from the flag, the env or the lookup is judged alike. No other command
 prints it.
 
-**`init` refuses an old-location store not yet moved.** `wi init` exits 1, writing
-nothing, when the store root is an old location that holds `items/`, or when an old
-location beside the top of the repo around the root (or beside the root's own parent
-directory) holds `items/`: an un-migrated store next to a new `.work-items/`. A store counts
-only by its `items/` directory, never by its name alone or by an ignore line naming it, so a
-store already moved away, with `/work/` still in a sidecar `.gitignore`, does not trip it.
-The refusal covers every `init` there, a re-run on an existing store and the no-flag note
-included, and comes after the sidecar refusal of `--no-track` (§ Store tracking), which keeps
-its message. It names the store's path and this file's § Moving a store, adds "then change
-any WORK_ITEMS_ROOT export that names the old path" when the root was not named with
-`--root`, and prints no deprecation line besides. A new store at an old location (no
-`items/` yet) is not refused.
+**`init` makes or keeps no store at an old location.** `wi init` exits 1, writing
+nothing, when the store root is an old location, a new store there included (so `init` never
+makes a store the next `init` refuses), or when an old location beside the top of the repo
+around the root (or beside the root's own parent directory) holds `items/`: an un-migrated
+store next to a new `.work-items/`. A store beside counts only by its `items/` directory,
+never by its name alone or by an ignore line naming it, so a store already moved away, with
+`/work/` still in a sidecar `.gitignore`, does not trip it. The refusal covers every `init`
+there, a re-run on an existing store and the no-flag note included, and comes after the
+sidecar refusal of `--no-track` (§ Store tracking), which keeps its message. It names the
+old location's path and this file's § Moving a store ("use `.work-items/`, moving the old
+store first if there is one"), adds "then change any WORK_ITEMS_ROOT export that names the
+old path" when the root was not named with `--root`, and prints no deprecation line
+besides.
 
-`--allow-old-location` overrides it, for a project whose `.work/` or `.claude-sandbox/work/`
-is its own and not a work-item store left behind. It works with `--track`, `--no-track`, the
+`--allow-old-location` overrides it, only when the operator keeps the store at the old
+location, or the directory is the project's own and not a work-item store. It works with `--track`, `--no-track`, the
 menu and an existing store; with it, `--no-track` at an old location makes a plain ignored
 store, never an own repo. It is never recorded: every `init` there needs it again, and
-`prime` and `lint` keep the deprecation line. Passed where there is nothing to override (no
-old-location store holding `items/` at or beside the root), it is refused, exit 1.
+`prime` and `lint` keep the deprecation line. Passed where there is nothing to override (a
+root not at an old location, with no old location holding `items/` beside it), it is refused,
+exit 1.
 
 **More than one store.** When the store in use is one of the three locations
 under a directory D (by real path), and another of them under D also holds
@@ -131,7 +133,8 @@ problem, fixed by moving the store (§ Moving a store).
   local repo, which `init` creates or adopts (§ The store's own repo, Setting it up). The
   record is then `tracking: tracked` plus `repo: own`: the flag names the host, which does
   not track the store, and the record names git, which does, in the store's own repo. At an
-  old location, or with no git on `PATH`, the choice makes a plain ignored store, recorded
+  old location (with `--allow-old-location`), or with no git on `PATH`, the choice makes a
+  plain ignored store, recorded
   `ignored`, as the bullets below describe, with a stderr line saying it has no history of
   its own.
 - **Ignoring** (`--no-track`, the menu's git-ignored, the no-terminal default) adds
@@ -455,7 +458,11 @@ repo, new or adopted, in this order:
    `symbolic-ref HEAD refs/heads/main`. An existing valid one is adopted as it is: its
    history, branch and any remote are kept (`lint` names a remote). Both get the local
    config `core.hooksPath=/dev/null` and `core.fsmonitor=false`, so a hand-run git there
-   (`references/store-safety.md` § Safe forms) runs no hook either. A failure: exit 1,
+   (`references/store-safety.md` § Safe forms) runs no hook either. Then both keys are read
+   back as that hand-run git resolves them, with git run without the store runner's `-c`
+   pins (its ceiling and scrub kept); an include, an `includeIf` or a worktree config
+   (`extensions.worktreeConfig`) that sets either over the written value stops set-up:
+   "`<key>` resolves to `<value>` for a hand-run git there". A failure: exit 1,
    `own repo not set up: <why>; tracking not recorded`; a rerun is safe.
 5. **The record**, `tracking: tracked` plus `repo: own`, once the repo is valid, so `repo:
    own` always names a repo that was valid at `init`.
@@ -468,8 +475,8 @@ repo, new or adopted, in this order:
 Every git call `init` makes, the host's reads included, runs without the caller's git
 steering: the runner's scrubbed names, `GIT_LITERAL_PATHSPECS` and `GIT_TEMPLATE_DIR` are
 dropped, so a host hook's `GIT_DIR` or `GIT_INDEX_FILE` never sends `init` into the host's
-repo. A rerun on an own store commits whatever is outstanding. At an old location (a new
-store there, or with `--allow-old-location`) the git-ignored choice makes a plain ignored
+repo. A rerun on an own store commits whatever is outstanding. At an old location (with
+`--allow-old-location`) the git-ignored choice makes a plain ignored
 store, recorded `ignored`, and says on stderr that an old location gets no repo of its own
 (move it: § Moving a store). With no git on `PATH` it
 makes the same plain store and warns `wi: WARNING git not found: <root> has no history of

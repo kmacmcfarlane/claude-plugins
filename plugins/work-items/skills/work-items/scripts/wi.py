@@ -1418,7 +1418,8 @@ OWN_PATHS = ("items", "archive", "README.md", STORE_FILE, ".gitignore")
 STALE_INDEX_LOCK = 600   # seconds
 
 
-def _store_git(root, *args, timeout=STORE_GIT_TIMEOUT, stdin=None):
+def _store_git(root, *args, timeout=STORE_GIT_TIMEOUT, stdin=None,
+               pins=True):
     """Run git in a store with its own repo, hardened (d1e9 D2): the pins
     above, cwd the store, GIT_CEILING_DIRECTORIES its real parent (a broken
     .git never falls through to the host), the host's GIT_* scrubbed,
@@ -1426,7 +1427,8 @@ def _store_git(root, *args, timeout=STORE_GIT_TIMEOUT, stdin=None):
     pathspecs for every call but check-ignore, which refuses them. Args are
     a list, never a shell. None when git is missing or times out, or when
     the store's parent holds os.pathsep, which would split the ceiling into
-    two paths; output decoded as _git does."""
+    two paths; output decoded as _git does. pins=False drops the -c pins and
+    nothing else: only for reading the config a hand-run git resolves."""
     real = os.path.realpath(root)
     if os.pathsep in os.path.dirname(real):
         return None
@@ -1441,7 +1443,8 @@ def _store_git(root, *args, timeout=STORE_GIT_TIMEOUT, stdin=None):
     else:
         env["GIT_LITERAL_PATHSPECS"] = "1"
     try:
-        r = subprocess.run(["git", *STORE_GIT_PINS, *args], cwd=real, env=env,
+        r = subprocess.run(["git", *(STORE_GIT_PINS if pins else ()), *args],
+                           cwd=real, env=env,
                            input=None if stdin is None else stdin.encode(),
                            capture_output=True, timeout=timeout)
         r.stdout = r.stdout.decode("utf-8", "backslashreplace")
@@ -2672,15 +2675,16 @@ def _foreign_entry(root):
 
 
 def _unmigrated_stores(root):
-    """The old-location stores init refuses at or beside the root (the
-    operator's ruling on d1e9 F3): the root itself when it is an old location
-    holding items/, and any old location holding items/ beside the top of
+    """The old locations init refuses at or beside the root (the operator's
+    ruling on d1e9 F3): the root itself when it is an old location, a new
+    store included, and any old location holding items/ beside the top of
     the repo around the root, or beside the root's own parent directory. A
-    store counts only by its items/ directory, never by name alone or by an
-    ignore line naming it."""
+    store beside counts only by its items/ directory, never by name alone or
+    by an ignore line naming it."""
     real = os.path.realpath(root)
     found = {}
-    if old_location(root) and (Path(root) / "items").is_dir():
+    if old_location(root):
+        # made or kept there: a new store too, which the next init refuses
         found[real] = Path(root)
     bases = []
     host = _host_repo(root)
@@ -2702,11 +2706,13 @@ def _old_location_refusal(root, stores, named):
     where = ", ".join(str(s) for s in stores)
     export = ("" if named else "; then change any WORK_ITEMS_ROOT export "
               "that names the old path")
-    return (f"{where}: a work-item store at an old location, not yet moved "
-            f"to {DEFAULT_STORE}/; move it first ({MOVING_A_STORE}){export}; "
-            "nothing written. Only if that directory is not a work-item "
-            f"store left behind (this project uses it for its own), rerun "
-            f"with {ALLOW_OLD_FLAG}")
+    return (f"{where}: an old store location ({', '.join(OLD_LOCATIONS)}); "
+            "init makes no store at one, keeps none there, and makes none "
+            f"beside one holding items/: use {DEFAULT_STORE}/, moving the old "
+            f"store first if there is one ({MOVING_A_STORE}){export}; nothing "
+            f"written. Pass {ALLOW_OLD_FLAG} only when the operator keeps the "
+            "store there, or the directory is this project's own and not a "
+            "work-item store")
 
 
 def _own_repo_check(root):
@@ -2828,6 +2834,16 @@ def _set_up_store_repo(root, adopt):
                     else "git did not answer")
         if r.returncode != 0:
             return _why(r)
+    # what a hand-run git there resolves, read without the -c pins: an
+    # include, an includeIf or a worktree config (extensions.worktreeConfig)
+    # can set either key over the value just written
+    for key, want in STORE_REPO_CONFIG:
+        r = _store_git(root, "config", "--get", key, pins=False)
+        got = r.stdout.strip() if r is not None and r.returncode == 0 else None
+        if got != want:
+            return (f"{key} resolves to {got!r} for a hand-run git there, not "
+                    f"{want!r} (an include, includeIf or worktree config "
+                    "sets it); remove that setting")
     git_dir, common, reason = _validate_store_git(root)
     if reason or git_dir is None:
         return reason or "git did not answer"
@@ -2923,10 +2939,10 @@ def _init(args):
         # init, the no-flag note included; no deprecation line besides
         raise WiError(1, _old_location_refusal(root, old, bool(args.root)))
     if args.allow_old_location and not old:
-        raise WiError(1, f"{ALLOW_OLD_FLAG} overrides only an old-location "
-                         f"store ({', '.join(OLD_LOCATIONS)}) holding items/ "
-                         f"at or beside the root, and {root} has none; "
-                         "nothing written")
+        raise WiError(1, f"{ALLOW_OLD_FLAG} overrides only a root at an old "
+                         f"location ({', '.join(OLD_LOCATIONS)}), or one "
+                         "holding items/ beside the root, and "
+                         f"{root} has neither; nothing written")
     for notice in location_notices(root):
         print(notice, file=sys.stderr)
     existed = (root / "items").is_dir()
@@ -5713,9 +5729,10 @@ def build_parser():
                        help="git tracks the store")
     sub.choices["init"].add_argument(
         ALLOW_OLD_FLAG, action="store_true",
-        help="init at, or beside, an old-location directory (.work, "
-             ".claude-sandbox/work) that holds items/ but is not a work-item "
-             "store left behind; never recorded, needed on every such init")
+        help="init at an old location (.work, .claude-sandbox/work), or "
+             "beside one holding items/, when the operator keeps the store "
+             "there or the directory is the project's own; never recorded, "
+             "needed on every such init")
     track.add_argument("--no-track", action="store_true",
                        help="the repo ignores the store (its line added to "
                             ".gitignore), which keeps its own local git "

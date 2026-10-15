@@ -1856,12 +1856,19 @@ class TestInit(InitCase):
 
     # -- the edges ---------------------------------------------------------
 
-    def test_new_old_location_store_keeps_a_plain_ignored_store(self):
-        # a store not yet holding items/ is no un-migrated store: --no-track
-        # there makes today's plain ignored store, never a repo
+    def test_new_old_location_store_needs_the_flag(self):
+        # no store is made at an old location without the flag, so init
+        # never makes one the next init refuses; with it, --no-track makes
+        # today's plain ignored store, never a repo
         host = self.make_host(ignore=False)
         store = host / ".work"
-        r = self.init(store, "--no-track")
+        for flags in (("--no-track",), ("--track",), ()):
+            r = self.init(store, *flags, code=1)
+            self.assertIn(f"{store}: an old store location", r.stderr)
+            self.assertIn("--allow-old-location", r.stderr)
+            self.assertFalse(store.exists())
+            self.assertFalse((host / ".gitignore").exists())
+        r = self.init(store, "--no-track", "--allow-old-location")
         self.assertIn("is at an old location, so it gets no repo of its own",
                       r.stderr)
         self.assertEqual(wi.read_tracking(store), "ignored")
@@ -2074,6 +2081,31 @@ class TestInitReview(InitCase):
                                     "file")
                 shutil.rmtree(self.tmp / "host")
 
+    def test_worktree_config_setting_hooks_refuses_adoption(self):
+        # extensions.worktreeConfig: config.worktree is read after the local
+        # config, so a hooksPath there, or an include there naming one, wins
+        # over the /dev/null init writes, for a hand-run git
+        hooks = self.tmp / "evil-hooks"
+        hooks.mkdir()
+        shutil.copy(self.marker("pre-commit"), hooks / "pre-commit")
+        inc = self.tmp / "inc"
+        inc.write_text(f"[core]\n\thooksPath = {hooks}\n")
+        cases = {"hooksPath": ("core.hooksPath", str(hooks)),
+                 "include": ("include.path", str(inc)),
+                 "fsmonitor": ("core.fsmonitor", str(self.marker("fsmon")))}
+        for name, (key, value) in cases.items():
+            with self.subTest(name):
+                store = self.make_own(own=False)
+                self.git(store, "config", "extensions.worktreeConfig", "true")
+                self.git(store, "config", "--worktree", key, value)
+                code, out, err = self.run_init(store, "--no-track")
+                self.assertEqual(code, 1, out + err)
+                want = key if key != "include.path" else "core.hooksPath"
+                self.assertIn(f"own repo not set up: {want} resolves to", err)
+                self.assertFalse(wi.read_repo_own(store))
+                shutil.rmtree(self.tmp / "host")
+        self.assertEqual(self.marked(), [])
+
     def test_other_files_in_head_but_not_the_index_are_refused(self):
         store = self.make_own(own=False)
         (store / "src").mkdir()
@@ -2120,9 +2152,9 @@ class TestInitReview(InitCase):
 
 
 class TestOldLocationRefusal(InitCase):
-    """The operator's ruling on d1e9 F3: `wi init` refuses while an
-    old-location store (`.work/`, `.claude-sandbox/work/`) holding items/
-    is not yet moved, at the root or beside its repo's top, unless
+    """The operator's ruling on d1e9 F3: `wi init` makes or keeps no store
+    at an old location (`.work/`, `.claude-sandbox/work/`), and makes none
+    beside an old location holding items/ (beside its repo's top), unless
     --allow-old-location is passed."""
 
     FLAG = "--allow-old-location"
@@ -2155,9 +2187,12 @@ class TestOldLocationRefusal(InitCase):
                         self.assertIn("a git-ignored store there lands in no "
                                       "repo; nothing written", r.stderr)
                         continue
-                    self.assertIn(f"{store}: a work-item store at an old "
-                                  "location, not yet moved to .work-items/; "
-                                  "move it first (the work-items skill's "
+                    self.assertIn(f"{store}: an old store location "
+                                  "(.claude-sandbox/work, .work); init makes "
+                                  "no store at one, keeps none there, and "
+                                  "makes none beside one holding items/: use "
+                                  ".work-items/, moving the old store first "
+                                  "if there is one (the work-items skill's "
                                   "references/format.md § Moving a store)",
                                   r.stderr)
                     self.assertIn("nothing written", r.stderr)
@@ -2170,7 +2205,7 @@ class TestOldLocationRefusal(InitCase):
         old = self.old_store(host, ".claude-sandbox/work")
         store = host / ".work-items"
         r = self.init(store, "--no-track", code=1)
-        self.assertIn(f"{old}: a work-item store at an old location", r.stderr)
+        self.assertIn(f"{old}: an old store location", r.stderr)
         self.assertFalse(store.exists())
         # with the override, the new store is made as ever
         self.init(store, "--no-track", self.FLAG)
@@ -2178,7 +2213,7 @@ class TestOldLocationRefusal(InitCase):
         # beside the repo's top, for a store below it too
         deeper = host / "sub" / ".work-items"
         r = self.init(deeper, "--no-track", code=1)
-        self.assertIn(f"{old}: a work-item store at an old location", r.stderr)
+        self.assertIn(f"{old}: an old store location", r.stderr)
 
     def test_the_export_sentence_only_when_wi_resolved_the_root(self):
         host = self.make_host()
@@ -2207,7 +2242,7 @@ class TestOldLocationRefusal(InitCase):
         self.assertTrue(wi.read_repo_own(store))
         # and the override, with nothing old to override, is refused
         r = self.init(store, "--no-track", self.FLAG, code=1)
-        self.assertIn(f"{self.FLAG} overrides only an old-location store",
+        self.assertIn(f"{self.FLAG} overrides only a root at an old location",
                       r.stderr)
 
     def test_the_override_at_an_old_location(self):

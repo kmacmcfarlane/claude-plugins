@@ -101,7 +101,9 @@ the next push.
   The store's own `.gitignore` keeps `.lock` and `*.tmp*` out of the `add`. `flock(1)` on
   `<store>/.lock` takes the same lock wi takes. With no `flock` (macOS), commit only when no
   session is working the store. A store `wi init` set up has `core.hooksPath=/dev/null` in
-  its own config, so this hand form runs no hook there either.
+  its own config, and `init` refused it unless a git run without wi's pins resolves that
+  value (no include or worktree config overriding it), so this hand form runs no hook there
+  either.
 
 ## Worktrees and clones
 

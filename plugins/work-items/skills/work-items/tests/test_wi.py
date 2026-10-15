@@ -37,6 +37,16 @@ spec = importlib.util.spec_from_file_location("wi", WI)
 wi = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(wi)
 
+# d1e9 F3, the operator's ruling: no store is made or kept at an old
+# location (.work/, .claude-sandbox/work/) without this flag, so every test
+# that makes or inits a store there passes it
+OLD = "--allow-old-location"
+
+
+def allow(store):
+    """[OLD] for a store at an old location, else []."""
+    return [OLD] if wi.old_location(store) else []
+
 
 def _clean_env(base=None):
     """base (os.environ by default) minus every WI_* and WORK_ITEMS_* key, so
@@ -1548,7 +1558,7 @@ class TestDefaultOwner(WiTestCase):
 
     def test_claim_end_to_end_uses_git_name(self):
         store = self.repo_with_name("Kyle McFarlane")
-        self.assertEqual(run(["init"], store).returncode, 0)
+        self.assertEqual(run(["init", OLD], store).returncode, 0)
         self.root = store
         self.write_item("mine-1111")
         env = dict((k, v) for k, v in self.iso.items() if v is not None)
@@ -1568,7 +1578,7 @@ class TestDefaultOwner(WiTestCase):
         # $USER still comes before git: a kyle@host claim made before this
         # change is re-claimed (a no-op) by the same user, not refused
         store = self.repo_with_name("Kyle McFarlane")
-        self.assertEqual(run(["init"], store).returncode, 0)
+        self.assertEqual(run(["init", OLD], store).returncode, 0)
         self.root = store
         self.write_item("held-1111", status="doing", owner=f"kyle@{HOST}",
                         claimed="2026-09-01T10:00Z")
@@ -1585,7 +1595,7 @@ class TestDefaultOwner(WiTestCase):
         # checks no owner); a re-claim needs --steal, or WORK_ITEMS_OWNER pinned to
         # the old spelling, which keeps matching
         store = self.repo_with_name("Kyle McFarlane")
-        self.assertEqual(run(["init"], store).returncode, 0)
+        self.assertEqual(run(["init", OLD], store).returncode, 0)
         self.root = store
         old = f"unknown@{HOST}"
         self.write_item("old-1111", status="doing", owner=old,
@@ -4209,7 +4219,7 @@ class TestInitShapes(WiTestCase):
         # repo, .claude-sandbox/ present, no sidecar git — init must leave the
         # host .gitignore alone so the new store stays trackable
         repo, store = self.sandbox_repo("private")
-        r = run(["init", "--track"], store)
+        r = run(["init", "--track", OLD], store)
         self.assertEqual(r.returncode, 0, r.stderr)
         self.assertIn("private-shaped", r.stdout)
         self.assertFalse((repo / ".gitignore").exists())
@@ -4219,7 +4229,7 @@ class TestInitShapes(WiTestCase):
     def test_private_shape_store_commits_with_git_add_all(self):
         repo, store = self.sandbox_repo("private-git")
         subprocess.run(["git", "init", "-q", str(repo)], check=True)
-        self.assertEqual(run(["init", "--track"], store).returncode, 0)
+        self.assertEqual(run(["init", "--track", OLD], store).returncode, 0)
         subprocess.run(["git", "-C", str(repo), "add", "-A"], check=True)
         staged = subprocess.run(
             ["git", "-C", str(repo), "diff", "--cached", "--name-only"],
@@ -4230,7 +4240,7 @@ class TestInitShapes(WiTestCase):
         repo, store = self.sandbox_repo("sidecar")
         (repo / ".claude-sandbox" / ".git").mkdir()
         (repo / ".gitignore").write_text("*.pyc\n")
-        r = run(["init", "--track"], store)
+        r = run(["init", "--track", OLD], store)
         self.assertEqual(r.returncode, 0, r.stderr)
         self.assertEqual((repo / ".gitignore").read_text(),
                          "*.pyc\n/.claude-sandbox/\n")
@@ -4238,7 +4248,7 @@ class TestInitShapes(WiTestCase):
     def test_already_ignored_adds_no_duplicate(self):
         repo, store = self.sandbox_repo("ignored")
         (repo / ".gitignore").write_text("/.claude-sandbox/\n")
-        r = run(["init"], store)
+        r = run(["init", OLD], store)
         self.assertEqual(r.returncode, 0, r.stderr)
         self.assertEqual((repo / ".gitignore").read_text(),
                          "/.claude-sandbox/\n")
@@ -4247,7 +4257,7 @@ class TestInitShapes(WiTestCase):
         repo, store = self.sandbox_repo("sidecar-ignored")
         (repo / ".claude-sandbox" / ".git").mkdir()
         (repo / ".gitignore").write_text(".claude-sandbox/\n")
-        r = run(["init", "--track"], store)
+        r = run(["init", "--track", OLD], store)
         self.assertEqual(r.returncode, 0, r.stderr)
         self.assertEqual((repo / ".gitignore").read_text(),
                          ".claude-sandbox/\n")
@@ -4358,7 +4368,7 @@ class TestHostGitignoreUntouched(WiTestCase):
 
     def test_private_init_then_add_leaves_gitignore_alone(self):
         repo = self.private_repo("init-add")
-        self.wi_in(repo, self.SANDBOX_ROOT + ["init", "--track"])
+        self.wi_in(repo, self.SANDBOX_ROOT + ["init", "--track", OLD])
         self.wi_in(repo, ["add", "first item"])
         self.assertEqual((repo / ".gitignore").read_text(), self.GI)
         self.assert_store_trackable(repo)
@@ -4369,7 +4379,7 @@ class TestHostGitignoreUntouched(WiTestCase):
         # operator removed it and committed, then kept using wi
         repo = self.private_repo("removed", gi="*.pyc\n/.claude-sandbox/\n")
         # 'ignored' shape: untouched
-        self.wi_in(repo, self.SANDBOX_ROOT + ["init", "--track"])
+        self.wi_in(repo, self.SANDBOX_ROOT + ["init", "--track", OLD])
         self.assertEqual((repo / ".gitignore").read_text(),
                          "*.pyc\n/.claude-sandbox/\n")
         (repo / ".gitignore").write_text(self.GI)
@@ -4394,7 +4404,7 @@ class TestHostGitignoreUntouched(WiTestCase):
 
     def test_auto_resolves_the_old_store_with_notice(self):
         repo = self.private_repo("auto-old")
-        self.wi_in(repo, self.SANDBOX_ROOT + ["init", "--track"])
+        self.wi_in(repo, self.SANDBOX_ROOT + ["init", "--track", OLD])
         self.wi_in(repo, ["add", "first item"])
         prime = self.wi_in(repo, ["prime"])
         self.assertIn("wi: deprecated: store .claude-sandbox/work is at an "
@@ -4406,7 +4416,7 @@ class TestHostGitignoreUntouched(WiTestCase):
         # ignore; other commands still never touch the host .gitignore
         repo = self.private_repo("sidecar", gi="*.pyc\n")
         self.git(repo / ".claude-sandbox", "init", "-q")
-        out = self.wi_in(repo, self.SANDBOX_ROOT + ["init", "--track"])
+        out = self.wi_in(repo, self.SANDBOX_ROOT + ["init", "--track", OLD])
         self.assertIn("sidecar git", out)
         self.assertEqual((repo / ".gitignore").read_text(),
                          "*.pyc\n/.claude-sandbox/\n")
@@ -4455,7 +4465,8 @@ class TestStoreCustodyWarning(WiTestCase):
 
     def init_unrecorded(self):
         """A store as `wi init` made it before 39a2: no recorded choice."""
-        r = run(["init", "--track"], self.root, env=self.env)
+        r = run(["init", "--track", *allow(self.root)], self.root,
+                env=self.env)
         self.assertEqual(r.returncode, 0, r.stderr)
         (self.root / "store.yaml").unlink()
 
@@ -4841,7 +4852,7 @@ class TestInitTracking(unittest.TestCase):
         return repo, repo / ".work-items"
 
     def init(self, store, *flags, code=0):
-        r = run(["init", *flags], store, env=self.env)
+        r = run(["init", *flags, *allow(store)], store, env=self.env)
         self.assertEqual(r.returncode, code, r.stdout + r.stderr)
         return r
 
@@ -4954,7 +4965,7 @@ class TestInitTracking(unittest.TestCase):
                 mock.patch.dict(os.environ, self.env), \
                 contextlib.redirect_stdout(out), \
                 contextlib.redirect_stderr(io.StringIO()):
-            code = wi.main(["--root", str(store), "init"])
+            code = wi.main(["--root", str(store), "init", *allow(store)])
         self.assertEqual(code, 0)
         return out.getvalue()
 
@@ -5118,7 +5129,7 @@ class TestInitTracking(unittest.TestCase):
         self.assertNotIn("remove the ignore line", warn)
         self.assertNotIn("--no-track", warn)
         # re-init with --track settles it (an old location: the override)
-        self.init(store, "--track", "--allow-old-location")
+        self.init(store, "--track")
         prime, lint = self.prime_lint(store)
         self.assertNotIn("WARNING", "\n".join(prime))
         self.assertEqual(lint.returncode, 0, lint.stdout)
@@ -5136,7 +5147,7 @@ class TestInitTracking(unittest.TestCase):
                       ".claude-sandbox/", warn)
         # --track alone leaves the line: the tracked warning names it, and
         # never offers --no-track in a sidecar (an old location: the override)
-        self.init(store, "--track", "--allow-old-location")
+        self.init(store, "--track")
         prime, lint = self.prime_lint(store)
         self.assertIn("against its recorded choice", prime[1])
         self.assertIn("'/work/' in the sidecar repo", prime[1])
@@ -5151,7 +5162,7 @@ class TestInitTracking(unittest.TestCase):
         repo, store = self.sidecar("sc-note")
         self.init(store, "--track")
         (store / "store.yaml").unlink()
-        r = self.init(store, "--allow-old-location")
+        r = self.init(store)
         self.assertIn("has no recorded tracking choice; record one with "
                       "`wi init --track`", r.stderr)
         self.assertNotIn("--no-track", r.stderr)
@@ -5579,11 +5590,12 @@ class StoreLookupCase(unittest.TestCase):
         return d
 
     def store(self, base, rel, n_items=1, flag="--track", allow=False):
-        """A store at base/rel made the way wi makes one, with items;
-        allow passes the old-location override (d1e9 F3), for a store made
-        beside an old one on purpose."""
+        """A store at base/rel made the way wi makes one, with items. The
+        old-location override (d1e9 F3) goes with a store at an old
+        location, and with allow, for a store made beside one on purpose."""
+        old = wi.old_location(base / rel)
         self.wi_ok(["--root", rel, "init", flag]
-                   + (["--allow-old-location"] if allow else []), base)
+                   + ([OLD] if allow or old else []), base)
         for i in range(n_items):
             self.wi_ok(["--root", rel, "add", f"{rel} item {i}"], base)
         return base / rel
