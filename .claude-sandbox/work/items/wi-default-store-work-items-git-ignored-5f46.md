@@ -47,3 +47,7 @@ result: DONE F1 round 1 at aa37b2e9 (_env helper, notices only from prime/lint/i
 dispatch: reviewer opus high — fresh (rule 4), F1
 agent: reviewer af7353ff071081892 F1 round 1 at aa37b2e9
 verdict: CLEAR F1 round 1 at aa37b2e9 (nits: 'old name is set' wording in format.md:237-244 and SKILL.md:70; test_estate.py:469 env scrub — carried into F2's brief)
+landed: F1 locally bb9add15 (Checks 12/12 OK); push held until F1-F4 land (told claude-sandbox)
+target: an agent worktree off main (bb9add15); work-items wi.py, SKILL.md, format.md, work-review SKILL.md, README.md, tests
+dispatch: implementer opus medium — F2, .work-items/ default, lookup order, two-store check, init default, worktree guard, moving-a-store recipe
+agent: implementer aeaab9c573ce82b95 F2 round 1
