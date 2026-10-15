@@ -56,3 +56,7 @@ note: 2026-10-15T05:50Z a background commit security review flagged 'command-exe
 verdict: NEEDS_CHANGES F1 round 1 at 0582a34a (1 medium: git status recurses into a gitlink submodule and runs its clean filter from prime and lint; lows: ceiling with ':' in the parent path, GIT_*_PATHSPECS not scrubbed, read-only store lint traceback, case-insensitive attribute names; nit: prime wording; sweep: no shell, only two subprocess sites, host ls-files runs host fsmonitor (by spec; harden anyway); departures accepted, F1 never pushed without F2 and F3)
 dispatch: implementer opus high — resume, F1 fix round 1
 agent: implementer a00b3d4405bafe651 F1 round 2
+result: DONE F1 round 2 at f91ae111 (all seven applied; six new tests; seven mutations caught; 473 OK)
+dispatch: reviewer opus high — resume, F1 round 2
+agent: reviewer a399339a8327c6ba6 F1 round 2 at f91ae111
+note: 2026-10-15T06:26Z operator: checkpoint and compact as soon as this dev cycle (d1e9 F1 review) completes; no new dispatches after it
