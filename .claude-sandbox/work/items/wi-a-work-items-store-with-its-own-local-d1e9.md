@@ -95,3 +95,5 @@ verdict: NEEDS_CHANGES F3 round 1 at 8712bd83 (3 medium: a rule in the store's o
 decided: old-location ruling built as: refuse (exit 1, nothing written) when the root is an old location holding items/, or when an old location beside the root's repo top still holds items/; also on re-runs of init there; sidecar --track included (the operator's ruling names .claude-sandbox), 3c06 tests rewritten through the override; override works with every mode, rejected at .work-items/, never yields an own repo at an old location, not recorded (each init needs it; notices stay)
 dispatch: implementer opus high — resume, F3 fix round 1 + the operator's old-location ruling
 agent: implementer a56d080820c81b88a F3 round 2
+result: DONE F3 round 2 at 0bf03f96 (all 7 + the ruling; flag --allow-old-location; 587/106/762/21 OK; 39 mutants caught; choices: flag refused only where it overrides nothing; a new store at an old location (no items/) not refused)
+dispatch: reviewer opus high — resume, F3 round 2
