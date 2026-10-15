@@ -57,3 +57,9 @@ result: DONE F2 round 1 at aa6a228e (lookup order, old-location and two-store no
 dispatch: reviewer opus high — fresh (rule 4), F2
 agent: reviewer a0fba032061992e48 F2 round 1 at aa6a228e
 answer 232: a, in chat 2026-10-15 after the pitfalls were shown, verbatim (excerpt): "So, let's just stay the course and let the change land to create the embedded origin-free repo for .work-items and run the migration." (read as: (a) confirmed; claude-sandbox's 117 a and 118 a are confirmed here; the nested-repo support lands as a follow-up after F1-F4; this settles 229 (d), 230 (b) and 231)
+verdict: CLEAR F2 round 1 at aa6a228e (lows: worktree guard names the git dir when the common dir is not .git; no ignored-to-ignored move recipe, the migration's own case; recipes end with a bare lint; nits: GIT_CEILING_DIRECTORIES in one test, long lines)
+decided: 2026-10-15T03:57Z cap — lows and nits with exact fixes: one finish round, read by the librarian (authority answer 145)
+dispatch: implementer opus medium — resume, F2 finish round
+agent: implementer aeaab9c573ce82b95 F2 round 2 (finish)
+result: DONE F2 finish at cc3a4f64 (all five exact; read by the librarian)
+verdict: CLEAR F2 after 0 fix rounds, 1 finish at cc3a4f64
