@@ -43,3 +43,4 @@ dispatch: planner opus high — resume, plan fix round 3 (exact fixes given)
 agent: planner a17fe67421b5a97f3 round 4
 return: planner DONE (03_review-round-3.md; H-L applied; N8 (b) fixed mapping HOME/PWD/TMPDIR/OLDPWD from the hook env)
 dispatch: reviewer opus high — resume, plan review round 4
+agent: reviewer afdc46fe247e2b56b plan round 4
