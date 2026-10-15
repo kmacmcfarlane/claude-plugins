@@ -377,8 +377,17 @@ broken when it holds a nested repo, since git recursing into one reads that repo
 unpinned config and attributes: a `.git` anywhere below the store's root, or a gitlink (mode
 160000) in its index, with the reason "`<path>` is a nested git repo or gitlink; remove it".
 Every runner call that compares the work tree (`status`, and `wi commit`'s `diff --cached`)
-also passes `--ignore-submodules=all`. A dedicated store keeps its attributes: its repo's
-rules are the user's.
+also passes `--ignore-submodules=all`. Such a store is broken, too, when its git config
+(read through the runner with `config --get-regexp`) sets `extensions.partialClone` or any
+`remote.<name>.promisor`, with the reason "the store's git config sets `<key>` (a lazy fetch
+from a promisor remote can run commands); remove it": a missing object would be fetched
+from that remote, running the `uploadpack` or ssh command the config names. The runner also
+sets `GIT_NO_LAZY_FETCH=1`; the refusal covers a git that does not read it. A dedicated
+store keeps its attributes and its config: its repo's rules are the user's.
+
+Which repo is around the store is asked from the store's parent; when git does not answer,
+or fails other than with "not a git repository", the store reads as git missing (every check
+silent, `wi commit` exit 3), never as a store with no repo around it.
 
 **The store runner.** Every git call that acts in a store with its own `.git` (validation,
 the custody check's `check-ignore` and `ls-files`, `git config user.name` for the claimant,
@@ -394,25 +403,29 @@ reads (is the store ignored, does the host track it) use plain git, since they r
   `GIT_OBJECT_DIRECTORY`, `GIT_ALTERNATE_OBJECT_DIRECTORIES`, `GIT_COMMON_DIR`,
   `GIT_NAMESPACE`, `GIT_PREFIX` and `GIT_ATTR_SOURCE` (a host hook that calls `wi` has them
   set to the host's), and with `GIT_CEILING_DIRECTORIES` the store's real parent,
-  `GIT_ATTR_NOSYSTEM=1`, `GIT_OPTIONAL_LOCKS=0`, `GIT_TERMINAL_PROMPT=0`, `LC_ALL=C`, and
+  `GIT_ATTR_NOSYSTEM=1`, `GIT_NO_LAZY_FETCH=1`, `GIT_OPTIONAL_LOCKS=0`,
+  `GIT_TERMINAL_PROMPT=0`, `LC_ALL=C`, and
   `GIT_LITERAL_PATHSPECS=1` for every call but `check-ignore`, which refuses it.
   `GIT_AUTHOR_*`, `GIT_COMMITTER_*`, `GIT_CONFIG_GLOBAL` and `GIT_CONFIG_NOSYSTEM` pass
   through.
-- So no hook, fsmonitor, signing program, background gc or global or system attributes file
-  runs, and a clean filter can be selected only by a store attribute file or a nested repo,
-  either of which makes the store broken.
+- So no hook, fsmonitor, signing program, background gc, lazy fetch or global or system
+  attributes file runs, and a clean filter can be selected only by a store attribute file or
+  a nested repo, either of which makes the store broken.
 - A store whose parent path holds `:` (the path-list separator) would split the ceiling, so
   the runner does not run there: the store reads as git missing, and every check is silent.
 
-**Pathspecs.** A store path goes into a git pathspec only when it exists on disk or the
-store's index lists it (a removal to stage): git fails on a pathspec that matches nothing.
-The store's own paths are `items`, `archive`, `README.md`, `store.yaml` and `.gitignore`.
+**Pathspecs.** A store path goes into a git pathspec only when git can match it: one
+`ls-files -z -c -o --exclude-standard` call over the candidates lists something under it,
+in the index (a removal to stage included) or untracked and not ignored. git fails on a
+pathspec that matches nothing, which an empty directory does (an `items/` whose items were
+all archived). When git cannot list, the paths on disk are used. The store's own paths are
+`items`, `archive`, `README.md`, `store.yaml` and `.gitignore`.
 
 **What `prime` and `lint` report.** Problems are a `prime` header line and a `lint` problem
 (exit 3); notices are a `prime` header line and a `lint` stderr line, exit unchanged.
 `prime` shows at most one of these lines, the first in this order. It runs no host or remote
-read, takes no lock, and makes at most five short git reads (validation, host lookup,
-attribute and pathspec listings, one `status`).
+read, takes no lock, and makes at most six short git reads (validation, host lookup, the
+promisor config read, attribute and pathspec listings, one `status`).
 
 | Check | When | Tier | Fix named |
 |---|---|---|---|
@@ -444,16 +457,19 @@ before the lock is taken.
 | Store | What `wi commit` does | Exit |
 |---|---|---|
 | own | Through the store runner: `add -A`, then `diff --cached --quiet` (no change: no commit), then `commit -q -m <message>`, all sharing one 5 s deadline. An `index.lock` conflict (another git process in the store) is retried three times, 0.2 s apart; `index.lock` is never deleted. With no git identity (`git var GIT_AUTHOR_IDENT` or `GIT_COMMITTER_IDENT` fails) it commits as `wi <wi@localhost>`, written to no config; `GIT_AUTHOR_*` and `GIT_COMMITTER_*`, when set, still win. After a commit, once the lock is released, `git gc --auto` runs in the foreground, bounded at 60 s, at git's default threshold (the runner pins `gc.auto=0` for every other call). | 0; 3 when git fails |
-| tracked by the repo that holds it: a host or sidecar repo, or a dedicated store's own repo | The same steps on the same paths with plain git: that repo's hooks and signing are its own rules, never bypassed. No prompt, 60 s a call; the lock is held that long, so another `wi` waiting on it may exit 4 after its 10 s. | 0; 3 on a failure, a hook's refusal included |
+| tracked by the repo that holds it: a host or sidecar repo, or a dedicated store's own repo | The same steps on the same paths with plain git: that repo's hooks and signing are its own rules, never bypassed. The caller's `GIT_*` steering (the runner's scrubbed names, and `GIT_LITERAL_PATHSPECS`) is dropped, here and in the ignore check. No prompt, 60 s a call; the lock is held that long, so another `wi` waiting on it may exit 4 after its 10 s. | 0; 3 on a failure, a hook's refusal included |
 | ignored by the repo that holds it (`git check-ignore` on the store's directory exits 0), or recorded `tracking: ignored` | Prints `nothing to commit: <root> is git-ignored by <repo>` (or `… is recorded git-ignored …`). | 0 |
-| outside git, or git not found | Prints `nothing to commit: <root> is in no git repo` (adding `(git not found)`). | 0 |
+| outside git; or git not found, for a store with no `.git` and no `repo: own` | Prints `nothing to commit: <root> is in no git repo` (adding `(git not found)`). | 0 |
+| git not found, for a store with a `.git` or `repo: own` | `not committed: git not found`: its changes stay uncommitted. | 3 |
+| git did not answer (validation, or which repo is around the store) | `not committed: git did not answer …`. | 3 |
 | own, unrecorded | Refuses: "`<root>` is its own git repo, not set up by wi: `wi init --no-track` adopts it". | 1 |
 | own, missing; broken; a `.git` at an old location | Refuses with the reason `lint` gives. | 1 |
 
 - **Output.** `committed <short sha>`, or `nothing to commit`. A failure is one stderr line,
   `wi: store <root> not committed: <why>`: git's first error line (200 characters at most),
   or `timed out`, which for a killed git call adds "if `<git-dir>/index.lock` is left,
-  remove it only when no git process runs in the store".
+  remove it only when no git process runs in the store" (for a tracked store, the git dir
+  and the repo that holds it).
 - **The message** is the caller's (`chore: work-item store - …` stays as it is); without
   `-m` it is `wi commit: outstanding changes`. The secret rule applies to it: a message
   `lint` would flag as a secret is refused, exit 1, never quoted, nothing committed, as

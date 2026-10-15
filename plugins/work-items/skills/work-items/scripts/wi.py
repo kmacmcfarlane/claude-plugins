@@ -1117,15 +1117,17 @@ UNTRACKED_MIN_ITEMS = 10
 PROBE_ITEM = "items/wi-custody-probe-0000.md"   # a new item's would-be path
 
 
-def _git(cwd, *args, stdin=None, timeout=GIT_TIMEOUT, extra_env=None):
+def _git(cwd, *args, stdin=None, timeout=GIT_TIMEOUT, extra_env=None,
+         scrub=()):
     """Run git; None when it is missing, the cwd is gone, or it times out.
     Output is decoded here, not by subprocess: -z output is raw bytes (no
     quotePath), and a non-UTF-8 path must neither crash nor depend on the
     locale; backslashreplace shows such a byte readably, as \\xe9.
-    timeout and extra_env serve `wi commit` in a store its host or sidecar
-    repo tracks, whose hooks get longer than a read (d1e9 D5)."""
-    env = {k: v for k, v in os.environ.items()
-           if k not in ("GIT_DIR", "GIT_WORK_TREE", "GIT_INDEX_FILE")}
+    timeout, extra_env and scrub (more names to drop from the env) serve
+    `wi commit` in a store its host or sidecar repo tracks, whose hooks get
+    longer than a read (d1e9 D5)."""
+    drop = {"GIT_DIR", "GIT_WORK_TREE", "GIT_INDEX_FILE", *scrub}
+    env = {k: v for k, v in os.environ.items() if k not in drop}
     env.update(extra_env or {})
     try:
         r = subprocess.run(["git"] + list(args), cwd=cwd, env=env,
@@ -1414,9 +1416,11 @@ def _store_git(root, *args, timeout=STORE_GIT_TIMEOUT, stdin=None):
     if os.pathsep in os.path.dirname(real):
         return None
     env = {k: v for k, v in os.environ.items() if k not in STORE_GIT_SCRUB}
+    # GIT_NO_LAZY_FETCH: a missing object never fetches from a promisor
+    # remote, whose uploadpack or ssh command the store's config could name
     env.update(GIT_CEILING_DIRECTORIES=os.path.dirname(real),
                GIT_OPTIONAL_LOCKS="0", GIT_TERMINAL_PROMPT="0",
-               GIT_ATTR_NOSYSTEM="1", LC_ALL="C")
+               GIT_ATTR_NOSYSTEM="1", GIT_NO_LAZY_FETCH="1", LC_ALL="C")
     if args[:1] == ("check-ignore",):
         env.pop("GIT_LITERAL_PATHSPECS", None)
     else:
@@ -1483,6 +1487,9 @@ def _validate_store_git(root):
 ATTR_REASON = ("{} selects git attributes (a filter there can run "
                "commands); remove it")
 NESTED_REASON = "{} is a nested git repo or gitlink; remove it"
+PROMISOR_KEYS = r"^(extensions\.partialclone|remote\..*\.promisor)$"
+PROMISOR_REASON = ("the store's git config sets {} (a lazy fetch from a "
+                   "promisor remote can run commands); remove it")
 
 
 def _unsafe_path(root, git_dir, common_dir):
@@ -1510,6 +1517,14 @@ def _unsafe_path(root, git_dir, common_dir):
         p = os.path.join(d, "info", "attributes")
         if os.path.lexists(p):
             return ATTR_REASON.format(os.path.relpath(p, real))
+    # a promisor remote fetches a missing object lazily, running whatever
+    # uploadpack or ssh command the config names; the runner sets
+    # GIT_NO_LAZY_FETCH, and this refuses the shape for a git that may not
+    # read it. Key names print lowercased; a remote's name keeps its case.
+    r = _store_git(root, "config", "--get-regexp", PROMISOR_KEYS,
+                   timeout=GIT_TIMEOUT)
+    if r is not None and r.returncode == 0 and r.stdout.strip():
+        return PROMISOR_REASON.format(r.stdout.split()[0])
     r = _store_git(root, "ls-files", "-s", "-z", timeout=GIT_TIMEOUT)
     if r is not None and r.returncode == 0:
         for rec in r.stdout.split("\0"):
@@ -1523,14 +1538,24 @@ def _unsafe_path(root, git_dir, common_dir):
     return None
 
 
+HOST_UNKNOWN = object()   # git did not say whether a repo is around
+
+
 def _host_repo(root):
     """The top of the git repo around the store, asked from the store's real
     parent, so a store that is its own repo still finds its host; None
-    outside git or when git cannot say. A host read: plain _git."""
+    outside git (git says "not a git repository"); HOST_UNKNOWN when git
+    did not answer or failed otherwise, so a store is never taken for one
+    with no host on a timeout. A host read: plain _git, in the C locale."""
     parent = os.path.dirname(os.path.realpath(root))
-    r = _git(parent, "rev-parse", "--show-toplevel")
-    if r is None or r.returncode != 0 or not r.stdout.strip():
-        return None
+    r = _git(parent, "rev-parse", "--show-toplevel",
+             extra_env={"LC_ALL": "C"})
+    if r is None:
+        return HOST_UNKNOWN
+    if r.returncode != 0:
+        return None if "not a git repository" in r.stderr else HOST_UNKNOWN
+    if not r.stdout.strip():
+        return HOST_UNKNOWN
     return Path(r.stdout.strip())
 
 
@@ -1549,6 +1574,8 @@ def store_repo_state(root):
     if git_dir is None:
         return StoreRepo("unknown")
     host = _host_repo(root)
+    if host is HOST_UNKNOWN:
+        return StoreRepo("unknown")
     if not own and host is None:
         # a dedicated repo keeps its attributes: its rules are the user's
         return StoreRepo("dedicated", git_dir=git_dir, common_dir=common)
@@ -1568,22 +1595,22 @@ def _kept_by_listing(candidates, listed):
 
 
 def existing_paths(root, candidates, git=None):
-    """The candidates that exist on disk, or that the store's index still
-    holds (a removal to stage), in order (d1e9 D4'). A pathspec naming
-    neither makes `add` and `commit` exit 128. One ls-files call, for the
-    candidates not on disk, through `git(*args)`: the store runner by
-    default; `wi commit` passes its own (a deadline, or the host's git)."""
+    """The candidates git can match, in order (d1e9 D4'): one the index
+    holds something under (a removal to stage included), or one with an
+    untracked file under it that is not ignored. A pathspec matching
+    neither makes `add` and `commit` fail, and an empty directory (an
+    `items/` whose items were all archived) matches nothing. One
+    `ls-files -c -o --exclude-standard` call, through `git(*args)`: the
+    store runner by default; `wi commit` passes its own (a deadline, or the
+    host's git). When git cannot list, the candidates on disk."""
     if git is None:
         def git(*args):
             return _store_git(root, *args, timeout=GIT_TIMEOUT)
-    on_disk = {c for c in candidates if os.path.lexists(Path(root) / c)}
-    rest = [c for c in candidates if c not in on_disk]
-    kept = set()
-    if rest:
-        r = git("ls-files", "-z", "--", *rest)
-        if r is not None and r.returncode == 0:
-            kept = set(_kept_by_listing(rest, r.stdout.split("\0")))
-    return [c for c in candidates if c in on_disk or c in kept]
+    r = git("ls-files", "-z", "-c", "-o", "--exclude-standard", "--",
+            *candidates)
+    if r is None or r.returncode != 0:
+        return [c for c in candidates if os.path.lexists(Path(root) / c)]
+    return _kept_by_listing(candidates, r.stdout.split("\0"))
 
 
 def _age(seconds):
@@ -1771,16 +1798,29 @@ def _own_runner(root, rs):
     return run
 
 
-def _tracked_runner(root):
-    """`run(*args)` for a store its host or sidecar repo tracks: plain _git
-    (that repo's hooks and signing are its own rules, never bypassed), no
-    prompt, 60 s a call."""
+# a caller's env (a host hook's GIT_COMMON_DIR, a shell's pathspec magic)
+# never steers a tracked store's commit or ignore check to other files
+TRACKED_SCRUB = STORE_GIT_SCRUB | {"GIT_LITERAL_PATHSPECS"}
+
+
+def _tracked_runner(root, repo):
+    """`run(*args)` for a store its host or sidecar repo `repo` tracks:
+    plain _git (that repo's hooks and signing are its own rules, never
+    bypassed), the caller's GIT_* steering scrubbed, no prompt, 60 s a
+    call."""
     def run(*args):
         r = _git(root, *args, timeout=TRACKED_COMMIT_TIMEOUT,
-                 extra_env={"GIT_TERMINAL_PROMPT": "0"})
+                 extra_env={"GIT_TERMINAL_PROMPT": "0"}, scrub=TRACKED_SCRUB)
         if r is None:
-            raise CommitFailed("git not found" if shutil.which("git") is None
-                               else "timed out")
+            if shutil.which("git") is None:
+                raise CommitFailed("git not found")
+            d = _git(root, "rev-parse", "--absolute-git-dir",
+                     scrub=TRACKED_SCRUB)
+            gd = (d.stdout.strip() if d is not None and d.returncode == 0
+                  and d.stdout.strip() else os.path.join(repo, ".git"))
+            lock = os.path.join(gd, "index.lock")
+            raise CommitFailed(f"timed out; if {lock} is left, remove it "
+                               f"only when no git process runs in {repo}")
         return r
     return run
 
@@ -1851,7 +1891,7 @@ def _store_ignored(root, repo):
     (`check-ignore` on the store's directory, as the old hand rule asked);
     raises CommitFailed when git cannot say."""
     real = os.path.realpath(root)
-    r = _git(real, "check-ignore", "-q", real)
+    r = _git(real, "check-ignore", "-q", real, scrub=TRACKED_SCRUB)
     if r is None or r.returncode not in (0, 1):
         why = "git did not answer" if r is None else _why(r)
         raise CommitFailed(f"cannot tell whether {repo} ignores the store: "
@@ -1887,6 +1927,9 @@ def cmd_commit(args):
                          "and re-run; nothing committed")
     root = resolve_root(args.root)
     if shutil.which("git") is None:
+        if os.path.lexists(root / ".git") or read_repo_own(root):
+            # a store with history of its own: its changes stay uncommitted
+            raise WiError(3, f"store {root} not committed: git not found")
         print(f"nothing to commit: {root} is in no git repo (git not found)")
         return 0
     rs = store_repo_state(root)
@@ -1899,7 +1942,8 @@ def cmd_commit(args):
             if sha:
                 _gc_after_commit(root)
         elif rs.state in ("plain", "dedicated"):
-            repo = root if rs.state == "dedicated" else _store_repo(root)
+            repo = (root if rs.state == "dedicated"
+                    else _store_repo(root, scrub=TRACKED_SCRUB))
             if repo is None:
                 print(f"nothing to commit: {root} is in no git repo")
                 return 0
@@ -1911,7 +1955,8 @@ def cmd_commit(args):
                 print(f"nothing to commit: {root} is git-ignored by {repo}")
                 return 0
             with Lock(root):
-                sha = _commit_own_paths(root, _tracked_runner(root), message)
+                sha = _commit_own_paths(root, _tracked_runner(root, repo),
+                                        message)
         elif rs.state == "unknown":
             raise CommitFailed("git did not answer in the store's repo")
         else:
@@ -2382,13 +2427,14 @@ def choose_tracking(inp, out, sidecar=False):
         out.write(f"not a choice: {line.strip()!r}\n")
 
 
-def _store_repo(root):
+def _store_repo(root, scrub=()):
     """The top of the git repo that holds the store, or None outside git.
-    A sidecar store's repo is .claude-sandbox/ itself."""
+    A sidecar store's repo is .claude-sandbox/ itself. scrub: more GIT_*
+    names to drop (`wi commit` drops the caller's steering)."""
     shape, _ = sandbox_shape(root)
     if shape == "sidecar":
         return root.absolute().parent
-    r = _git(root, "rev-parse", "--show-toplevel")
+    r = _git(root, "rev-parse", "--show-toplevel", scrub=scrub)
     if r is None or r.returncode != 0 or not r.stdout.strip():
         return None
     return Path(r.stdout.strip())

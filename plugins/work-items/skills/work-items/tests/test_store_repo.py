@@ -531,6 +531,7 @@ class TestRunner(StoreRepoCase):
         self.assertEqual(argv[-1], "status")
         self.assertEqual(env["GIT_CEILING_DIRECTORIES"], str(store.parent))
         self.assertEqual(env["GIT_ATTR_NOSYSTEM"], "1")
+        self.assertEqual(env["GIT_NO_LAZY_FETCH"], "1")
         self.assertEqual(env["GIT_OPTIONAL_LOCKS"], "0")
         self.assertEqual(env["LC_ALL"], "C")
         self.assertEqual(env["GIT_LITERAL_PATHSPECS"], "1")
@@ -602,6 +603,55 @@ class TestNestedRepo(StoreRepoCase):
         self.assertEqual(rs.state, "broken")
         self.assertIn("items/.GitAttributes selects git attributes",
                       rs.reason)
+
+
+class TestLazyFetch(StoreRepoCase):
+    """F2 review round 1: a promisor remote fetches a missing object lazily,
+    running the uploadpack (or ssh command) the store's config names."""
+
+    def promisor_store(self, key="remote.origin.promisor", value="true"):
+        store = self.make_own()
+        tree = self.git(store, "rev-parse", "HEAD^{tree}").stdout.strip()
+        (store / ".git" / "objects" / tree[:2] / tree[2:]).unlink()
+        self.git(store, "config", "remote.origin.url",
+                 str(self.tmp / "nowhere"))
+        self.git(store, "config", "remote.origin.uploadpack",
+                 str(self.marker("uploadpack")))
+        if key.startswith("extensions."):
+            self.git(store, "config", "core.repositoryformatversion", "1")
+        self.git(store, "config", key, value)
+        # control: plain git fetches the missing tree, running the script
+        self.git(store, "status", "--porcelain", check=False)
+        self.assertIn("uploadpack", self.marked())
+        self.clear_marks()
+        return store
+
+    def test_runner_never_fetches_lazily(self):
+        store = self.promisor_store()
+        wi._store_git(store, "status", "--porcelain")
+        wi._store_git(store, "cat-file", "-p", "HEAD^{tree}")
+        self.assertEqual(self.marked(), [])
+
+    def test_promisor_remote_is_broken(self):
+        store = self.promisor_store()
+        self.assertIn("sets remote.origin.promisor", self.state(store).reason)
+        r = self.wi(["lint"], store)
+        self.assertEqual(r.returncode, 3, r.stdout + r.stderr)
+        self.assertIn("a lazy fetch from a promisor remote can run commands",
+                      r.stdout)
+        r = self.wi(["commit", "-m", "x"], store)
+        self.assertEqual(r.returncode, 1, r.stdout + r.stderr)
+        self.assertIn("sets remote.origin.promisor", r.stderr)
+        self.wi(["prime"], store)
+        self.assertEqual(self.marked(), [])
+
+    def test_partial_clone_extension_is_broken(self):
+        store = self.promisor_store("extensions.partialClone", "origin")
+        self.assertIn("sets extensions.partialclone",
+                      self.state(store).reason)
+        r = self.wi(["commit", "-m", "x"], store)
+        self.assertEqual(r.returncode, 1, r.stdout + r.stderr)
+        self.assertEqual(self.marked(), [])
 
 
 class TestEdges(StoreRepoCase):
@@ -1266,12 +1316,155 @@ class TestCommit(StoreRepoCase):
                          f"nothing to commit: {store} is in no git repo\n")
 
     def test_git_missing(self):
-        store = self.make_own()
-        self.edit(store)
         empty = self.tmp / "nobin"
         empty.mkdir()
-        r = self.commit(store, env={"PATH": str(empty)})
+        # a store with history of its own: its changes stay uncommitted
+        store = self.make_own()
+        self.edit(store)
+        r = self.commit(store, code=3, env={"PATH": str(empty)})
+        self.assertIn(f"store {store} not committed: git not found",
+                      r.stderr)
+        # recorded own, its .git gone: the same
+        shutil.rmtree(store / ".git")
+        self.commit(store, code=3, env={"PATH": str(empty)})
+        # any other store: nothing to commit
+        plain = self.tmp / "loose" / ".work-items"
+        self.store_files(plain, own=False)
+        r = self.commit(plain, env={"PATH": str(empty)})
         self.assertIn("is in no git repo (git not found)", r.stdout)
+
+    # -- review round 1 ------------------------------------------------------
+
+    def test_empty_items_in_own_store_commits(self):
+        # every item archived: items/ is an empty directory
+        store = self.make_own()
+        (store / "archive" / "2026").mkdir(parents=True)
+        (store / "items" / "one-aaaa.md").rename(
+            store / "archive" / "2026" / "one-aaaa.md")
+        r = self.commit(store, "-m", self.MSG)
+        self.assertTrue(r.stdout.startswith("committed "), r.stdout)
+        self.assertEqual(self.git(store, "show", "--name-status",
+                                  "--format=", "HEAD").stdout.split()[0][0],
+                         "R")
+        self.assertEqual(self.commit(store).stdout, "nothing to commit\n")
+
+    def test_own_store_with_no_commit_yet_and_empty_items(self):
+        store = self.tmp / "host" / ".work-items"
+        self.make_host()
+        self.store_files(store, items=())
+        self.git(store, "init", "-q", "--template=")
+        r = self.commit(store, "-m", self.MSG)
+        self.assertTrue(r.stdout.startswith("committed "), r.stdout)
+        self.assertEqual(sorted(self.files_in_head(store)),
+                         [".gitignore", "README.md", "store.yaml"])
+
+    def test_host_tracked_store_with_empty_items(self):
+        host = self.make_host(ignore=False)
+        store = host / ".work-items"
+        self.store_files(store, own=False, items=())
+        self.git(host, "add", "-A")
+        self.git(host, "commit", "-q", "-m", "store")
+        (store / "README.md").write_text("# Work items\nedited\n")
+        r = self.commit(store, "-m", self.MSG, env=self.IDENT)
+        self.assertTrue(r.stdout.startswith("committed "), r.stdout)
+        self.assertEqual(self.files_in_head(host), [".work-items/README.md"])
+
+    def test_existing_paths_drops_empty_and_ignored_only(self):
+        store = self.make_own()
+        (store / "archive").mkdir()                       # empty
+        (store / "items" / "one-aaaa.md").unlink()        # a removal
+        self.assertEqual(wi.existing_paths(store, wi.OWN_PATHS),
+                         ["items", "README.md", "store.yaml", ".gitignore"])
+        self.git(store, "add", "-A")
+        self.git(store, "commit", "-q", "-m", "gone")
+        (store / "items" / "x.md.tmp1").write_text("tmp\n")   # ignored
+        self.assertNotIn("items", wi.existing_paths(store, wi.OWN_PATHS))
+
+    def test_unanswered_host_lookup_is_unknown_and_refused(self):
+        # an unrecorded own repo is never taken for a dedicated one, whose
+        # commit runs plain git (its hooks), when git did not answer
+        store = self.make_own(own=False)
+        hook = store / ".git" / "hooks" / "pre-commit"
+        hook.parent.mkdir(exist_ok=True)
+        shutil.copy(self.marker("store-pre-commit"), hook)
+        self.edit(store)
+        before = self.subjects(store)
+        real = wi._git
+
+        def slow(cwd, *args, **kw):
+            if args[:2] == ("rev-parse", "--show-toplevel"):
+                return None
+            return real(cwd, *args, **kw)
+
+        with mock.patch.object(wi, "_git", slow):
+            self.assertEqual(self.state(store).state, "unknown")
+            code, out, err = self.run_main(store, "-m", self.MSG)
+        self.assertEqual(code, 3, out + err)
+        self.assertIn("git did not answer", err)
+        self.assertEqual(self.subjects(store), before)
+        self.assertEqual(self.marked(), [])
+
+    def test_host_lookup_failing_otherwise_is_unknown(self):
+        store = self.make_own(own=False)
+        real = wi._git
+
+        def broken(cwd, *args, **kw):
+            if args[:2] == ("rev-parse", "--show-toplevel"):
+                return subprocess.CompletedProcess(
+                    args, 128, "", "fatal: unsafe repository\n")
+            return real(cwd, *args, **kw)
+
+        with mock.patch.object(wi, "_git", broken):
+            self.assertEqual(self.state(store).state, "unknown")
+        # outside any repo, git says so: no host, a dedicated store
+        self.assertEqual(
+            self.state(self.make_own(host=False, own=False)).state,
+            "dedicated")
+
+    IDENT = {"GIT_AUTHOR_NAME": "t", "GIT_AUTHOR_EMAIL": "t@t",
+             "GIT_COMMITTER_NAME": "t", "GIT_COMMITTER_EMAIL": "t@t"}
+
+    def test_tracked_commit_ignores_the_callers_git_steering(self):
+        host = self.make_host(ignore=False)
+        store = host / ".work-items"
+        self.store_files(store, own=False)
+        self.git(host, "add", "-A")
+        self.git(host, "commit", "-q", "-m", "store")
+        self.edit(store)
+        elsewhere = self.tmp / "elsewhere-objects"
+        elsewhere.mkdir()
+        env = dict(self.IDENT, GIT_LITERAL_PATHSPECS="1",
+                   GIT_OBJECT_DIRECTORY=str(elsewhere),
+                   GIT_COMMON_DIR=str(self.tmp / "no-such-common"))
+        r = self.commit(store, "-m", self.MSG, env=env)
+        self.assertTrue(r.stdout.startswith("committed "), r.stdout)
+        self.assertEqual(self.subjects(host)[0], self.MSG)
+        self.assertEqual(list(elsewhere.iterdir()), [])
+        self.git(host, "cat-file", "-e", "HEAD^{tree}")
+        # an ignored store is still read as ignored under that env
+        ignored = self.make_host(name="ign") / ".work-items"
+        self.store_files(ignored, own=False)
+        r = self.commit(ignored, env={"GIT_LITERAL_PATHSPECS": "1"})
+        self.assertIn("is git-ignored by", r.stdout)
+
+    def test_tracked_timeout_names_the_repos_index_lock(self):
+        host = self.make_host(ignore=False)
+        store = host / ".work-items"
+        self.store_files(store, own=False)
+        self.git(host, "add", "-A")
+        self.git(host, "commit", "-q", "-m", "store")
+        self.edit(store)
+        real = wi._git
+
+        def killed(cwd, *args, **kw):
+            return None if "commit" in args else real(cwd, *args, **kw)
+
+        with mock.patch.object(wi, "_git", killed):
+            code, out, err = self.run_main(store, "-m", self.MSG)
+        self.assertEqual(code, 3, out + err)
+        self.assertIn(f"timed out; if {host / '.git' / 'index.lock'} is "
+                      f"left, remove it only when no git process runs in "
+                      f"{host}", err)
 
     # -- the message ---------------------------------------------------------
 
