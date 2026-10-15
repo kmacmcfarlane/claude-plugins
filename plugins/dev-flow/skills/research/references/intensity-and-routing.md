@@ -585,8 +585,9 @@ the new one.
   line on an item does (the `dev-cycle` skill's spend check), so a named item's owner sees
   the research it asked for in its next `cost:` line.
 - **The item file is the run's one write in the repo besides its destination** (and is
-  tracked only when the store is). The run never commits it; the report's `LANDED` names it
-  (`item <id>`; `chain-of-verification`: its `Record:` line).
+  tracked only when the store is). The run never commits it; in a store that is its own
+  repo, `wi` commits each write itself. The report's `LANDED` names it (`item <id>`;
+  `chain-of-verification`: its `Record:` line).
 
 ## Recording
 

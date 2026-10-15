@@ -58,8 +58,9 @@ Also observed:
 - **Git run inside a plain store acts on the host repo** (`git rev-parse --show-toplevel`
   prints the host's root), and `git clean -fdx .` from inside it empties the store.
 - **Inside an own-repo store**, `git reset --hard` reverts an uncommitted item edit and
-  `git clean -fd` deletes an uncommitted new item. Until wi commits into the store, every
-  item changed since the store's last commit is uncommitted.
+  `git clean -fd` deletes an uncommitted new item. `wi` commits each change it makes there,
+  so what is uncommitted is a hand edit, or a change whose commit failed (a
+  `wi: WARNING store not committed` line).
 - **`rm -r`** of the store, its repo root or a directory above it has no undo.
 
 Harm: a deletion by `git clean` or `rm` is total (no undo; restore a backup). A stash move
@@ -125,6 +126,10 @@ made there restarts decision numbering.
   `git var GIT_AUTHOR_IDENT` fails, which is exactly when a plain commit would fail.
 - **No git:** the item write still lands (wi needs no git to write). Report "store not
   committed", and leave the commit to a session that has git.
+- **A write's own commit fails** (an own-repo store; `wi: WARNING store not committed:
+  <why>`, the command's exit code unchanged): the change is saved. Never repeat the
+  command, which would apply it twice; run `$WI commit` once the cause (an `index.lock`, a
+  timeout) is gone.
 
 ## Secrets in the store's history
 

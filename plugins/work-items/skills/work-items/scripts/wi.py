@@ -1365,27 +1365,62 @@ def _custody_body(root):
 
 
 class Lock:
-    """flock on <root>/.lock; 10s wait then exit 4."""
+    """flock on <root>/.lock; 10s wait then exit 4.
 
-    def __init__(self, root, timeout=10.0):
+    d1e9 F5: a write command's lock also commits what the command wrote.
+    With `commit` (the default), a store recording `repo: own` has its repo
+    validated before the flock is taken; every file written under the lock
+    is journalled (_journal_write), and __exit__ commits the journal's own
+    paths into the store's repo before it releases the flock, also when the
+    block raised after some writes. The commit never raises: a failure is
+    one stderr warning and the write stands. A store without `repo: own`
+    costs one read of store.yaml and runs no git. `commit=False` is for a
+    lock that writes nothing (lint's check, `wi commit`) or commits by
+    itself (`init`), and for a dry run, which writes nothing."""
+
+    def __init__(self, root, timeout=10.0, *, commit=True):
+        self.root, self.commit = root, commit
         self.path, self.timeout, self.fh = root / ".lock", timeout, None
+        self.repo = None
 
     def __enter__(self):
+        # validation before the lock (d1e9 D4''): no git runs while it is held
+        self.repo = _per_change_state(self.root) if self.commit else None
         self.fh = open(self.path, "a")
         deadline = time.monotonic() + self.timeout
         while True:
             try:
                 fcntl.flock(self.fh, fcntl.LOCK_EX | fcntl.LOCK_NB)
-                return self
+                break
             except OSError:
                 if time.monotonic() >= deadline:
                     self.fh.close()
                     raise WiError(4, "lock timeout on " + str(self.path))
                 time.sleep(0.05)
+        _JOURNAL.clear()
+        return self
 
     def __exit__(self, *exc):
-        fcntl.flock(self.fh, fcntl.LOCK_UN)
-        self.fh.close()
+        try:
+            if self.repo is not None:
+                _commit_journal(self.root, self.repo)
+        finally:
+            _JOURNAL.clear()
+            fcntl.flock(self.fh, fcntl.LOCK_UN)
+            self.fh.close()
+
+
+# d1e9 F5: what a write command wrote, for its lock to commit. Paths as
+# written (absolute or relative to the cwd); only those under the locked
+# store, among its own paths, are committed. A process holds one lock at a
+# time, and each lock starts the journal empty.
+_JOURNAL = []
+# the subcommand being run (main sets it): the <verb> of a commit message
+_COMMAND = ["write"]
+
+
+def _journal_write(path):
+    _JOURNAL.append(Path(path))
 
 
 # d1e9: a store that is its own git repo (.work-items/.git), recorded
@@ -1709,7 +1744,7 @@ def store_repo_checks(root, rs, full=True):
     if rs.state == "own":
         if full:
             try:
-                with Lock(Path(root), timeout=2.0):
+                with Lock(Path(root), timeout=2.0, commit=False):
                     n = _uncommitted(root)
             except (WiError, OSError) as e:
                 # busy, or the lock file cannot be opened (a read-only store)
@@ -1901,13 +1936,15 @@ def _retrying(run, *args):
     return r
 
 
-def _commit_own_paths(root, run, message, ident=()):
-    """Stage and commit the store's own paths that exist (d1e9 D4 steps 2-5,
-    D4'): `add -A`, `diff --cached --quiet`, `commit -- <paths>`, all on one
-    pathspec, so a file staged by hand outside it stays staged and out of
-    the commit. The short sha, or None when nothing changed. Raises
+def _commit_own_paths(root, run, message, ident=(), candidates=OWN_PATHS,
+                      sha=True):
+    """Stage and commit the candidates git can match (d1e9 D4 steps 2-5,
+    D4'): the store's own paths, or a write's journal (F5). `add -A`,
+    `diff --cached --quiet`, `commit -- <paths>`, all on one pathspec, so a
+    file staged by hand outside it stays staged and out of the commit. The
+    short sha (True with sha=False), or None when nothing changed. Raises
     CommitFailed."""
-    paths = existing_paths(root, OWN_PATHS, git=run)
+    paths = existing_paths(root, candidates, git=run)
     if not paths:
         return None
     spec = ("--", *paths)
@@ -1923,8 +1960,99 @@ def _commit_own_paths(root, run, message, ident=()):
     r = _retrying(run, *ident, "commit", "-q", "-m", message, *spec)
     if r.returncode != 0:
         raise CommitFailed(_why(r))
+    if not sha:
+        return True
     r = run("rev-parse", "--short", "HEAD")
     return r.stdout.strip() if r.returncode == 0 else "HEAD"
+
+
+NOT_COMMITTED = ("wi: WARNING store not committed: {} (the change is saved; "
+                 "`wi commit` commits it)")
+
+
+def _per_change_state(root):
+    """The StoreRepo a write's lock commits into, or None when the store
+    does not record `repo: own`, so wi never starts committing into a repo
+    no `init` set up (d1e9 D1): one read of store.yaml, no git. For a store
+    that records it, the hardened validation (git's 2 s bound), run before
+    the lock is taken. Never raises."""
+    try:
+        if not read_repo_own(root):
+            return None
+        if shutil.which("git") is None:
+            return StoreRepo("unknown", "git not found")
+        return store_repo_state(root)
+    except Exception as e:  # a commit's trouble never fails the write
+        return StoreRepo("unknown", f"{type(e).__name__}: {e}")
+
+
+def _not_own_why(rs):
+    """Why a store recording `repo: own` gets no per-change commit."""
+    if rs.state == "missing":
+        return f"`repo: own` is recorded in {STORE_FILE} but there is no .git"
+    if rs.state == "broken":
+        return rs.reason
+    if rs.state == "old":
+        return (f"a git repo at an old location: move the store "
+                f"({MOVING_A_STORE})")
+    return rs.reason or "git did not answer"
+
+
+def _journal_paths(root):
+    """The journal's store-relative POSIX paths among the store's own paths,
+    in the order first written. A path is placed by its parent's real path,
+    so an archive source, gone from disk, still resolves."""
+    real = os.path.realpath(root)
+    out = []
+    for p in _JOURNAL:
+        full = os.path.join(os.path.realpath(os.path.dirname(os.path.abspath(
+            p))), os.path.basename(p))
+        rel = os.path.relpath(full, real)
+        if os.sep != "/":
+            rel = rel.replace(os.sep, "/")
+        if _is_own_path(rel) and rel not in out:
+            out.append(rel)
+    return out
+
+
+def _journal_message(verb, rels):
+    """The per-change commit message (d1e9 D4): verb and item ids, never
+    the item's text. One item: `wi <verb>: <id>`; several, and every
+    archive: `wi <verb>: <n> item(s)` and a body of `- <id>` lines, sorted."""
+    ids = sorted({os.path.splitext(r.rsplit("/", 1)[-1])[0] for r in rels
+                  if r.startswith(("items/", "archive/")) and r.endswith(".md")})
+    if not ids:
+        return f"wi {verb}: store files"
+    if len(ids) == 1 and verb != "archive":
+        return f"wi {verb}: {ids[0]}"
+    n = len(ids)
+    return (f"wi {verb}: {n} item{'' if n == 1 else 's'}\n\n"
+            + "\n".join(f"- {i}" for i in ids))
+
+
+def _commit_journal(root, rs):
+    """Commit what this lock's command wrote into an own store's repo
+    (d1e9 D4, F5), under the lock, within one 5 s deadline. Nothing written
+    (a claim already held, a refused write): no git call. Never raises: a
+    failure prints NOT_COMMITTED and leaves the exit code and stdout as
+    they are, since a caller seeing a failure could retry a write that
+    landed."""
+    try:
+        rels = _journal_paths(root)
+        if not rels:
+            return
+        if rs.state != "own":
+            print(NOT_COMMITTED.format(_not_own_why(rs)), file=sys.stderr)
+            return
+        run = _own_runner(root, rs)
+        _commit_own_paths(root, run, _journal_message(_COMMAND[0], rels),
+                          _fallback_ident(root, run), candidates=rels,
+                          sha=False)
+    except CommitFailed as e:
+        print(NOT_COMMITTED.format(e), file=sys.stderr)
+    except Exception as e:  # never fail a write that landed
+        print(NOT_COMMITTED.format(f"{type(e).__name__}: {e}"),
+              file=sys.stderr)
 
 
 def _gc_after_commit(root):
@@ -1989,7 +2117,7 @@ def cmd_commit(args):
     rs = store_repo_state(root)
     try:
         if rs.state == "own":
-            with Lock(root):
+            with Lock(root, commit=False):
                 run = _own_runner(root, rs)
                 sha = _commit_own_paths(root, run, message,
                                         _fallback_ident(root, run))
@@ -2008,7 +2136,7 @@ def cmd_commit(args):
             if rs.state == "plain" and _store_ignored(root, repo):
                 print(f"nothing to commit: {root} is git-ignored by {repo}")
                 return 0
-            with Lock(root):
+            with Lock(root, commit=False):
                 sha = _commit_own_paths(root, _tracked_runner(root, repo),
                                         message)
         elif rs.state == "unknown":
@@ -2084,6 +2212,7 @@ def _atomic_write(path, data, create=False, keep_mode=False):
         except BaseException:
             tmp.unlink()
             raise
+        _journal_write(path)
         return
     try:
         _move_no_clobber(tmp, path)
@@ -2134,6 +2263,7 @@ def _move_no_clobber(src, dst):
     except OSError:
         linked = False  # no hard links on this filesystem: reserve the name
     if linked:
+        _journal_write(dst)  # dst holds the content from here (F5)
         try:
             os.unlink(src)
         except OSError as e:
@@ -2151,6 +2281,7 @@ def _move_no_clobber(src, dst):
         os.close(fd)
     try:
         os.replace(src, dst)
+        _journal_write(dst)
     except OSError as e:
         try:
             now = os.lstat(dst)
@@ -2862,7 +2993,8 @@ def _init_own(root, host, defaulted):
     the first commit through `wi commit`'s own-store path."""
     adopt = os.path.lexists(root / ".git")
     (root / "items").mkdir(parents=True, exist_ok=True)
-    with Lock(root):
+    # init commits by itself, every own path, so its lock commits nothing
+    with Lock(root, commit=False):
         if os.path.lexists(root / ".git") != adopt:
             # a .git came or went while init waited for the lock: check again
             host = _own_repo_check(root)
@@ -2905,8 +3037,7 @@ def _init_own(root, host, defaulted):
             print(f"committed {sha} ({message})" if sha
                   else "nothing to commit")
         except CommitFailed as e:
-            print(f"wi: WARNING store not committed: {e} (the change is "
-                  "saved; `wi commit` commits it)", file=sys.stderr)
+            print(NOT_COMMITTED.format(e), file=sys.stderr)
     if defaulted:
         print(f"wi: WARNING no terminal and no --track/--no-track: created "
               f"{root} as a git-ignored store with its own local repo. To "
@@ -3508,7 +3639,7 @@ def cmd_migrate_parked(args):
     convention before `parked` existed) to parked. Dry run unless --apply."""
     root = resolve_root(args.root)
     rows = []
-    with Lock(root):
+    with Lock(root, commit=args.apply):
         changed = []
         for item in load_all(root):
             if item.get("status") != "blocked":
@@ -3543,7 +3674,7 @@ def cmd_repair_escapes(args):
     `wi set` fixes one value by hand instead."""
     root = resolve_root(args.root)
     rows, changed = [], []
-    with Lock(root):
+    with Lock(root, commit=args.apply):
         for item in load_all(root, archived=True):
             if args.id and item.id != args.id:
                 continue
@@ -3801,7 +3932,7 @@ def cmd_next(args):
 
 
 def next_pipeline(root, args):
-    with Lock(root):
+    with Lock(root, commit=bool(args.claim)):
         items = load_all(root)
         by_id = DepIndex(root, items)
         ordered = pipeline_queues(items, by_id)
@@ -4506,7 +4637,7 @@ def cmd_import_todo(args):
     text = Path(args.path).read_text()
     parsed = parse_todo(text)
     created_rows, skipped_rows, new_items = [], [], []
-    with Lock(root):
+    with Lock(root, commit=not args.dry_run):
         items = load_all(root, archived=True)
         markers = {r for it in items for r in it.get("refs", [])}
         ids = taken_ids(root, items)
@@ -5627,6 +5758,9 @@ def cmd_archive(args):
         for src, dest in moves:
             dest.parent.mkdir(parents=True, exist_ok=True)
             _move_no_clobber(src, dest)
+            # the source's removal is committed with the destination, so an
+            # own store's history shows the move as a rename (d1e9 D4')
+            _journal_write(src)
         moved = len(moves)
     print(f"archived {moved}")
     return 0
@@ -5749,6 +5883,7 @@ def build_parser():
 def main(argv=None):
     args = build_parser().parse_args(argv)
     args.argv = list(sys.argv[1:] if argv is None else argv)
+    _COMMAND[0] = args.command
     try:
         return args.func(args) or 0
     except WiError as e:

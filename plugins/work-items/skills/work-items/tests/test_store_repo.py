@@ -2,8 +2,9 @@
 the store's .git apart (own, unrecorded, dedicated, missing, broken, old),
 the hardened store git runner, custody through it, and the store-repo rows
 of `prime` and `lint`; `wi commit` (F2), one test group per row of its
-table in format.md § Committing the store; and `wi init` creating or
-adopting the store's repo (F3, TestInit).
+table in format.md § Committing the store; `wi init` creating or
+adopting the store's repo (F3, TestInit); and each write command committing
+what it wrote, under its lock (F5, TestPerChange).
 
 Every git call here runs in a temp dir: HOME is a temp dir, the global
 config is a temp file (GIT_CONFIG_GLOBAL), GIT_CONFIG_NOSYSTEM=1, and
@@ -141,12 +142,13 @@ class StoreRepoCase(unittest.TestCase):
         self.git(host, "commit", "-q", "-m", "host")
         return host
 
-    def make_own(self, host=True, own=True, commit=True):
+    def make_own(self, host=True, own=True, commit=True,
+                 items=("one-aaaa",)):
         """A store at <host>/.work-items with its own repo, committed."""
         base = self.make_host() if host else self.tmp / "nohost"
         base.mkdir(exist_ok=True)
         store = base / ".work-items"
-        self.store_files(store, own=own)
+        self.store_files(store, own=own, items=items)
         self.git(store, "init", "-q", "--template=")
         if commit:
             self.git(store, "add", "-A")
@@ -2283,6 +2285,499 @@ class TestOldLocationRefusal(InitCase):
         self.assertIn("deprecated: store", r.stdout)
         r = self.wi(["lint"], store)
         self.assertIn("deprecated: store", r.stderr)
+
+
+def _have_yaml_parser():
+    r = subprocess.run([sys.executable, "-c",
+                        "import importlib.util as u, sys; sys.exit(0 if "
+                        "u.find_spec('ruamel') or u.find_spec('yaml') else 1)"],
+                       capture_output=True)
+    return r.returncode == 0
+
+
+NOT_COMMITTED = "wi: WARNING store not committed:"
+TODO_MD = """# TODO
+
+- [ ] First imported thing
+- [ ] Second imported thing
+"""
+
+
+class TestPerChange(StoreRepoCase):
+    """d1e9 D4, D4', D4'' (F5): in a store recorded `repo: own`, every write
+    command commits what it wrote, under the lock that held the write:
+    `wi <verb>: <id>` (or `<n> item(s)` and a `- <id>` body), only the
+    paths it wrote, a failure warned and the write kept. A store without
+    `repo: own` runs no git for a write."""
+
+    def w(self, store, *args, env=None, code=0):
+        r = self.wi(list(args), store, env=env)
+        self.assertEqual(r.returncode, code, r.stdout + r.stderr)
+        return r
+
+    def main(self, store, *args):
+        """wi in this process (for patches); (exit, stdout, stderr)."""
+        import io
+        out, err = io.StringIO(), io.StringIO()
+        with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
+            code = wi.main(["--root", str(store), *args])
+        return code, out.getvalue(), err.getvalue()
+
+    def log(self, store, fmt="%s"):
+        return self.git(store, "log", f"--format={fmt}").stdout.splitlines()
+
+    def head_files(self, store):
+        return self.git(store, "show", "--name-only", "--no-renames",
+                        "--format=", "HEAD").stdout.split()
+
+    def head_body(self, store):
+        return self.git(store, "log", "-1", "--format=%b").stdout.strip()
+
+    def clean(self, store):
+        """Nothing uncommitted among the own paths, and lint clean."""
+        self.assertEqual(self.git(store, "status", "--porcelain").stdout, "")
+        r = self.w(store, "lint")
+        self.assertNotIn("uncommitted", r.stderr)
+
+    def step(self, store, args, subject=None, path=None, body=None):
+        """Run one write; with `subject`, exactly one new commit with that
+        subject holding `path`; without, no new commit."""
+        before = len(self.log(store))
+        r = self.w(store, *args)
+        self.assertNotIn(NOT_COMMITTED, r.stderr)
+        after = self.log(store)
+        if subject is None:
+            self.assertEqual(len(after), before, f"{args}: {after[0]}")
+            return r
+        self.assertEqual(len(after), before + 1, f"{args}: {after[:2]}")
+        if isinstance(subject, str):
+            self.assertEqual(after[0], subject, args)
+        else:
+            self.assertRegex(after[0], subject, args)
+        if path is not None:
+            self.assertIn(path, self.head_files(store), args)
+        if body is not None:
+            self.assertEqual(self.head_body(store), body, args)
+        return r
+
+    # -- each write command ----------------------------------------------
+
+    def test_every_write_command_commits_once(self):
+        store = self.make_own()
+        a, pa = "one-aaaa", "items/one-aaaa.md"
+        self.assertFalse((store / "archive").exists())  # no archive/: fine
+        self.step(store, ["next", "--pipeline", "--claim", "w1"],
+                  f"wi next: {a}", pa)
+        self.step(store, ["release", a], f"wi release: {a}", pa)
+        self.step(store, ["claim", a, "--as", "me@here"], f"wi claim: {a}", pa)
+        self.step(store, ["claim", a, "--as", "me@here"])   # held: no write
+        self.step(store, ["handoff", a, "--doing", "x"], f"wi handoff: {a}",
+                  pa)
+        self.step(store, ["note", a, "--", "a value never in history"],
+                  f"wi note: {a}", pa)
+        self.step(store, ["block", a, "waiting"], f"wi block: {a}", pa)
+        self.step(store, ["unblock", a], f"wi unblock: {a}", pa)
+        self.step(store, ["park", a, "later"], f"wi park: {a}", pa)
+        self.step(store, ["unpark", a], f"wi unpark: {a}", pa)
+        self.step(store, ["groom", a, "which one?"], f"wi groom: {a}", pa)
+        self.step(store, ["ungroom", a], f"wi ungroom: {a}", pa)
+        self.step(store, ["set", a, "priority", "1"], f"wi set: {a}", pa)
+        r = self.step(store, ["add", "Second thing"], re.compile(r"^wi add: "))
+        b = r.stdout.split()[-1]
+        pb = f"items/{b}.md"
+        self.assertEqual(self.log(store)[0], f"wi add: {b}")
+        self.assertEqual(self.head_files(store), [pb])
+        self.step(store, ["block", b, "PARKED: someday"], f"wi block: {b}",
+                  pb)
+        self.step(store, ["migrate-parked"])                # dry run
+        self.step(store, ["migrate-parked", "--apply"],
+                  f"wi migrate-parked: {b}", pb)
+        # an escape-amplified title, hand-edited and committed
+        p = store / pb
+        p.write_text(re.sub(r"(?m)^title: .*$",
+                            lambda m: 'title: "say \\\\\\"hi\\\\\\""',
+                            p.read_text(), count=1))
+        self.w(store, "commit", "-m", "hand edit")
+        self.step(store, ["repair-escapes"])                # dry run
+        self.step(store, ["repair-escapes", "--apply"],
+                  f"wi repair-escapes: {b}", pb)
+        todo = self.tmp / "TODO.md"
+        todo.write_text(TODO_MD)
+        self.step(store, ["import-todo", str(todo), "--dry-run"])
+        r = self.step(store, ["import-todo", str(todo)],
+                      "wi import-todo: 2 items")
+        made = sorted(line.split("\t")[1] for line in r.stdout.splitlines()
+                      if line.startswith("created\t"))
+        self.assertEqual(self.head_body(store),
+                         "\n".join(f"- {i}" for i in made))
+        self.assertEqual(sorted(self.head_files(store)),
+                         sorted(f"items/{i}.md" for i in made))
+        out = self.tmp / "backlog.yaml"
+        self.step(store, ["export", str(out), "--format", "backlog-yaml"],
+                  re.compile(r"^wi export: \d+ items$"))
+        # the backlog files lie outside the store: never in its commit
+        self.assertTrue(all(f.startswith("items/")
+                            for f in self.head_files(store)))
+        self.step(store, ["done", a], f"wi done: {a}", pa)
+        self.step(store, ["archive", "--older-than", "0d"],
+                  "wi archive: 1 item", body=f"- {a}")
+        self.step(store, ["archive", "--older-than", "0d"])  # nothing left
+        # the note's text is in no commit message
+        self.assertNotIn("never in history", "\n".join(self.log(store, "%B")))
+        self.clean(store)
+
+    @unittest.skipUnless(_have_yaml_parser(), "no YAML parser for import")
+    def test_import_commits_once(self):
+        store = self.make_own()
+        src = self.tmp / "in.yaml"
+        src.write_text("schema_version: 2\nstories:\n"
+                       "  - id: S-901\n    title: one\n    status: todo\n"
+                       "  - id: S-902\n    title: two\n    status: todo\n")
+        r = self.step(store, ["import", "--format", "backlog-yaml", str(src)],
+                      "wi import: 2 items")
+        ids = sorted(p.split("/")[1][:-3] for p in self.head_files(store))
+        self.assertEqual(len(ids), 2)
+        self.assertEqual(self.head_body(store),
+                         "\n".join(f"- {i}" for i in ids))
+        self.assertIn("imported 2 new", r.stdout)
+        self.clean(store)
+
+    def test_archive_commit_shows_a_rename(self):
+        store = self.make_own()
+        self.w(store, "done", "one-aaaa")
+        self.step(store, ["archive", "--older-than", "0d"],
+                  "wi archive: 1 item", body="- one-aaaa")
+        r = self.git(store, "show", "-M", "--name-status", "--format=",
+                     "HEAD")
+        status, src, dest = r.stdout.split()
+        self.assertTrue(status.startswith("R"), r.stdout)
+        self.assertEqual(src, "items/one-aaaa.md")
+        self.assertRegex(dest, r"^archive/\d{4}/one-aaaa\.md$")
+        self.clean(store)
+
+    def test_archive_of_an_item_never_committed(self):
+        """D4': its source is on neither disk nor index, so it leaves the
+        pathspec; the destination is committed, with no warning."""
+        store = self.make_own()
+        lock = store / ".git" / "index.lock"
+        lock.write_text("")
+        r = self.w(store, "add", "Never committed")
+        iid = r.stdout.split()[-1]
+        self.assertIn(NOT_COMMITTED, r.stderr)
+        self.w(store, "done", iid)
+        lock.unlink()
+        r = self.step(store, ["archive", "--older-than", "0d"],
+                      "wi archive: 1 item", body=f"- {iid}")
+        self.assertEqual(r.stderr, "")
+        files = self.head_files(store)
+        self.assertEqual(len(files), 1)
+        self.assertRegex(files[0], rf"^archive/\d{{4}}/{iid}\.md$")
+
+    def test_hand_staged_file_stays_staged_and_out(self):
+        store = self.make_own()
+        (store / "README.md").write_text("# hand edit\n")
+        self.git(store, "add", "README.md")
+        self.step(store, ["note", "one-aaaa", "--", "x"],
+                  "wi note: one-aaaa", "items/one-aaaa.md")
+        self.assertEqual(self.head_files(store), ["items/one-aaaa.md"])
+        staged = self.git(store, "diff", "--cached", "--name-only").stdout
+        self.assertEqual(staged.split(), ["README.md"])
+
+    def test_hand_edit_elsewhere_is_left_for_wi_commit(self):
+        """Scope: only the journal's paths, so an unrelated hand edit is
+        never swept into a command's commit."""
+        store = self.make_own(items=("one-aaaa", "two-bbbb"))
+        other = store / "items" / "two-bbbb.md"
+        other.write_text(other.read_text() + "hand\n")
+        self.step(store, ["note", "one-aaaa", "--", "x"],
+                  "wi note: one-aaaa")
+        self.assertEqual(self.head_files(store), ["items/one-aaaa.md"])
+        r = self.w(store, "lint")
+        self.assertIn("1 uncommitted path(s)", r.stderr)
+
+    # -- identity --------------------------------------------------------
+
+    def test_no_identity_commits_as_wi(self):
+        store = self.make_own()
+        r = subprocess.run(["git", "var", "GIT_AUTHOR_IDENT"], cwd=store,
+                           env=self.env, capture_output=True)
+        if r.returncode == 0:
+            self.skipTest("git finds an identity on this machine")
+        self.w(store, "note", "one-aaaa", "--", "x")
+        self.assertEqual(self.log(store, "%an <%ae>|%cn <%ce>")[0],
+                         "wi <wi@localhost>|wi <wi@localhost>")
+        self.assertNotIn("user", (store / ".git" / "config").read_text())
+        self.assertEqual(self.gitconfig.read_text(), "")
+
+    def test_identity_from_env_wins(self):
+        store = self.make_own()
+        self.w(store, "note", "one-aaaa", "--", "x",
+               env={"GIT_AUTHOR_NAME": "Ann", "GIT_AUTHOR_EMAIL": "ann@x",
+                    "GIT_COMMITTER_NAME": "Cy",
+                    "GIT_COMMITTER_EMAIL": "cy@x"})
+        self.assertEqual(self.log(store, "%an <%ae>|%cn <%ce>")[0],
+                         "Ann <ann@x>|Cy <cy@x>")
+
+    # -- failures keep the write -----------------------------------------
+
+    def test_index_lock_present(self):
+        store = self.make_own()
+        lock = store / ".git" / "index.lock"
+        lock.write_text("")
+        before = self.log(store)
+        r = self.w(store, "note", "one-aaaa", "--", "kept")
+        self.assertIn("kept", (store / "items" / "one-aaaa.md").read_text())
+        warnings = [ln for ln in r.stderr.splitlines()
+                    if ln.startswith(NOT_COMMITTED)]
+        self.assertEqual(len(warnings), 1, r.stderr)
+        self.assertIn("index.lock", warnings[0])
+        self.assertIn("`wi commit` commits it", warnings[0])
+        self.assertTrue(lock.exists())          # retried, never deleted
+        self.assertEqual(self.log(store), before)
+        r = self.w(store, "lint")
+        self.assertIn("1 uncommitted path(s)", r.stderr)
+        lock.unlink()
+        self.w(store, "commit")
+        self.clean(store)
+
+    def test_index_lock_is_retried(self):
+        store = self.make_own()
+        real = wi._store_git
+        calls = []
+
+        def fake(root, *args, **kw):
+            if "add" in args:
+                calls.append(args)
+            return real(root, *args, **kw)
+
+        (store / ".git" / "index.lock").write_text("")
+        with mock.patch.object(wi, "_store_git", fake), \
+                mock.patch.object(wi, "INDEX_LOCK_WAIT", 0.0):
+            code, _, err = self.main(store, "note", "one-aaaa", "--", "x")
+        self.assertEqual(code, 0, err)
+        self.assertEqual(len(calls), 1 + wi.INDEX_LOCK_RETRIES)
+
+    def test_a_failed_commit_keeps_the_write_exit_and_stdout(self):
+        store = self.make_own()
+        code, ok_out, err = self.main(store, "note", "one-aaaa", "--", "a")
+        self.assertEqual((code, err), (0, ""))
+        real = wi._store_git
+
+        def fake(root, *args, **kw):
+            if "commit" in args:
+                return subprocess.CompletedProcess(args, 1, "", "boom\n")
+            return real(root, *args, **kw)
+
+        before = self.log(store)
+        with mock.patch.object(wi, "_store_git", fake):
+            code, out, err = self.main(store, "note", "one-aaaa", "--", "b")
+        self.assertEqual(code, 0)
+        self.assertEqual(out, ok_out)                # stdout unchanged
+        self.assertEqual(err.splitlines(),
+                         [NOT_COMMITTED + " boom (the change is saved; "
+                          "`wi commit` commits it)"])
+        self.assertIn(" b\n", (store / "items" / "one-aaaa.md").read_text())
+        self.assertEqual(self.log(store), before)
+
+    def test_an_unexpected_error_never_fails_the_write(self):
+        store = self.make_own()
+        with mock.patch.object(wi, "_commit_own_paths",
+                               side_effect=OSError("disk gone")):
+            code, out, err = self.main(store, "note", "one-aaaa", "--", "x")
+        self.assertEqual(code, 0, err)
+        self.assertIn(NOT_COMMITTED, err)
+        self.assertIn("disk gone", err)
+        self.assertIn("noted", out)
+
+    def test_a_refused_write_makes_no_commit_and_no_warning(self):
+        store = self.make_own()
+        before = self.log(store)
+        r = self.w(store, "note", "one-aaaa", "--", "two\nlines", code=1)
+        self.assertNotIn(NOT_COMMITTED, r.stderr)
+        self.assertEqual(self.log(store), before)
+
+    def test_shared_deadline(self):
+        """D4': every step shares one deadline; past it the write stands,
+        one `timed out` warning, and the lock is released."""
+        store = self.make_own()
+        real = wi._store_git
+
+        def slow(root, *args, **kw):
+            if "add" in args:
+                time.sleep(kw["timeout"])
+                return None                      # killed at its timeout
+            return real(root, *args, **kw)
+
+        with mock.patch.object(wi, "COMMIT_DEADLINE", 0.5), \
+                mock.patch.object(wi, "_store_git", slow):
+            t0 = time.monotonic()
+            code, _, err = self.main(store, "note", "one-aaaa", "--", "x")
+            took = time.monotonic() - t0
+        self.assertEqual(code, 0, err)
+        self.assertLess(took, 0.5 + 1.0)
+        lines = [ln for ln in err.splitlines() if ln.startswith(NOT_COMMITTED)]
+        self.assertEqual(len(lines), 1, err)
+        self.assertIn("timed out", lines[0])
+        with open(store / ".lock", "a") as fh:
+            fcntl.flock(fh, fcntl.LOCK_EX | fcntl.LOCK_NB)   # released
+
+    def test_broken_or_missing_repo_warns_and_keeps_the_write(self):
+        for name, breaker, says in (
+                ("broken", lambda s: (s / ".gitattributes").write_text(
+                    "* filter=x\n"), ".gitattributes selects git attributes"),
+                ("missing", lambda s: shutil.rmtree(s / ".git"),
+                 "`repo: own` is recorded")):
+            with self.subTest(name):
+                shutil.rmtree(self.tmp / "host", ignore_errors=True)
+                store = self.make_own()
+                breaker(store)
+                r = self.w(store, "note", "one-aaaa", "--", "kept")
+                self.assertIn("kept", (store / "items" /
+                                       "one-aaaa.md").read_text())
+                lines = [ln for ln in r.stderr.splitlines()
+                         if ln.startswith(NOT_COMMITTED)]
+                self.assertEqual(len(lines), 1, r.stderr)
+                self.assertIn(says, lines[0])
+
+    def test_validation_runs_before_the_lock(self):
+        """D4'': no git runs for validation while the lock is held."""
+        store = self.make_own()
+        real_state, held = wi.store_repo_state, []
+
+        def spy(root):
+            with open(Path(root) / ".lock", "a") as fh:
+                try:
+                    fcntl.flock(fh, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                    fcntl.flock(fh, fcntl.LOCK_UN)
+                except OSError:
+                    held.append(True)
+            return real_state(root)
+
+        with mock.patch.object(wi, "store_repo_state", spy):
+            code, _, err = self.main(store, "note", "one-aaaa", "--", "x")
+        self.assertEqual((code, err), (0, ""))
+        self.assertEqual(held, [])
+        self.assertEqual(self.log(store)[0], "wi note: one-aaaa")
+
+    def test_commit_runs_under_the_lock(self):
+        """D4: the commit runs before the flock is released, so no other wi
+        write lands between the rename and its commit."""
+        store = self.make_own()
+        real, held = wi._commit_own_paths, []
+
+        def spy(root, *args, **kw):
+            with open(Path(root) / ".lock", "a") as fh:
+                try:
+                    fcntl.flock(fh, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                    fcntl.flock(fh, fcntl.LOCK_UN)
+                    held.append(False)
+                except OSError:
+                    held.append(True)
+            return real(root, *args, **kw)
+
+        with mock.patch.object(wi, "_commit_own_paths", spy):
+            code, _, err = self.main(store, "note", "one-aaaa", "--", "x")
+        self.assertEqual((code, err), (0, ""))
+        self.assertEqual(held, [True])
+        self.assertEqual(self.log(store)[0], "wi note: one-aaaa")
+
+    # -- concurrency -----------------------------------------------------
+
+    def test_two_writers_forty_commits(self):
+        store = self.make_own(items=("one-aaaa", "two-bbbb"))
+        env = dict(self.env, WORK_ITEMS_ROOT=str(store))
+        script = ("for i in $(seq 20); do \"$PY\" \"$WI\" note \"$ID\" -- "
+                  "\"n $i\" >/dev/null || exit 1; done")
+        procs = [subprocess.Popen(
+            ["sh", "-c", script], env=dict(env, PY=sys.executable,
+                                           WI=str(WI), ID=iid),
+            stderr=subprocess.PIPE, text=True)
+            for iid in ("one-aaaa", "two-bbbb")]
+        for p in procs:
+            _, err = p.communicate(timeout=300)
+            self.assertEqual(p.returncode, 0, err)
+            self.assertNotIn(NOT_COMMITTED, err)
+        subjects = self.log(store)
+        self.assertEqual(len(subjects), 1 + 40)
+        self.assertEqual(subjects.count("wi note: one-aaaa"), 20)
+        self.assertEqual(subjects.count("wi note: two-bbbb"), 20)
+        self.clean(store)
+
+    # -- stores wi does not commit into, and commands that write nothing --
+
+    def git_calls_of(self, store, *args):
+        calls = []
+        real = subprocess.run
+
+        def spy(argv, *a, **kw):
+            if argv and os.path.basename(str(argv[0])) == "git":
+                calls.append(list(argv))
+            return real(argv, *a, **kw)
+
+        with mock.patch.object(wi.subprocess, "run", spy):
+            code, out, err = self.main(store, *args)
+        self.assertIn(code, (0, 2), out + err)
+        return calls
+
+    def test_no_git_call_without_repo_own(self):
+        plain = self.tmp / "plain" / ".work-items"
+        self.store_files(plain, own=False)
+        host = self.make_host(name="tracking", ignore=False)
+        tracked = host / ".work-items"
+        self.store_files(tracked, own=False)
+        self.git(host, "add", "-A")
+        self.git(host, "commit", "-q", "-m", "store")
+        unrecorded = self.make_own(own=False)
+        for name, store in (("plain", plain), ("host-tracked", tracked),
+                            ("unrecorded", unrecorded)):
+            for args in (("note", "one-aaaa", "--", "x"),
+                         ("set", "one-aaaa", "priority", "1"),
+                         ("add", f"New in {name}"),
+                         ("done", "one-aaaa"),
+                         ("archive", "--older-than", "0d")):
+                with self.subTest(store=name, cmd=args[0]):
+                    self.assertEqual(self.git_calls_of(store, *args), [])
+
+    def test_dry_runs_and_reads_run_no_git_in_an_own_store(self):
+        store = self.make_own()
+        todo = self.tmp / "TODO.md"
+        todo.write_text(TODO_MD)
+        for args in (("migrate-parked",), ("repair-escapes",),
+                     ("import-todo", str(todo), "--dry-run"),
+                     ("next", "--pipeline"), ("ls",),
+                     ("show", "one-aaaa")):
+            with self.subTest(cmd=args[0]):
+                self.assertEqual(self.git_calls_of(store, *args), [])
+
+    def test_docs_name_the_warning_and_the_commands(self):
+        """format.md owns the wording: its warning line is the one wi prints,
+        and it lists every command whose lock commits; SKILL.md points at it."""
+        docs = HERE.parent
+        fmt = re.sub(r"\s+", " ", (docs / "references" / "format.md")
+                     .read_text(encoding="utf-8"))
+        self.assertIn("`" + wi.NOT_COMMITTED.format("<why>") + "`", fmt)
+        section = fmt[fmt.index("**Each change committed.**"):
+                      fmt.index("## Committing the store")]
+        for cmd in ("add", "claim", "release", "handoff", "done", "note",
+                    "block", "unblock", "park", "unpark", "groom", "ungroom",
+                    "set", "next --pipeline --claim", "migrate-parked --apply",
+                    "repair-escapes --apply", "import-todo", "import",
+                    "export", "archive"):
+            self.assertIn(f"`{cmd}`", section, cmd)
+        skill = re.sub(r"\s+", " ", (docs / "SKILL.md").read_text(
+            encoding="utf-8"))
+        self.assertIn("A store that is its own repo is committed by `wi` on "
+                      "every change", skill)
+        self.assertIn("`wi: WARNING store not committed`", skill)
+
+    def test_init_lock_makes_one_commit(self):
+        """init commits by itself; its lock adds none."""
+        host = self.make_host()
+        store = host / ".work-items"
+        r = self.wi(["init", "--no-track"], store)
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+        self.assertEqual(self.log(store), ["wi init: store created"])
+        self.assertNotIn(NOT_COMMITTED, r.stderr)
 
 
 class TestGitPins(StoreRepoCase):

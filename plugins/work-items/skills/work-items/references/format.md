@@ -197,8 +197,9 @@ problem, fixed by moving the store (§ Moving a store).
 `status:` is the only authority on state. `done` never moves a file — a
 status-only close is a two-line front-matter change that merges cleanly
 against any body edit. `wi archive --older-than 90d` moves closed items in a
-dedicated commit (`wi commit` right after it), in the store's own repo or the repo
-that tracks it.
+dedicated commit: in a store that is its own repo `wi archive` makes it (§ The store's
+own repo, Each change committed); in a store the repo around it tracks, run `wi commit`
+right after it.
 
 A write killed mid-way never blocks the store. An item in both `items/` and
 `archive/` as one file (a kill between hard link and unlink) is a move half
@@ -416,7 +417,8 @@ until it is moved (§ Root resolver, Old locations).
 ## The store's own repo
 
 A store at `.work-items/` can be its own local git repo, with no remote: the repo around it
-(the host) ignores it, and the store's history is in `<root>/.git`.
+(the host) ignores it, and the store's history is in `<root>/.git`, where `wi` commits each
+change it makes (Each change committed, below).
 
 **Setting it up: `wi init --no-track`.** The git-ignored choice (`--no-track`, the menu's
 git-ignored, the no-terminal default) gives a store that is not at an old location its own
@@ -520,8 +522,8 @@ silent, `wi commit` exit 3), never as a store with no repo around it.
 
 **The store runner.** Every git call that acts in a store with its own `.git` (validation,
 the custody check's `check-ignore` and `ls-files`, `git config user.name` for the claimant,
-the checks below, `init`'s set-up and first commit, and `wi commit` in an own store) goes
-through one runner. The host's own
+the checks below, `init`'s set-up and first commit, each write's commit, and `wi commit` in
+an own store) goes through one runner. The host's own
 reads (is the store ignored, does the host track it) use plain git, since they read the host.
 - argv: `git -c core.hooksPath=/dev/null -c core.fsmonitor=false -c commit.gpgSign=false
   -c core.autocrlf=false -c core.safecrlf=false -c gc.auto=0 -c maintenance.auto=false
@@ -577,12 +579,66 @@ check runs inside the store's own repo, where nothing is ignored unless the stor
 `.gitignore` ignores `items/`, which it then names. Every check is silent when git is
 missing or slow.
 
+**Each change committed.** In a store recorded `repo: own`, every command that writes an
+item commits what it wrote into the store's repo, under the lock that held the write and
+before that lock is released, so no other `wi` write lands between a file's rename and its
+commit:
+- the commands: `add`, `claim`, `release`, `handoff`, `done`, `note`, `block`, `unblock`,
+  `park`, `unpark`, `groom`, `ungroom`, `set`, `next --pipeline --claim`,
+  `migrate-parked --apply`, `repair-escapes --apply`, `import-todo` (not `--dry-run`),
+  `import`, `export` (it writes aliases into items) and `archive`; `init` makes its own
+  first commit (Setting it up, above);
+- one commit per command, however many files it wrote; a command that writes nothing (a
+  claim already held, a refused write, an archive with nothing old enough) makes none, and
+  reads and dry runs run no git at all;
+- commits follow the record, never the `.git` alone: a store without `repo: own` (plain,
+  tracked by the repo around it, own unrecorded, dedicated) gets no per-change commit and
+  runs no git for a write, so its commits stay `wi commit`'s (§ Committing the store).
+
+What it does:
+- **Before the lock**, the store's repo is validated as above (What is valid, with the
+  attribute, nested-repo and promisor checks), each git call bounded at 2 s. No git runs for
+  validation while the lock is held.
+- **Only what the command wrote** is committed: the files it wrote under the store, among
+  the store's own paths, and for `archive` each moved item's source too, so the history
+  shows the move as a rename. The pathspec rule applies (Pathspecs, above): a source that
+  was never committed and is gone from disk drops out, and only its destination is
+  committed. A hand edit, a file staged by hand, or an earlier change whose commit failed
+  is never swept into a command's commit; it stays for `wi commit`, and `lint`'s
+  uncommitted notice counts it.
+- **The steps** are `wi commit`'s in an own store (§ Committing the store): the identity
+  fallback, `add -A`, `diff --cached --quiet` (no change: no commit), `commit -q -m`, with
+  `index.lock` retried three times 0.2 s apart and never deleted, through the store runner,
+  all within one 5 s deadline. No `git gc` runs; only `wi commit` runs it.
+- **The message** names the command and the item ids, never an item's text: `wi <verb>:
+  <id>` for one item; `wi <verb>: <n> items` and a body of one `- <id>` line per item,
+  sorted, for several. `archive` always takes the count form with the body (`wi archive:
+  1 item`). `<verb>` is the subcommand's name (`next` for `next --pipeline --claim`).
+- **A failure keeps the write.** The file is already in place when the commit starts. Any
+  failure prints one stderr line, `wi: WARNING store not committed: <why> (the change is
+  saved; `wi commit` commits it)`, and leaves the command's exit code and stdout as they
+  would be: a caller that saw a failure could retry a write that landed, and a `note`
+  would then be appended twice. `<why>` is git's first error line (200 characters at
+  most), `timed out` (with the `index.lock` sentence when a call was killed), `git not
+  found`, `git did not answer`, or why the store's repo cannot take a commit (broken: the
+  reason; own, missing: "`repo: own` is recorded in store.yaml but there is no .git"; a
+  `.git` at an old location). Run `wi commit` once the cause is gone.
+- **Cost.** A write in a store without `repo: own` adds one read of `store.yaml` and no git
+  process. In an own store it adds about ten short git processes: four before the lock
+  (validation, the host lookup, the promisor config read, the index listing), and under it
+  `git var` twice (once per process), one path listing, `add`, `diff --cached` and
+  `commit`. Observed 2026-10-15 with git 2.39.5: one `wi note` in a 500-item own store
+  took 0.08 s with its commit and 0.06 s without (median of 15 runs, each a fresh `wi`
+  process); `prime` and the read commands take no lock and are unchanged.
+
 ## Committing the store: `wi commit [-m <message>]`
 
 `wi commit` is the one way to commit a store: a skill that commits the store runs it, never
-`git` by hand. It commits only the store's own paths that exist (§ The store's own repo,
-Pathspecs), each git step scoped with `--` to them, so a file staged by hand outside them
-stays staged and out of the commit. It always holds the store's lock (a 10 s wait, then
+`git` by hand. In a store that is its own repo, `wi` has already committed each change it
+made (§ The store's own repo, Each change committed), so `wi commit` there commits what is
+left: hand edits, and a change whose own commit failed. It commits only the store's own
+paths that exist (§ The store's own repo, Pathspecs), each git step scoped with `--` to
+them, so a file staged by hand outside them stays staged and out of the commit. It always holds the store's lock (a 10 s wait, then
 exit 4), so it never races a `wi` write. The message and the store's state are checked
 before the lock is taken.
 
