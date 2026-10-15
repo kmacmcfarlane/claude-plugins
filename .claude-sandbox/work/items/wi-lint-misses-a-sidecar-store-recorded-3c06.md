@@ -36,3 +36,6 @@ decision 227: Answer 214's reframe — the default work-item store becomes one g
 shown 227: 2026-10-14T08:14Z page
 answer 227: b, in chat 2026-10-15, verbatim: "I think ./.work-items is best, because it matches the name of the skill. I'm going to stick with that decision. That means another change for the `wi` cli tool, but I'm confident now. I think the `wi` tool should use `WORK_ITEMS_` as the env var prefix for consistency as well." (read as: (b) .work-items/ at the repo root, git-ignored on init, this repo's store moving after claude-sandbox's store decision; plus wi's environment variables renamed to the WORK_ITEMS_ prefix)
 note: 2026-10-15T02:14Z decision 214 is superseded by answer 227 (the default store moves to .work-items/); the sidecar guard here waits for the new store default and claude-sandbox's decision 115
+decided: 2026-10-15T02:30Z scope — decision 214 is moot (answer 227 b: a bare wi init no longer targets a sidecar store); the build keeps its refusal of ignored choices in a sidecar; the remaining round-1 findings 2, 4, 5 go in now, as 5f46 needs 3c06 landed first
+dispatch: implementer opus medium — resume, merge main, findings 2, 4, 5
+agent: implementer ac34548631423ee4a round 3

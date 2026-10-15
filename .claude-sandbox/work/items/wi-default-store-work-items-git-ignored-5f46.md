@@ -26,3 +26,6 @@ return: planner DONE .claude-sandbox/investigations/wi-default-store-work-items-
 baseline: 66828c2369cb833c7af58dcba081aea7c108e92be6a81ff72a80796921933e6e  00_initial.md 476e811190bfe5bd27743d53602dfd56b507ed898043c06bfb8475446754e878  INDEX.md 
 dispatch: reviewer opus high — plan review round 1 (fresh)
 agent: reviewer ada90b0ef30b65b3c plan round 1
+verdict: NEEDS_CHANGES plan round 1 (8 medium: two-store check never runs with an exported root; a worktree init creates a stray store; test harness leaks old names; first-start sets only the new name; librarian's store-and-git premise is a doctrine question (new OQ3); OQ1 misses a private versioned option and the decision-numbering reset; 3c06 must be a hard prerequisite; the move recipe empties other clones' stores; 6 low; 1 nit)
+dispatch: planner opus high — resume, plan fix round 1
+agent: planner ac82427bf27ca5eb5 round 2
