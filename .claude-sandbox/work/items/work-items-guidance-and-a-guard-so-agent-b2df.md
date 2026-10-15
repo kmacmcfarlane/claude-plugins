@@ -61,3 +61,6 @@ agent: implementer a1f08393bdfff79d7 F1 round 1
 result: DONE F1 round 1 at f02df013 (SKILL.md § Protecting the store, references/store-safety.md, format.md backup clause, tests/test_store_safety.py 25 tests; work-items 440 OK)
 dispatch: reviewer opus high — fresh (rule 4), F1
 agent: reviewer a5c21442436113174 F1 round 1 at f02df013
+verdict: NEEDS_CHANGES F1 round 1 at f02df013 (1 high: 'then -f for -n' reads as a doubled force, and the run deleted a linked worktree in this layout; 4 medium: bundle backup drops uncommitted items, tar restore misplaces a nested-path store, SKILL.md misses the tracked-store rule, the example lint skips SKILL.md and passes unsafe forms; 3 low; 2 nits)
+dispatch: implementer opus medium — resume, F1 fix round 1
+agent: implementer a1f08393bdfff79d7 F1 round 2

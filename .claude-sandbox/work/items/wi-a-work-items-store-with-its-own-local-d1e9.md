@@ -27,3 +27,6 @@ return: planner DONE .claude-sandbox/investigations/wi-a-work-items-store-with-i
 baseline: 57b8bc4b87f6de3a6edf8c70a9c585107fbef27fd98b87bdf3eb1699e0848210  00_initial.md f5a5db2660075459e4f2c7aa95a894cef89add67fbdc66632a789305b90c0724  INDEX.md 
 dispatch: reviewer opus high — plan review round 1 (fresh)
 agent: reviewer a3b8f5b2c3a80ea24 plan round 1
+verdict: NEEDS_CHANGES plan round 1 (7 must-fix: fixed pathspec list fails on a store with no archive/; custody reads run unpinned git (fsmonitor); attribute-selected clean filters run under every pin; own-but-unrecorded store gets unhardened commits; uncommitted as a lint problem breaks the lint-then-commit rule; the plan ignores claude-sandbox's agreed hold; A9 notes and Q1 (iii) also need relaying; 6 low incl. lock deadline, journal sources, idempotent rerun, cc_scan before wi commit; 1 nit)
+dispatch: planner opus high — resume, plan fix round 1
+agent: planner ac5d8b6d969db2d50 round 2
