@@ -53,8 +53,15 @@ def item_text(iid, status="todo", priority=2, created="2026-09-01",
     return "\n".join(lines) + "\n"
 
 
+def _clean_env():
+    """os.environ minus every WI_* and WORK_ITEMS_* key, so no name set in
+    the caller's shell, old or new, reaches a run (5f46)."""
+    return {k: v for k, v in os.environ.items()
+            if not k.startswith(("WI_", "WORK_ITEMS_"))}
+
+
 def run(args, cwd=None, env_extra=None):
-    env = {k: v for k, v in os.environ.items() if k != "WI_ROOT"}
+    env = _clean_env()
     env.update(env_extra or {})
     return subprocess.run([sys.executable, str(WI)] + args, env=env,
                           capture_output=True, text=True, cwd=cwd)
@@ -199,7 +206,7 @@ class TestDiscovery(EstateCase):
         os.mkfifo(gitdir / "commondir")
         self.put(self.store("alpha"), "a-one-0001")
         (self.scan / "alpha" / ".git").write_text(f"gitdir: {gitdir}\n")
-        env = {k: v for k, v in os.environ.items() if k != "WI_ROOT"}
+        env = _clean_env()
         try:
             res = subprocess.run([sys.executable, str(WI), "estate", "--dir",
                                   str(self.scan), "--json"], env=env,

@@ -909,8 +909,46 @@ class Item:
 
 # ── Store: root, lock, load/save ────────────────────────────────────────────
 
+# 5f46: the environment names. WORK_ITEMS_* are current; the WI_* names
+# are deprecated fallbacks that still work. The new name wins when both are
+# set; an empty value counts as unset.
+ENV_NAMES = (("WORK_ITEMS_ROOT", "WI_ROOT"),
+             ("WORK_ITEMS_OWNER", "WI_OWNER"))
+
+
+def _env(new, old):
+    """(value, notice) for one variable under its new and deprecated names:
+    the new name's value when set, else the old one's, else None. notice is
+    a one-line deprecation notice when the old name is used, or is set to a
+    different value from the new name; None when both are set alike (the
+    transition export) or the old name is unset."""
+    new_v, old_v = os.environ.get(new) or "", os.environ.get(old) or ""
+    if new_v:
+        if old_v and old_v != new_v:
+            return new_v, f"wi: deprecated: {old} and {new} differ; {new} wins"
+        return new_v, None
+    if old_v:
+        return old_v, f"wi: deprecated: {old} is set; use {new}"
+    return None, None
+
+
+_ENV_NOTICED = set()
+
+
+def env_notices():
+    """The deprecation notices for the environment names, each at most once
+    per process. Printed only where health is read: prime, lint and init."""
+    out = []
+    for new, old in ENV_NAMES:
+        notice = _env(new, old)[1]
+        if notice and notice not in _ENV_NOTICED:
+            _ENV_NOTICED.add(notice)
+            out.append(notice)
+    return out
+
+
 def resolve_root(explicit=None, must_exist=True):
-    root = explicit or os.environ.get("WI_ROOT")
+    root = explicit or _env("WORK_ITEMS_ROOT", "WI_ROOT")[0]
     if root:
         root = Path(root)
     elif Path(".claude-sandbox").is_dir():
@@ -1746,6 +1784,8 @@ def _create_if_absent(path, text):
 
 
 def cmd_init(args):
+    for notice in env_notices():
+        print(notice, file=sys.stderr)
     root = resolve_root(args.root, must_exist=False)
     refusal = _store_outside_repo(root)
     if refusal:
@@ -1934,12 +1974,13 @@ def _getpass_user():
 
 
 def default_owner(root=None):
-    """The claimant: WI_OWNER verbatim (the explicit override, host
-    included), else `<user>@<host>` with the user from the first of $USER
-    (verbatim, as before), `git config user.name` run from the store's repo,
-    getpass.getuser(), and `unknown`. The last two are sanitized to an owner
-    token; an empty value counts as unset."""
-    explicit = os.environ.get("WI_OWNER")
+    """The claimant: WORK_ITEMS_OWNER verbatim (the explicit override, host
+    included; the deprecated WI_OWNER when it is unset), else `<user>@<host>`
+    with the user from the first of $USER (verbatim, as before), `git config
+    user.name` run from the store's repo, getpass.getuser(), and `unknown`.
+    The last two are sanitized to an owner token; an empty value counts as
+    unset."""
+    explicit = _env("WORK_ITEMS_OWNER", "WI_OWNER")[0]
     if explicit:
         return explicit
     user = os.environ.get("USER") or _git_user_name(root) \
@@ -2623,9 +2664,11 @@ def cmd_prime(args):
              f"{len(grouped['blocked'])} blocked · run `wi show <id>` before "
              f"working an item, `wi handoff` at every stop"]
     warning = custody_warning(root)
-    # the warning is header: its tokens are reserved from the budget, and it
-    # is inserted after trimming so trimming never drops it
-    reserved = tokens(warning) + 1 if warning else 0
+    # the warning and the env deprecation notices are header: their tokens
+    # are reserved from the budget, and they are inserted after trimming so
+    # trimming never drops them
+    header = ([warning] if warning else []) + env_notices()
+    reserved = sum(tokens(h) + 1 for h in header)
     spent = tokens(lines[0]) + reserved
 
     def fits(line):
@@ -2677,8 +2720,8 @@ def cmd_prime(args):
         lines.pop(-2 if lines[-1].startswith("       …") and len(lines) > 2
                   else -1)
         text = "\n".join(lines)
-    if warning:
-        lines.insert(1, warning)
+    if header:
+        lines[1:1] = header
         text = "\n".join(lines)
     print(text)
     return 0
@@ -4246,6 +4289,10 @@ def secret_findings(text):
 
 
 def cmd_lint(args):
+    # a deprecated name is a migration state, not a defect: stderr, and the
+    # exit is unchanged
+    for notice in env_notices():
+        print(notice, file=sys.stderr)
     root = resolve_root(args.root)
     problems = []
     items, texts = [], {}
@@ -4386,8 +4433,14 @@ def cmd_archive(args):
 # ── CLI ─────────────────────────────────────────────────────────────────────
 
 def build_parser():
-    p = argparse.ArgumentParser(prog="wi", description=__doc__.split("\n")[0])
-    p.add_argument("--root", help="work-item root (default: $WI_ROOT or auto)")
+    p = argparse.ArgumentParser(
+        prog="wi", description=__doc__.split("\n")[0],
+        epilog="environment: WORK_ITEMS_ROOT names the work-item root; "
+               "WORK_ITEMS_OWNER names the claimant. The old names WI_ROOT "
+               "and WI_OWNER still work but are deprecated; the new name "
+               "wins when both are set.")
+    p.add_argument("--root",
+                   help="work-item root (default: $WORK_ITEMS_ROOT or auto)")
     sub = p.add_subparsers(dest="command", required=True)
     spec = {
         ("init", cmd_init, "create the work-item root, or record an "

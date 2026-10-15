@@ -35,7 +35,7 @@ the TODO.md failure mode with extra steps.
 | `$WI next [--plain\|--json]` | ready-ranked queue: `todo` with every dep met (done, dropped or in UAT, archived or not), priority then age |
 | `$WI show <id> [--brief]` | one item; `--brief` for front matter + handoff only |
 | `$WI add "<title>" [--short-display-name "<name>"]` | new item (`<slug>-<4hex>` id); describe, don't dump — path and key, never value; `--short-display-name` is the optional name agents give it to the operator, stripped and 40 characters or fewer (over that exits 1, nothing written: shorten it and re-run), shown as `[<name>] <title>` in text rows (`references/format.md` § Short display name and tag) |
-| `$WI claim <id>` / `release <id>` | atomic; claims as `WI_OWNER`, else `<user>@<host>` from `$USER`, git `user.name`, then the login name (`references/format.md` § Claimant); a stale `claimed:` shows up in `next`; refuses (exit 1) a `blocked`, `parked` or `grooming` item, and a `todo` item with any dep `next` counts as unmet, naming each |
+| `$WI claim <id>` / `release <id>` | atomic; claims as `WORK_ITEMS_OWNER`, else `<user>@<host>` from `$USER`, git `user.name`, then the login name (`references/format.md` § Claimant); a stale `claimed:` shows up in `next`; refuses (exit 1) a `blocked`, `parked` or `grooming` item, and a `todo` item with any dep `next` counts as unmet, naming each |
 | `$WI handoff <id> --doing … --next … [--blocked …] [--learned …]` | the per-item residue — write it whenever the item is left mid-flight |
 | `$WI note <id> [--raw] -- "<text>" ["<text>" …]` | appends each text to `## Notes` under the lock, one write for all of them or none: dated (`- <today> <text>`) by default, verbatim with `--raw` (for a record line such as `decision N:`); always put `--` before the texts. Refuses (exit 1, nothing written, stderr `wi: text <n>: …`, never quoting the text) a line break, an empty text, under `--raw` a `## ` line or a fence opener, and any line `lint` would flag as a secret: reword it as path and key and re-run. `handoff` stays the four-line residue |
 | `$WI done <id> [--note <sha>]` / `done --drop` | closes it in place; `implement`'s "Update the work item" step owns this on landed work |
@@ -63,8 +63,14 @@ verbs, capability differences and canonical state mapping are in
 
 ## Rules
 
-- The store is resolved `WI_ROOT` → `.claude-sandbox/work/` → `.work/`; create only via
-  `$WI init`, and only when the user asks for the store.
+- The store is resolved `WORK_ITEMS_ROOT` → `.claude-sandbox/work/` → `.work/`; create only
+  via `$WI init`, and only when the user asks for the store.
+- wi's environment names are `WORK_ITEMS_ROOT` and `WORK_ITEMS_OWNER`. The old `WI_ROOT`
+  and `WI_OWNER` still work as deprecated fallbacks; the new name wins when both are set, and
+  `prime`, `lint` and `init` print a one-line `wi: deprecated: …` notice when an old name is
+  used or differs from the new one (none when both are set to the same value, which is how to
+  export for an older wi too). To tell a wi with these names from an older one, probe
+  `$WI --help`: it names `WORK_ITEMS_ROOT` only in a wi that reads it.
 - `$WI init` always gets `--track` or `--no-track` from an agent; never rely on the
   no-terminal default, which picks git-ignored for you. Read
   `echo "${CLAUDE_SANDBOX_CONTAINER-}|${CLAUDE_SANDBOX_TRACK_IN_HOST-}"`. Nothing before the
@@ -87,7 +93,7 @@ verbs, capability differences and canonical state mapping are in
   the operator. The same flags record the choice for an existing store with none recorded.
 - Working an item follows the checkout/worktree rule — process stays in the checkout, the
   item's edits go in a worktree. A worktree is its own checkout: it lacks the main checkout's
-  untracked or uncommitted store, and a tracked one there is a stale copy, so from there `WI_ROOT` points at the main checkout's
+  untracked or uncommitted store, and a tracked one there is a stale copy, so from there `WORK_ITEMS_ROOT` points at the main checkout's
   store: the main checkout is
   `git rev-parse --path-format=absolute --git-common-dir` minus its trailing `/.git`.
 - Item files are hand-editable; run `$WI lint` after hand edits, in the same turn.

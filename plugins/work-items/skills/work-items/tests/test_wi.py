@@ -38,8 +38,16 @@ wi = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(wi)
 
 
+def _clean_env(base=None):
+    """base (os.environ by default) minus every WI_* and WORK_ITEMS_* key, so
+    no name set in the caller's shell, old or new, reaches a run (5f46)."""
+    return {k: v for k, v in (os.environ if base is None else base).items()
+            if not k.startswith(("WI_", "WORK_ITEMS_"))}
+
+
 def run(args, root, env=None, cwd=None):
-    full_env = dict(os.environ, WI_ROOT=str(root), WI_OWNER="tester@local")
+    full_env = dict(_clean_env(), WORK_ITEMS_ROOT=str(root),
+                    WORK_ITEMS_OWNER="tester@local")
     full_env.update(env or {})
     return subprocess.run([sys.executable, str(WI)] + args, env=full_env,
                           capture_output=True, text=True, cwd=cwd)
@@ -47,7 +55,7 @@ def run(args, root, env=None, cwd=None):
 
 def _race_claim(spec_tuple):
     root, item_id, owner = spec_tuple
-    return run(["claim", item_id], root, env={"WI_OWNER": owner}).returncode
+    return run(["claim", item_id], root, env={"WORK_ITEMS_OWNER": owner}).returncode
 
 
 CANONICAL = """---
@@ -1225,11 +1233,11 @@ class TestClaim(WiTestCase):
         self.wi_ok(["claim", "target-1111"])  # idempotent for same owner
         self.assertEqual((self.root / "items" / "target-1111.md").read_text(),
                          before)
-        r = run(["claim", "target-1111"], self.root, env={"WI_OWNER": "other@x"})
+        r = run(["claim", "target-1111"], self.root, env={"WORK_ITEMS_OWNER": "other@x"})
         self.assertEqual(r.returncode, 4)
         self.assertIn("held by tester@local", r.stderr)
         self.wi_ok(["claim", "target-1111", "--steal"],
-                   env={"WI_OWNER": "other@x"})
+                   env={"WORK_ITEMS_OWNER": "other@x"})
         text = (self.root / "items" / "target-1111.md").read_text()
         self.assertIn("stolen from tester@local", text)
         self.wi_ok(["release", "target-1111"])
@@ -1417,8 +1425,9 @@ HOST = os.uname().nodename.split(".")[0]
 
 
 class TestDefaultOwner(WiTestCase):
-    """The claimant order: WI_OWNER, $USER, `git config user.name` (from the
-    store's repo), getpass.getuser(), `unknown`. Git is isolated from the
+    """The claimant order: WORK_ITEMS_OWNER (WI_OWNER deprecated), $USER,
+    `git config user.name` (from the store's repo), getpass.getuser(),
+    `unknown`. Git is isolated from the
     machine's own config (no global/system file, HOME in the temp dir) and
     getpass is mocked, so nothing here reads the real user or git identity."""
 
@@ -1448,10 +1457,13 @@ class TestDefaultOwner(WiTestCase):
 
     @contextlib.contextmanager
     def env(self, **over):
-        want = dict(self.iso, WI_OWNER=None, USER=None, LOGNAME=None,
-                    LNAME=None, USERNAME=None)
+        want = dict(self.iso, USER=None, LOGNAME=None, LNAME=None,
+                    USERNAME=None)
         want.update(over)
         with mock.patch.dict(os.environ):
+            for k in list(os.environ):
+                if k.startswith(("WI_", "WORK_ITEMS_")):
+                    del os.environ[k]
             for k, v in want.items():
                 if v is None:
                     os.environ.pop(k, None)
@@ -1469,7 +1481,7 @@ class TestDefaultOwner(WiTestCase):
 
     def test_wi_owner_wins_verbatim(self):
         store = self.repo_with_name("Git Name")
-        self.assertEqual(self.owner(store, WI_OWNER="me@box", USER="u"),
+        self.assertEqual(self.owner(store, WORK_ITEMS_OWNER="me@box", USER="u"),
                          "me@box")
 
     def test_user_beats_git(self):
@@ -1482,7 +1494,7 @@ class TestDefaultOwner(WiTestCase):
 
     def test_empty_user_counts_as_unset(self):
         store = self.repo_with_name("gitname")
-        self.assertEqual(self.owner(store, USER="", WI_OWNER=""),
+        self.assertEqual(self.owner(store, USER="", WORK_ITEMS_OWNER=""),
                          f"gitname@{HOST}")
 
     def test_git_name_sanitized_to_one_token(self):
@@ -1537,9 +1549,10 @@ class TestDefaultOwner(WiTestCase):
         self.root = store
         self.write_item("mine-1111")
         env = dict((k, v) for k, v in self.iso.items() if v is not None)
-        full = dict(os.environ, WI_ROOT=str(store), **env)
-        for k in ("WI_OWNER", "USER", "GIT_DIR", "GIT_WORK_TREE"):
+        full = _clean_env()
+        for k in ("USER", "GIT_DIR", "GIT_WORK_TREE"):
             full.pop(k, None)
+        full.update(env, WORK_ITEMS_ROOT=str(store))
         r = subprocess.run([sys.executable, str(WI), "claim", "mine-1111"],
                            env=full, capture_output=True, text=True,
                            cwd=str(self.no_repo))
@@ -1566,7 +1579,7 @@ class TestDefaultOwner(WiTestCase):
     def test_old_unknown_claim_needs_pin_or_steal(self):
         # USER was unset before and git now names the user: an item claimed
         # as unknown@host reads as someone else's. release still works (it
-        # checks no owner); a re-claim needs --steal, or WI_OWNER pinned to
+        # checks no owner); a re-claim needs --steal, or WORK_ITEMS_OWNER pinned to
         # the old spelling, which keeps matching
         store = self.repo_with_name("Kyle McFarlane")
         self.assertEqual(run(["init"], store).returncode, 0)
@@ -1584,10 +1597,192 @@ class TestDefaultOwner(WiTestCase):
             stolen = wi.load_item_anywhere(store, "old-1111")
             self.assertTrue(wi._claim(stolen, me, steal=True))
             self.assertEqual(stolen.get("owner"), me)
-        with self.env(WI_OWNER=old):
+        with self.env(WORK_ITEMS_OWNER=old):
             self.assertEqual(wi.default_owner(store), old)
             self.assertFalse(wi._claim(wi.load_item_anywhere(store, "old-1111"),
                                        wi.default_owner(store)))
+
+
+class EnvNamesTest(WiTestCase):
+    """5f46: WORK_ITEMS_ROOT and WORK_ITEMS_OWNER are the names; WI_ROOT and
+    WI_OWNER are deprecated fallbacks. The new name wins; an empty value is
+    unset; a notice prints only from prime (stdout), lint (stderr, exit
+    unchanged) and init (stderr), and never when both names agree. Old
+    names reach a run only through this class's own env argument, on top of
+    the scrubbed base."""
+
+    ROOT_OLD = "wi: deprecated: WI_ROOT is set; use WORK_ITEMS_ROOT"
+    ROOT_DIFF = ("wi: deprecated: WI_ROOT and WORK_ITEMS_ROOT differ; "
+                 "WORK_ITEMS_ROOT wins")
+    OWNER_OLD = "wi: deprecated: WI_OWNER is set; use WORK_ITEMS_OWNER"
+    OWNER_DIFF = ("wi: deprecated: WI_OWNER and WORK_ITEMS_OWNER differ; "
+                  "WORK_ITEMS_OWNER wins")
+
+    def setUp(self):
+        super().setUp()
+        self.write_item("env-1111")
+        self.other = self.tmp / "other"
+        self.assertEqual(run(["init"], self.other).returncode, 0)
+        self.cwd = self.tmp / "cwd"     # auto-resolution finds nothing here
+        self.cwd.mkdir()
+
+    def wi(self, args, **env):
+        full = _clean_env()
+        full.update(env)
+        return subprocess.run([sys.executable, str(WI)] + args, env=full,
+                              capture_output=True, text=True,
+                              cwd=str(self.cwd))
+
+    def notices(self, args, **env):
+        """Every deprecation line a command prints, stdout and stderr."""
+        r = self.wi(args, **env)
+        return r, [ln for ln in (r.stdout + r.stderr).splitlines()
+                   if ln.startswith("wi: deprecated:")]
+
+    def assert_health_notice(self, want, **env):
+        for args in (["prime"], ["lint"], ["init"]):
+            r, got = self.notices(args, **env)
+            self.assertEqual(r.returncode, 0, f"{args}: {r.stderr}{r.stdout}")
+            self.assertEqual(got, want, args)
+        if want:
+            # prime: a stdout header line; lint: stderr, never a problem
+            r = self.wi(["prime"], **env)
+            self.assertEqual(r.stdout.splitlines()[1:1 + len(want)], want)
+            r = self.wi(["lint"], **env)
+            self.assertEqual(r.stderr.splitlines()[:len(want)], want)
+            self.assertNotIn("deprecated", r.stdout)
+
+    def assert_quiet(self, **env):
+        for args in (["next", "--plain"], ["show", "env-1111"]):
+            r, got = self.notices(args, **env)
+            self.assertEqual(r.returncode, 0, f"{args}: {r.stderr}")
+            self.assertEqual(got, [], args)
+
+    def store(self, **env):
+        r = self.wi(["prime"], **env)
+        self.assertEqual(r.returncode, 0, r.stderr)
+        return r.stdout.splitlines()[0].split(" · ")[0][len("wi: "):]
+
+    def owner(self, **env):
+        r = self.wi(["claim", "env-1111", "--steal"],
+                    WORK_ITEMS_ROOT=str(self.root), **env)
+        self.assertEqual(r.returncode, 0, r.stderr)
+        # back to todo, so lint stays clean for the notice checks after
+        rel = self.wi(["release", "env-1111"],
+                      WORK_ITEMS_ROOT=str(self.root))
+        self.assertEqual(rel.returncode, 0, rel.stderr)
+        return r.stdout.rsplit(" as ", 1)[1].strip()
+
+    # ── ROOT ──
+    def test_root_new_only(self):
+        env = dict(WORK_ITEMS_ROOT=str(self.root))
+        self.assertEqual(self.store(**env), str(self.root))
+        self.assert_health_notice([], **env)
+
+    def test_root_old_only_used_with_notice(self):
+        env = dict(WI_ROOT=str(self.root))
+        self.assertEqual(self.store(**env), str(self.root))
+        self.assert_health_notice([self.ROOT_OLD], **env)
+        self.assert_quiet(**env)
+
+    def test_root_both_equal_silent(self):
+        env = dict(WORK_ITEMS_ROOT=str(self.root), WI_ROOT=str(self.root))
+        self.assertEqual(self.store(**env), str(self.root))
+        self.assert_health_notice([], **env)
+
+    def test_root_both_differ_new_wins(self):
+        env = dict(WORK_ITEMS_ROOT=str(self.root), WI_ROOT=str(self.other))
+        self.assertEqual(self.store(**env), str(self.root))
+        self.assert_health_notice([self.ROOT_DIFF], **env)
+        self.assert_quiet(**env)
+
+    def test_root_new_empty_old_used(self):
+        env = dict(WORK_ITEMS_ROOT="", WI_ROOT=str(self.root))
+        self.assertEqual(self.store(**env), str(self.root))
+        self.assert_health_notice([self.ROOT_OLD], **env)
+
+    def test_root_both_empty_auto(self):
+        r = self.wi(["next"], WORK_ITEMS_ROOT="", WI_ROOT="")
+        self.assertEqual(r.returncode, 1)
+        self.assertIn("no work-item root at .work", r.stderr)
+        self.assertNotIn("deprecated", r.stderr)
+
+    # ── OWNER ──
+    def test_owner_new_only(self):
+        self.assertEqual(self.owner(WORK_ITEMS_OWNER="new@x"), "new@x")
+        self.assert_health_notice([], WORK_ITEMS_ROOT=str(self.root),
+                                  WORK_ITEMS_OWNER="new@x")
+
+    def test_owner_old_only_used_with_notice(self):
+        self.assertEqual(self.owner(WI_OWNER="old@x"), "old@x")
+        env = dict(WORK_ITEMS_ROOT=str(self.root), WI_OWNER="old@x")
+        self.assert_health_notice([self.OWNER_OLD], **env)
+        self.assert_quiet(**env)
+
+    def test_owner_both_equal_silent(self):
+        self.assertEqual(self.owner(WORK_ITEMS_OWNER="me@x", WI_OWNER="me@x"),
+                         "me@x")
+        self.assert_health_notice([], WORK_ITEMS_ROOT=str(self.root),
+                                  WORK_ITEMS_OWNER="me@x", WI_OWNER="me@x")
+
+    def test_owner_both_differ_new_wins(self):
+        self.assertEqual(self.owner(WORK_ITEMS_OWNER="new@x",
+                                    WI_OWNER="old@x"), "new@x")
+        env = dict(WORK_ITEMS_ROOT=str(self.root), WORK_ITEMS_OWNER="new@x",
+                   WI_OWNER="old@x")
+        self.assert_health_notice([self.OWNER_DIFF], **env)
+        self.assert_quiet(**env)
+
+    def test_owner_new_empty_old_used(self):
+        self.assertEqual(self.owner(WORK_ITEMS_OWNER="", WI_OWNER="old@x"),
+                         "old@x")
+        self.assert_health_notice([self.OWNER_OLD],
+                                  WORK_ITEMS_ROOT=str(self.root),
+                                  WORK_ITEMS_OWNER="", WI_OWNER="old@x")
+
+    def test_owner_both_empty_auto(self):
+        self.assertEqual(self.owner(WORK_ITEMS_OWNER="", WI_OWNER="",
+                                    USER="autouser"),
+                         f"autouser@{HOST}")
+
+    def test_both_old_names_two_notices_each_once(self):
+        env = dict(WI_ROOT=str(self.root), WI_OWNER="old@x")
+        self.assert_health_notice([self.ROOT_OLD, self.OWNER_OLD], **env)
+
+    def test_prime_notice_is_header_within_budget(self):
+        for i in range(30):
+            self.write_item(f"fill-{i:04d}", title="filler " * 8)
+        r = self.wi(["prime", "--budget", "120"], WI_ROOT=str(self.root))
+        self.assertEqual(r.returncode, 0, r.stderr)
+        lines = r.stdout.splitlines()
+        self.assertEqual(lines[1], self.ROOT_OLD)
+        self.assertIn("…", r.stdout)      # trimmed, the notice kept
+        self.assertLessEqual(wi.tokens(r.stdout.rstrip("\n")), 120)
+
+    def test_parent_env_old_names_do_not_reach_the_harness(self):
+        with mock.patch.dict(os.environ, WI_ROOT=str(self.other),
+                             WI_OWNER="leak@x",
+                             WORK_ITEMS_OWNER="leak2@x"):
+            r = run(["prime"], self.root)
+            c = run(["claim", "env-1111"], self.root)
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertNotIn("deprecated", r.stdout + r.stderr)
+        self.assertTrue(r.stdout.startswith(f"wi: {self.root} "))
+        self.assertIn("as tester@local", c.stdout)
+
+
+class HelpNamesEnvTest(unittest.TestCase):
+    """`wi --help` (and `-h`) names WORK_ITEMS_ROOT: the probe a caller uses
+    to tell a wi with the 5f46 rename from an older one."""
+
+    def test_help_names_work_items_root(self):
+        for flag in ("--help", "-h"):
+            r = subprocess.run([sys.executable, str(WI), flag],
+                               env=_clean_env(), capture_output=True,
+                               text=True)
+            self.assertEqual(r.returncode, 0, r.stderr)
+            self.assertIn("WORK_ITEMS_ROOT", r.stdout, flag)
+            self.assertIn("WORK_ITEMS_OWNER", r.stdout, flag)
 
 
 class TestHandoffDoneArchive(WiTestCase):
@@ -3572,7 +3767,7 @@ class TestUndecodableFile(WiTestCase):
             with self.subTest(where=where):
                 path = self.place(where)
                 self.assert_clean(run(["claim", "good-1111"], self.root,
-                                      env={"WI_OWNER": "t@local"}), path)
+                                      env={"WORK_ITEMS_OWNER": "t@local"}), path)
                 self.assert_clean(run(["show", "good-1111"], self.root), path)
                 path.unlink()
 
@@ -4069,10 +4264,10 @@ class TestHostGitignoreUntouched(WiTestCase):
     after a later `wi add`; the writer was the claude-sandbox launcher's
     layout setup (trackInHost: false), not wi. These tests pin that every
     wi subcommand, run the way an operator runs it (cwd auto-resolve, no
-    WI_ROOT), leaves the host .gitignore byte-identical."""
+    WORK_ITEMS_ROOT), leaves the host .gitignore byte-identical."""
 
     GI = "*.pyc\n.claude-sandbox/work/.lock\n"
-    AUTO = {"WI_ROOT": ""}   # empty = resolve .claude-sandbox/work from cwd
+    AUTO = {"WORK_ITEMS_ROOT": ""}   # empty = resolve .claude-sandbox/work from cwd
 
     def git(self, repo, *args, check=True):
         # isolate from the caller's git: no global/system config (signing,
