@@ -1,6 +1,6 @@
 ---
 name: work-items
-description: Repo-durable work items via the `wi` CLI — one markdown file per item in `.work/` (or `.claude-sandbox/work/`), with ready-ranking, claims, handoff blocks, TODO.md import, and a backlog-yaml bridge. Auto-activates when a repo has a work-item store, or when the user says "what's next", "work item", "next task", "claim it", "hand it off", "mark it done", or asks to migrate a TODO.md. Not for unattended ralph runs (backlog-yaml owns those).
+description: Repo-durable work items via the `wi` CLI — one markdown file per item in `.work-items/` at the repo root (git-ignored by default; tracked on request), with ready-ranking, claims, handoff blocks, TODO.md import, and a backlog-yaml bridge. Auto-activates when a repo has a work-item store, or when the user says "what's next", "work item", "next task", "claim it", "hand it off", "mark it done", or asks to migrate a TODO.md. Not for unattended ralph runs (backlog-yaml owns those).
 disable-model-invocation: false
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion
 argument-hint: "[next | show <id> | add | done <id> | import-todo <path>]"
@@ -8,10 +8,10 @@ argument-hint: "[next | show <id> | add | done <id> | import-todo <path>]"
 
 # Work items
 
-Work items live in git — one markdown file each, `status:` authoritative, never moved on
-completion — so they survive machines, sessions and collaborators, merge cleanly, and cost
-tokens only one item at a time. The whole-file `TODO.md` read this replaces cost ~12K tokens
-per read; `wi next` costs ~300–500. The file format, resolver rule, deprecation-notice
+Work items live beside the repo, in git when the store is tracked — one markdown file each,
+`status:` authoritative, never moved on completion — so they survive sessions (and machines
+and collaborators when tracked), merge cleanly, and cost tokens only one item at a time. The
+whole-file `TODO.md` read this replaces cost ~12K tokens per read; `wi next` costs ~300–500. The file format, resolver rule, deprecation-notice
 template and secret rule are canonical in `references/format.md` — read it before editing an
 item file by hand; this file does not restate it.
 
@@ -31,7 +31,7 @@ the TODO.md failure mode with extra steps.
 
 | | |
 | --- | --- |
-| `$WI init --track\|--no-track` | creates the store, or records an existing one's tracking choice in `store.yaml` without re-creating anything; `--no-track` adds the store's directory to the repo's root `.gitignore` (never a duplicate line, never glued onto a last line with no newline). Neither flag: a menu on a terminal (git-ignored is the default); with no terminal, an ignored store and a stderr warning. A git-ignored choice in a sidecar layout (`.claude-sandbox/.git` exists), including the no-terminal default, is refused, exit 1, nothing written; there the menu defaults to tracked and does not take git-ignored (`references/format.md` § Store tracking) |
+| `$WI init --track\|--no-track` | creates the store (`.work-items/` unless a root is named), or records an existing one's tracking choice in `store.yaml` without re-creating anything; `--no-track` adds the store's directory to the repo's root `.gitignore` (never a duplicate line, never glued onto a last line with no newline). Neither flag: a menu on a terminal (git-ignored is the default); with no terminal, an ignored store and a stderr warning. A git-ignored choice in a sidecar layout (`.claude-sandbox/.git` exists), including the no-terminal default, is refused, exit 1, nothing written; there the menu defaults to tracked and does not take git-ignored (`references/format.md` § Store tracking). In a linked worktree with no store and no root named it refuses, exit 1, nothing written |
 | `$WI next [--plain\|--json]` | ready-ranked queue: `todo` with every dep met (done, dropped or in UAT, archived or not), priority then age |
 | `$WI show <id> [--brief]` | one item; `--brief` for front matter + handoff only |
 | `$WI add "<title>" [--short-display-name "<name>"]` | new item (`<slug>-<4hex>` id); describe, don't dump — path and key, never value; `--short-display-name` is the optional name agents give it to the operator, stripped and 40 characters or fewer (over that exits 1, nothing written: shorten it and re-run), shown as `[<name>] <title>` in text rows (`references/format.md` § Short display name and tag) |
@@ -51,7 +51,7 @@ the TODO.md failure mode with extra steps.
 | `$WI import-todo TODO.md` | idempotent migration; then replace TODO.md with the deprecation notice from `references/format.md` |
 | `$WI export/import --format backlog-yaml` | the ralph bridge — backlog.yaml stays authoritative for unattended runs |
 | `$WI lint` | format + secret-shape + store-custody check; run before committing hand edits |
-| `$WI archive` | moves closed items to `archive/` — its own commit, nothing else in it |
+| `$WI archive` | moves closed items to `archive/` — its own commit when the store is tracked, nothing else in it |
 
 Exit codes: 0 ok · 1 usage/validation · 2 not found/empty (e.g. `next` with nothing ready —
 report "nothing ready", don't retry) · 3 file/parser error · 4 lock/claim conflict (someone
@@ -63,42 +63,43 @@ verbs, capability differences and canonical state mapping are in
 
 ## Rules
 
-- The store is resolved `WORK_ITEMS_ROOT` → `.claude-sandbox/work/` → `.work/`; create only
-  via `$WI init`, and only when the user asks for the store.
+- The store is resolved `--root` → `WORK_ITEMS_ROOT` → the first of `.work-items/`,
+  `.claude-sandbox/work/`, `.work/` under the cwd that holds `items/`; with none, `init`
+  creates `.work-items/`. Create only via `$WI init`, and only when the user asks for the
+  store. `.claude-sandbox/work/` and `.work/` are old locations: still found, deprecated, with
+  a one-line `wi: deprecated: store … is at an old location` notice from `prime`, `lint` and
+  `init` (moving one: `references/format.md` § Moving a store). A
+  `wi: WARNING more than one work-item store under …` line means a second store sits beside
+  the one in use: `prime` shows it and `lint` counts it as a problem (exit 3) however the
+  root was found, and every other command prints it on stderr when the root was
+  auto-resolved; move or remove the extra store.
 - wi's environment names are `WORK_ITEMS_ROOT` and `WORK_ITEMS_OWNER`. The old `WI_ROOT`
   and `WI_OWNER` still work as deprecated fallbacks; the new name wins when both are set, and
   `prime`, `lint` and `init` print a one-line `wi: deprecated: …` notice when an old name is
-  used or differs from the new one (none when both are set to the same value, which is how to
-  export for an older wi too). To tell a wi with these names from an older one, probe
-  `$WI --help`: it names `WORK_ITEMS_ROOT` only in a wi that reads it.
+  set and its new name is unset or empty, or when both are set and differ (none when both
+  are set to the same value, which is how to export for an older wi too). To tell a wi
+  with these names from an older one, probe `$WI --help`: it names `WORK_ITEMS_ROOT` only in a wi that reads it.
 - `$WI init` always gets `--track` or `--no-track` from an agent; never rely on the
-  no-terminal default, which picks git-ignored for you. Read
-  `echo "${CLAUDE_SANDBOX_CONTAINER-}|${CLAUDE_SANDBOX_TRACK_IN_HOST-}"`. Nothing before the
-  `|` means outside claude-sandbox: ask the operator whether the store is tracked or
-  git-ignored. Inside, for a store at `.claude-sandbox/work/` (the default whenever
-  `.claude-sandbox/` exists), first look for a sidecar from the main checkout, as for the
-  layout probe below (a worktree has no `.claude-sandbox/` in a sidecar layout, so the test
-  fails there): `test -e .claude-sandbox/.git` succeeds (`.claude-sandbox/` is its own repo,
-  as `wi` itself tests) → `--track`, whatever the variable or the host's ignore says, since
-  `--no-track` there would leave new items in no repo (`wi` refuses it). Without
-  a sidecar, the part after the `|` is the merged `trackInHost` of the sandbox's config
-  cascade: `true` → `--track`; `false` → `--no-track`; any other value → ask the operator.
-  Empty means either that no config defines it (the launcher then treats it as false) or
-  that the sandbox was launched before the variable was exported, and the two cannot be
-  told apart, so read the layout from the main checkout: `git check-ignore -q
-  .claude-sandbox/` exits 0 (host git ignores the dir, the false layout) → `--no-track`,
-  1 → `--track`, anything else → ask the operator. An env file in the cascade can also set
-  the variable when no config defines `trackInHost`, and the launcher still lays out as
-  false; if `init --track` then warns that git ignores the store, relay the warning and ask
-  the operator. The same flags record the choice for an existing store with none recorded.
+  no-terminal default. A new store is `.work-items/` at the repo root and is git-ignored:
+  pass `--no-track` unless the operator asked for a tracked store. An existing store with no
+  recorded choice keeps what git already does with it. From the main checkout:
+  - a sidecar store (`test -e .claude-sandbox/.git`, store at `.claude-sandbox/work/`) →
+    `--track` (wi refuses an ignored one);
+  - `git ls-files <store> | head -1` prints a path → `--track`;
+  - `git check-ignore -q <store>` exits 0 → `--no-track`;
+  - otherwise ask the operator.
+
+  The same flags record the choice for an existing store with none recorded.
 - Working an item follows the checkout/worktree rule — process stays in the checkout, the
   item's edits go in a worktree. A worktree is its own checkout: it lacks the main checkout's
   untracked or uncommitted store, and a tracked one there is a stale copy, so from there `WORK_ITEMS_ROOT` points at the main checkout's
   store: the main checkout is
-  `git rev-parse --path-format=absolute --git-common-dir` minus its trailing `/.git`.
+  `git rev-parse --path-format=absolute --git-common-dir` minus its trailing `/.git`. In a
+  linked worktree with no store and no root named, `wi` fails with the `export
+  WORK_ITEMS_ROOT=…` line to run, and `init` refuses rather than make a stray store.
 - Item files are hand-editable; run `$WI lint` after hand edits, in the same turn.
 - A `wi: WARNING store … is silently untracked` line (second line of `prime`; a problem, exit 3, in `lint`) means new items are git-ignored, or the store holds ≥10 items and none is tracked (below 10, an uncommitted store is treated as new). The line names the ignore rule (file:line) and the remedies for that cause; fix the cause rather than working around it. A store recorded as git-ignored (`tracking: ignored`) gets no warning; one recorded as tracked that git ignores anyway does, since that contradicts the choice; a store with no recorded choice keeps the warning, whose fix ends by recording the choice (`$WI init --track`, or `--no-track` when it is meant to stay local). A sidecar store recorded as git-ignored warns too (`… is recorded git-ignored … so new items land in no repo`), naming `$WI init --track` and any ignore line in the sidecar repo to remove.
 - One session claims an item before working it; two sessions on one item is what `claim` is
   for — respect a conflict.
-- Migration of a repo's TODO.md is a reviewed, committed change (import → review items →
-  write notice → commit), never a drive-by.
+- Migration of a repo's TODO.md is a reviewed change (import → review items → write notice
+  → commit; the items are in that commit when the store is tracked), never a drive-by.

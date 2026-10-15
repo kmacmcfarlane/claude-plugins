@@ -1,8 +1,8 @@
 """Tests for `wi estate`, the read-only cross-repo sweep.
 
 Every store here is a fixture built in a temp dir: a scan dir holding a few
-repo dirs, each with a `.claude-sandbox/work` or `.work` store. The live
-estate is never read.
+repo dirs, each with a `.work-items`, `.claude-sandbox/work` or `.work`
+store. The live estate is never read.
 """
 import base64
 import hashlib
@@ -111,6 +111,29 @@ class TestDiscovery(EstateCase):
         report = self.scan_one()
         self.assertEqual([(r["repo"], r["store"]) for r in report["repos"]],
                          [("alpha", ".claude-sandbox/work"), ("beta", ".work")])
+
+    def test_work_items_store_is_found_and_sorted_with_the_others(self):
+        # 5f46: .work-items/ is the default store; records sort by
+        # (path, store), and a repo with two stores yields two records
+        self.put(self.store("alpha", ".work-items"), "a-one-0001")
+        self.put(self.store("beta", ".work"), "b-one-0001")
+        self.put(self.store("beta", ".work-items"), "b-two-0001")
+        self.put(self.store("beta"), "b-three-0001")
+        report = self.scan_one()
+        self.assertEqual([(r["repo"], r["store"]) for r in report["repos"]],
+                         [("alpha", ".work-items"),
+                          ("beta", ".claude-sandbox/work"),
+                          ("beta", ".work"), ("beta", ".work-items")])
+
+    def test_symlink_alias_of_one_store_is_one_record(self):
+        # 5f46: stores are distinct by real path; ESTATE_STORES order keeps
+        # the .work-items spelling
+        s = self.store("alpha", ".work-items")
+        self.put(s, "a-one-0001")
+        os.symlink(".work-items", self.scan / "alpha" / ".work")
+        rows = self.scan_one()["repos"]
+        self.assertEqual([(r["repo"], r["store"]) for r in rows],
+                         [("alpha", ".work-items")])
 
     def test_symlinked_repo_out_of_the_dir_is_not_followed(self):
         outside = self.tmp / "elsewhere" / "repo"
@@ -467,7 +490,8 @@ class TestSummary(EstateCase):
         (s / "archive" / "2026" / "arch-open-0001.md").write_text(
             item_text("arch-open-0001", status="todo"))
         nxt = subprocess.run([sys.executable, str(WI), "--root", str(s),
-                              "next", "--json"], capture_output=True, text=True)
+                              "next", "--json"], capture_output=True,
+                             text=True, env=_clean_env())
         want = [i["id"] for i in json.loads(nxt.stdout)["ready"]]
         got = [i["id"] for i in
                self.repo(self.scan_one(top=10), "alpha")["ready"]]

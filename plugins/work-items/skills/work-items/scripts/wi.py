@@ -947,16 +947,149 @@ def env_notices():
     return out
 
 
-def resolve_root(explicit=None, must_exist=True):
+# 5f46: the store locations under a directory, in lookup order. .work-items/
+# is the default; the other two are old locations, deprecated, still found.
+STORE_LOCATIONS = (".work-items", ".claude-sandbox/work", ".work")
+DEFAULT_STORE = STORE_LOCATIONS[0]
+MOVING_A_STORE = ("the work-items skill's references/format.md § Moving a "
+                  "store")
+
+
+def _auto_root(base=Path(".")):
+    """The first location under base that holds items/, else None."""
+    for rel in STORE_LOCATIONS:
+        if (base / rel / "items").is_dir():
+            return Path(rel) if base == Path(".") else base / rel
+    return None
+
+
+def _root_and_source(explicit=None):
+    """(root, auto): the root from --root, then WORK_ITEMS_ROOT (WI_ROOT),
+    then the first store location under the cwd that holds items/, else the
+    default .work-items. auto is False for a flag or env root."""
     root = explicit or _env("WORK_ITEMS_ROOT", "WI_ROOT")[0]
     if root:
-        root = Path(root)
-    elif Path(".claude-sandbox").is_dir():
-        root = Path(".claude-sandbox/work")
-    else:
-        root = Path(".work")
+        return Path(root), False
+    return (_auto_root() or Path(DEFAULT_STORE)), True
+
+
+def linked_worktree_main():
+    """The main checkout's path when the cwd is in a linked git worktree,
+    else None (the main checkout, outside git, git missing, slow or too old
+    for --path-format). One git call; run only on the no-store path."""
+    r = _git(".", "rev-parse", "--path-format=absolute", "--git-dir",
+             "--git-common-dir")
+    if r is None or r.returncode != 0:
+        return None
+    lines = r.stdout.splitlines()
+    if len(lines) != 2 or not all(lines):
+        return None
+    git_dir, common = (os.path.realpath(ln) for ln in lines)
+    if git_dir == common:
+        return None
+    common = Path(common)
+    return common.parent if common.name == ".git" else common
+
+
+def _worktree_store(main):
+    """The main checkout's store to name: the first location there that
+    holds items/, else the default."""
+    found = _auto_root(main)
+    return found if found is not None else main / DEFAULT_STORE
+
+
+def worktree_init_refusal():
+    """init's refusal when no root is named, no store is found and the cwd
+    is a linked worktree, else None (D11 of the 5f46 series)."""
+    root, auto = _root_and_source(None)
+    if not auto or (root / "items").is_dir():
+        return None
+    main = linked_worktree_main()
+    if main is None:
+        return None
+    return ("wi init: refusing to create a store in a linked worktree (it "
+            "would be a stray copy); run it in the main checkout "
+            f"{main}, or name the root with --root or WORK_ITEMS_ROOT")
+
+
+def old_location(root):
+    """True when the store's real path is at an old location: named .work,
+    or work inside .claude-sandbox. Flag, env and auto roots alike."""
+    real = Path(os.path.realpath(root))
+    return (real.name == ".work"
+            or (real.name == "work" and real.parent.name == ".claude-sandbox"))
+
+
+_LOCATION_NOTICED = set()
+
+
+def location_notices(root):
+    """The old-location deprecation notice, at most once per process.
+    Printed only where health is read: prime, lint and init."""
+    if not old_location(root):
+        return []
+    notice = (f"wi: deprecated: store {root} is at an old location; the "
+              f"default is {DEFAULT_STORE}/ ({MOVING_A_STORE})")
+    if notice in _LOCATION_NOTICED:
+        return []
+    _LOCATION_NOTICED.add(notice)
+    return [notice]
+
+
+def _store_parent(real):
+    """D when a real path is D/.work-items, D/.work or D/.claude-sandbox/work;
+    else None."""
+    if real.name in (".work-items", ".work"):
+        return real.parent
+    if real.name == "work" and real.parent.name == ".claude-sandbox":
+        return real.parent.parent
+    return None
+
+
+def two_store_warning(root):
+    """One line when the store is a known location under a directory D and
+    another known location under D also holds items/, else None. Stores are
+    compared by real path: a symlink alias of the same store is not a
+    second one."""
+    real = Path(os.path.realpath(root))
+    base = _store_parent(real)
+    if base is None:
+        return None
+    seen, others = {real}, []
+    for rel in STORE_LOCATIONS:
+        cand = base / rel
+        if not (cand / "items").is_dir():
+            continue
+        cand_real = Path(os.path.realpath(cand))
+        if cand_real in seen:
+            continue
+        seen.add(cand_real)
+        others.append(str(cand))
+    if not others:
+        return None
+    return (f"wi: WARNING more than one work-item store under {base}: using "
+            f"{real}, also {', '.join(others)} (move or remove the extra "
+            f"one: {MOVING_A_STORE})")
+
+
+def resolve_root(explicit=None, must_exist=True, warn_stores=True):
+    """The store root. With auto-resolution, a second store under the same
+    dir is warned of on stderr (warn_stores; prime and lint report it
+    themselves, whatever the root's source). With no store found and no
+    root named, a linked worktree is pointed at its main checkout's
+    store."""
+    root, auto = _root_and_source(explicit)
     if must_exist and not (root / "items").is_dir():
+        main = linked_worktree_main() if auto else None
+        if main is not None:
+            raise WiError(1, "no work-item store in this linked worktree; the "
+                             "store lives in the main checkout: export "
+                             f"WORK_ITEMS_ROOT={_worktree_store(main)}")
         raise WiError(1, f"no work-item root at {root} (run `wi init`)")
+    if auto and warn_stores:
+        warning = two_store_warning(root)
+        if warning:
+            print(warning, file=sys.stderr)
     return root
 
 
@@ -1585,11 +1718,12 @@ SANDBOX_IGNORES = ("/.claude-sandbox/", "/.claude-sandbox",
 
 
 def sandbox_shape(root):
-    """Classify a `.claude-sandbox/work` store per agents/decisions/0002:
-    ('private'|'sidecar'|'ignored', repo_dir), or (None, None) for `.work/`
-    and other non-sandbox stores. private = host repo tracks config + work;
-    sidecar = a git repo at .claude-sandbox/.git owns the store; ignored =
-    the host .gitignore already whole-dir-ignores .claude-sandbox/."""
+    """Classify a `.claude-sandbox/work` store (an old location, 5f46) per
+    agents/decisions/0002: ('private'|'sidecar'|'ignored', repo_dir), or
+    (None, None) for `.work-items/`, `.work/` and other non-sandbox stores.
+    private = host repo tracks config + work; sidecar = a git repo at
+    .claude-sandbox/.git owns the store; ignored = the host .gitignore
+    already whole-dir-ignores .claude-sandbox/."""
     sandbox = root.absolute().parent
     if sandbox.name != ".claude-sandbox":
         return None, None
@@ -1609,10 +1743,11 @@ def _interactive():
 
 
 def choose_tracking(inp, out, sidecar=False):
-    """The init menu: 'tracked' or 'ignored'. Enter, or end of input, takes
-    the default, git-ignored. In a sidecar layout (3c06) git-ignored is
-    refused, so tracked is the default and git-ignored is shown but not
-    taken: the menu never returns 'ignored' there."""
+    """Ask the init menu and return the choice. Outside a sidecar layout it
+    returns 'tracked' or 'ignored', and Enter, or end of input, takes the
+    default, git-ignored. In a sidecar layout (3c06) git-ignored is refused,
+    so tracked is the default and git-ignored is shown but not taken: the
+    menu returns only 'tracked' there."""
     default = "tracked" if sidecar else "ignored"
     if sidecar:
         out.write("wi init: should git track this work-item store?\n"
@@ -1786,7 +1921,14 @@ def _create_if_absent(path, text):
 def cmd_init(args):
     for notice in env_notices():
         print(notice, file=sys.stderr)
+    refusal = worktree_init_refusal() if not args.root else None
+    if refusal:
+        # 5f46: a store made here would be a stray copy no other session sees
+        print(refusal, file=sys.stderr)
+        return 1
     root = resolve_root(args.root, must_exist=False)
+    for notice in location_notices(root):
+        print(notice, file=sys.stderr)
     refusal = _store_outside_repo(root)
     if refusal:
         raise WiError(1, refusal)
@@ -2650,7 +2792,7 @@ def next_pipeline(root, args):
 
 
 def cmd_prime(args):
-    root = resolve_root(args.root)
+    root = resolve_root(args.root, warn_stores=False)
     items = load_all(root)
     by_id = DepIndex(root, items)
     grouped, closed = split_by_status(items)
@@ -2663,11 +2805,12 @@ def cmd_prime(args):
     lines = [f"wi: {root} · {n_open} open · {len(grouped['doing'])} doing · "
              f"{len(grouped['blocked'])} blocked · run `wi show <id>` before "
              f"working an item, `wi handoff` at every stop"]
-    warning = custody_warning(root)
-    # the warning and the env deprecation notices are header: their tokens
+    # the warnings and the deprecation notices are header: their tokens
     # are reserved from the budget, and they are inserted after trimming so
-    # trimming never drops them
-    header = ([warning] if warning else []) + env_notices()
+    # trimming never drops them. The two-store check runs however the root
+    # was found (5f46).
+    header = [w for w in (custody_warning(root), two_store_warning(root))
+              if w] + env_notices() + location_notices(root)
     reserved = sum(tokens(h) + 1 for h in header)
     spent = tokens(lines[0]) + reserved
 
@@ -2780,7 +2923,7 @@ def cmd_needs_input(args):
 
 # ── estate: the read-only cross-repo sweep ─────────────────────────────────
 
-ESTATE_STORES = (".claude-sandbox/work", ".work")
+ESTATE_STORES = STORE_LOCATIONS   # .work-items first: it wins a dedupe
 ESTATE_COUNTED = ("todo", "doing", "blocked", "parked", "grooming", "done",
                   "dropped")
 ESTATE_LISTS = ("decisions", "security", "stale", "problems")
@@ -3057,12 +3200,17 @@ def estate_scan(dirs, top=5, stale="24h", now=None, cap=ESTATE_CAP):
     kept, skipped = _repo_candidates(dirs)
     repos = []
     for d, base, name, repo in kept:
+        seen = set()   # 5f46: one record per real path; the first spelling
         for rel in ESTATE_STORES:
             store = repo / rel
             if not (store / "items").is_dir():
                 continue
             if not (_within(store, base) and _within(store / "items", base)):
                 continue
+            real = os.path.realpath(store)
+            if real in seen:
+                continue
+            seen.add(real)
             rec = {"repo": name, "path": str(repo), "path_raw": _raw(repo)}
             rec.update(estate_store(store, base, top, stale_after, now, cap))
             rec["store"] = rel
@@ -4293,7 +4441,9 @@ def cmd_lint(args):
     # exit is unchanged
     for notice in env_notices():
         print(notice, file=sys.stderr)
-    root = resolve_root(args.root)
+    root = resolve_root(args.root, warn_stores=False)
+    for notice in location_notices(root):
+        print(notice, file=sys.stderr)
     problems = []
     items, texts = [], {}
     for path in item_paths(root, archived=True):
@@ -4386,9 +4536,10 @@ def cmd_lint(args):
                         f"{', '.join(TRACKING_CHOICES)} (got '{raw}'); fix: "
                         "`wi init --track` or `wi init --no-track`")
     # lint has no warning tier: every finding it prints is a problem, exit 3
-    warning = custody_warning(root)
-    if warning:
-        problems.append(warning)
+    # 5f46: a second store under the same dir, however the root was found
+    for warning in (custody_warning(root), two_store_warning(root)):
+        if warning:
+            problems.append(warning)
     for p in problems:
         print(p)
     if problems:
@@ -4440,7 +4591,9 @@ def build_parser():
                "and WI_OWNER still work but are deprecated; the new name "
                "wins when both are set.")
     p.add_argument("--root",
-                   help="work-item root (default: $WORK_ITEMS_ROOT or auto)")
+                   help="work-item root (default: $WORK_ITEMS_ROOT, else "
+                        "the first of .work-items, .claude-sandbox/work, "
+                        ".work that holds items/, else .work-items)")
     sub = p.add_subparsers(dest="command", required=True)
     spec = {
         ("init", cmd_init, "create the work-item root, or record an "
