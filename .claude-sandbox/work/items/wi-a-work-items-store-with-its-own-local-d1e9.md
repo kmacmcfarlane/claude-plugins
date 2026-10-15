@@ -102,3 +102,5 @@ verdict: NEEDS_CHANGES F3 round 2 at 0bf03f96 (1-3, 5-7 and the ruling closed; o
 decided: a new store at an old location is refused too without --allow-old-location (one rule: no store is made or kept at an old location without the flag; 3c06 tests pass the flag when creating)
 dispatch: implementer opus high — resume, F3 fix round 2
 agent: implementer a56d080820c81b88a F3 round 3
+result: DONE F3 round 3 at 13c9f4ee (read-back of effective hooksPath/fsmonitor without pins; new old-location stores need the flag; 588/106/762/21 OK; 41 mutants; fixed own mutation runner false-catch)
+dispatch: reviewer opus high — resume, F3 round 3
