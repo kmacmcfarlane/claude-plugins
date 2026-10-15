@@ -73,3 +73,9 @@ agent: implementer a659b29ac5cfe5ebe F5 round 1
 result: DONE F5 round 1 at 809f6ad1 (ralph backlog-yaml loop exports both names; claim_check STORES with .work-items first; checks.md; test; claim-md 72 OK)
 dispatch: reviewer opus medium — F5 (small, two plugins)
 agent: reviewer a34c31257d1312d48 F5 round 1 at 809f6ad1
+result: DONE F4 round 1 at 45696581 (rehydrate STORE_DIRS, env precedence, store-only commits at all three; checkpoint loop exports both, skip-commit clause for an ignored store; handoff-format, design-rationale; 757 OK)
+dispatch: reviewer opus high — fresh (rule 4), F4
+agent: reviewer a392a869cf34323d1 F4 round 1 at 45696581
+result: DONE F3 round 1 at e7f140b3 (both lookup copies, first-start --no-track per answer 232 a, brief Store: lines, skip-commit clauses, durable wording; test_store_lookup.py; dev-flow 101 OK; opt-in.md:51 Scope note deferred to this repo's store move)
+dispatch: reviewer opus high — fresh (rule 4), F3
+agent: reviewer a30965ea7fa25cb55 F3 round 1 at e7f140b3
