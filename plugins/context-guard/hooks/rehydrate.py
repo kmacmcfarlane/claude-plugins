@@ -120,7 +120,10 @@ CAP = 9000
 LEDGER_BUDGET = 2500
 MAX_ITEMS = 50
 ID_RE = re.compile(r"[A-Za-z0-9][A-Za-z0-9._:-]*")
-STORE_EXCLUDE = ("--", ".", ":!.claude-sandbox/work")
+# The work-item store's three locations, in wi's lookup order: .work-items
+# first, then the deprecated .claude-sandbox/work and .work.
+STORE_DIRS = (".work-items", ".claude-sandbox/work", ".work")
+STORE_EXCLUDE = ("--", ".") + tuple(":!" + d for d in STORE_DIRS)
 _FM_OPEN = re.compile(r"[ \t]*---[ \t]*(\r?\n)")
 _FM_CLOSE = re.compile(r"^[ \t]*---[ \t]*\r?$", re.M)
 _ITEMS_RE = re.compile(r"^items:[^\n]*\n(?:[ \t]*-[^\n]*\n)*", re.M)
@@ -221,13 +224,15 @@ def claimed_items(fm):
 
 
 def store_root(top):
-    """The work-item store: WI_ROOT, else the repo's .claude-sandbox/work, else
-    .work (wi's own fallback). None when no items/ dir exists."""
-    env = os.environ.get("WI_ROOT")
-    cands = [os.path.join(top, env) if env else None,
-             os.path.join(top, ".claude-sandbox", "work"), os.path.join(top, ".work")]
-    for c in ([cands[0]] if env else cands[1:]):
-        if c and os.path.isdir(os.path.join(c, "items")):
+    """The work-item store: WORK_ITEMS_ROOT, else the deprecated WI_ROOT (an
+    empty value counts as unset), else the first of the repo's .work-items,
+    .claude-sandbox/work and .work holding items/ (wi's own order). A root set
+    in the environment is the only candidate. None when no items/ dir exists."""
+    env = os.environ.get("WORK_ITEMS_ROOT") or os.environ.get("WI_ROOT")
+    cands = [os.path.join(top, env)] if env else \
+        [os.path.join(top, *d.split("/")) for d in STORE_DIRS]
+    for c in cands:
+        if os.path.isdir(os.path.join(c, "items")):
             return c
     return None
 
@@ -345,9 +350,9 @@ def unverified_reason(top):
 def head_moved(hs, store=False):
     """None when the recorded head still describes the repo; else the one line
     that replaces the `## Next` body. Store-only commits (librarian chores under
-    .claude-sandbox/work) do not count as movement. The line names `wi prime`
-    only when the repo has a work-item store (`store`): with none there is no
-    queue to prime, and `wi` may not be installed at all."""
+    .work-items, .claude-sandbox/work or .work) do not count as movement. The
+    line names `wi prime` only when the repo has a work-item store (`store`):
+    with none there is no queue to prime, and `wi` may not be installed at all."""
     if not hs:
         return None
     why, n = divergence(hs), hs["n"]

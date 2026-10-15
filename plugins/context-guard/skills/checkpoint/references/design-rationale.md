@@ -185,7 +185,8 @@ Three layers, escalating; the first two are hooks, the third is a skill.
    the one that improves the next session. Step 4a½ writes what only the conversation held
    about each open item into that item before the manifest (the operator's standing request,
    decision 179 (a), 2026-10-07): the manifest lives in the config dir and is one session's,
-   while the item travels with the repo to whoever picks it up next. Step 4 delegates the mechanical flush to a **fork**
+   while the item stays with the repo's store (and travels with the repo when the store is
+   tracked) for whoever picks it up next. Step 4 delegates the mechanical flush to a **fork**
    (inherits history + cache; a fresh subagent starts empty and is the wrong primitive here).
 
 **Added later: Step 0 acts on its drafts** (the operator's request, decision 196 (a),

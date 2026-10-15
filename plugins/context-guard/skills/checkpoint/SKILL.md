@@ -232,7 +232,7 @@ that repo, before the first `wi` call (Step 3's `wi add`, Step 4a½, a re-run's
 
 ```bash
 MAIN=$(git rev-parse --path-format=absolute --git-common-dir 2>/dev/null) && MAIN=${MAIN%/.git} || MAIN=$PWD
-for d in "$MAIN/.claude-sandbox/work" "$MAIN/.work"; do test -d "$d/items" && { export WI_ROOT="$d"; break; }; done
+for d in "$MAIN/.work-items" "$MAIN/.claude-sandbox/work" "$MAIN/.work"; do test -d "$d/items" && { export WORK_ITEMS_ROOT="$d" WI_ROOT="$d"; break; }; done
 WI_PY=$(ls "$MAIN"/plugins/*/skills/work-items/scripts/wi.py 2>/dev/null | head -1)
 P="${CLAUDE_CONFIG_DIR:-$HOME/.claude}/plugins"
 IP="$(python3 -I - "$P/installed_plugins.json" work-items@kmacmcfarlane "$MAIN" 2>/dev/null <<'PY'
@@ -255,12 +255,15 @@ test -f "$WI_PY" || WI_PY=$(ls -t "$P"/cache/kmacmcfarlane/work-items/*/skills/w
 if test -f "$WI_PY"; then WI="python3 $WI_PY"; echo "$WI"; else WI=no-wi-found; echo "no wi found"; fi
 ```
 
-It finds the store too, a `.claude-sandbox/work/` or `.work/` holding `items/`. When it
-finds none, `WI_ROOT` keeps any value the environment set: a store there is the store, as
-it is for `wi` and the rehydration hook; with neither, there is no store and every `wi` step
-is skipped. Every `wi` in this skill means the command it printed, with its absolute path
-(shell variables do not outlive one Bash call), and `WI_ROOT` set to that store. `WI` is
-bound to `python3` only when the file exists, so a miss never runs a bare `python3`; a
+It finds the store too: the first of `.work-items/`, `.claude-sandbox/work/` and `.work/`
+holding `items/`, the order `wi` uses (the last two are old locations it still reads). When
+it finds none, `WORK_ITEMS_ROOT` (else the deprecated `WI_ROOT`) keeps any value the
+environment set: a store there is the store, as it is for `wi` and the rehydration hook;
+with neither, there is no store and every `wi` step is skipped. Every `wi` in this skill
+means the command it printed, with its absolute path (shell variables do not outlive one
+Bash call), and both `WORK_ITEMS_ROOT` and `WI_ROOT` set to that store: an installed `wi`
+older than the new name reads only `WI_ROOT`. `WI` is bound to `python3` only when the
+file exists, so a miss never runs a bare `python3`; a
 `$WI` call run anyway fails with exit 127. The install-record read runs `python3 -I`, so a
 `json.py` in the working directory is never imported. The install record holds one entry
 per install scope, so the read takes the entry that applies to this repo, never the first
@@ -290,7 +293,9 @@ State the routing table before writing.
 
 **4a.** Commits first (the message is a compaction-proof summary you chose; include noodle notes
 and retractions), then investigation/plan files; the work-item store's commit waits for Step
-4a½, which makes it (with `items:` empty, commit the store here). Respect each repo's rules:
+4a½, which makes it (with `items:` empty, commit the store here). A git-ignored store
+(`git -C "$MAIN" check-ignore -q "$WORK_ITEMS_ROOT"` exits 0) is never committed: skip this
+commit. Respect each repo's rules:
 pre-commit hooks, secret encryption, never `git add -A` where the tree carries unencrypted
 secrets. A repo not yours to commit to stays dirty with a written note. Then sweep the
 session scratchpad, which `/clear` leaves behind: copy every file a successor needs to a
@@ -351,7 +356,8 @@ Any other question is an `OPEN` line. Never carry residue with `wi handoff`: it 
 line per key, so the residue would displace the item's own Handoff. **Path and key, never
 value**: item files are tracked forever, and this rule is the guard: `wi note` refuses lint's
 shapes, and lint's shapes are not every secret. Run `wi lint`, then commit the store: this
-is 4a's work-item commit. Name each item written in the manifest's `Next` as `wi show <id>`,
+is 4a's work-item commit (a git-ignored store, `git -C "$MAIN" check-ignore -q
+"$WORK_ITEMS_ROOT"` exits 0, is never committed: skip this commit). Name each item written in the manifest's `Next` as `wi show <id>`,
 the full view, since `--brief` omits Notes. The writer is this session, or a fork under Step
 2's dictate → fork rule, handed the tagged lines verbatim; the fork adds no recall of its
 own. **Lean form**: read only `wi show <id> --brief` (a duplicate line is cheaper than a
