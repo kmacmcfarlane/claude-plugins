@@ -26,3 +26,5 @@ return: planner DONE .claude-sandbox/investigations/spike-destructive-action-saf
 baseline: 77165043a85c70a4e8c46e5edaa7bf1b318815c5e8f2cd655220d19f0c4f8f56  00_initial.md 793399525965e9c1965ca5dce53cb3ecc4f7dae72a200064d547b3ab2450e126  INDEX.md 
 dispatch: reviewer opus high — plan review round 1 (fresh)
 agent: reviewer afdc46fe247e2b56b plan round 1
+verdict: NEEDS_CHANGES plan round 1 (16: 5 medium — -p denial is documented (headless) so the stall is interactive-only; X6 must run interactive bypass; L2 misses documented forms (logs/*/*, var+top-level name, trailing substitution, backslash, additional-dir globs); aim may be two aims and F2's row promises F7; OQ vs b2df 233-239 mapping; brief section 7 deliverables map; lows: R4 vs #94704 semicolon cd, L1 scope wording, L1 message for non-rm prompts, deny reason for stricter rules, R6 basis, X4 cwd, F7 files, nits)
+dispatch: planner opus high — resume, plan fix round 1
