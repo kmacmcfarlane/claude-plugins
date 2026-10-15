@@ -43,3 +43,7 @@ agent: reviewer a465a62b18f0b778d plan round 2
 verdict: NEEDS_CHANGES plan round 2 (16 of 18 fixed; 3 must-fix: under -X no -e or :! exclusion keeps the store, so the deny's own safe form deletes it; git clean -f without -d removes untracked items in a host-tracked store; unbounded reads of repo-controlled files (FIFO, /dev/zero) on every Bash call; lows: built-in-named aliases, glob negations, shell aliases, roll-backs out of scope, backups monitor checkable, D4 wording)
 dispatch: planner opus high — resume, plan fix round 2
 agent: planner a2cdd001d65a75437 round 3
+return: planner DONE .claude-sandbox/investigations/work-items-guidance-and-a-guard-so-agent-b2df (02_review-round-2.md; -X never safe with a covered store, positive pathspec safe form; any clean covering a non-ignored store denied; bounded reads; OQ6 narrowed to the operator's backups-alert knowledge)
+baseline: 4a58600911b3adc583227e7d97a325d7235640b203d290887c3aa6cccde7b2da  00_initial.md 057d212d0023c838f298c7bded4a9d0bdf5d77c6f91186fe0a9d95941ffa76c4  01_review-round-1.md 4cf41d4b466e84438fb2da508408540967a7942f44095bd1930a22d065eb1387  02_review-round-2.md 5e9c6b2f41d0fb2d72adcb1d1c0b0b8885bd9754b89c8fce4fe5063ad0bc1d13  INDEX.md 
+dispatch: reviewer opus high — resume, plan review round 3
+agent: reviewer a465a62b18f0b778d plan round 3

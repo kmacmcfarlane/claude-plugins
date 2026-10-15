@@ -3,10 +3,11 @@ id: wi-default-store-work-items-git-ignored-5f46
 title: "wi: default store .work-items/, git-ignored on init; env vars renamed to WORK_ITEMS_"
 short_display_name: wi store .work-items, WORK_ITEMS_ env
 type: feature
-status: todo
+status: done
 priority: 1
 created: 2026-10-15
 updated: 2026-10-15
+closed: 2026-10-15
 refs:
   - answer 227, operator 2026-10-15
 ---
@@ -96,3 +97,7 @@ agent: reviewer a392a869cf34323d1 F4 round 2 at d44c2cb8
 result: DONE F3 finish at 5fe1515b, main merged as a35d3f06 (clause asks the repo holding the store at every site; exact; read by the librarian)
 verdict: CLEAR F3 after 0 fix rounds, 1 finish at a35d3f06
 verdict: CLEAR F4 round 2 at d44c2cb8 (nits: three reflows, scope the host commit to the store; declined, optional)
+landed: F1-F5 pushed d39e0e7c..529f076f at 2026-10-15T04:46Z; Checks 12/12 OK; claude-sandbox told
+
+## Notes
+- 2026-10-15 done
