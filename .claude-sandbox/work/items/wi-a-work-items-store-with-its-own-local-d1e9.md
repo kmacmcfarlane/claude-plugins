@@ -62,3 +62,4 @@ agent: reviewer a399339a8327c6ba6 F1 round 2 at f91ae111
 note: 2026-10-15T06:26Z operator: checkpoint and compact as soon as this dev cycle (d1e9 F1 review) completes; no new dispatches after it
 verdict: CLEAR F1 round 2 at f91ae111 (22-case sweep silent; 50k-file store prime 147 ms; nit: no test pins the host ls-files fsmonitor pin — carried into F2's brief; nit: .GIT dir counted, no change)
 findings: carried — add a host core.fsmonitor marker to TestChecks.test_host_tracks_the_store and assert none after lint
+landed: F1 locally 6fb686d2 (Checks 12/12 OK); NOT pushed — F1 ships only with F2, F3, F5 (its fix texts name wi commit and init adoption)
