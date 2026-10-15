@@ -78,3 +78,7 @@ dispatch: reviewer opus high — resume, F2 round 2
 agent: reviewer add9a9ef6d85711e5 F2 round 2 at 3a057c2c
 verdict: CLEAR F2 round 2 at 3a057c2c (all 7 closed; nits: _unsafe_path key cut at a space (cosmetic); lazy-fetch test fails rather than skips on git < 2.39.4)
 carry: F3's brief — _store_repo env scrub at init (reviewer flag c)
+landed: F2 locally 390c60c5 (Checks 12/12 OK; cc_scan clean: own helper names only); NOT pushed — ships with F1, F3, F5
+note: wi commit stages every store path, so in a store two sessions write it sweeps the other session's finished item writes into this commit (attribution only; F5's per-change commits end it). Until F5 lands this librarian keeps committing named store files.
+target: an agent worktree off main (390c60c5); wi init create/adopt, own-unrecorded and no-history checks (F3)
+dispatch: implementer opus high — d1e9 F3: init creates or adopts the store's repo (same file and effort as F1/F2)
