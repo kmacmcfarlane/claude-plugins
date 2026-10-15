@@ -86,3 +86,6 @@ agent: implementer a56d080820c81b88a F3 round 1
 result: DONE F3 round 1 at 8712bd83 (init create/adopt via _store_git, --template= empty, env scrub, local hooksPath/fsmonitor; 573/105/762/21 OK; 19 mutants caught; departures: old locations not refused (note instead), a remote does not refuse adoption (plan), test_wi fixtures moved to --track, extra refusals and notices)
 dispatch: reviewer opus high — fresh (rule 4), d1e9 F3 (security-sensitive)
 agent: reviewer a68637230a53cccf7 F3 round 1 at 8712bd83
+note: 2026-10-15 session restarted; reviewer a68637230a53cccf7 (F3 round 1) stopped unfinished — resumed
+ruling: operator 2026-10-15, verbatim: "It seems like `wi init` should just error out if it finds un-migrated `.work` or `.claude-sandbox` prompting agents to do the migration (with an override flag to bypass if for some reason a different project is using the .work convention)" — replaces F3 departure 1 (and goes past D3 step 2): init exits non-zero on a store at an old location, naming the move (format.md § Moving a store); one override flag keeps today's plain store there
+decided: the flag's name is the implementer's to propose (two-way until the push); dev-flow first-start's init line handles the new exit
