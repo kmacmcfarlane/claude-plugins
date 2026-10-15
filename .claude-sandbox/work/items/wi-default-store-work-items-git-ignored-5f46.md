@@ -95,3 +95,4 @@ dispatch: reviewer opus high — resume, F4 round 2
 agent: reviewer a392a869cf34323d1 F4 round 2 at d44c2cb8
 result: DONE F3 finish at 5fe1515b, main merged as a35d3f06 (clause asks the repo holding the store at every site; exact; read by the librarian)
 verdict: CLEAR F3 after 0 fix rounds, 1 finish at a35d3f06
+verdict: CLEAR F4 round 2 at d44c2cb8 (nits: three reflows, scope the host commit to the store; declined, optional)
