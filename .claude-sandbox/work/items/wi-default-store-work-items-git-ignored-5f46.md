@@ -80,3 +80,13 @@ result: DONE F3 round 1 at e7f140b3 (both lookup copies, first-start --no-track 
 dispatch: reviewer opus high — fresh (rule 4), F3
 agent: reviewer a30965ea7fa25cb55 F3 round 1 at e7f140b3
 verdict: CLEAR F5 round 1 at 809f6ad1 (nit: checks.md:29-30 wording; declined, optional)
+verdict: NEEDS_CHANGES F4 round 1 at 45696581 (1 medium: the skip-commit clause asks the host repo, so a sidecar store, which wi records tracked, and a nested-repo store are wrongly skipped; ask the repo holding the store and commit there — the same fix applies to F3's copies; 2 low: design-rationale wording under 232 a, Lean OPEN line; 2 nits)
+dispatch: implementer opus medium — resume, F4 fix round 1
+agent: implementer a8d929df520e959a2 F4 round 2
+verdict: CLEAR F3 round 1 at e7f140b3 (L1 ending-the-session tracked wording; nits opt-in Scope, exit 128, first-start line); plus F4's medium applies here: the skip-commit clause must ask the repo holding the store, not the host (a sidecar store is host-ignored yet tracked)
+decided: 2026-10-15T04:31Z cap — one finish round on F3 with F4's exact clause, L1 and the nits (authority answer 145)
+closed 229: superseded by answer 232 (d)
+closed 230: superseded by answer 232 (b)
+closed 231: superseded by answer 232 (librarian stores follow the ignored default, history in their own repo)
+dispatch: implementer opus medium — resume, F3 finish round
+agent: implementer a5e878c739c73bc30 F3 round 2 (finish)
