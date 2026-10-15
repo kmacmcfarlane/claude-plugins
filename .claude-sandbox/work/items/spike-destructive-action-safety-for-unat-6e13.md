@@ -34,3 +34,4 @@ dispatch: reviewer opus high — resume, plan review round 2
 agent: reviewer afdc46fe247e2b56b plan round 2
 verdict: NEEDS_CHANGES plan round 2 (15 of 16 closed; new: A N1 lets ${HOME:?}/* through though docs say use a literal for normally-set vars; B b2df map's revised: lines break the decision doctrine (close as superseded, rewrite cards); C folding 233 drops its guidance-only option; D G2 ambiguous on ${T:?}; lows E 236 ask options recreate the stall, F N2 name list fixed, G catalog parenthetical)
 dispatch: planner opus high — resume, plan fix round 2
+agent: planner a17fe67421b5a97f3 round 3
