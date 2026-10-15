@@ -291,9 +291,10 @@ escape hatches:
    under `${CLAUDE_CONFIG_DIR:-$HOME/.claude}/claude-kit/context-gate/` (the newest `.json`
    there is the live session; `gauge.json`, `window-mismatch.jsonl` and the `_`-prefixed
    files are not sessions). It refuses, exiting non-zero and
-   writing nothing, when no state file exists for that id — a mistyped id, since a live
-   session always has one. It also stamps the machine fields of that session's own
-   manifest — found by the session id, in the config dir (above), wherever you run it —
+   writing nothing, when the id is empty or no state file exists for that id — a
+   mistyped id, since a live session always has one. It also stamps the machine fields
+   of that session's own manifest — found by the session id, in the config dir (above),
+   wherever you run it —
    but only a manifest written in the last 30 minutes (the format spec's "Machine fields"
    rule); an older one is left as it is. The working directory supplies only the `head:`,
    `branch:` and `top:` it records, so run it from the repo the manifest is about; the

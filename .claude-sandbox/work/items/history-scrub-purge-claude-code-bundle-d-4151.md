@@ -25,3 +25,4 @@ note: 2026-10-07T18:35Z purge inputs to add (from the e347 build review): the tr
 note: 2026-10-07T18:45Z purge inputs: the undocumented loop variable in store item 8ab6:26, on main since e122bdd (deny-listed locally)
 answer 171: later (answer page, rev 2026-10-07T07:00Z, 2026-10-07T20:51:03.424Z; read as: later, as before — when the operator can oversee it)
 note: 2026-10-13 from the claude-sandbox plan reviewer (relayed by its librarian): the public tip and 3 history commits carry the private work path in .claude-sandbox/config.yaml; the sidecar move (dc89) removes it from the tip only — a history rewrite question for the operator, with the abb8 audit list
+2026-10-13 add: work item 87fd's own body (pushed) names Read hook response fields first written from an internals read (5126 review r2); found by 87fd's implementer; current tree and history both — operator's path per CLAUDE.md rule 5

@@ -57,3 +57,27 @@ shown 208: 2026-10-09T08:34Z chat
 shown 207: 2026-10-09T08:57Z page
 shown 208: 2026-10-09T08:57Z page
 note: 2026-10-09T08:59Z DF-9 returns to this item's stage 2 (not 64c7): the librarian-mode hint points at dev-cycle references/bindings.md § Peer hint, which this item adds; text per 00 § DF-9 ('context-guard adds the context gate and checkpoints'). KD-2 stays with d0b0 (inline, no pointer needed)
+shown 207: 2026-10-14T06:53Z page
+shown 208: 2026-10-14T06:53Z page
+answer 207: b (unattended) — "we can run interactively if the unattended probes fail, assuming you can tell if they fail" (answer page YXBW5U31wCnd2jPAWyJF1F, rev 2026-10-09T10:00:00Z, at 2026-10-14T07:08:07.891Z)
+answer 208: a (answer page YXBW5U31wCnd2jPAWyJF1F, rev 2026-10-09T10:00:00Z, at 2026-10-14T07:08:42.503Z)
+target: an agent worktree off main (f4be55ec); per the series plan
+budget: waived (operator 2026-10-08); spend measured
+dispatch: implementer opus medium — build per the series with unattended probes and failure detection (answer 207 b), hub statusline mention removed (answer 208 a)
+agent: implementer a7d5d84371ff4f280 round 1
+result: DONE round 1 at 72f0bbb5 (helper in context-guard and statusline-hub, identity test in kit-dev; adopters; 208 a: hub first-run install mention removed; probes O1, O2, O4 (UserPromptSubmit only), O5 pass, O3 fail: the prose echo of the switch is denied in default mode, so prose no longer reads it; host settings hash unchanged every run)
+dispatch: reviewer opus high — fresh (rule 4)
+agent: reviewer a20cca2804ea4285f round 1 at 72f0bbb5
+verdict: NEEDS_CHANGES round 1 at 72f0bbb5 (1 high: prose tips no longer honour the switch, against README principle 4 and every tip's text; 1 medium: 'prose cannot read it' overstates the probe, printenv ran under an allow rule; 2 low: SessionStart not observed to show a hint, '-p unseen' wording; 2 nits)
+decided: 2026-10-14T08:01Z scope — route A (prose reads the switch through a skill's injected printenv line pre-approved in allowed-tools, per https://code.claude.com/docs/en/skills) keeps README principle 4 unchanged, so no doctrine decision; one more probe in the same isolation under answer 207 (b); if it fails, route B (a doctrine change) comes to the operator as a decision
+dispatch: implementer opus medium — resume, fix round 1 (route A with one probe; findings 2-6)
+agent: implementer a7d5d84371ff4f280 round 2
+result: DONE round 2 at 38aa5ae1 (route A probe passed: runs 9, 11, 12 on 2.1.293; the plain printenv form fails to load the skill when unset, the '|| true' form works; seven skills inject the switch; findings 2-6 applied; all suites OK)
+dispatch: reviewer opus high — resume, round 2
+agent: reviewer a20cca2804ea4285f round 2 at 38aa5ae1
+verdict: NEEDS_CHANGES round 2 at 38aa5ae1 (1 high: per the skills doc an injected command that is not allowed (ask or deny rule, managed-only rules) aborts the whole skill, so seven skills could fail to load for a soft-peer tip; 1 low: auto-mode instruction conflict; 2 nits: marketplace suffix, long lines)
+decided: 2026-10-14T08:24Z scope — fix (a): isolate the capture in one small non-user-invocable skill per plugin, called only when a tip would show, a failed call withholds; keeps README principle 4 and confines any abort to the tip; one deny-rule probe first under answer 207 (b); if a failed Skill call ends the turn, route B comes to the operator as a decision
+dispatch: implementer opus medium — resume, fix round 2
+agent: implementer a7d5d84371ff4f280 round 3
+result: BLOCKED round 3 (probe runs 13-17, 2.1.293: a failed capture returns as a tool error and the run continues; but invoking a skill that carries allowed-tools and an injected line through the Skill tool is itself permission-gated in default mode, so fix (a) puts a prompt at each tip, and round 1's seven skills may now prompt when Claude invokes them; slash invocation loaded without a prompt; which part triggers the gate is unconfirmed); branch at 38aa5ae1, nothing new committed
+decision 228: How should a skill's peer-hint tip honour the hide-tips switch, now that every way for a skill to read it either prompts you or can stop the skill loading? — options: (a) hooks only read the switch; a skill's tip shows at most once per conversation and stops when you ask in chat; README principle 4 and the tip text say so honestly; round 1's injected lines come out [recommended] | (b) a small capture skill per plugin read at each tip: a permission prompt at the moment of each tip in default mode, withheld in -p runs | (c) skills give no tips at all; they only disclose what was skipped, and only hooks hint | (z) decide later: the helper and its hook adopters wait unlanded

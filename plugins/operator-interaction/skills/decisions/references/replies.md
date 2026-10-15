@@ -60,7 +60,7 @@ Example 25 in `references/gallery.md` shows one.
 ## Reply types
 
 **Choose — `N: letter`, or a choice in words.** Act on it. On a **⚠ one-way decision**, when
-the **chosen option** is one-way — its Undo (its cell in the block's Impact table) says it
+the **chosen option** is one-way — its Undo (its cell in the block's Impact table, or on its impact line on a card) says it
 cannot be undone, or only at real cost — first repeat the choice back and act only once the
 operator confirms. A one-way decision with a narrow reach (no ⚠, its Undo saying it cannot be
 undone) is answered like any card: its narrow reach is why it is not ⚠.

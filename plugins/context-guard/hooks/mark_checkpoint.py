@@ -8,8 +8,8 @@ DUE stops re-firing, HARD stops blocking, and a deferral at or under DUE is
 allowed to proceed on its next attempt. One above DUE is still held while the
 session is idle at its last measured fill, and proceeds once a prompt or tool
 result follows it. Refuses (exit 1, nothing written)
-when the session has no state file: a live session always has one, so that
-means a mistyped id, not a session to create.
+when the id is empty or blank, or when the session has no state file: a live
+session always has one, so that means a mistyped id, not a session to create.
 
 With `--from <draft>` it first INSTALLS the draft (install_draft): the
 skill writes the manifest with the Write tool into its session scratchpad,
@@ -517,6 +517,12 @@ def main(argv):
         # an id never starts with "-": that is a mistyped flag
         sys.exit(usage)
     sid = argv[1]
+    if not sid.strip():
+        # Refuse before looking it up: an empty id comes from an unset
+        # variable, not a session (a hook with no id keys its state as the
+        # literal `unknown`, which the HARD STOP hatch prints).
+        sys.exit("mark_checkpoint.py: empty session id (is $CLAUDE_CODE_SESSION_ID "
+                 "set?); nothing recorded.")
     if not os.path.exists(L.state_path(sid)):
         # A live session always has state (every prompt's gate hook writes it), so
         # a missing file means a mistyped id: refuse rather than stand down nothing.

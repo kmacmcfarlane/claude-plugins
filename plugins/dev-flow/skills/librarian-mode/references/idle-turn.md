@@ -67,7 +67,7 @@ Work
 
 - **Groom** — items that need the operator: every row `wi needs-input` prints — a
   `grooming` item (its questions) or an unanswered `decision N:` line (no `answer N:`
-  line with the same N in the same item; `answer N: <reply>`, SKILL.md § Report, is the
+  line with the same N in the same item; `answer N: <reply>`, `report.md` § The counter, is the
   only form it reads, so the librarian writes one whenever the operator answers) —
   plus `blocked` items with a reason that names the operator, which `needs-input`
   does not cover: including a free-text deferral such as "operator holding until
@@ -77,12 +77,13 @@ Work
   recommendation as the headline names it — `[recommended]` or an older mark, or a
   preference or authority label, read as the `work-items` skill's format reference,
   § Operator questions, lists them — one row per decision, never several folded into one
-  row. With the `operator-interaction:decisions` skill loaded, the row ends with the
-  decision's effect at that skill's tag size — `→ <effect>`, under about 10 words, each
-  option's in a few words when there is no recommendation — read from the `impact:` line
-  of the last card stored for N (`decisions.md` § What the store records), since
-  `wi needs-input` prints the headline only; a card without one is backfilled as that
-  section says before the row is printed. A deferred one also shows its last `wake N:`,
+  row. With the `operator-interaction:decisions` skill loaded, the row ends with an
+  effect at that skill's tag size — `→ <effect>`, under about 10 words — read from the
+  last card stored for N (`decisions.md` § What the store records): the recommended
+  option's own effect from its option line, since the arrow follows the recommendation;
+  with no recommendation, each option's in a few words from the `impact:` line. It is read
+  from the store since `wi needs-input` prints the headline only; a card without one is
+  backfilled as that section says before the row is printed. A deferred one also shows its last `wake N:`,
   and stays a Groom row until the wake comes.
   With the `operator-interaction:decisions` skill loaded, a decision is put to the operator
   in full only when `decisions.md` § The Report's item 4 selects it (raised since the last
@@ -166,7 +167,7 @@ $WI block <hold-id> "HOLD: <scope> until <end condition>"
 The short display name (`fable hold`, `one-agent hold`) never contains "until":
 context-guard's rehydrate hook reads each HOLD line of a checkpoint manifest (the Holds
 lines in `ending-the-session.md`) and takes its end condition from after the last
-"until". Its length, and what each exit from `add` means, are as SKILL.md § Intake step 1
+"until". Its length, and what each exit from `add` means, are as `intake.md` § Step 1
 says.
 
 It records three things:
@@ -179,8 +180,8 @@ It records three things:
     too; the `hold:` line names them;
   - **a limit** that preserves quota — at most N agents in flight, no fable. A limit
     caps and does not stop: dispatch goes on inside it. It binds every dispatch while
-    it stands — idle-turn dispatch, Intake, and every fix round (SKILL.md § The cycle,
-    the Hold binding). N counts every background agent in flight, implementers and
+    it stands — idle-turn dispatch, Intake, and every fix round (`cycle-bindings.md`
+    § Hold). N counts every background agent in flight, implementers and
     reviewers alike: one item's implementer and reviewer never run at once, but a
     reviewer on one item and an implementer on another are two.
 - **The end condition** — an event ("until the operator says bedtime"), a time ("until

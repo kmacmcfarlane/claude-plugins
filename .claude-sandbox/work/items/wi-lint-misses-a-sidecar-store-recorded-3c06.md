@@ -18,3 +18,21 @@ From 00fc's scratch test, 2026-10-13: wi init --no-track in a sidecar layout rec
 - next: —
 - blocked: —
 - learned: —
+target: an agent worktree branch off main (832cec4f); plugins/work-items/skills/work-items/{scripts/wi.py,tests/test_wi.py,SKILL.md,references/format.md}
+budget: waived (operator 2026-10-08); spend measured
+dispatch: implementer opus medium — lint/prime warn on an ignored sidecar store; init --no-track in a sidecar warns or refuses
+agent: implementer ac34548631423ee4a round 1
+result: DONE round 1 at 012293db (372 tests OK; lint finding exit 3; init refuses ignored choices in a sidecar incl. the no-terminal default)
+dispatch: reviewer opus high — fresh (rule 4), review 012293db against main
+agent: reviewer a93ea09796cd7b81e round 1 at 012293db
+verdict: NEEDS_CHANGES round 1 at 012293db (1 medium needs the operator: refusing the no-terminal default in a sidecar overrides answer 211 b; lows: menu defaults to the refused option, untested; unrecorded-store note still offers --no-track; format.md bullet omits the exception; nits: SKILL.md cell, SIDECAR_NO_REPO wording; code sound, 372 OK)
+dispatch: implementer opus medium — resume, fix round 1 part 1 (findings 3, 6: independent of the ruling)
+agent: implementer ac34548631423ee4a round 2
+decision 214: In a sidecar layout (.claude-sandbox/ is its own git repo) what should a bare wi init with no terminal do, given answer 211 b chose an ignored store plus a warning for that case in general? — options: (a) refuse, exit 1, nothing written, naming --track (as built; reverses 211 b for sidecars only) | (b) default to tracked in a sidecar: exit 0, the store is committed in the sidecar repo, the host still never sees it, so 211 b's foreign-safe reason holds [recommended] | (c) ignored store plus a warning as 211 b reads literally: wi then flags the store as broken on every prime | (z) decide later: 3c06 waits, the bug stays on main
+result: DONE round 2 part 1 at 1202eb7c (findings 3, 6; 373 OK); the rest waits on decision 214
+shown 214: 2026-10-14T06:53Z page
+answer 214: words only, a reframe — "I think we should move to ./.work-item being the defacto store in all casses, and it should be gitignored when established. That simplifies it, esp in the context of using the work-item plugin without claude sandbox. The CLAUDE.md in this repo needs clear guidance to ensure all architecture and implementation plans account for stand-alone functionality of plugins with graceful degradation where cross-plugin integration is implemented. A notable exception is the statusline-hub, which exists as a hard-dependency for context-guard (and claude analytics)" (answer page YXBW5U31wCnd2jPAWyJF1F, rev 2026-10-14T00:30:00Z, at 2026-10-14T07:04:40.843Z)
+decision 227: Answer 214's reframe — the default work-item store becomes one git-ignored folder at the repo root, everywhere. Which folder name, and does this repo's store move to it? — options: (a) .work/ (wi already supports it), git-ignored on init; this repo's store moves once claude-sandbox's migration plan is settled, history unchanged [recommended] | (b) .work-items/ (the plugin's name), git-ignored; same timing | (c) .work-item/ as you wrote it; same timing | (z) decide later: wi keeps today's layout-dependent rule
+shown 227: 2026-10-14T08:14Z page
+answer 227: b, in chat 2026-10-15, verbatim: "I think ./.work-items is best, because it matches the name of the skill. I'm going to stick with that decision. That means another change for the `wi` cli tool, but I'm confident now. I think the `wi` tool should use `WORK_ITEMS_` as the env var prefix for consistency as well." (read as: (b) .work-items/ at the repo root, git-ignored on init, this repo's store moving after claude-sandbox's store decision; plus wi's environment variables renamed to the WORK_ITEMS_ prefix)
+note: 2026-10-15T02:14Z decision 214 is superseded by answer 227 (the default store moves to .work-items/); the sidecar guard here waits for the new store default and claude-sandbox's decision 115

@@ -98,6 +98,17 @@ alternative not taken, in case practice argues for it.
   card-level Impact covers the decision across all its options, each facet on its own line;
   each option's effect lives in its own detail. Not taken: Effect as the recommended option's
   on a page.
+- **Effect across the options in chat, and each option's own impact** (2026-10-14, answer
+  206 (a), widened by the operator: "is there a provision for displaying the
+  effect/reach/undo/cost in TUI cards/blocks per-option too? That parity seems valuable.
+  Make it so"; the italic line under each option, facets that do not apply left out, and
+  older stored lines read as written, designs made in build, not the operator's) — the
+  Impact line's Effect, stored and shown, covers the decision across all its options,
+  favouring none, as the page's does; each option on a card carries its own effect, reach,
+  undo and cost on an italic line under it, and a block shows the card's Impact line above
+  its table. Not taken: Effect as the recommended option's in chat (206 (b)); per-option
+  facets on the list line. The list line keeping the recommended option's own effect after
+  its label (a build design) is pending the operator's answer to decision 219.
 - **A Context section on chat cards and blocks** (2026-10-12, the operator's direction: "the
   decision skill's TUI output should have a context section for cards and blocks, similar to
   how the decision-page works"; the cue folded in as Context's last clause, the What line
@@ -111,3 +122,12 @@ alternative not taken, in case practice argues for it.
   card, shown every time; a list line carries none. Not taken: the cue alone, shown to a
   cold reader only (2026-09-30); the cue on a line of its own above Context; a block's
   Context at the page's high size.
+- **No Options in full; none is not shown, on an answer page** (2026-10-14, the operator's
+  direction: "the options in full section is redundant to the inline details in each option,
+  ditch it. If any sub-section is empty or none, just don't display it"; the required Impact
+  facets, each option's Undo cell, the basis word and the rec line's *unknown: none* kept as
+  statements, (z) given a
+  **More**, and a one-way card's options shown open, designs made in build, not the
+  operator's) — each option's **More** carries what the fold did (its text at every level,
+  its impact and its row); a part, facet or field that is empty or none is left off the page.
+  Not taken: the fold kept beside **More** (198, as built); *none* written out.

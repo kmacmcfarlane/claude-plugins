@@ -3,22 +3,30 @@
 Every librarian on one subscription spends from the same five-hour and weekly windows.
 `scripts/quota_budget.py` measures them and prints the inputs a budgeted idle turn needs.
 It decides nothing. It prints the numbers (used, velocity, allowed rate and reserve per
-window, the binding window, the fresh-claim count) and `next_check`, and nothing else. The
-mode and the concurrency cap N are chosen in F2's idle turn from those numbers, and that
-integration has not landed yet. The reason is the librarian's decision on R1, recorded on
-work item 9882: F2 owns the mode table and the N formula, and the agents policy is about to
-change the librarian count that formula divides by. Computing N here would bake in a
-formula that is about to change. Routing's reader of these numbers: the `dev-cycle`
-skill's `references/model-routing.md` § Below the quota reserve; the review loop's, the
-`dev-cycle` skill's `references/bindings.md` § Decisions, Past the fourth review (§ Rounds
-past the fourth review, below).
+window, the binding window, the fresh-claim count, the spend inputs, the weekly quota
+pressure and the stored quota answer) and `next_check`, and nothing else. One call shape
+writes an answer instead of a claim: `--quota-answer go-on` stores the operator's go-on
+(§ The store, `quota-answer.json`). The mode and the concurrency cap N are chosen in F2's
+idle turn from those numbers, and that integration has not landed yet. The reason is the
+librarian's decision on R1, recorded on work item 9882: F2 owns the mode table and the N
+formula, and the agents policy is about to change the librarian count that formula
+divides by. Computing N here would bake in a formula that is about to change. Routing's
+reader of these numbers: the `dev-cycle` skill's `references/model-routing.md` § Below
+the quota reserve; the review loop's, the `dev-cycle` skill's `references/bindings.md`
+§ Decisions, Past the fourth review (§ Rounds past the fourth review, below); the spend
+asks' reader of the spend inputs and the quota pressure, the `dev-cycle` skill's
+`references/bindings.md` § Spend budget.
 
 **Who owns what.** This file owns the mechanics: where the store lives, its schema, and how
-the numbers are computed. The **values** belong to the `agents` repo's
-`librarian-budget-policy` series (its item 8ad9): the reserve table, the claim TTLs and the
-absent-signal pool. They are defaults until the operator ratifies them, except where a ruling
-is noted below. A value changes there first and is then copied into the constants at the top
-of the script, never the other way round.
+the numbers are computed. The **values** — the reserve table, the claim TTLs, the
+absent-signal pool, and the spend inputs — are claude-plugins' own: agents decision 0010
+(operator ruling 2026-10-03) moved them here from the `agents` repo's
+`librarian-budget-policy` series, whose decisions 0008 and 0009 keep their history. They
+stay defaults until the operator ratifies them, a ruling recorded in claude-plugins, except
+where a ruling is noted below. A value change is a claude-plugins decision, made in the
+constants at the top of the script, which are the one copy. The measured spend inputs
+(dollars per point, the burst size, each kind's p75) come from claude-analytics once its
+reports exist (§ The numbers, Spend inputs).
 
 ## Running it
 
@@ -29,16 +37,24 @@ python3 scripts/quota_budget.py            # from the skill dir; one JSON object
 | Flag | Effect |
 |---|---|
 | `--session ID` | the session whose sensor record is read (default `$CLAUDE_CODE_SESSION_ID`, which Claude Code exports to its Bash tool) |
-| `--repo NAME` | the claim's repo (default: basename of the main checkout, from `git rev-parse --git-common-dir`, so a worktree resolves to its repo) |
+| `--repo NAME` | the claim's repo (default: basename of the main checkout, from `git rev-parse --git-common-dir`, so a worktree resolves to its repo); for the quota answer's reference and its `authority`, the repo (default: the origin remote's name, else that basename, § `quota-answer.json`) |
 | `--read-only` | write nothing: no sample appended, no claim written |
 | `--takeover` | overwrite a fresh claim held by another session (see § Claims) |
 | `--stale-after S` | a reading older than S seconds counts as no signal (default 1800) |
 | `--sink-dir DIR` | the claude-analytics samples dir (default: discovered, § Sources) |
+| `--quota-answer go-on` | store the operator's go-on in `quota-answer.json` and write nothing else (no sample, no claim). `go-on` is the only value: a wait is never stored |
+| `--for-reset WHEN` | with `--quota-answer`, required: the weekly reset the quota ask named (epoch seconds or ISO 8601) |
+| `--item ID` | with `--quota-answer`: the asking work item |
+| `--decision N` | with `--quota-answer`: the decision number answered (left out standalone) |
+| `--answered-at UTC` | with `--quota-answer`: the answer's time, ISO 8601 (default: the call's own time) |
+| `--reply TEXT` | with `--quota-answer`: the operator's reply as the `answer:` line records it |
 
 Exit 0 with the result. Exit 1 when a store write failed: the result is still printed,
 with an `errors` list, and a message goes to stderr. Exit 1 also on an internal error: a
 minimal `{"v": 1, "signal": "none", "reason": "internal error", "next_check": 900}` is
-printed, and the exception goes to stderr. Exit 2 on a bad argument. It never raises. A
+printed, and the exception goes to stderr. Exit 2 on a bad argument, and on a quota answer
+refused (§ `quota-answer.json`): nothing is written, and the reason goes to stderr and to
+`errors`. It never raises. A
 poisoned input never reaches an error, though: an unreadable, oversized or deeply nested
 JSON file reads as absent, and a bad line in a `.jsonl` file is skipped.
 
@@ -53,6 +69,7 @@ CFG/claude-kit/librarian/          0700
   samples.lock                     0600  flock held across each append and prune
   intent.json                      0600  operator intent (written by the intent feature; read here)
   claims/<repo>.json               0600  one claim per repo; each librarian writes only its own
+  quota-answer.json                0600  the stored go-on, one per subscription (--quota-answer)
   claims/stale/                          tombstones (not read by the count)
 ```
 
@@ -70,8 +87,8 @@ conflict, below). The script creates each directory it is missing with mode 0700
 `claude-kit/` down. It also sets the directory it writes into to 0700 on every write
 (`librarian/` and `claims/`), even when that directory already existed. Directories above
 those, including an existing `claude-kit/`, keep their modes. The store holds percentages,
-session ids and intent, never a settings value. The script never reads a settings file or
-Claude Code's user-level state file.
+session ids, intent and the go-on's reference with the operator's reply, never a settings
+value. The script never reads a settings file or Claude Code's user-level state file.
 
 ### `samples.jsonl`
 
@@ -114,6 +131,48 @@ session's own registry file, `CFG/sessions/$CLAUDE_PID.json`, and only when that
 heartbeat, and `in_flight` as a list of `{item, tier, since}`. It keeps any other field in
 a claim of its own session, such as `demand`, `mode` or `hold_two_writers`, which the
 idle-turn integration writes.
+
+### `quota-answer.json`
+
+The operator's go-on to a quota ask (the `dev-cycle` skill's `references/bindings.md`
+§ Spend budget), stored once for the subscription so every librarian and run on it reads
+it. There is one file and the last writer wins.
+
+```json
+{"v": 1, "kind": "go_on", "resets_at": 1790120000.0, "from_used": 41.0,
+ "go_on_points": "<pts>", "until_used": "<from_used + go_on_points>",
+ "ref": {"repo": "claude-plugins", "item": "<item id>", "decision": 12,
+         "answered_at": "2026-10-14T09:12Z", "reply": "<the operator's reply>"},
+ "set_by": "<session id>", "at": 1789760000.0}
+```
+
+- **Written** only by `--quota-answer go-on --for-reset <the reset the question named>`,
+  and only by a session that recorded the operator's own `answer:` (the first-hand rule
+  `intent.json` follows). The call writes this file and nothing else: no sample, no claim.
+  It is written the store's way: a unique temp file, then `os.replace`, at 0600, the
+  directory at 0700. A symlink at the path is replaced, never followed.
+- **The reach.** `resets_at` is the current weekly window's, `from_used` the weekly use at
+  answer time, `go_on_points` the spend input `GO_ON_POINTS`, and `until_used = from_used
+  + go_on_points`.
+- **The reference.** `repo` is `--repo`, else the origin remote's name (the last path part
+  of `git remote get-url origin` without `.git`, in either the `host:owner/name.git` or the
+  URL form), else the main checkout's directory name; this is the `<repo>` of
+  `<repo>#N`. `item` and `decision` are `--item` and `--decision`, `null` when not given.
+  `answered_at` is `--answered-at` normalised to UTC `YYYY-MM-DDTHH:MMZ`, or, when it is
+  not given, the call's own time truncated to the minute, so it is always present.
+  `reply` is `--reply` with control and format characters turned to spaces, trimmed, and
+  cut to `REPLY_MAX` characters with an ellipsis when longer; `""` when not given.
+- **Refused** (exit 2, nothing written): a value other than `go-on`, `wait` included (a
+  wait is never stored); no weekly reading; a `--for-reset` that has passed, or that is not
+  within 60 s (`RESET_TOLERANCE_S`) of the current weekly `resets_at`, meaning the answer
+  came after the week turned; a missing or malformed `--for-reset`; a malformed
+  `--answered-at`; an `--item`, `--repo` or `--decision` outside the safe-name or
+  positive-number form; `--read-only` with it; and any of the answer's own flags without
+  it. **A store write error** exits 1, as other writes do. The result carries
+  `quota_answer: {"written", "path", "refused"}` on every `--quota-answer` call.
+- **Read** on every call with a reading into `quota_pressure.answer` (§ The numbers, Quota
+  pressure). It is opened without following a symlink, non-blocking, regular files only,
+  at most 1 MiB, so a symlink, a FIFO or an oversized file reads as absent.
 
 ## Sources
 
@@ -162,9 +221,10 @@ idle-turn integration writes.
   away's five-hour reserve is 10, not the 5 that 1222's 00 gave in its F1 section: the
   agents policy resolved that series' F1/F5 disagreement that way.
   done-for-the-day's five-hour reserve is 5, not 0: the operator ruled it on 2026-09-24
-  (the series' Open Question 3). The other values are still the series' defaults. No
-  intent's five-hour reserve is below 5, which agents decision 0008's 5% floor asks for;
-  that floor is still read provisionally.
+  (the series' Open Question 3). The other values are the series' original defaults,
+  kept. No intent's five-hour reserve is below 5, which agents decision 0008's 5% floor
+  asks for (now claude-plugins', decision 0010); that floor is still read provisionally,
+  until the operator ratifies it here.
 
   The weekly column is `R`, the reserve until the last 48 h of the weekly window.
 - **The weekly taper.** Reserve still unused at the weekly reset is wasted, so over the
@@ -181,6 +241,57 @@ idle-turn integration writes.
   `reserves.seven_day` is the untapered `R`. The taper needs nothing from the idle turn
   or a scheduler: it is recomputed from the reading on every call, and `next_check`
   (at most an hour out) already re-reads it through the last 48 h.
+- **Spend inputs** (`spend_inputs`, printed on every call, with or without a signal). Each
+  spend kind's `p75` (its typical phase spend) and `ceiling` (its sanity ceiling), in
+  list-price dollars per phase, from `SPEND_KINDS`: `plan.spike` (the plan of a `spike`),
+  `plan.other`, `build.chore`, `build.bug` and `build.other`. Beside them:
+  `usd_per_point` (`USD_PER_POINT`, list dollars per weekly percentage point),
+  `fable_factor` (`FABLE_FACTOR`, the scale a `model: fable` pin puts on ceiling and
+  `p75`), `burst_per_sqrt_day` (`BURST_PER_SQRT_DAY`, b), `alpha` (`ASK_ALPHA`),
+  `go_on_points` (`GO_ON_POINTS`, the weekly points one go-on covers), `phase_hours`
+  (`PHASE_HOURS`) and `share_floor` (`SHARE_FLOOR`). The values are the constants at the
+  top of the script, never restated here. `source` names where they came from:
+  `"constants"` today. `spend_inputs()` is the one seam: a reader of claude-analytics'
+  reports plugs in there, and nothing that reads the result changes when it does. The
+  p75s, the dollars per point and b are measured defaults, to retune; the ceilings,
+  `alpha`, `go_on_points`, `phase_hours`, `share_floor` and `fable_factor` are the ask
+  rule's design values.
+- **Quota pressure** (`quota_pressure`; `null` with no signal). It reads the weekly window
+  only (`windows.seven_day`); the five-hour window never enters it. With `d` the days to
+  the weekly reset (`hours_to_reset ÷ 24`), the reserve the tapered weekly reserve, and
+  `headroom` the window's `100 − used − reserve`:
+
+  - `burst` (burst room) `= burst_per_sqrt_day × √d`: what a big day may still take. It
+    shrinks toward the reset, where unused quota is lost.
+  - `free` (the free headroom after burst room) `= 100 − used − reserve − burst`.
+  - `before_reset_share = max(share_floor, min(1, hours to the reset ÷ phase_hours))`: the
+    share of a phase's spend expected to land before the reset.
+  - `ask_all` is `free ≤ 0`.
+  - `ask_above_points` is 0 when `ask_all`, else `alpha × free ÷ before_reset_share`;
+    `ask_above_usd = ask_above_points × usd_per_point`. Comparing an expected spend with
+    it is the same as asking whether the share of it before the reset exceeds `alpha ×
+    free`.
+  - `room_usd` (the room above the reserve, in dollars) `= max(0, headroom) ×
+    usd_per_point ÷ before_reset_share`. It ignores burst room.
+
+  - `answer`: the stored go-on as it applies now (§ The store, `quota-answer.json`), or
+    `null` when there is none, or it is unreadable, of another `v` or `kind`, or from
+    another weekly window (its `resets_at` more than 60 s from the current one). Its keys:
+    `until_used` and `resets_at` (the reach); `covers`, true while weekly use is below
+    `until_used`; `authority`, the string a decided-alone line cites for the reading repo
+    (`--repo`, else the origin remote's name, else the checkout's): `answer N` for this
+    repo's decision N, `answer <repo>#N` for another repo's, or `answer <repo> <item>
+    <UTC>` for an unnumbered standalone answer (a missing item or time is left out);
+    `answered_at` (`null` in a hand-edited file whose time is missing or not
+    `YYYY-MM-DDTHH:MMZ`; `covers` still holds); and `reply`, cleaned and cut as stored
+    (`""` when none, or not a string).
+
+  It also echoes `days_to_reset`, `used`, `reserve` and `headroom`. Points are rounded to
+  3 places, dollars to 2. The script decides no ask: the caller compares its own expected
+  spend with `ask_above_usd`, and with `room_usd` for the option it recommends (the
+  `dev-cycle` skill's `references/bindings.md` § Spend budget). A concurrency sum, the
+  in-flight items' expected spend weighed against `free` together, is the idle turn's
+  (item c79e) and is not done here.
 - **No signal.** The result is `signal: "none"` with a `reason` when there is no session
   id or sensor record, the record's `v` is not 1, it has no rate limits (an API-key
   session, or no render yet), it lacks either window, it is older than `--stale-after`, it
@@ -246,7 +357,23 @@ runs. An unreadable `at` is never fresh. The count reads `claims/*.json` only, n
                            "reserve": 25.0, "headroom": 51.5, "velocity": 6.2,
                            "velocity_points": 9, "velocity_span_s": 7210.0, "allowed": 51.5},
              "seven_day": {"...": "the same keys"}},
- "binding": "seven_day", "allowed": 0.41,
+ "binding": "seven_day", "allowed": 0.44,
+ "spend_inputs": {"source": "constants",
+                  "kinds": {"plan": {"spike": {"p75": "<$>", "ceiling": "<$>"},
+                                     "other": {"...": "the same keys"}},
+                            "build": {"chore": {"...": "the same keys"},
+                                      "bug": {"...": "the same keys"},
+                                      "other": {"...": "the same keys"}}},
+                  "usd_per_point": "<$>", "fable_factor": "<x>",
+                  "burst_per_sqrt_day": "<pts>", "alpha": "<share>",
+                  "go_on_points": "<pts>", "phase_hours": "<h>", "share_floor": "<share>"},
+ "quota_pressure": {"days_to_reset": 4.1667, "used": 41.0, "reserve": 15.0,
+                    "headroom": 44.0, "burst": "<pts>", "free": "<pts>",
+                    "before_reset_share": 1.0, "ask_all": false,
+                    "ask_above_points": "<pts>", "ask_above_usd": "<$>", "room_usd": "<$>",
+                    "answer": {"until_used": "<pts>", "resets_at": 1790120000.0,
+                               "authority": "answer 12", "covers": true,
+                               "answered_at": "2026-10-14T09:12Z", "reply": "<text>"}},
  "claims": {"repo": "claude-plugins", "path": "...", "written": true, "action": "refreshed",
             "previous": null, "fresh": 2, "fresh_in_flight": 1},
  "next_check": 3600}
@@ -257,15 +384,18 @@ tapered in the last 48 h (agents decision 0008); the flat `R` is `weekly_taper.b
 `weekly_taper` gives the intent's untapered weekly `R` (`base`), the floor, the taper's
 length in hours, and whether the weekly window is inside it now.
 
-With no signal, `windows`, `binding`, `allowed` and `weekly_taper` are `null`. `intent`,
-`reserves` and `claims` are still filled in. Readers ignore keys they do not know. A change
-of meaning to an existing key bumps `v`.
+With no signal, `windows`, `binding`, `allowed`, `weekly_taper` and `quota_pressure` are
+`null`. `intent`, `reserves`, `spend_inputs` and `claims` are still filled in. A
+`--quota-answer` call adds `quota_answer` (§ The store, `quota-answer.json`). The
+internal-error object stays minimal and carries neither `spend_inputs` nor
+`quota_pressure`. Readers ignore keys they do not know. A change of meaning to an existing
+key bumps `v`.
 
 ## Rounds past the fourth review
 
 The guard on a round that would open unasked past a phase's fourth review is the
 `dev-cycle` skill's `references/bindings.md` § Decisions (answer 145 (a)): no hold in force
-(SKILL.md § The cycle, Hold) and a fresh weekly reading not below the reserve. It replaced
+(`cycle-bindings.md` § Hold) and a fresh weekly reading not below the reserve. It replaced
 the one self-granted build round of answer 114 (b): no standing grant is needed, the item's
 spend budget being the grant.
 

@@ -31,7 +31,9 @@ the series slug, a kebab-case name made from the cycle brief's goal, or — `rev
 
 ## What a librarian binds
 
-For reference, the values `librarian-mode` supplies (its own SKILL.md is authoritative):
+For reference, the values `librarian-mode` supplies (the `librarian-mode` skill's
+`references/cycle-bindings.md` is authoritative, summarised one line each in its SKILL.md
+§ The cycle):
 
 | Binding | Librarian value |
 |---|---|
@@ -42,7 +44,7 @@ For reference, the values `librarian-mode` supplies (its own SKILL.md is authori
 | Base | `main`, unless the item names another |
 | Model floor | A `model:` pin and/or an `effort:` pin in the item body |
 | Record sink | The item body |
-| Decision channel | `decision N:` appended to the item, carried under `decisions needed` in its Report — **durable**; caller's stop: a hold in force (its SKILL.md § The cycle, Hold) |
+| Decision channel | `decision N:` appended to the item, carried under `decisions needed` in its Report — **durable**; caller's stop: a hold in force (the `librarian-mode` skill's `references/cycle-bindings.md` § Hold) |
 | Terminal action | `git merge --no-ff` into local `main`; the push is the librarian's, after its Report; an item naming another base merges into that base, never pushed |
 | Series home | `$MAIN/.claude-sandbox/investigations/<slug>/`, as standalone — tooling state like the store, written by the cycle, never a custody edit; agents write there only the series, and dispatched commits never include `.claude-sandbox/` |
 
@@ -85,7 +87,22 @@ carries kit-dev, else the installed plugin's, found as `wi` is (§ Store):
 ```bash
 CS=$(ls "$WORKTREE"/plugins/*/skills/create-skill/SKILL.md 2>/dev/null | head -1)
 P="${CLAUDE_CONFIG_DIR:-$HOME/.claude}/plugins"
-test -n "$CS" || CS="$(python3 -I -c 'import json,sys; print(json.load(open(sys.argv[1]))["plugins"]["kit-dev@kmacmcfarlane"][0]["installPath"])' "$P/installed_plugins.json" 2>/dev/null)/skills/create-skill/SKILL.md"
+IP="$(python3 -I - "$P/installed_plugins.json" kit-dev@kmacmcfarlane "$WORKTREE" 2>/dev/null <<'PY'
+import json, os, sys
+es = json.load(open(sys.argv[1]))["plugins"][sys.argv[2]]
+here = os.path.realpath(sys.argv[3])
+def rank(e):  # the install that applies here: deepest local/project path, then user
+    pp = e.get("projectPath")
+    if e.get("scope") in ("local", "project") and pp:
+        pp = os.path.realpath(pp)
+        if here == pp or here.startswith(pp.rstrip("/") + "/"):
+            return (2, len(pp), e["scope"] == "local")
+    return (1, 0, False) if e.get("scope") == "user" else (0, 0, False)
+best = max(es, key=rank)
+print(best["installPath"] if rank(best)[0] else "")
+PY
+)"
+test -n "$CS" || CS="$IP/skills/create-skill/SKILL.md"
 test -f "$CS" || CS=$(ls -t "$P"/cache/kmacmcfarlane/kit-dev/*/skills/create-skill/SKILL.md 2>/dev/null | head -1)
 if test -f "$CS"; then echo "$CS"; else echo "no create-skill found"; fi
 ```
@@ -371,7 +388,7 @@ as a decision through the decision channel, per the `foundation` skill's
 `references/moves.md`: the question names the artifact, the reopen the line names (Reopen
 requirements or Reopen architecture) and why, and the reopen's gate (gate G1 re-runs on
 the delta and the operator approves the change; or gate G2 re-runs on the delta and the
-operator approves any one-way ADR change). Options:
+operator approves any one-way ADR change and any change to an interface's terms). Options:
 
 - (a) **reopen, and this item stops** — the reopen is filed as its own item under the
   foundation item (`$WI add … --parent <foundation id>`; no store: Step 6's `open
@@ -546,7 +563,22 @@ operator's or an answer's.
 ```bash
 UR_PY=$(ls "$MAIN"/plugins/*/skills/usage-report/scripts/usage_report.py 2>/dev/null | head -1)
 P="${CLAUDE_CONFIG_DIR:-$HOME/.claude}/plugins"
-test -n "$UR_PY" || UR_PY="$(python3 -I -c 'import json,sys; print(json.load(open(sys.argv[1]))["plugins"]["context-guard@kmacmcfarlane"][0]["installPath"])' "$P/installed_plugins.json" 2>/dev/null)/skills/usage-report/scripts/usage_report.py"
+IP="$(python3 -I - "$P/installed_plugins.json" context-guard@kmacmcfarlane "$MAIN" 2>/dev/null <<'PY'
+import json, os, sys
+es = json.load(open(sys.argv[1]))["plugins"][sys.argv[2]]
+here = os.path.realpath(sys.argv[3])
+def rank(e):  # the install that applies here: deepest local/project path, then user
+    pp = e.get("projectPath")
+    if e.get("scope") in ("local", "project") and pp:
+        pp = os.path.realpath(pp)
+        if here == pp or here.startswith(pp.rstrip("/") + "/"):
+            return (2, len(pp), e["scope"] == "local")
+    return (1, 0, False) if e.get("scope") == "user" else (0, 0, False)
+best = max(es, key=rank)
+print(best["installPath"] if rank(best)[0] else "")
+PY
+)"
+test -n "$UR_PY" || UR_PY="$IP/skills/usage-report/scripts/usage_report.py"
 test -f "$UR_PY" || UR_PY=$(ls -t "$P"/cache/kmacmcfarlane/context-guard/*/skills/usage-report/scripts/usage_report.py 2>/dev/null | head -1)
 if test -f "$UR_PY"; then timeout 120 python3 "$UR_PY" item <record sink file> --json --no-week
 else echo "no reader found"; fi
@@ -643,16 +675,16 @@ re-run before the push, a conflict or red check aborting it — or leave the loc
 unpushed (`troubleshooting.md` § Landing, "Push rejected", which follows the
 `librarian-mode` skill's `references/troubleshooting.md` § Push rejected).
 
-Option 3 (or a push the invocation asked for in words), once the push succeeds, also
-means Step 6 adds one team summary after the Report — a push left rejected gets none. The
-shape is the `librarian-mode` skill's `references/team-summary.md`, read there and not
-restated here, with one clause read against this cycle instead of a librarian's: its
-commit-range recipe reads `main`/`origin/main` as `<base>`/`origin/<base>`; its
-librarian-only timing (the `incoming:` lines, its own SKILL.md § Report,
-`ending-the-session.md`, 75%/DUE, noting `origin/<base>` before each push) does not
-apply — the summary simply follows the four lines; and its bullets cover only this
-cycle's own landing — another commit the push carried is noted as not the cycle's, or
-folded into the housekeeping area.
+Option 3 (or a push the invocation asked for in words), once the push succeeds, also means
+Step 6 adds one team summary after the Report — a push left rejected gets none. The shape
+is the `librarian-mode` skill's `references/team-summary.md`, read there and not restated
+here, with one clause read against this cycle instead of a librarian's: its commit-range
+recipe reads `main`/`origin/main` as `<base>`/`origin/<base>`; its librarian-only timing
+(the `incoming:` lines, the `librarian-mode` skill's `references/report.md`,
+`ending-the-session.md`, 75%/DUE, noting `origin/<base>` before each push) does not apply
+— the summary simply follows the four lines; and its bullets cover only this cycle's own
+landing — another commit the push carried is noted as not the cycle's, or folded into the
+housekeeping area.
 
 ## Store
 
@@ -674,7 +706,22 @@ MAIN=$(git rev-parse --path-format=absolute --git-common-dir 2>/dev/null) && MAI
 for d in "$MAIN/.claude-sandbox/work" "$MAIN/.work"; do test -d "$d/items" && { export WI_ROOT="$d"; break; }; done
 WI_PY=$(ls "$MAIN"/plugins/*/skills/work-items/scripts/wi.py 2>/dev/null | head -1)
 P="${CLAUDE_CONFIG_DIR:-$HOME/.claude}/plugins"
-test -n "$WI_PY" || WI_PY="$(python3 -I -c 'import json,sys; print(json.load(open(sys.argv[1]))["plugins"]["work-items@kmacmcfarlane"][0]["installPath"])' "$P/installed_plugins.json" 2>/dev/null)/skills/work-items/scripts/wi.py"
+IP="$(python3 -I - "$P/installed_plugins.json" work-items@kmacmcfarlane "$MAIN" 2>/dev/null <<'PY'
+import json, os, sys
+es = json.load(open(sys.argv[1]))["plugins"][sys.argv[2]]
+here = os.path.realpath(sys.argv[3])
+def rank(e):  # the install that applies here: deepest local/project path, then user
+    pp = e.get("projectPath")
+    if e.get("scope") in ("local", "project") and pp:
+        pp = os.path.realpath(pp)
+        if here == pp or here.startswith(pp.rstrip("/") + "/"):
+            return (2, len(pp), e["scope"] == "local")
+    return (1, 0, False) if e.get("scope") == "user" else (0, 0, False)
+best = max(es, key=rank)
+print(best["installPath"] if rank(best)[0] else "")
+PY
+)"
+test -n "$WI_PY" || WI_PY="$IP/skills/work-items/scripts/wi.py"
 test -f "$WI_PY" || WI_PY=$(ls -t "$P"/cache/kmacmcfarlane/work-items/*/skills/work-items/scripts/wi.py 2>/dev/null | head -1)
 if test -f "$WI_PY"; then WI="python3 $WI_PY"; echo "$WI"; else WI=no-wi-found; echo "no wi found"; fi
 ```
@@ -684,7 +731,13 @@ The last line binds `WI` only to a file that exists: with none, every lookup lea
 name at all, take the verb as a script to run from the working directory, or read one from
 stdin. So `no wi found` binds `WI` to a name that is no command, and a `$WI` call run by
 mistake fails with exit 127 instead of running anything. The install-record read runs
-`python3 -I`, so a `json.py` in the working directory is never imported.
+`python3 -I`, so a `json.py` in the working directory is never imported. The install
+record holds one entry per install scope, so the read takes the entry that applies to this
+repo, never the first listed: a `local` or `project` entry whose `projectPath` is the main
+checkout or a directory above it (the deepest, `local` before `project`), else the `user`
+entry; another project's install never answers. The authoring-rules and budget-reader
+lookups above run this same pick with their own plugin's key (the authoring one against
+`$WORKTREE`).
 `${CLAUDE_PLUGIN_ROOT}` is dev-flow's root and carries no `wi`. Shell state does not outlive
 one Bash call, so a later call uses the command the snippet printed, with its absolute path,
 or runs the snippet again.

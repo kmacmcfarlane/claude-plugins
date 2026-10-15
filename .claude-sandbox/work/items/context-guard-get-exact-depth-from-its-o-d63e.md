@@ -26,8 +26,12 @@ Operator 2026-09-17: remove context-guard's dependency on the status line as its
 - The transcript carries an `attachment.type:"model"` line at session start and on every model change, with
   identity.modelId (e.g. "claude-opus-5[1m]") — readable by a hook.
 - The model id does not decide the window alone: plain opus-5 / sonnet-5 / fable-5 / opus-4-7+ are natively 1M;
-  haiku-4-5 is 200K; overrides: CLAUDE_CODE_DISABLE_1M_CONTEXT, CLAUDE_CODE_MAX_CONTEXT_TOKENS (with compaction
-  disabled), and an account-side 1M-credits cap that a hook cannot see.
+  haiku-4-5 is 200K (documented: https://code.claude.com/docs/en/model-config#extended-context lists the native-1M
+  models; https://platform.claude.com/docs/en/build-with-claude/context-windows#context-window-sizes-by-model gives
+  the other models 200K); overrides, documented at https://code.claude.com/docs/en/env-vars and
+  https://code.claude.com/docs/en/model-config#correct-the-window-for-a-gateway-or-custom-model-id:
+  CLAUDE_CODE_DISABLE_1M_CONTEXT, CLAUDE_CODE_MAX_CONTEXT_TOKENS (with DISABLE_COMPACT for a recognised
+  model ID), and an account-side 1M-credits cap that a hook cannot see.
 - Status line in -p mode: did not fire. Its context_window_size remains the only exact source.
 decision 14: depth source for context-guard — (a) hook-derived window (transcript model line + model table + env
   overrides) as the default, status line optional and wins when present, derived depth warns but never hard-blocks
@@ -37,7 +41,9 @@ decision 14: depth source for context-guard — (a) hook-derived window (transcr
   line does, duplicated logic acceptable. Librarian agrees on the approach: the status line computes nothing — Claude
   Code hands it context_window_size — so the hook must derive the window instead:
   transcript `attachment.type:"model"` identity.modelId → [1m] suffix / native-1M models → env overrides
-  (CLAUDE_CODE_DISABLE_1M_CONTEXT, CLAUDE_CODE_MAX_CONTEXT_TOKENS with compaction disabled) → an account-side 1M
+  (CLAUDE_CODE_DISABLE_1M_CONTEXT, CLAUDE_CODE_MAX_CONTEXT_TOKENS with DISABLE_COMPACT for a recognised model ID;
+  documented: https://code.claude.com/docs/en/env-vars,
+  https://code.claude.com/docs/en/model-config#correct-the-window-for-a-gateway-or-custom-model-id) → an account-side 1M
   gate. Which sessions Claude Code holds at 200K beyond the documented plan rules (https://code.claude.com/docs/en/model-config#extended-context) can be derived from Claude Code's internals; it is not recorded here. Tokens: transcript usage (already exact).
 decision 14 (revised): (d) hook derives the window by duplicating Claude Code's selection logic, including the
   cached account gate; the derived depth may hard-block when every input resolved (known model, readable fresh
@@ -56,12 +62,12 @@ decision 14 (revised): (d) hook derives the window by duplicating Claude Code's 
 
 ## Plan (2026-09-18, opus plan-writer; .claude-sandbox/investigations/d63e-window-mirror/plan.md)
 - CORRECTION to decision 14's premise: the account file is not needed for the window, and is never read (it holds secrets). Which sessions Claude Code holds at 200K beyond the documented plan rules (https://code.claude.com/docs/en/model-config#extended-context) can be derived from Claude Code's internals; it is not recorded here. The account 1M gate a hook can see is the documented usage-credits error for 1M context (https://code.claude.com/docs/en/errors#usage-credits-required-for-1m-context), looked for in the transcript -> the hook never needs ~/.claude.json.
-- Derives the model window: native-1M table, [1m] rule, CLAUDE_CODE_DISABLE_1M_CONTEXT (caps all at 200K), CLAUDE_CODE_MAX_CONTEXT_TOKENS (first under DISABLE_COMPACT, last for custom models). 11-step algorithm, 21-row truth table; new window_rules.py; depth() order: fresh status line > derived resolved (may block) > derived unresolved (warn) > inferred; mismatch log window-mismatch.jsonl demotes that CC version to warn-only; new SessionStart/PostModelSwitch bookkeeping. Size M (~700 lines incl. tests), fable implementer + reviewer.
+- Derives the model window: native-1M table, [1m] rule, CLAUDE_CODE_DISABLE_1M_CONTEXT (caps all at 200K), CLAUDE_CODE_MAX_CONTEXT_TOKENS (first under DISABLE_COMPACT, last for custom models) (the variables and their effect on the window are documented: https://code.claude.com/docs/en/env-vars, https://code.claude.com/docs/en/model-config#correct-the-window-for-a-gateway-or-custom-model-id). 11-step algorithm, 21-row truth table; new window_rules.py; depth() order: fresh status line > derived resolved (may block) > derived unresolved (warn) > inferred; mismatch log window-mismatch.jsonl demotes that CC version to warn-only; new SessionStart/PostModelSwitch bookkeeping. Size M (~700 lines incl. tests), fable implementer + reviewer.
 - Security: a directory listing printed the served-catalog cache filename (contains account/org UUIDs) into the plan-writer's tool output; no ~/.claude.json values printed beyond allowed booleans/timestamps/keys.
 decision 31: approve the d63e plan for implementation (fable, or opus fallback while fable is out)
 decision 32: drop ~/.claude.json from the design entirely (plan rec: yes)
 decision 33: CC version the table was copied from: record + demote to warn-only after a real mismatch (plan rec) vs gate hard-block on exact version
-decision 34: auto-compact window (CLAUDE_CODE_AUTO_COMPACT_WINDOW etc.): follow-up item, not this one (plan rec)
+decision 34: auto-compact window (CLAUDE_CODE_AUTO_COMPACT_WINDOW etc., documented: https://code.claude.com/docs/en/model-config#set-the-auto-compact-window): follow-up item, not this one (plan rec)
 
 OPERATOR 2026-09-19: decision 31 approved; 32 a (drop ~/.claude.json entirely); 33 a (record CC version, demote to warn-only after a real mismatch); 34 b (include the auto-compact window in d63e).
 
@@ -81,20 +87,20 @@ dispatch: implementer opus fix round 1 — resume (fable unavailable)
 fix round 1 (opus): DONE 26f7c7b + 6db9fd3 (all 13; 387 tests; kill switch byte-identical on 42 cases; scan cache: 16ms steady state). Librarian accepts: precompact keeps main's exact-or-inferred deferral (derived never defers); an absent remote-settings cache = no remote policy; macOS (no /proc) = warn-only above 200K. 6d60 docs folded in.
 dispatch: reviewer opus review round 2 — resume
 
-review round 2 (opus): NEEDS_CHANGES — critical 1 (proc_info trusts any ancestor with a registry entry; shared registry across sandboxes -> wrong cmdline), 2 (policy tier is first-wins, not merged), 3 (an undocumented managed-settings location unread); medium 4 (remote policy may not be fully visible in remote-settings.json), 5 (escapes missing when the auto-compact block has a fresh status line); lows 6-8. Model window now safe. Librarian decision: adopt the simplest safe rule — a settings-derived auto-compact window is unresolved whenever any policy tier is present, remote policy cannot be ruled out, or the ancestor is not verified as the Claude Code binary.
+review round 2 (opus): NEEDS_CHANGES — critical 1 (proc_info trusts any ancestor with a registry entry; shared registry across sandboxes -> wrong cmdline), 2 (policy tier is first-wins, not merged; documented: https://code.claude.com/docs/en/managed-settings#how-claude-code-combines-managed-sources), 3 (a managed-settings source unread; the documented sources: https://code.claude.com/docs/en/managed-settings#where-each-mechanism-stores-the-policy); medium 4 (remote policy may not be fully visible in remote-settings.json, the documented cache: https://code.claude.com/docs/en/server-managed-settings#invalid-entries-in-delivered-settings), 5 (escapes missing when the auto-compact block has a fresh status line); lows 6-8. Model window now safe. Librarian decision: adopt the simplest safe rule — a settings-derived auto-compact window is unresolved whenever any policy tier is present, remote policy cannot be ruled out, or the ancestor is not verified as the Claude Code process.
 dispatch: implementer opus fix round 2 — resume
 
-fix round 2 (opus): DONE c27cd37 + 4aa7c87 (verified claude ancestor; any policy / unrulable remote policy -> unresolved; auto-compact window never hard-blocks on 2.1.277; sidechain cache; escapes on mirror-bounded blocks). Librarian: keep the resolution machinery (REMOTE_POLICY_RULED_OUT=False) for a future CC.
+fix round 2 (opus): DONE c27cd37 + 4aa7c87 (verified claude ancestor; any policy / unrulable remote policy -> unresolved; a settings-derived auto-compact window never hard-blocks; sidechain cache; escapes on mirror-bounded blocks). Librarian: keep the resolution machinery (REMOTE_POLICY_RULED_OUT=False) for a future CC.
 dispatch: reviewer opus review round 3 — resume
 
-review round 3 (opus): NEEDS_CHANGES — critical 1: proc_info walks past an unregistered child claude (CLAUDE_CODE_CHILD_SESSION=1 children do not register) and borrows the outer claude's key, so a nested run's credits latch hard-blocks the operator's own session (reproduced). Everything else holds; playbook matches code.
+review round 3 (opus): NEEDS_CHANGES — critical 1: proc_info walks past a nested child claude it finds no registry entry for (the premise that a nested claude writes no registry entry: a `claude -p` started from the Bash tool wrote its own sessions/<pid>.json while it ran, observed on Claude Code 2.1.286, as plugins/context-guard/hooks/lib_context.py records) and borrows the outer claude's key, so a nested run's credits latch hard-blocks the operator's own session (reproduced). Everything else holds; playbook matches code.
 dispatch: implementer opus fix round 3 (last) — fable unavailable (unknown); fallback (rule 3: last round after a critical)
 
 fix round 3 (opus fallback): DONE a1188d3 (walk stops at the first claude; CHILD_SESSION unverified; pidDomain checked; nested probe clean).
 dispatch: reviewer opus review round 4 (final) — resume
 
 ## Cap
-review round 4 (opus, final): NEEDS_CHANGES — no false hard-block remains (0 kill-switch diffs every run); high: CC 2.1.277 sets CLAUDE_CODE_CHILD_SESSION=1 (and CLAUDE_PID) in EVERY command hook env, so the new env check marks every real session unverified -> derived windows above 200K never hard-block inside real CC (safe but the mirror's main purpose is inert). Fix: drop the env test; key the first claude ancestor only when its pid == the hook's CLAUDE_PID. CAP HIT (4).
+review round 4 (opus, final): NEEDS_CHANGES — no false hard-block remains (0 kill-switch diffs every run); high: Claude Code sets CLAUDE_CODE_CHILD_SESSION=1 (and CLAUDE_PID) in EVERY command hook env (documented: https://code.claude.com/docs/en/env-vars), so the new env check marks every real session unverified -> derived windows above 200K never hard-block inside real CC (safe but the mirror's main purpose is inert). Fix: drop the env test; key the first claude ancestor only when its pid == the hook's CLAUDE_PID. CAP HIT (4).
 decision 37: d63e cap: (a) one extra round (key on CLAUDE_PID), re-review, land [recommended]; (b) land now safe-but-inert (200K windows and DISABLE_COMPACT+max tokens still block; above 200K warns), fix in a follow-up; (c) hold unmerged.
 
 OPERATOR 2026-09-19: decision 37 a — one extra round (key on CLAUDE_PID).

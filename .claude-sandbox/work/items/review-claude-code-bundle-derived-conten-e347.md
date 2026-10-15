@@ -20,7 +20,7 @@ Relayed by peer claude-sandbox librarian 2026-10-06 with the license request: pu
 - blocked: —
 - learned: —
 helper: scout sonnet medium — inventory of Claude Code bundle-derived passages in the tree (read-only) for decision 162 and this review
-helper-return: scout — inventory at .claude-sandbox/investigations/e347-bundle-derived-content/00_inventory.md: all in context-guard (plus one statusline comment); 1 recipe, 6 transcribed tables, 3 quoted-string groups, ~20 mangled identifiers, ~12 provenance comments; every row pushed since 2026-09-19; runtime-used: the window tables, ACW clamp, LATCH_API_ERROR, REMOTE_POLICY_RULED_OUT, pidDomain/CLAUDE_PID
+helper-return: scout — inventory at .claude-sandbox/investigations/e347-bundle-derived-content/00_inventory.md: all in context-guard (plus one statusline comment); 1 recipe, 6 transcribed tables, 3 quoted-string groups, ~20 mangled identifiers, ~12 provenance comments; every row pushed since 2026-09-19; runtime-used: the window tables, ACW clamp, LATCH_API_ERROR, REMOTE_POLICY_RULED_OUT (our own constants), pidDomain (a session-registry field; observed in a registry entry on Claude Code 2.1.292, as plugins/context-guard/hooks/lib_context.py records) / CLAUDE_PID (documented: https://code.claude.com/docs/en/env-vars)
 decision 164: How should the bundle-derived passages in context-guard be handled? — options: (a) scrub: remove the recipe, the mangled names and bundle control-flow wording; keep runtime values, re-labelled as observed or documented where they can be checked, else as the version they were last confirmed on [recommended] | (b) rebuild: also drop the transcribed tables and derive the window only from what Claude Code reports at runtime | (c) leave as is | (z) decide later
   raised: 2026-10-06T03:41Z
   what: what to do with the Claude Code bundle-derived content the scout inventoried (00_inventory.md): one extraction recipe, six transcribed tables, quoted 429 strings, about 20 minified identifiers and about 12 "from the binary / 2.1.277" comments, all in context-guard's window-rules and helpers, all pushed since 2026-09-19
@@ -299,3 +299,6 @@ shown 172: 2026-10-08T20:02Z chat
 shown 172: 2026-10-09T06:11Z page
 answer 172: later (answer page HvKDfFHjrqNtygDKziv7ta, rev 2026-10-09T06:00:00Z, at 2026-10-09T06:51:41.984Z; read as: later, default wake = the next Report; the scrub waits, and runs only with the operator watching)
 shown 172: 2026-10-09T08:57Z page
+shown 172: 2026-10-14T06:53Z page
+shown 172: 2026-10-14T08:14Z page
+answer 172: a, in chat 2026-10-15, verbatim: "172a" (⚠ one-way pick: read back, waits for confirmation; the scrub runs only with the operator present)

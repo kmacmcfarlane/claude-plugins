@@ -34,7 +34,9 @@ draft, or recorded as a hold the checklist allows, before the review.
 - The contracts match the claim's `## Boundaries` and `## Interfaces`: each contract is an
   item or an interface there, defined on the side the claim names. A contract the claim
   lacks, or puts on the other side, is a claim change: a requirements reopen
-  (`references/moves.md`), and the operator's (§ 3).
+  (`references/moves.md`), and the operator's (§ 3). An interface's terms
+  (`references/moves.md` § The rows), for each interface the claim names, are drafted here
+  as its claim lines, and the operator approves them with this gate (§ 3).
 - The threat and privacy model ran, or its one-line skip is recorded.
 - Every H risk has a mitigation or a spike.
 - The pre-mortem prompt ran (`references/prompt-list.md` § Pre-mortem).
@@ -80,13 +82,14 @@ Who approves which gate (operator decision 195, answered (a) on 2026-10-09):
 | Gate | The operator approves | Reported only |
 |---|---|---|
 | G1 requirements | always | — |
-| G2 architecture | each one-way ADR, and any change to the repo's `CLAIM.md` (its areas, Not-ours lines, boundaries, which side defines an interface) | everything else in the phase |
+| G2 architecture | each one-way ADR, the terms of an interface the claim names, drafted or changed at this gate, and any other change to the repo's `CLAIM.md` (a substance change, as the `ownership:claim-md` skill's substance rule defines it) | everything else in the phase |
 | G3 the plan | always, since it files work | — |
 
-A G2 with no one-way ADR and no claim change passes on the reviewer's `CLEAR` and is
-reported to the operator in the Report, not asked. The G3 decision then carries a short
-architecture summary (the strategy bullets, the ADRs and the H risks, a few lines), so the
-operator has read the architecture before approving the plan built on it.
+A G2 with no one-way ADR, no interface terms drafted or changed and no claim change passes
+on the reviewer's `CLEAR` and is reported to the operator in the Report, not asked. The G3
+decision then carries a short architecture summary (the strategy bullets, the ADRs and the
+H risks, a few lines), so the operator has read the architecture before approving the plan
+built on it.
 
 **The decision**, one per gate, put to the operator per the `operator-interaction:decisions`
 skill when the session lists it, else as a plain lettered list in prose:
