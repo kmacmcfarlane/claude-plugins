@@ -53,7 +53,7 @@ the TODO.md failure mode with extra steps.
 | `$WI export/import --format backlog-yaml` | the ralph bridge — backlog.yaml stays authoritative for unattended runs |
 | `$WI lint` | format + secret-shape + store-custody check; run after hand edits, then `$WI commit` |
 | `$WI commit [-m "<message>"]` | the one way to commit the store, never `git` by hand: under the store's lock it commits the store's own files into the repo that holds them (the store's own repo, or the host or sidecar repo that tracks it, whose hooks run), and prints `nothing to commit` for a store that repo ignores. Refuses (exit 1, nothing committed) a message `lint` would flag as a secret, and an own repo `wi` did not set up (unrecorded) or cannot trust (broken); exit 3 when git fails, or is missing for a store with its own repo (`references/format.md` § Committing the store) |
-| `$WI archive` | moves closed items to `archive/` — its own commit (`$WI commit` right after it) in the store's repo or the repo that tracks it, nothing else in it |
+| `$WI archive` | moves closed items to `archive/` — its own commit, nothing else in it: `wi` makes it in a store that is its own repo; in a store the repo around it tracks, `$WI commit` right after it |
 
 Exit codes: 0 ok · 1 usage/validation · 2 not found/empty (e.g. `next` with nothing ready —
 report "nothing ready", don't retry) · 3 file/parser error · 4 lock/claim conflict (someone
@@ -110,6 +110,9 @@ verbs, capability differences and canonical state mapping are in
   WORK_ITEMS_ROOT=…` line to run, and `init` refuses rather than make a stray store.
 - Item files are hand-editable; run `$WI lint`, then `$WI commit`, after hand edits, in the
   same turn.
+- A store that is its own repo is committed by `wi` on every change (`references/format.md`
+  § The store's own repo, Each change committed); a `wi: WARNING store not committed` line
+  means the change is saved but not committed: run `$WI commit` once its cause is gone.
 - A `wi: WARNING store … is silently untracked` line (second line of `prime`; a problem, exit 3, in `lint`) means new items are git-ignored, or the store holds ≥10 items and none is tracked (below 10, an uncommitted store is treated as new). The line names the ignore rule (file:line) and the remedies for that cause; fix the cause rather than working around it. A store recorded as git-ignored (`tracking: ignored`) gets no warning; one recorded as tracked that git ignores anyway does, since that contradicts the choice; a store with no recorded choice keeps the warning, whose fix ends by recording the choice (`$WI init --track`, or `--no-track` when it is meant to stay local). A sidecar store recorded as git-ignored warns too (`… is recorded git-ignored … so new items land in no repo`), naming `$WI init --track` and any ignore line in the sidecar repo to remove.
 - One session claims an item before working it; two sessions on one item is what `claim` is
   for — respect a conflict.

@@ -17,7 +17,9 @@ skills are prose, so the rules are held by what their files say:
 - every store commit runs `$WI commit` (item d1e9, F2): `bindings.md` holds the canonical
   sentence once, a hand commit or a `check-ignore` test on the store survives only in its
   fallback for a `wi` older than the verb, and every librarian-mode file that commits the
-  store names `$WI commit`.
+  store names `$WI commit`;
+- the research family's item rule says that in a store that is its own repo `wi` commits
+  each write itself (item d1e9, F5).
 
 Standard library only. Run from plugins/dev-flow:
 
@@ -205,6 +207,14 @@ class StoreCommitTest(unittest.TestCase):
         self.assertEqual(bad, [])
         # first-start, decisions, decide-alone, ending-the-session at least
         self.assertGreaterEqual(seen, 4)
+
+    def test_research_item_says_wi_commits_an_own_store(self):
+        """d1e9 F5: the research run never commits its item, and says that in
+        a store that is its own repo `wi` commits each write itself."""
+        path = COPIES["intensity-and-routing.md § Resolving the store"][0]
+        text = flat(path.read_text(encoding="utf-8"))
+        self.assertIn("The run never commits it; in a store that is its own "
+                      "repo, `wi` commits each write itself.", text)
 
     def test_checkers_catch_the_old_rule(self):
         old = flat('the store\'s commit goes to the repo that holds it (`git -C\n'
