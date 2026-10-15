@@ -18,14 +18,13 @@ resolve the custody layer (step 2) first; no `## Librarian` section means the op
 WORK_ITEMS_ROOT="$MAIN/.work-items" WI_ROOT="$MAIN/.work-items" $WI init --no-track
 ```
 
-(idempotent; both names, so an older installed `wi` creates the same store). The flag is
-the `work-items` skill's rule for `$WI init` (never the no-flag default): a new store is
+(idempotent; both names, so an older installed `wi` creates the same store). The flag is the
+`work-items` skill's rule for `$WI init` (never the no-flag default): a new store is
 git-ignored by the host repo, so `--no-track`, and `--track` only when the operator asked
-for a tracked store. Relay its output (it explains the host `.gitignore` line it wrote),
-and add one line: "initialised .work-items/ — first start on this repo". `status` never
-creates a store:
-with no `## Librarian` section it prints "not opted in; `start` offers opt-in"
-(`opt-in.md`), otherwise "no store", and stops.
+for a tracked store. Relay its output (it explains the host `.gitignore` line it wrote, or
+why none was needed), and add one line: "initialised .work-items/ — first start on this
+repo". `status` never creates a store: with no `## Librarian` section it prints "not opted
+in; `start` offers opt-in" (`opt-in.md`), otherwise "no store", and stops.
 
 ## What the first Rehydrate reports
 
@@ -38,7 +37,8 @@ correction is a work item that edits `## Librarian`. `start` commits the opt-in 
 
 The main checkout must be on `main` and clean before a merge — except first-start dirt (the
 `.gitignore` line `wi init` wrote, and the store itself when it is tracked): commit it with
-the first landed item or leave it for the operator; it never blocks a merge. A git-ignored
-store (`git -C "$MAIN" check-ignore -q "$WORK_ITEMS_ROOT"` exits 0) is never committed to
-the host repo: skip it, and only the `.gitignore` line is dirt. On another branch with
-uncommitted work, stop and raise it as a numbered decision rather than stashing around it.
+the first landed item or leave it for the operator; it never blocks a merge. The store's
+commit goes to the repo that holds it (`git -C "$WORK_ITEMS_ROOT"`); when that repo ignores
+the store (`git -C "$WORK_ITEMS_ROOT" check-ignore -q "$WORK_ITEMS_ROOT"` exits 0), skip
+this commit; then only the `.gitignore` line is dirt. On another branch with uncommitted
+work, stop and raise it as a numbered decision rather than stashing around it.

@@ -693,12 +693,14 @@ A work-item store is optional. Look in the main checkout for `.work-items/`, the
 first that holds `items/` is the store. No store: the record sink is the scratchpad run
 record, and nothing is filed. Never run `wi init` from a cycle.
 
-The snippet exports the store under both `WORK_ITEMS_ROOT` and the deprecated `WI_ROOT`, so
-an installed `wi` older than this copy still finds it; every later assignment of either name
-sets both. A git-ignored store (`git -C "$MAIN" check-ignore -q "$WORK_ITEMS_ROOT"` exits 0)
-is never committed to the host repo: a step that commits the store skips that commit. The
-store still outlives the session on this checkout, and any history it keeps lives in the
-store's own repository, never the host's.
+The snippet exports the store under both `WORK_ITEMS_ROOT` and the deprecated `WI_ROOT`, so an
+installed `wi` older than this copy still finds it; every later assignment of either name sets
+both. A step that commits the store follows one rule: the store's commit goes to the repo that
+holds it (`git -C "$WORK_ITEMS_ROOT"`); when that repo ignores the store (`git -C
+"$WORK_ITEMS_ROOT" check-ignore -q "$WORK_ITEMS_ROOT"` exits 0), skip this commit. Any exit
+other than 0 or 1 means the snippet was not run in this call: re-run it first. The store still
+outlives the session on this checkout, and any history it keeps lives in the store's own
+repository, never the host's.
 
 `wi` itself comes from the repo's own tree when it carries the `work-items` plugin, else
 from the installed plugin. This is dev-flow's canonical copy of the lookup: every dev-flow

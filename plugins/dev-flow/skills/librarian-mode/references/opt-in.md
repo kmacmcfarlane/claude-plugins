@@ -47,9 +47,9 @@ with none, they ride in the Report as numbered decisions with no item and are fi
 one once the store exists — the store is never created early for them.
 
 1. **Scope** — what the librarian owns. Options, in this order:
-   - `Whole repo` — every tracked path except `.claude-sandbox/` and `.claude/`, which
-     are always outside Scope (the store, sandbox config and worktrees belong to the
-     tooling; a change to them goes to the operator).
+   - `Whole repo` — every tracked path except `.claude-sandbox/`, `.claude/` and
+     `.work-items/`, which are always outside Scope (the store, sandbox config and
+     worktrees belong to the tooling; a change to them goes to the operator).
    - `Plugin layer` — only when `plugins/` exists: `plugins/*/skills`, `plugins/*/hooks`,
      the README catalog and doctrine sections, CLAUDE.md.
      On a repo with no code and no `plugins/`, and only there, this slot is
