@@ -96,7 +96,7 @@ class WiTestCase(unittest.TestCase):
     def setUp(self):
         self.tmp = Path(tempfile.mkdtemp(prefix="wi-test-"))
         self.addCleanup(shutil.rmtree, self.tmp, ignore_errors=True)
-        self.root = self.tmp / ".work"
+        self.root = self.tmp / ".work-items"
         self.assertEqual(run(["init"], self.root).returncode, 0)
 
     def write_item(self, iid, title=None, status="todo", priority=2, deps=(),
@@ -559,7 +559,7 @@ class TestImportTodo(WiTestCase):
 
     def import_one(self, line):
         """Import a one-entry TODO.md into a fresh store; return its item."""
-        self.root = Path(tempfile.mkdtemp(dir=self.tmp)) / ".work"
+        self.root = Path(tempfile.mkdtemp(dir=self.tmp)) / ".work-items"
         self.assertEqual(run(["init"], self.root).returncode, 0)
         todo = self.tmp / "TODO.md"
         todo.write_text("# TODO\n\n" + line + "\n")
@@ -1627,7 +1627,9 @@ class EnvNamesTest(WiTestCase):
         self.cwd.mkdir()
 
     def wi(self, args, **env):
-        full = _clean_env()
+        # no git discovery above the temp dir: the cwd's auto-resolution
+        # never reaches a real repo's worktree check
+        full = dict(_clean_env(), GIT_CEILING_DIRECTORIES=str(self.tmp))
         full.update(env)
         return subprocess.run([sys.executable, str(WI)] + args, env=full,
                               capture_output=True, text=True,
@@ -1704,7 +1706,7 @@ class EnvNamesTest(WiTestCase):
     def test_root_both_empty_auto(self):
         r = self.wi(["next"], WORK_ITEMS_ROOT="", WI_ROOT="")
         self.assertEqual(r.returncode, 1)
-        self.assertIn("no work-item root at .work", r.stderr)
+        self.assertIn("no work-item root at .work-items (run", r.stderr)
         self.assertNotIn("deprecated", r.stderr)
 
     # ── OWNER ──
@@ -4267,7 +4269,10 @@ class TestHostGitignoreUntouched(WiTestCase):
     WORK_ITEMS_ROOT), leaves the host .gitignore byte-identical."""
 
     GI = "*.pyc\n.claude-sandbox/work/.lock\n"
-    AUTO = {"WORK_ITEMS_ROOT": ""}   # empty = resolve .claude-sandbox/work from cwd
+    AUTO = {"WORK_ITEMS_ROOT": ""}   # empty = auto-resolve from the cwd
+    # 5f46: only init names its root; every other command auto-resolves the
+    # existing .claude-sandbox/work store (an old location) from the cwd
+    SANDBOX_ROOT = ["--root", ".claude-sandbox/work"]
 
     def git(self, repo, *args, check=True):
         # isolate from the caller's git: no global/system config (signing,
@@ -4339,7 +4344,7 @@ class TestHostGitignoreUntouched(WiTestCase):
 
     def test_private_init_then_add_leaves_gitignore_alone(self):
         repo = self.private_repo("init-add")
-        self.wi_in(repo, ["init", "--track"])
+        self.wi_in(repo, self.SANDBOX_ROOT + ["init", "--track"])
         self.wi_in(repo, ["add", "first item"])
         self.assertEqual((repo / ".gitignore").read_text(), self.GI)
         self.assert_store_trackable(repo)
@@ -4349,7 +4354,8 @@ class TestHostGitignoreUntouched(WiTestCase):
         # the operator-attention sequence: the whole-dir line got in, the
         # operator removed it and committed, then kept using wi
         repo = self.private_repo("removed", gi="*.pyc\n/.claude-sandbox/\n")
-        self.wi_in(repo, ["init", "--track"])  # 'ignored' shape: untouched
+        # 'ignored' shape: untouched
+        self.wi_in(repo, self.SANDBOX_ROOT + ["init", "--track"])
         self.assertEqual((repo / ".gitignore").read_text(),
                          "*.pyc\n/.claude-sandbox/\n")
         (repo / ".gitignore").write_text(self.GI)
@@ -4363,12 +4369,30 @@ class TestHostGitignoreUntouched(WiTestCase):
         diff = self.git(repo, "diff", "--", ".gitignore").stdout
         self.assertEqual(diff, "")
 
+    def test_auto_init_with_sandbox_dir_creates_work_items(self):
+        # 5f46: a .claude-sandbox/ dir no longer picks the store; with no
+        # store, init makes the default .work-items/
+        repo = self.private_repo("auto-default")
+        self.wi_in(repo, ["init", "--track"])
+        self.assertTrue((repo / ".work-items" / "items").is_dir())
+        self.assertFalse((repo / ".claude-sandbox" / "work").exists())
+        self.assertEqual((repo / ".gitignore").read_text(), self.GI)
+
+    def test_auto_resolves_the_old_store_with_notice(self):
+        repo = self.private_repo("auto-old")
+        self.wi_in(repo, self.SANDBOX_ROOT + ["init", "--track"])
+        self.wi_in(repo, ["add", "first item"])
+        prime = self.wi_in(repo, ["prime"])
+        self.assertIn("wi: deprecated: store .claude-sandbox/work is at an "
+                      "old location", prime)
+        self.assertFalse((repo / ".work-items").exists())
+
     def test_sidecar_shape_unchanged(self):
         # sidecar keeps the 7f00 behaviour: init ensures the whole-dir
         # ignore; other commands still never touch the host .gitignore
         repo = self.private_repo("sidecar", gi="*.pyc\n")
         self.git(repo / ".claude-sandbox", "init", "-q")
-        out = self.wi_in(repo, ["init", "--track"])
+        out = self.wi_in(repo, self.SANDBOX_ROOT + ["init", "--track"])
         self.assertIn("sidecar git", out)
         self.assertEqual((repo / ".gitignore").read_text(),
                          "*.pyc\n/.claude-sandbox/\n")
@@ -4705,8 +4729,11 @@ class TestStoreCustodyWarning(WiTestCase):
         r = run(["prime", "--budget", "10"], self.root, env=self.env)
         self.assertEqual(r.returncode, 0, r.stderr)
         lines = r.stdout.rstrip("\n").split("\n")
-        self.assertEqual(len(lines), 1, r.stdout)
+        # the store is at an old location (5f46): its notice is header too
+        self.assertEqual(len(lines), 2, r.stdout)
         self.assertTrue(lines[0].startswith("wi: "), r.stdout)
+        self.assertTrue(lines[1].startswith("wi: deprecated: store "),
+                        r.stdout)
         self.assertNotIn("WARNING", r.stdout)
 
 
@@ -4797,7 +4824,7 @@ class TestInitTracking(unittest.TestCase):
         if sandbox:
             (repo / ".claude-sandbox").mkdir()
             return repo, repo / ".claude-sandbox" / "work"
-        return repo, repo / ".work"
+        return repo, repo / ".work-items"
 
     def init(self, store, *flags, code=0):
         r = run(["init", *flags], store, env=self.env)
@@ -4829,20 +4856,22 @@ class TestInitTracking(unittest.TestCase):
         repo, store = self.repo()
         r = self.init(store, "--no-track")
         self.assertEqual(self.tracking(store), "ignored")
-        self.assertEqual(self.gi(repo), "/.work/\n")
-        self.assertIn(f"added /.work/ to {repo / '.gitignore'}", r.stdout)
+        self.assertEqual(self.gi(repo), "/.work-items/\n")
+        self.assertIn(f"added /.work-items/ to {repo / '.gitignore'}",
+                      r.stdout)
         self.assertTrue(self.ignored(repo, store))
         self.assertEqual(r.stderr, "")
 
     def test_no_track_after_line_without_newline(self):
-        # the real case: a naive append glued `.work/` onto `*/mocks/`
+        # the real case: a naive append glued `.work-items/` onto `*/mocks/`
         repo, store = self.repo(gi="*/mocks/")
         self.init(store, "--no-track")
-        self.assertEqual(self.gi(repo), "*/mocks/\n/.work/\n")
+        self.assertEqual(self.gi(repo), "*/mocks/\n/.work-items/\n")
         self.assertTrue(self.ignored(repo, store))
 
     def test_no_track_adds_no_duplicate(self):
-        for i, gi in enumerate((".work/\n", "/.work\n", "*.pyc\n.work\n",
+        for i, gi in enumerate((".work-items/\n", "/.work-items\n",
+                                "*.pyc\n.work-items\n",
                                 ".w*/\n")):
             with self.subTest(gi=gi):
                 repo, store = self.repo(f"dup{i}", gi=gi)
@@ -4855,9 +4884,9 @@ class TestInitTracking(unittest.TestCase):
         # info/exclude does not travel with the repo; the line does
         repo, store = self.repo(gi="*.pyc\n")
         with open(repo / ".git" / "info" / "exclude", "a") as fh:
-            fh.write(".work/\n")
+            fh.write(".work-items/\n")
         self.init(store, "--no-track")
-        self.assertEqual(self.gi(repo), "*.pyc\n/.work/\n")
+        self.assertEqual(self.gi(repo), "*.pyc\n/.work-items/\n")
 
     def test_sandbox_home(self):
         repo, store = self.repo(gi="*.pyc\n", sandbox=True)
@@ -4895,7 +4924,7 @@ class TestInitTracking(unittest.TestCase):
         repo, store = self.repo(gi="*/mocks/")
         r = self.init(store)          # subprocess: no terminal
         self.assertEqual(self.tracking(store), "ignored")
-        self.assertEqual(self.gi(repo), "*/mocks/\n/.work/\n")
+        self.assertEqual(self.gi(repo), "*/mocks/\n/.work-items/\n")
         self.assertIn("WARNING no terminal and no --track/--no-track", r.stderr)
         self.assertIn("git-ignored store", r.stderr)
         self.assertIn("`wi init --track`", r.stderr)
@@ -4921,7 +4950,7 @@ class TestInitTracking(unittest.TestCase):
         repo, store = self.repo("menu-default")
         self.menu_init(store, "\n")
         self.assertEqual(self.tracking(store), "ignored")
-        self.assertEqual(self.gi(repo), "/.work/\n")
+        self.assertEqual(self.gi(repo), "/.work-items/\n")
 
     def test_menu_enter_in_a_sidecar_tracks_the_store(self):
         repo, store = self.repo("menu-sc", sandbox=True)
@@ -4954,7 +4983,7 @@ class TestInitTracking(unittest.TestCase):
         # a flag records the choice without re-creating anything
         self.init(store, "--no-track")
         self.assertEqual(self.tracking(store), "ignored")
-        self.assertEqual(self.gi(repo), "*.pyc\n/.work/\n")
+        self.assertEqual(self.gi(repo), "*.pyc\n/.work-items/\n")
         self.assertEqual(item.read_text(), "x\n")
         self.assertEqual((store / "README.md").read_text(), readme)
 
@@ -4972,7 +5001,7 @@ class TestInitTracking(unittest.TestCase):
         r = self.init(store, "--track")
         self.assertEqual(self.tracking(store), "tracked")
         self.assertIn("against its recorded choice", r.stderr)
-        self.assertIn(".gitignore:1 '/.work/'", r.stderr)
+        self.assertIn(".gitignore:1 '/.work-items/'", r.stderr)
 
     # prime and lint
 
@@ -4997,20 +5026,20 @@ class TestInitTracking(unittest.TestCase):
         self.assertIn("lint clean", lint.stdout)
 
     def test_recorded_tracked_but_ignored_warns(self):
-        repo, store = self.repo(gi=".work/\n")
+        repo, store = self.repo(gi=".work-items/\n")
         self.init(store, "--track")
         self.add_items(store)
         prime, lint = self.prime_lint(store)
         warn = prime[1]
         self.assertTrue(warn.startswith("wi: WARNING store "), warn)
         self.assertIn("silently untracked, against its recorded choice", warn)
-        self.assertIn(".gitignore:1 '.work/'", warn)
+        self.assertIn(".gitignore:1 '.work-items/'", warn)
         self.assertIn("`wi init --no-track`", warn)
         self.assertEqual(lint.returncode, 3)
         self.assertIn(warn, lint.stdout.splitlines())
 
     def test_unrecorded_ignored_store_names_recording_as_the_fix(self):
-        repo, store = self.repo(gi=".work/\n")
+        repo, store = self.repo(gi=".work-items/\n")
         self.init(store, "--track")
         (store / "store.yaml").unlink()
         self.add_items(store)
@@ -5024,7 +5053,7 @@ class TestInitTracking(unittest.TestCase):
         self.assertEqual(lint.returncode, 3)
         # recording the ignored choice settles it
         self.init(store, "--no-track")
-        self.assertEqual(self.gi(repo), ".work/\n")
+        self.assertEqual(self.gi(repo), ".work-items/\n")
         prime, lint = self.prime_lint(store)
         self.assertNotIn("WARNING", "\n".join(prime))
         self.assertEqual(lint.returncode, 0, lint.stdout)
@@ -5119,7 +5148,7 @@ class TestInitTracking(unittest.TestCase):
         self.assertEqual(lint.returncode, 3)
 
     def test_non_sidecar_recorded_ignored_stores_stay_quiet(self):
-        # a private-shaped sandbox store and a plain .work/ store
+        # a private-shaped sandbox store and a plain .work-items/ store
         for i, sandbox in enumerate((True, False)):
             with self.subTest(sandbox=sandbox):
                 repo, store = self.repo(f"quiet{i}", sandbox=sandbox)
@@ -5243,7 +5272,7 @@ class TestInitTracking(unittest.TestCase):
                 (repo / ".gitignore").symlink_to(v)
                 r = self.init(store, "--no-track", code=1)
                 self.assertIn(".gitignore is a symlink: no line added; add "
-                              "/.work/ by hand", r.stderr)
+                              "/.work-items/ by hand", r.stderr)
                 self.assertIn("tracking not recorded", r.stderr)
                 self.assertNotIn("tracking: ignored", r.stdout)
                 self.assertIsNone(self.tracking(store))
@@ -5309,8 +5338,8 @@ class TestInitTracking(unittest.TestCase):
 
     def test_crlf_gitignore_stays_crlf(self):
         for i, (before, after) in enumerate((
-                (b"a\r\nb", b"a\r\nb\r\n/.work/\r\n"),
-                (b"a\r\n", b"a\r\n/.work/\r\n"))):
+                (b"a\r\nb", b"a\r\nb\r\n/.work-items/\r\n"),
+                (b"a\r\n", b"a\r\n/.work-items/\r\n"))):
             with self.subTest(before=before):
                 repo, store = self.repo(f"crlf{i}")
                 (repo / ".gitignore").write_bytes(before)
@@ -5323,7 +5352,7 @@ class TestInitTracking(unittest.TestCase):
         (repo / ".gitignore").write_bytes(b"caf\xe9/\n*.o")
         r = self.init(store, "--no-track")
         self.assertNotIn("Traceback", r.stderr)
-        self.assertEqual(self.raw_gi(repo), b"caf\xe9/\n*.o\n/.work/\n")
+        self.assertEqual(self.raw_gi(repo), b"caf\xe9/\n*.o\n/.work-items/\n")
         self.assertEqual(self.tracking(store), "ignored")
 
     def test_gitignore_mode_is_kept(self):
@@ -5333,11 +5362,12 @@ class TestInitTracking(unittest.TestCase):
         self.assertEqual(os.stat(repo / ".gitignore").st_mode & 0o777, 0o640)
 
     def test_negated_literal_line_still_gets_the_line(self):
-        repo, store = self.repo(gi=".work/\n!.work/\n")
+        repo, store = self.repo(gi=".work-items/\n!.work-items/\n")
         self.assertFalse(self.ignored(repo, store))
         r = self.init(store, "--no-track")
-        self.assertEqual(self.gi(repo), ".work/\n!.work/\n/.work/\n")
-        self.assertIn("added /.work/", r.stdout)
+        self.assertEqual(self.gi(repo),
+                         ".work-items/\n!.work-items/\n/.work-items/\n")
+        self.assertIn("added /.work-items/", r.stdout)
         self.assertTrue(self.ignored(repo, store))
 
     def test_glob_characters_in_the_path_are_escaped(self):
@@ -5418,10 +5448,10 @@ class TestInitTracking(unittest.TestCase):
         alias = self.tmp / "alias"
         alias.symlink_to(real)
         self.git(real, "init", "-q")
-        store = alias / ".work"
+        store = alias / ".work-items"
         self.init(store, "--no-track")
         self.assertEqual(self.tracking(store), "ignored")
-        self.assertEqual(self.gi(real), "/.work/\n")
+        self.assertEqual(self.gi(real), "/.work-items/\n")
 
     def test_line_that_does_not_ignore_is_reported(self):
         repo, store = self.repo()
@@ -5430,16 +5460,17 @@ class TestInitTracking(unittest.TestCase):
                 mock.patch.dict(os.environ, self.env):
             ok, msg = wi.ensure_ignored(store)
         self.assertFalse(ok)
-        self.assertEqual(msg, "/.work/ did not make git ignore the store")
+        self.assertEqual(msg,
+                         "/.work-items/ did not make git ignore the store")
 
     def test_git_unavailable_falls_back_to_literal_lines(self):
-        repo, store = self.repo(gi="/.work\n")
+        repo, store = self.repo(gi="/.work-items\n")
         self.init(store, "--track")
         with mock.patch.object(wi, "_ignore_rule", return_value=False):
             ok, msg = wi.ensure_ignored(store)
         self.assertTrue(ok)
-        self.assertIn("already ignores the store ('/.work')", msg)
-        self.assertEqual(self.gi(repo), "/.work\n")
+        self.assertIn("already ignores the store ('/.work-items')", msg)
+        self.assertEqual(self.gi(repo), "/.work-items\n")
 
     def test_lint_flags_duplicate_tracking_lines(self):
         repo, store = self.repo()
@@ -5481,6 +5512,403 @@ class TestInitTracking(unittest.TestCase):
         self.assertEqual(lint.returncode, 3)
         self.assertIn("store.yaml: tracking must be one of tracked, ignored "
                       "(got 'maybe')", lint.stdout)
+
+
+@unittest.skipUnless(shutil.which("git"), "git not available")
+class StoreLookupCase(unittest.TestCase):
+    """5f46 F2: every test here auto-resolves from a fresh temp dir, under
+    the scrubbed env, with hermetic git; this repo's own store is never in
+    reach."""
+
+    def setUp(self):
+        self.tmp = Path(tempfile.mkdtemp(prefix="5f46f2-"))
+        self.addCleanup(shutil.rmtree, self.tmp, ignore_errors=True)
+        self.genv = {"GIT_CONFIG_GLOBAL": os.devnull,
+                     "GIT_CONFIG_NOSYSTEM": "1",
+                     "GIT_CEILING_DIRECTORIES": str(self.tmp)}
+
+    def wi(self, args, cwd, **env):
+        full = dict(_clean_env(), WORK_ITEMS_OWNER="tester@local",
+                    **self.genv)
+        full.update(env)
+        return subprocess.run([sys.executable, str(WI)] + args, env=full,
+                              capture_output=True, text=True, cwd=str(cwd))
+
+    def wi_ok(self, args, cwd, **env):
+        r = self.wi(args, cwd, **env)
+        self.assertEqual(r.returncode, 0, f"{args}: {r.stderr}{r.stdout}")
+        return r
+
+    def git(self, repo, *args, check=True):
+        env = {k: v for k, v in os.environ.items()
+               if k not in ("GIT_DIR", "GIT_WORK_TREE", "GIT_INDEX_FILE")}
+        env.update(self.genv)
+        return subprocess.run(
+            ["git", "-C", str(repo), "-c", "user.email=t@t", "-c",
+             "user.name=t", "-c", "commit.gpgsign=false", "-c",
+             "core.excludesFile="] + list(args),
+            capture_output=True, text=True, check=check, env=env)
+
+    def dir(self, name, git=False):
+        d = self.tmp / name
+        d.mkdir(parents=True)
+        if git:
+            self.git(d, "init", "-q")
+        return d
+
+    def store(self, base, rel, n_items=1, flag="--track"):
+        """A store at base/rel made the way wi makes one, with items."""
+        self.wi_ok(["--root", rel, "init", flag], base)
+        for i in range(n_items):
+            self.wi_ok(["--root", rel, "add", f"{rel} item {i}"], base)
+        return base / rel
+
+    def header(self, r):
+        return r.stdout.splitlines()[0]
+
+
+class ResolveOrderTest(StoreLookupCase):
+    TWO = "wi: WARNING more than one work-item store under "
+    OLD = "is at an old location; the default is .work-items/"
+
+    def test_each_single_location_is_found(self):
+        for i, rel in enumerate(wi.STORE_LOCATIONS):
+            with self.subTest(rel=rel):
+                d = self.dir(f"single{i}")
+                self.store(d, rel)
+                r = self.wi_ok(["prime"], d)
+                self.assertTrue(
+                    self.header(r).startswith(f"wi: {rel} · 1 open"),
+                    r.stdout)
+                self.assertNotIn(self.TWO, r.stdout + r.stderr)
+                self.assertEqual(self.OLD in r.stdout, rel != ".work-items")
+
+    def test_sandbox_dir_with_a_work_store_resolves_work(self):
+        # the old lookup took .claude-sandbox/work whenever .claude-sandbox/
+        # existed, and failed here
+        d = self.dir("sb-work")
+        (d / ".claude-sandbox").mkdir()
+        self.store(d, ".work")
+        r = self.wi_ok(["ls", "--plain"], d)
+        self.assertIn(".work item 0", r.stdout)
+
+    def test_no_store_init_makes_an_ignored_work_items(self):
+        d = self.dir("fresh", git=True)
+        (d / ".claude-sandbox").mkdir()
+        r = self.wi_ok(["init"], d)
+        self.assertIn("no terminal", r.stderr)
+        self.assertTrue((d / ".work-items" / "items").is_dir())
+        self.assertFalse((d / ".claude-sandbox" / "work").exists())
+        self.assertEqual(wi.read_tracking(d / ".work-items"), "ignored")
+        self.assertEqual((d / ".gitignore").read_text(), "/.work-items/\n")
+        self.assertNotIn("deprecated", r.stderr)
+
+    def test_no_store_other_commands_name_work_items(self):
+        d = self.dir("none", git=True)
+        r = self.wi(["next"], d)
+        self.assertEqual(r.returncode, 1)
+        self.assertIn("no work-item root at .work-items (run `wi init`)",
+                      r.stderr)
+
+    def test_work_items_found_first_when_an_old_store_exists(self):
+        # claude-sandbox's migration relies on this: no env var, a moved
+        # .work-items/ beside a leftover .claude-sandbox/work/ wins, warned
+        d = self.dir("two", git=True)
+        old = self.store(d, ".claude-sandbox/work")
+        new = self.store(d, ".work-items", flag="--no-track")
+        want = (f"{self.TWO}{d.resolve()}: using {new.resolve()}, also "
+                f"{d.resolve() / '.claude-sandbox/work'} (move or remove "
+                "the extra one: the work-items skill's "
+                "references/format.md § Moving a store)")
+        r = self.wi_ok(["prime"], d)
+        self.assertTrue(self.header(r).startswith("wi: .work-items · "))
+        self.assertIn(want, r.stdout.splitlines())
+        self.assertNotIn(self.TWO, r.stderr)
+        for args in (["ls", "--plain"], ["show", "nothing-0000"],
+                     ["next", "--plain"], ["init"]):
+            r = self.wi(args, d)
+            self.assertIn(want, r.stderr.splitlines(), args)
+        r = self.wi(["ls", "--plain"], d)
+        self.assertIn(".work-items item 0", r.stdout)
+        self.assertNotIn(".claude-sandbox/work item 0", r.stdout)
+        r = self.wi(["lint"], d)
+        self.assertEqual(r.returncode, 3, r.stdout)
+        self.assertIn(want, r.stdout.splitlines())
+        self.assertNotIn(self.TWO, r.stderr)
+        self.assertTrue(old.exists())
+
+    def test_explicit_root_two_stores_only_in_prime_and_lint(self):
+        d = self.dir("explicit", git=True)
+        self.store(d, ".claude-sandbox/work")
+        self.store(d, ".work-items")
+        for how in ("flag", "env"):
+            with self.subTest(how=how):
+                pre, env = ((["--root", ".claude-sandbox/work"], {})
+                            if how == "flag" else
+                            ([], {"WORK_ITEMS_ROOT": ".claude-sandbox/work"}))
+                r = self.wi_ok(pre + ["prime"], d, **env)
+                line = next(ln for ln in r.stdout.splitlines()
+                            if ln.startswith(self.TWO))
+                self.assertIn(f"also {d.resolve() / '.work-items'}", line)
+                r = self.wi(pre + ["lint"], d, **env)
+                self.assertEqual(r.returncode, 3, r.stdout)
+                self.assertIn(self.TWO, r.stdout)
+                r = self.wi_ok(pre + ["ls", "--plain"], d, **env)
+                self.assertIn(".claude-sandbox/work item 0", r.stdout)
+                self.assertNotIn("WARNING", r.stderr)
+                r = self.wi(pre + ["next", "--plain"], d, **env)
+                self.assertNotIn("WARNING", r.stderr)
+
+    def test_symlink_alias_is_one_store(self):
+        d = self.dir("alias", git=True)
+        self.store(d, ".work-items")
+        os.symlink(".work-items", d / ".work")
+        for pre in ([], ["--root", ".work"]):
+            with self.subTest(pre=pre):
+                r = self.wi_ok(pre + ["prime"], d)
+                self.assertNotIn(self.TWO, r.stdout + r.stderr)
+                # judged by real path: this .work is .work-items
+                self.assertNotIn(self.OLD, r.stdout)
+                r = self.wi_ok(pre + ["lint"], d)
+                self.assertNotIn(self.TWO, r.stdout + r.stderr)
+
+    def test_explicit_root_whose_real_path_is_old_gets_the_notice(self):
+        d = self.dir("realold")
+        self.store(d, ".work")
+        os.symlink(".work", d / "store-link")
+        r = self.wi_ok(["--root", "store-link", "prime"], d)
+        self.assertIn("wi: deprecated: store store-link " + self.OLD,
+                      r.stdout)
+        # a link named otherwise to a .work-items store: no notice
+        e = self.dir("realnew")
+        self.store(e, ".work-items")
+        os.symlink(".work-items", e / "plain")
+        r = self.wi_ok(["--root", "plain", "prime"], e)
+        self.assertNotIn("deprecated", r.stdout)
+
+    def test_old_location_notice_in_prime_lint_and_init_only(self):
+        d = self.dir("oldnote")
+        self.store(d, ".work", n_items=40)
+        notice = ("wi: deprecated: store .work is at an old location; the "
+                  "default is .work-items/ (the work-items skill's "
+                  "references/format.md § Moving a store)")
+        r = self.wi_ok(["prime", "--budget", "60"], d)
+        self.assertIn(notice, r.stdout.splitlines())
+        self.assertEqual(r.stdout.count(notice), 1)
+        r = self.wi_ok(["lint"], d)
+        self.assertEqual(r.stderr.splitlines(), [notice])
+        self.assertNotIn("deprecated", r.stdout)
+        r = self.wi_ok(["init"], d)
+        self.assertIn(notice, r.stderr.splitlines())
+        for args in (["ls", "--plain"], ["next", "--plain"]):
+            r = self.wi(args, d)
+            self.assertNotIn("deprecated", r.stdout + r.stderr, args)
+
+    def test_nested_repo_work_items_is_refused_ignored(self):
+        # a .work-items/ that is its own git repo: ignoring it would leave
+        # its items in no repo; nothing is recorded (OQ2 pin)
+        d = self.dir("nested", git=True)
+        (d / ".work-items").mkdir()
+        self.git(d / ".work-items", "init", "-q")
+        for flags in (("--no-track",), ()):
+            with self.subTest(flags=flags):
+                r = self.wi(["init", *flags], d)
+                self.assertEqual(r.returncode, 1, r.stdout + r.stderr)
+                self.assertIn("is the repo root", r.stderr)
+                self.assertFalse((d / ".work-items" / "items").exists())
+                self.assertFalse((d / ".work-items" / "store.yaml").exists())
+                self.assertFalse((d / ".gitignore").exists())
+        self.wi_ok(["init", "--track"], d)
+        self.assertEqual(wi.read_tracking(d / ".work-items"), "tracked")
+
+    def test_sidecar_store_is_still_refused_git_ignored(self):
+        # 3c06's guard (D4'): an explicit .claude-sandbox/work root, or an
+        # existing one found by auto-resolution
+        d = self.dir("sidecar", git=True)
+        (d / ".claude-sandbox").mkdir()
+        self.git(d / ".claude-sandbox", "init", "-q")
+        r = self.wi(["--root", ".claude-sandbox/work", "init", "--no-track"],
+                    d)
+        self.assertEqual(r.returncode, 1, r.stdout)
+        self.assertIn("a git-ignored store there lands in no repo", r.stderr)
+        self.assertFalse((d / ".claude-sandbox" / "work").exists())
+        store = self.store(d, ".claude-sandbox/work")
+        before = (store / "store.yaml").read_text()
+        r = self.wi(["init", "--no-track"], d)
+        self.assertEqual(r.returncode, 1, r.stdout)
+        self.assertIn("a git-ignored store there lands in no repo", r.stderr)
+        self.assertEqual((store / "store.yaml").read_text(), before)
+        self.assertFalse((d / ".work-items").exists())
+
+
+class StoreMoveTest(StoreLookupCase):
+    """The store moves claude-sandbox's migration relies on (5f46)."""
+
+    def test_no_track_on_a_moved_store_records_ignored_and_keeps_items(self):
+        d = self.dir("moved", git=True)
+        old = self.store(d, ".claude-sandbox/work", n_items=3)
+        self.git(d, "add", "-A")
+        self.git(d, "commit", "-qm", "store")
+        before = {p.name: p.read_bytes() for p in (old / "items").iterdir()}
+        self.assertEqual(len(before), 3)
+        self.git(d, "rm", "-r", "-q", "--cached", ".claude-sandbox/work")
+        shutil.move(str(old), str(d / ".work-items"))
+        r = self.wi_ok(["--root", ".work-items", "init", "--no-track"], d)
+        new = d / ".work-items"
+        self.assertEqual(wi.read_tracking(new), "ignored")
+        self.assertEqual(
+            {p.name: p.read_bytes() for p in (new / "items").iterdir()},
+            before)
+        self.assertEqual((d / ".gitignore").read_text(), "/.work-items/\n")
+        probe = next((new / "items").iterdir())
+        self.assertEqual(self.git(d, "check-ignore", "-q", str(probe),
+                                  check=False).returncode, 0)
+        self.assertNotIn("WARNING", r.stderr)
+        r = self.wi_ok(["lint"], d)
+        self.assertIn("lint clean: 3 items", r.stdout)
+        self.assertEqual(r.stderr, "")
+
+    def test_ignored_to_ignored_move_keeps_items(self):
+        # the claude-sandbox migration's case: an ignored .work/ moved to
+        # .work-items/; only the .gitignore change is in git
+        d = self.dir("ign", git=True)
+        old = self.store(d, ".work", n_items=2, flag="--no-track")
+        self.assertEqual((d / ".gitignore").read_text(), "/.work/\n")
+        before = {p.name: p.read_bytes() for p in (old / "items").iterdir()}
+        shutil.move(str(old), str(d / ".work-items"))
+        self.wi_ok(["--root", ".work-items", "init", "--no-track"], d)
+        new = d / ".work-items"
+        self.assertEqual(wi.read_tracking(new), "ignored")
+        self.assertEqual(
+            {p.name: p.read_bytes() for p in (new / "items").iterdir()},
+            before)
+        self.assertEqual((d / ".gitignore").read_text(),
+                         "/.work/\n/.work-items/\n")
+        (d / ".gitignore").write_text("/.work-items/\n")
+        self.git(d, "add", ".gitignore")
+        self.assertEqual(self.git(d, "status", "--porcelain").stdout,
+                         "A  .gitignore\n")
+        r = self.wi_ok(["--root", ".work-items", "lint"], d)
+        self.assertIn("lint clean: 2 items", r.stdout)
+        r = self.wi_ok(["prime"], d)
+        self.assertTrue(self.header(r).startswith("wi: .work-items · 2 open"))
+        self.assertNotIn("WARNING", r.stdout)
+
+    def test_no_track_writes_the_root_gitignore_line_once(self):
+        d = self.dir("once", git=True)
+        (d / ".gitignore").write_text("*.pyc\n")
+        for _ in range(2):
+            self.wi_ok(["init", "--no-track"], d)
+        self.wi_ok(["--root", ".work-items", "init", "--no-track"], d)
+        self.assertEqual((d / ".gitignore").read_text(),
+                         "*.pyc\n/.work-items/\n")
+        e = self.dir("present", git=True)
+        (e / ".gitignore").write_text("/.work-items/\n")
+        r = self.wi_ok(["init", "--no-track"], e)
+        self.assertIn("no line added", r.stdout)
+        self.assertEqual((e / ".gitignore").read_text(), "/.work-items/\n")
+
+
+class WorktreeNoStoreTest(StoreLookupCase):
+    """A linked worktree with no store and no root named points at the main
+    checkout's store; init refuses there (5f46, D11)."""
+
+    def main_and_worktree(self, rel=".work-items", name="main"):
+        main = self.dir(name, git=True)
+        (main / "README").write_text("x\n")
+        self.git(main, "add", "README")
+        self.git(main, "commit", "-qm", "init")
+        self.store(main, rel)
+        wt = self.tmp / f"{name}-wt"
+        self.git(main, "worktree", "add", "-q", "-b", "side", str(wt))
+        return main, wt
+
+    def test_next_names_the_main_store(self):
+        for i, rel in enumerate((".work-items", ".claude-sandbox/work")):
+            with self.subTest(rel=rel):
+                main, wt = self.main_and_worktree(rel, name=f"m{i}")
+                r = self.wi(["next"], wt)
+                self.assertEqual(r.returncode, 1, r.stdout)
+                self.assertEqual(
+                    r.stderr,
+                    "wi: no work-item store in this linked worktree; the "
+                    "store lives in the main checkout: export "
+                    f"WORK_ITEMS_ROOT={os.path.realpath(main)}/{rel}\n")
+
+    def test_init_refuses_and_writes_nothing(self):
+        main, wt = self.main_and_worktree()
+        for flags in ((), ("--no-track",), ("--track",)):
+            with self.subTest(flags=flags):
+                r = self.wi(["init", *flags], wt)
+                self.assertEqual(r.returncode, 1, r.stdout)
+                self.assertIn("wi init: refusing to create a store in a "
+                              "linked worktree (it would be a stray copy); "
+                              "run it in the main checkout "
+                              f"{os.path.realpath(main)}, or name the root "
+                              "with --root or WORK_ITEMS_ROOT", r.stderr)
+                self.assertFalse((wt / ".work-items").exists())
+                self.assertEqual(
+                    self.git(wt, "status", "--porcelain").stdout, "")
+
+    def test_an_explicit_root_works_in_a_worktree(self):
+        main, wt = self.main_and_worktree()
+        self.wi_ok(["--root", str(wt / ".work-items"), "init", "--track"],
+                   wt)
+        self.assertTrue((wt / ".work-items" / "items").is_dir())
+        env_store = self.tmp / "env-store"
+        self.wi_ok(["init", "--track"], wt, WORK_ITEMS_ROOT=str(env_store))
+        self.assertTrue((env_store / "items").is_dir())
+        r = self.wi_ok(["ls", "--plain"], wt,
+                       WORK_ITEMS_ROOT=str(main / ".work-items"))
+        self.assertIn(".work-items item 0", r.stdout)
+
+    def test_main_checkout_init_still_creates_work_items(self):
+        main = self.dir("plain-main", git=True)
+        (main / "README").write_text("x\n")
+        self.git(main, "add", "README")
+        self.git(main, "commit", "-qm", "init")
+        self.wi_ok(["init", "--no-track"], main)
+        self.assertTrue((main / ".work-items" / "items").is_dir())
+
+    def test_separate_git_dir_worktree_names_no_main_path(self):
+        # the common dir is not named .git: the main checkout's path is not
+        # known, so the messages name it in words
+        main = self.tmp / "sep-main"
+        self.git(self.tmp, "init", "-q", "--separate-git-dir",
+                 str(self.tmp / "sep.git"), str(main))
+        (main / "README").write_text("x\n")
+        self.git(main, "add", "README")
+        self.git(main, "commit", "-qm", "init")
+        wt = self.tmp / "sep-wt"
+        self.git(main, "worktree", "add", "-q", "-b", "side", str(wt))
+        r = self.wi(["next"], wt)
+        self.assertEqual(r.returncode, 1, r.stdout)
+        self.assertEqual(
+            r.stderr,
+            "wi: no work-item store in this linked worktree; the store lives "
+            "in the main checkout: export WORK_ITEMS_ROOT=<main checkout>/"
+            ".work-items\n")
+        r = self.wi(["init", "--no-track"], wt)
+        self.assertEqual(r.returncode, 1, r.stdout)
+        self.assertEqual(
+            r.stderr,
+            "wi init: refusing to create a store in a linked worktree (it "
+            "would be a stray copy); run it in the main checkout, or name "
+            "the root with --root or WORK_ITEMS_ROOT\n")
+        self.assertFalse((wt / ".work-items").exists())
+        # the main checkout itself is not a linked worktree
+        self.wi_ok(["init", "--track"], main)
+        self.assertTrue((main / ".work-items" / "items").is_dir())
+
+    def test_without_git_the_worktree_behaves_as_before(self):
+        main, wt = self.main_and_worktree()
+        empty = self.dir("no-bin")
+        r = self.wi(["next"], wt, PATH=str(empty))
+        self.assertEqual(r.returncode, 1)
+        self.assertIn("no work-item root at .work-items (run `wi init`)",
+                      r.stderr)
+        self.wi_ok(["init", "--track"], wt, PATH=str(empty))
+        self.assertTrue((wt / ".work-items" / "items").is_dir())
 
 
 class TestDetailsBlocks(unittest.TestCase):

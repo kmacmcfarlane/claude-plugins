@@ -99,7 +99,10 @@ Write it in this order, short enough to read in two minutes:
 2. **Each repo in plain words.** One short paragraph or a few lines per repo that has open
    work: what is in flight, what is blocked and on what, what is ready next. Skip counts the
    operator cannot act on. Group quiet repos into one line ("garden-api, notes: nothing
-   in flight, a few ready items each").
+   in flight, a few ready items each"). Two stores in one repo (two records with the same
+   `path`), or a store at an old location (`store` is `.claude-sandbox/work` or `.work`), is
+   worth one clause in that repo's line: the work-items skill's `references/format.md`
+   § Moving a store is the fix.
 3. **Waiting on you.** The open decisions, per repo, each named in plain words with how long
    it has waited when `age_days` is known, its recommendation as its stored headline (the
    decision's `text`) names it — read by the marks and labels the `work-items` skill's
@@ -147,11 +150,11 @@ Actions: `wi estate --dir ~/src/other-org --json`, then as above.
 - **`not in a git repo; name the dir to scan with --dir`**, or **`the default scan dir would
   be …`**: the session is outside a repo, or the repo sits directly in `$HOME` or above it;
   ask which dir holds the checkouts, or use the one the operator named.
-- **A repo is missing from the sweep**: its store is not at `.claude-sandbox/work/` or
-  `.work/` directly under the repo, the repo is more than one level down, or the repo or store
-  is a symlink leading out of the scanned dir, which the sweep never follows. Or it shares its
-  git repository with another entry that was kept: check `skipped`, which names the entry and
-  why. Name it rather than hunting for it.
+- **A repo is missing from the sweep**: its store is not at `.work-items/`,
+  `.claude-sandbox/work/` or `.work/` directly under the repo, the repo is more than one
+  level down, or the repo or store is a symlink leading out of the scanned dir, which the
+  sweep never follows. Or it shares its git repository with another entry that was kept:
+  check `skipped`, which names the entry and why. Name it rather than hunting for it.
 - **A `problems` entry on a store**: a file that does not parse, an empty file left by an
   interrupted write, or a symlink out of the dir. The rest of that store is still counted.
   Report it; the repair is `wi lint` in that repo's own session.

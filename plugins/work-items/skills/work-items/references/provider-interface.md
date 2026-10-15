@@ -104,7 +104,8 @@ only these rejections exit 1:
 ### `wi` — this plugin
 
 One markdown file per item under a store resolved `WORK_ITEMS_ROOT` (the deprecated
-`WI_ROOT` as a fallback) → `.claude-sandbox/work/` → `.work/`. `status:` is the only
+`WI_ROOT` as a fallback) → the first of `.work-items/`, `.claude-sandbox/work/`, `.work/`
+that holds `items/` (the last two deprecated). `status:` is the only
 authority on state; files never move on completion.
 Mutations take `flock(<root>/.lock)` and write tmp+rename. Stdlib-only Python; the item file
 format, resolver rule and secret rule are canonical in `references/format.md` — that file is

@@ -1,7 +1,8 @@
 # Work-item file format
 
-One markdown file per item, managed by `scripts/wi.py`. The store is git; the
-CLI adds locking, validation and budgeted views on top. Spec of record:
+One markdown file per item, managed by `scripts/wi.py`. The store lives in the
+repo's directory, tracked by git or git-ignored (§ Store tracking); the CLI adds
+locking, validation and budgeted views on top. Spec of record:
 `agents/investigations/context-guardrails/threads/F-wi-spec.md`.
 
 ## Root resolver
@@ -12,8 +13,45 @@ CLI adds locking, validation and budgeted views on top. Spec of record:
    main checkout so claims are visible to each other. The deprecated `$WI_ROOT`
    is read when `$WORK_ITEMS_ROOT` is unset or empty; when both are set,
    `$WORK_ITEMS_ROOT` wins. An empty value counts as unset.
-2. `.claude-sandbox/work/` when `.claude-sandbox/` exists in the cwd.
-3. `.work/` otherwise.
+2. Otherwise the first of these under the cwd that holds `items/`:
+   `.work-items/` (the default), `.claude-sandbox/work/`, `.work/`. A
+   `.claude-sandbox/` directory alone picks nothing.
+3. With none, `.work-items/`: `init` creates it, and every other command exits
+   1 with ``no work-item root at .work-items (run `wi init`)``. In a linked git
+   worktree (its git dir differs from its common dir) this case differs:
+   every command but `init` exits 1 with `wi: no work-item store in this
+   linked worktree; the store lives in the main checkout: export
+   WORK_ITEMS_ROOT=<main>/<store>`, naming the main checkout's store (the
+   first location there holding `items/`, else `.work-items`), and `init`
+   refuses, exit 1, nothing written, since a store there would be a stray copy
+   no other session sees. When git does not give the main checkout's path
+   (the common dir is not named `.git`: a worktree of a bare repo or of a
+   `--separate-git-dir` clone), the error names `<main checkout>/.work-items`
+   and the refusal says only "run it in the main checkout". A root named by
+   flag or env skips this check, and so does a git that is missing or fails.
+
+**Old locations.** `.claude-sandbox/work/` and `.work/` are deprecated: still
+found, still used. A store whose real path (symlinks followed) is named `.work`,
+or is `work` inside `.claude-sandbox`, gets one line from `prime` (a header
+line, reserved from the budget like the custody warning), `lint` (stderr; not a
+problem, the exit is unchanged) and `init` (stderr), at most once per run:
+`wi: deprecated: store <root> is at an old location; the default is
+.work-items/ (the work-items skill's references/format.md § Moving a store)`.
+A root from the flag, the env or the lookup is judged alike. No other command
+prints it.
+
+**More than one store.** When the store in use is one of the three locations
+under a directory D (by real path), and another of them under D also holds
+`items/`, `prime` shows a header line and `lint` counts a problem (exit 3),
+however the root was found: `wi: WARNING more than one work-item store under
+<D>: using <store>, also <others> (move or remove the extra one: the
+work-items skill's references/format.md § Moving a store)`. With the lookup
+(no flag, no env), `.work-items/` wins and every other command prints the same
+line on stderr; with a named root the other commands stay silent, since the
+caller chose the store. Stores are compared by real path: a symlink to the
+same store (`.work` linking to `.work-items`) is one store, not two. The usual
+way to get two is checking out a branch from before a move, which brings back
+a tracked old store beside the git-ignored `.work-items/`.
 
 ```
 <root>/
@@ -45,13 +83,14 @@ recorded choice, and `wi lint` reports it, as it does more than one `tracking:` 
   how to choose tracked instead (`wi init --track`, then remove the store's line from
   `.gitignore`), and exits 0 (in a sidecar layout, refused: see below).
 - **Ignoring** (`--no-track`, the menu's git-ignored, the no-terminal default) adds
-  `/<store path>/` — `/.work/` or `/.claude-sandbox/work/` — to the root `.gitignore` of the
+  `/<store path>/` — `/.work-items/`, or at an old location `/.work/` or
+  `/.claude-sandbox/work/` — to the root `.gitignore` of the
   repo that holds the store (glob characters in the path escaped). The file is created when
   it is missing; otherwise the line is appended in one atomic write that keeps the file's
   bytes, its line ending (CRLF stays CRLF) and its mode, with a newline added first when
   its last line has none. No line is added when the store is already ignored by git, as
   `git check-ignore` judges it, from one of the repo's `.gitignore` files: its path in any
-  spelling, a glob, a parent directory, or, for `.claude-sandbox/work/`, the host
+  spelling, a glob, a parent directory, or, for the old `.claude-sandbox/work/`, the host
   `.gitignore` ignoring `.claude-sandbox/` as a whole (`init` says that covers the store). A
   literal line followed by a negation does not count. A rule only in `.git/info/exclude` or
   a global excludes file does not count either, since it does not travel with the repo.
@@ -62,7 +101,11 @@ recorded choice, and `wi lint` reports it, as it does more than one `tracking:` 
   git-ignored store would land in no repo. `init` refuses any git-ignored choice there
   (`--no-track`, the no-terminal default) before anything is written, exits 1, and names
   `wi init --track`; an existing store keeps its recorded choice. The menu there defaults
-  to tracked, and answering git-ignored asks again.
+  to tracked, and answering git-ignored asks again. The refusal covers a named
+  `.claude-sandbox/work` root and an existing one the lookup finds; a bare `wi init` with no
+  store makes `.work-items/`, which is never a sidecar store.
+- **A `.work-items/` that is its own git repo** is the root of that repo, so it is refused as
+  git-ignored by the rule below; `--track` records it.
 - **What init refuses.** It never writes through a symlink: a symlinked `.gitignore` gets no
   line (`init` names the line to add by hand), and a store directory that is a symlink to a
   place outside the repo holding it is refused outright, with nothing written. A store that
@@ -93,7 +136,7 @@ recorded choice, and `wi lint` reports it, as it does more than one `tracking:` 
 `status:` is the only authority on state. `done` never moves a file — a
 status-only close is a two-line front-matter change that merges cleanly
 against any body edit. `wi archive --older-than 90d` moves closed items in a
-dedicated commit.
+dedicated commit (when the store is tracked).
 
 A write killed mid-way never blocks the store. An item in both `items/` and
 `archive/` as one file (a kill between hard link and unlink) is a move half
@@ -235,8 +278,8 @@ else's — `release` still clears it, a re-claim needs `--steal`, or pin
 ### Deprecated environment names
 
 `WI_ROOT` and `WI_OWNER` are the old names of `WORK_ITEMS_ROOT` and
-`WORK_ITEMS_OWNER`, kept as fallbacks. When an old name is used (its new name
-unset or empty), or is set to a different value from its new name, `prime`
+`WORK_ITEMS_OWNER`, kept as fallbacks. When an old name is set and its new
+name is unset or empty, or both are set and differ, `prime`
 (a header line on stdout, reserved from the budget like the custody warning),
 `lint` (stderr; not a problem, the exit is unchanged) and `init` (stderr) print
 one line each, at most once per run: `wi: deprecated: WI_ROOT is set; use
@@ -245,6 +288,46 @@ WORK_ITEMS_ROOT wins` (the same for `_OWNER`). No other command prints them.
 Both names set to the same value is silent: that is the transition export, which
 works with an older wi too. `wi --help` names `WORK_ITEMS_ROOT` in a wi that
 reads it.
+
+## Moving a store
+
+`wi` has no move command: a store moves once per repo, by one of these recipes,
+run from the main checkout. Before any of them, stop the sessions that use the
+store (their claims and its `.lock`), and update every `WORK_ITEMS_ROOT` (or
+`WI_ROOT`) export that names the old path: briefs, open worktrees. Each recipe
+ends with `wi --root .work-items lint`, and leaves no old directory behind (the
+two-store warning catches one). `<old>` is the old store path, `.claude-sandbox/work` or `.work`.
+
+- **Tracked → tracked.** `git mv <old> .work-items`, then
+  `wi --root .work-items init --track`, then commit.
+- **Tracked → git-ignored.** `git rm -r -q --cached <old>`, `mv <old>
+  .work-items`, `wi --root .work-items init --no-track` (it adds `/.work-items/`
+  to the root `.gitignore` and records `ignored`), then commit the removal and the
+  `.gitignore` line. Past history stays in `git log`.
+
+  **Other clones.** The move commit deletes the store's files from git, so every
+  other clone that pulls it loses its working copy of the store. Do one of these:
+  - run this recipe in each clone **before** pulling the move; or
+  - after pulling, recover the store in each clone:
+    1. `git archive <move>^ <old> | tar -x`, which restores `<old>` as it was
+       just before the move commit (`<move>` is the move commit);
+    2. `mv <old> .work-items`;
+    3. `wi --root .work-items init --no-track`, which finds the `/.work-items/`
+       line already present and records `ignored`;
+    4. `wi --root .work-items lint`.
+
+  From then on each clone's ignored store is its own: nothing syncs them. A clone
+  with uncommitted edits to tracked store files has its pull refused by git until
+  they are committed or stashed.
+- **Git-ignored → git-ignored.** `mv <old> .work-items`, then
+  `wi --root .work-items init --no-track` (it adds `/.work-items/` and records
+  `ignored`), then remove the old store's own ignore line from `.gitignore` if it
+  has one (`/.work/`) and commit that `.gitignore` change. Nothing else is in git.
+- **Sidecar → root.** A store at `.claude-sandbox/work/` in a sidecar layout has
+  its history in `.claude-sandbox/.git`. Copy it out (`cp -a .claude-sandbox/work
+  .work-items`), `wi --root .work-items init --track` or `--no-track`, then remove
+  it from the sidecar with a commit in the sidecar repo `.claude-sandbox/` (ask the
+  operator before committing there).
 
 ## Editing fields: `wi set <id> <field> <value>`
 
@@ -668,7 +751,8 @@ the Handoff's `next:` needs it. Never `cat` the items directory. Hand off with
 
 ## Secret rule
 
-Item files are tracked forever in git: record **the path and the key, never
+Item files may be tracked in git, now or later (an ignored store can become
+tracked), so the rule holds for every store: record **the path and the key, never
 the value**. Write `creds: clusterenv.yaml key DISCORD_WEBHOOK_BACKUPS`, not
 the webhook URL. `wi lint` flags PEM blocks, `KEY=value` assignments (bare,
 or after a bullet, date, tag, bold or other leading text, unless the key is
@@ -816,9 +900,9 @@ After `wi import-todo TODO.md`, replace the file's contents with:
 ```markdown
 # TODO — moved
 
-Work items now live in `.work/` (or `.claude-sandbox/work/`), one file per
-item, managed by `wi` (the `work-items` plugin's
-`skills/work-items/scripts/wi.py`).
+Work items now live in `.work-items/` at the repo root, one file per item,
+managed by `wi` (the `work-items` plugin's `skills/work-items/scripts/wi.py`).
+When the store is git-ignored, it is local to this checkout.
 
 - `wi prime` — what's next, in ≤300 tokens; start every session here
 - `wi next` / `wi show <id> --brief` — pick and inspect an item

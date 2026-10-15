@@ -411,9 +411,10 @@ unchecked, and the result says so.
 
 ### work-items
 
-Repo-durable work items — one markdown file per item in `.work/` (or `.claude-sandbox/work/`),
-`status:` authoritative, files never moved on completion, so they survive machines, sessions
-and collaborators and merge cleanly.
+Repo-durable work items — one markdown file per item in `.work-items/` at the repo root
+(git-ignored by default; tracked on request), `status:` authoritative, files never moved on
+completion, so they survive sessions (and machines and collaborators when tracked) and merge
+cleanly.
 
 | Skill | Description |
 |---|---|
