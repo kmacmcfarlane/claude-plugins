@@ -1,0 +1,24 @@
+---
+id: wi-default-store-work-items-git-ignored-5f46
+title: "wi: default store .work-items/, git-ignored on init; env vars renamed to WORK_ITEMS_"
+short_display_name: wi store .work-items, WORK_ITEMS_ env
+type: feature
+status: todo
+priority: 1
+created: 2026-10-15
+updated: 2026-10-15
+refs:
+  - answer 227, operator 2026-10-15
+---
+
+Answer 227 b (operator 2026-10-15): the default work-item store is .work-items/ at the repo root, git-ignored when established, because it matches the plugin's name and works without claude-sandbox. Also rename wi's env vars to the WORK_ITEMS_ prefix (WI_ROOT -> WORK_ITEMS_ROOT, WI_OWNER -> WORK_ITEMS_OWNER, ...). Decided alone: the old WI_* names and the .work/ and .claude-sandbox/work/ stores keep working as deprecated fallbacks with a one-line warning, so no repo breaks mid-migration. Acceptance: wi finds .work-items/ first; the estate sweep includes it; every skill and reference naming WI_ROOT or the old store paths is updated; tests; README/CLAUDE.md layout. Coordinate with claude-sandbox decision 115.
+
+## Handoff
+- doing: —
+- next: —
+- blocked: —
+- learned: —
+target: series .claude-sandbox/investigations/wi-default-store-work-items-git-ignored-5f46/
+budget: waived (operator 2026-10-08); spend measured
+dispatch: planner opus high — plan the store default and env-var rename (answer 227 b)
+agent: planner ac82427bf27ca5eb5 round 1
