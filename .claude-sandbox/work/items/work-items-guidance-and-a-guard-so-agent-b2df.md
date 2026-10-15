@@ -51,3 +51,6 @@ verdict: NEEDS_CHANGES plan round 3 (all nine round-2 closed; 2 medium exact: F1
 decided: 2026-10-15T04:48Z cap — only exact text fixes: one plan finish round, read by the librarian (authority answer 145)
 dispatch: planner opus high — resume, plan finish round
 agent: planner a2cdd001d65a75437 round 4 (finish)
+result: DONE plan finish at 03_finish-round.md (27-30 exact; read by the librarian)
+verdict: CLEAR plan after 2 fix rounds, 1 finish (series 00-03)
+revised: 2026-10-15T04:49Z decision 233 (b) now names that the plugin hook also guards rm -r on a store; 237 tied to the stores-only aim; 238 narrowed: hooper's daily restic already copies /home/rt/work incl. stores (hooper 9517985), the question is whether #backups has been alert-free and a day-old copy is enough — options (a) yes: local copy plus hooper's restic [recommended if no recent alerts] | (b) no: also a wi backup command or a snapshot at each librarian landing in the nested-store build | (c) also other machines | (z) later
