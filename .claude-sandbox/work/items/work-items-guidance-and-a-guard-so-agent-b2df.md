@@ -33,3 +33,10 @@ decision 237: OQ5 — what does it protect? — options: (a) work-item stores an
 decision 238: OQ6 — backups? — options: (a) a copy inside the repo's .git directory now [recommended] | (b) also an off-machine copy | (c) a wi backup command later | (z) decide later
 decision 239: OQ7 — reaching running sessions with the guidance now? — options: (a) a peer message to live sessions plus a relay to claude-sandbox for its container CLAUDE.md [recommended] | (b) the peer message only | (c) neither | (z) decide later
 agent: reviewer a465a62b18f0b778d plan round 1
+verdict: NEEDS_CHANGES plan round 1 (2 high: the probe never reaches the hook's if-filter; the guard's own git dry run could execute core.fsmonitor from the command's -c or a foreign repo's config before any prompt; 7 medium: bypassPermissions claim not documented for hooks, if-filter misses bash -c/sudo/aliases, aim promises nested repos not built, OQ6 backup question checkable now, two copies both deny the probe, rm -r is beyond the git request, this repo's store is host-tracked not sidecar; 7 low; 3 nits)
+dispatch: planner opus high — resume, plan fix round 1 (verbatim report passed)
+agent: planner a2cdd001d65a75437 round 2
+return: planner DONE .claude-sandbox/investigations/work-items-guidance-and-a-guard-so-agent-b2df (01_review-round-1.md; static guard, no git subprocess; no if filters, every Bash call reaches a fast-exit script; per-copy probes; hooper's restic covers /home/rt/work daily (hooper 9517985); OQ1 and OQ6 reworded)
+baseline: 4a58600911b3adc583227e7d97a325d7235640b203d290887c3aa6cccde7b2da  00_initial.md 057d212d0023c838f298c7bded4a9d0bdf5d77c6f91186fe0a9d95941ffa76c4  01_review-round-1.md cf1e94eb8bc83b080e665aecc4f74f65613b0c84495ae6776eb4f9783c616189  INDEX.md 
+dispatch: reviewer opus high — resume, plan review round 2
+agent: reviewer a465a62b18f0b778d plan round 2
