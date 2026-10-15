@@ -49,3 +49,6 @@ target: an agent worktree off main (3e1b96bb); work-items wi.py and tests (F1)
 budget: waived (operator 2026-10-08); spend measured
 dispatch: implementer opus high — d1e9 F1: own-repo recognition, the hardened store git runner, prime/lint checks (security-sensitive)
 agent: implementer a00b3d4405bafe651 F1 round 1
+result: DONE F1 round 1 at 0582a34a (store_repo_state, _store_git with every pin incl. attr.tree, custody and claimant via the runner, F1 prime/lint rows; test_store_repo.py 52 tests, 11 mutations caught; work-items 467 OK, 2 skipped on git 2.39.5; departures: commit on an unmatched pathspec exits 1; attr.tree pin replaces the broken rule)
+dispatch: reviewer opus high — fresh (rule 4), d1e9 F1 (security-sensitive)
+agent: reviewer a399339a8327c6ba6 F1 round 1 at 0582a34a
