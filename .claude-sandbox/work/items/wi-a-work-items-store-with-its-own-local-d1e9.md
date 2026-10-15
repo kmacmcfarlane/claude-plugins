@@ -110,3 +110,6 @@ decided: finish round of exact leftovers (finding 1 scrub for the read-back, nit
 dispatch: implementer opus high — resume, F3 finish round
 agent: implementer a56d080820c81b88a F3 finish round
 review: self — finish round at 980558dc: exactly the two leftovers (command-scope config stripped for the pins=False read-back only; two lines rewrapped); test added; work-items 589 OK, kit-dev 21 OK
+landed: F3 locally 6e5140fb (Checks 12/12 OK; cc_scan clean: own tags only); NOT pushed — ships with F1, F2, F5
+target: an agent worktree off main (6e5140fb); per-change commits from every write verb (F5)
+dispatch: implementer opus high — d1e9 F5: each change committed under the lock
