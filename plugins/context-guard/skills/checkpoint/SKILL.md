@@ -293,12 +293,17 @@ State the routing table before writing.
 
 **4a.** Commits first (the message is a compaction-proof summary you chose; include noodle
 notes and retractions), then investigation/plan files; the work-item store's commit waits
-for Step 4a½, which makes it (with `items:` empty, commit the store here). The store's
-commit goes to the repo that holds it (`git -C "$WORK_ITEMS_ROOT"`); when that repo ignores
-the store (`git -C "$WORK_ITEMS_ROOT" check-ignore -q "$WORK_ITEMS_ROOT"` exits 0), skip
-this commit. Respect each repo's rules: pre-commit hooks, secret encryption, never
-`git add -A` where the tree carries unencrypted secrets. A repo not yours to commit to stays
-dirty with a written note. Then sweep the session scratchpad, which `/clear` leaves behind: copy
+for Step 4a½, which makes it (with `items:` empty, commit the store here). Commit the store
+with `wi commit -m "<message>"`: under `wi`'s lock it commits the store's own files into the
+repo that holds them (the store's own repo, or the host or sidecar repo that tracks it), and
+prints `nothing to commit` for a store that repo ignores. Never commit the store with `git`
+directly. A `wi` without `commit` (`invalid choice: 'commit'`, exit 2) is older than this
+text: take the store's lock and commit by hand, `flock -w 10 "$WORK_ITEMS_ROOT/.lock" git -C
+"$WORK_ITEMS_ROOT" commit -q -m "<message>" -- .` after the same `flock … add -A -- .`, and
+skip it when that repo ignores the store (`git -C "$WORK_ITEMS_ROOT" check-ignore -q
+"$WORK_ITEMS_ROOT"` exits 0). Respect each repo's rules: pre-commit hooks, secret
+encryption, never `git add -A` where the tree carries unencrypted secrets. A repo not yours
+to commit to stays dirty with a written note. Then sweep the session scratchpad, which `/clear` leaves behind: copy
 every file a successor needs to a durable path, or list it under **Copy forward** (the
 format spec's scratchpad rule).
 
@@ -357,11 +362,9 @@ Any other question is an `OPEN` line. Never carry residue with `wi handoff`: it 
 line per key, so the residue would displace the item's own Handoff. **Path and key, never
 value**: item files may be tracked in git, now or later, so this rule holds for every store,
 and it is the guard: `wi note` refuses lint's shapes, and lint's shapes are not every
-secret. Run `wi lint`, then commit the store: this is 4a's work-item commit. The store's
-commit goes to the repo that holds it (`git -C "$WORK_ITEMS_ROOT"`); when that repo ignores
-the store (`git -C "$WORK_ITEMS_ROOT" check-ignore -q "$WORK_ITEMS_ROOT"` exits 0), skip
-this commit. Name each item written in the manifest's `Next` as `wi show <id>`, the full
-view, since `--brief` omits Notes. The writer is this session, or a fork under Step 2's
+secret. Run `wi lint`, then commit the store as 4a says (`wi commit -m "<message>"`): this
+is 4a's work-item commit. Name each item written in the manifest's `Next` as
+`wi show <id>`, the full view, since `--brief` omits Notes. The writer is this session, or a fork under Step 2's
 dictate → fork rule, handed the tagged lines verbatim; the fork adds no recall of its own.
 **Lean form**: read only `wi show <id> --brief` (a duplicate line is cheaper than a lost
 one), write only corrections, refusals, unconfirmed operator statements and open questions,

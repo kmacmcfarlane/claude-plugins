@@ -132,9 +132,8 @@ compacts when convenient, and it continues. Finish the step in hand, then:
    (append) or new items (`$WI add` with `--short-display-name`, as `intake.md` § Step 1
    says), never into CLAUDE.md or a skill file; its commits
    are store-only — the work-item store, and only when the repo holding the store tracks it:
-   the store's commit goes to the repo that holds it (`git -C "$WORK_ITEMS_ROOT"`); when
-   that repo ignores the store (`git -C "$WORK_ITEMS_ROOT" check-ignore -q
-   "$WORK_ITEMS_ROOT"` exits 0), skip this commit. The manifest is never committed: it
+   commit the store with `$WI commit -m "<message>"` (the `dev-cycle` skill's
+   `references/bindings.md`, the store lookup). The manifest is never committed: it
    lives in the config dir, one per session, and the store and the investigation series carry the
    durable record.
    Anything that would change a custody file becomes a work item. The manifest names

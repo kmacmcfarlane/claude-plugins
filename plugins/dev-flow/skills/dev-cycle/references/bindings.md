@@ -695,12 +695,18 @@ record, and nothing is filed. Never run `wi init` from a cycle.
 
 The snippet exports the store under both `WORK_ITEMS_ROOT` and the deprecated `WI_ROOT`, so an
 installed `wi` older than this copy still finds it; every later assignment of either name sets
-both. A step that commits the store follows one rule: the store's commit goes to the repo that
-holds it (`git -C "$WORK_ITEMS_ROOT"`); when that repo ignores the store (`git -C
-"$WORK_ITEMS_ROOT" check-ignore -q "$WORK_ITEMS_ROOT"` exits 0), skip this commit. Any exit
-other than 0 or 1 means the snippet was not run in this call: re-run it first. The store still
-outlives the session on this checkout, and any history it keeps lives in the store's own
-repository, never the host's.
+both. A step that commits the store runs `$WI commit -m "<message>"`: under `wi`'s lock it
+commits the store's own files into the repo that holds them (the store's own repo, or the host
+or sidecar repo that tracks it), and prints `nothing to commit` for a store that repo ignores.
+Never commit the store with `git` directly. Run the repo's own pre-commit checks on `git -C
+"$WORK_ITEMS_ROOT" diff HEAD -- .` and the store's untracked files before `$WI commit`. A `wi`
+without `commit` (`invalid choice: 'commit'`, exit 2) is older than this text: take the store's
+lock and commit by hand, `flock -w 10 "$WORK_ITEMS_ROOT/.lock" git -C "$WORK_ITEMS_ROOT" commit
+-q -m "<message>" -- .` after the same `flock … add -A -- .`, and skip it when that repo
+ignores the store (`git -C "$WORK_ITEMS_ROOT" check-ignore -q "$WORK_ITEMS_ROOT"` exits 0);
+there, any other exit than 0 or 1 means the snippet was not run in this call: re-run it
+first. The store still outlives the session on this checkout, and any history it keeps lives
+in the store's own repository, never the host's.
 
 `wi` itself comes from the repo's own tree when it carries the `work-items` plugin, else
 from the installed plugin. This is dev-flow's canonical copy of the lookup: every dev-flow
