@@ -54,3 +54,7 @@ agent: planner a2cdd001d65a75437 round 4 (finish)
 result: DONE plan finish at 03_finish-round.md (27-30 exact; read by the librarian)
 verdict: CLEAR plan after 2 fix rounds, 1 finish (series 00-03)
 revised: 2026-10-15T04:49Z decision 233 (b) now names that the plugin hook also guards rm -r on a store; 237 tied to the stores-only aim; 238 narrowed: hooper's daily restic already copies /home/rt/work incl. stores (hooper 9517985), the question is whether #backups has been alert-free and a day-old copy is enough — options (a) yes: local copy plus hooper's restic [recommended if no recent alerts] | (b) no: also a wi backup command or a snapshot at each librarian landing in the nested-store build | (c) also other machines | (z) later
+decided: 2026-10-15T04:49Z scope — F1 (the work-items guidance) answers no open question, so it builds now; F2-F4 wait on 233-239
+target: an agent worktree off main (9cf28cfb); work-items SKILL.md, references/store-safety.md (new), references/format.md, tests/test_store_safety.py
+dispatch: implementer opus medium — b2df F1, the store-safety guidance
+agent: implementer a1f08393bdfff79d7 F1 round 1
