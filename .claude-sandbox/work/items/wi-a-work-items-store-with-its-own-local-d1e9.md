@@ -45,3 +45,7 @@ verdict: CLEAR plan round 3 (low: pin -c attr.tree=<empty tree> in the runner, n
 findings: carried — D2 pins add -c attr.tree=4b825dc642cb6eb9a060e54bf8d69288fbee4904 (https://github.com/git/git/blob/master/Documentation/config/attr.adoc); the GIT_ATTR_SOURCE test is skipped below the git that reads it
 decision 240: OQ1 — names for a store with its own repo — options: (a) keep --no-track; store.yaml records tracking: tracked plus repo: own (the flag describes the host, the record the store's own repo) [recommended] | (b) a new --own-repo flag | (c) a third value, tracking: own-repo | (z) decide later: F3 builds (a)
 decision 241: OQ2 — lift claude-sandbox's hold (no nested store repo before d1e9 lands)? — options: (a) lift it now: claude-sandbox creates the repos by hand, adopted later with history kept | (b) keep it: only history between a store's move and d1e9's push is lost [recommended] | (z) decide later: the hold stands
+target: an agent worktree off main (3e1b96bb); work-items wi.py and tests (F1)
+budget: waived (operator 2026-10-08); spend measured
+dispatch: implementer opus high — d1e9 F1: own-repo recognition, the hardened store git runner, prime/lint checks (security-sensitive)
+agent: implementer a00b3d4405bafe651 F1 round 1
