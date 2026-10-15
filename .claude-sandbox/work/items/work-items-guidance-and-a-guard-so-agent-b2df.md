@@ -64,3 +64,15 @@ agent: reviewer a5c21442436113174 F1 round 1 at f02df013
 verdict: NEEDS_CHANGES F1 round 1 at f02df013 (1 high: 'then -f for -n' reads as a doubled force, and the run deleted a linked worktree in this layout; 4 medium: bundle backup drops uncommitted items, tar restore misplaces a nested-path store, SKILL.md misses the tracked-store rule, the example lint skips SKILL.md and passes unsafe forms; 3 low; 2 nits)
 dispatch: implementer opus medium — resume, F1 fix round 1
 agent: implementer a1f08393bdfff79d7 F1 round 2
+result: DONE F1 round 2 at f50a60c5 (all 10 applied; recovery pinned; 444 OK)
+decided: 2026-10-15T05:19Z words — SKILL.md's rule becomes 'never a doubled -f near a store' (a doubled force deletes linked worktrees even with the store excluded; matches the lint and the hazard)
+dispatch: implementer opus medium — resume, one-line rule wording, then review round 2
+result: DONE F1 at 1625b037 (never a doubled -f; tests; 445 OK)
+dispatch: reviewer opus high — resume, F1 round 2
+agent: reviewer a5c21442436113174 F1 round 2 at 1625b037
+verdict: CLEAR F1 round 2 at 1625b037 (lows: the tracked-store '-e' advice is wrong under -X; lint misses a ../ pathspec; nit: split the git clean bullet)
+decided: 2026-10-15T05:30Z cap — exact fixes: one finish round, read by the librarian (authority answer 145)
+dispatch: implementer opus medium — resume, F1 finish round
+agent: implementer a1f08393bdfff79d7 F1 round 3 (finish)
+result: DONE F1 finish at 8ef47e27 (three exact; SKILL.md bullet split; read by the librarian)
+verdict: CLEAR F1 after 2 fix rounds, 1 finish at 8ef47e27
