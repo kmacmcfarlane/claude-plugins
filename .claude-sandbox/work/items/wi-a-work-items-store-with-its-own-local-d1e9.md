@@ -66,3 +66,6 @@ landed: F1 locally 6fb686d2 (Checks 12/12 OK); NOT pushed — F1 ships only with
 target: an agent worktree off main (eee4e1d2); wi.py commit verb, tests, and the dev-flow and context-guard store-commit sites (F2)
 dispatch: implementer opus high — d1e9 F2: wi commit and every store-commit site (same file and effort as F1: one tier for the whole build)
 agent: implementer ad0e653ee6fafc636 F2 round 1
+result: DONE F2 round 1 at 4324cdfd (wi commit; dev-flow and context-guard sites; carried host fsmonitor test; 536/105/762/21 OK; 21 mutations caught; departures: intensity-and-routing edit deferred to F5, gc --auto overrides gc.auto pin, recorded-ignored never committed, git missing exit 0, validation timeout exit 3)
+dispatch: reviewer opus high — fresh (rule 4), d1e9 F2 (security-sensitive)
+agent: reviewer add9a9ef6d85711e5 F2 round 1 at 4324cdfd
