@@ -301,3 +301,4 @@ answer 172: later (answer page HvKDfFHjrqNtygDKziv7ta, rev 2026-10-09T06:00:00Z,
 shown 172: 2026-10-09T08:57Z page
 shown 172: 2026-10-14T06:53Z page
 shown 172: 2026-10-14T08:14Z page
+answer 172: a, in chat 2026-10-15, verbatim: "172a" (⚠ one-way pick: read back, waits for confirmation; the scrub runs only with the operator present)
