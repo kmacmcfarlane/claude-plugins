@@ -82,3 +82,4 @@ landed: F2 locally 390c60c5 (Checks 12/12 OK; cc_scan clean: own helper names on
 note: wi commit stages every store path, so in a store two sessions write it sweeps the other session's finished item writes into this commit (attribution only; F5's per-change commits end it). Until F5 lands this librarian keeps committing named store files.
 target: an agent worktree off main (390c60c5); wi init create/adopt, own-unrecorded and no-history checks (F3)
 dispatch: implementer opus high — d1e9 F3: init creates or adopts the store's repo (same file and effort as F1/F2)
+agent: implementer a56d080820c81b88a F3 round 1
