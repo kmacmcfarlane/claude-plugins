@@ -179,9 +179,10 @@ renders what the operator read instead of composing it again.
   seen, stands, write no `seen N:` line; `shown N:` lines are written as above.
 
   Both lines are column 0, appended, never inside a card, and ride the next store commit
-  like every other record line. Their shape and how they are read (first and last by
-  position; seen after the last showing by file order, never by the times) are the
-  `work-items` skill's format reference, § Shown and seen.
+  like every other record line (a git-ignored store has no host commit to ride: they stay in
+  the store). Their shape and how they are read (first and last by position; seen after the
+  last showing by file order, never by the times) are the `work-items` skill's format
+  reference, § Shown and seen.
 - **Re-show:** render the last stored card, adding only what the skill allows, and append
   its `shown N:` line (above). *While it waited* is read from the record, never from
   memory. It opens at the last `shown N:` line that a `seen N:` line follows in file order —
@@ -268,18 +269,19 @@ renders what the operator read instead of composing it again.
   ```
 
   `acted` names the commit on main, or the item, that carried the answer out — written when
-  that change lands, in the store commit that records the landing. An answer carried out
-  by several changes is closed when the last of them lands, and stays answered but not
-  closed until then; an answer that changes nothing closes at once as `closed N: acted
-  <the id of the item the answer was recorded on>`. `rule` names the file the answer
-  became a standing rule in, written once the rule change lands. `superseded by` names the
-  later decision that replaced it: a reframe is closed this way when M is raised, and an
-  answer a later decision overturns when that one is answered. A `drop` needs none (its
-  answer line is its close, and it counts as closed), and a `you decide` closes as any
-  answer does. Any other answered decision with no `closed N:` line is answered but not
-  closed. A later `closed N:` for the same N (an acted answer later made a rule, say) adds
-  to the record; the last one is its state (`grep -n '^closed N:'`, last hit). Its shape,
-  and the reader's split, are the `work-items` skill's format reference, § Closed.
+  that change lands, in the store commit that records the landing (for a git-ignored store,
+  appended when it lands, with no host commit). An answer carried out by several changes is
+  closed when the last of them lands, and stays answered but not closed until then; an
+  answer that changes nothing closes at once as `closed N: acted <the id of the item the
+  answer was recorded on>`. `rule` names the file the answer became a standing rule in,
+  written once the rule change lands. `superseded by` names the later decision that replaced
+  it: a reframe is closed this way when M is raised, and an answer a later decision
+  overturns when that one is answered. A `drop` needs none (its answer line is its close,
+  and it counts as closed), and a `you decide` closes as any answer does. Any other answered
+  decision with no `closed N:` line is answered but not closed. A later `closed N:` for the
+  same N (an acted answer later made a rule, say) adds to the record; the last one is its
+  state (`grep -n '^closed N:'`, last hit). Its shape, and the reader's split, are the
+  `work-items` skill's format reference, § Closed.
 - **Another repo's decision:** `<repo>#N` — `<repo>` the name of that repo's `origin`
   remote (its last path part, without `.git`), else its main checkout's directory name —
   in any line of this store that names one (a card's `basis:`, a `wake N:` event, a

@@ -5,16 +5,17 @@ The five steps SKILL.md § Rehydrate lists as headlines, in full.
 ## Step 1 — Locate the main checkout and the store
 
 Run the `dev-cycle` skill's `references/bindings.md` § Store snippet, dev-flow's canonical
-copy of the lookup: it sets `MAIN`, exports `WI_ROOT` for the store it finds, and prints
-the `wi` command, from the repo's own tree or else the installed plugin's copy. The
-librarian's store is `$MAIN/.claude-sandbox/work`, or an existing `.work/` one, which the
-snippet finds too. When it prints `no wi found`, `work-items` is not installed, and the
-librarian cannot run without it — its whole queue is the store. Stop there: say
-"librarian-mode needs work-items, which is not installed: /plugin install
-work-items@kmacmcfarlane", and touch nothing else (no opt-in, no store, no dispatch). This
-is a repair notice, not a peer hint, so the hint switch never hides it. No store yet, or a
-`.work/` one: `first-start.md`. `MAIN` is not this session's cwd: a worktree session — say
-so and route every edit through dispatch (SKILL.md § Red flags).
+copy of the lookup: it sets `MAIN`, exports `WORK_ITEMS_ROOT` (and the deprecated `WI_ROOT`,
+the same path) for the store it finds, and prints the `wi` command, from the repo's own tree
+or else the installed plugin's copy. The librarian's store is `$MAIN/.work-items`, or an
+existing one at an old location (`.claude-sandbox/work/`, `.work/`), which the snippet finds
+too. When it prints `no wi found`, `work-items` is not installed, and the librarian cannot
+run without it — its whole queue is the store. Stop there: say "librarian-mode needs
+work-items, which is not installed: /plugin install work-items@kmacmcfarlane", and touch
+nothing else (no opt-in, no store, no dispatch). This is a repair notice, not a peer hint,
+so the hint switch never hides it. No store yet: `first-start.md`. `MAIN` is not this
+session's cwd: a worktree session — say so and route every edit through dispatch
+(SKILL.md § Red flags).
 
 ## Step 2 — Read the custody docs
 
@@ -35,7 +36,7 @@ templates carry its rule: `<plain name> (<tag>)`.
 $WI prime
 $WI show <id> --brief      # for each item marked doing by you
 $WI ls --tag hold          # active holds
-grep -rh '^decision [0-9]' "$WI_ROOT" | sort -k2 -n | tail -1  # last decision N
+grep -rh '^decision [0-9]' "$WORK_ITEMS_ROOT" | sort -k2 -n | tail -1  # last decision N
 ```
 
 Take each `doing` item's record up by the `dev-cycle` skill's `references/resume.md`,

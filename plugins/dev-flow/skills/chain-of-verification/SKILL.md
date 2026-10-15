@@ -109,9 +109,9 @@ Before the first batch, decide the run's item by that file's § The work item, i
 order: a run inside a sub-agent files nothing and records in its `Record:` line, even under
 `--item`; a named item (`--item <id>`) is adopted and never closed here; with a store and
 `wi`, file one (§ Filing there: tag `research-run`) and claim it; otherwise, the `Record:`
-line. The `wi` calls and the appends to `<WI_ROOT>/items/<id>.md` run through `Bash` under
-the session's own permissions; re-run that file's store snippet in each Bash call that needs
-it. At Step 6, close a filed item per that file's § Closing. The Verification Summary's
+line. The `wi` calls and the appends to `<WORK_ITEMS_ROOT>/items/<id>.md` run through `Bash`
+under the session's own permissions; re-run that file's store snippet in each Bash call that
+needs it. At Step 6, close a filed item per that file's § Closing. The Verification Summary's
 `Record:` line (Step 6) takes the shape that file's § Stored names gives it.
 
 #### Codebase mode

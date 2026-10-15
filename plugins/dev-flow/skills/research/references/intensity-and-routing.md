@@ -492,7 +492,8 @@ The handoff keeps `$WI lint` clean while the run is open.
 - **The id goes into the run's state file** — the brief's `item:` field, the strategy doc's
   `Item:` line; `none — <reason>` when there is no item. With an item (filed or named),
   write beside it the resolved command, `wi: python3 <absolute wi.py> --root <absolute
-  WI_ROOT>`, and the file the record lines are appended to, `item_file: <WI_ROOT>/items/<id>.md`:
+  WORK_ITEMS_ROOT>`, and the file the record lines are appended to,
+  `item_file: <WORK_ITEMS_ROOT>/items/<id>.md`:
   shell variables do not survive between Bash calls or into a wakeup or a resumed session,
   and these lines do. A resumed run reads them and never files a second.
 - A `research-refine` run's item carries `--ref wi:<prior run's item>` when the prior brief
@@ -500,13 +501,15 @@ The handoff keeps `$WI lint` clean while the run is open.
 
 ### Resolving the store
 
-From the working directory, the main checkout's `.claude-sandbox/work/`, then `.work/`; the
-first that holds `items/` is the store. `wi` comes from the repo's own tree when it carries the
-`work-items` plugin, else from the installed plugin:
+From the working directory, the main checkout's `.work-items/`, then `.claude-sandbox/work/`,
+then `.work/` (the last two are old locations `wi` still finds); the first that holds `items/`
+is the store. The snippet exports it under both `WORK_ITEMS_ROOT` and the deprecated
+`WI_ROOT`, so an installed `wi` older than this copy still finds it. `wi` comes from the
+repo's own tree when it carries the `work-items` plugin, else from the installed plugin:
 
 ```bash
 MAIN=$(git rev-parse --path-format=absolute --git-common-dir 2>/dev/null) && MAIN=${MAIN%/.git} || MAIN=$PWD
-for d in "$MAIN/.claude-sandbox/work" "$MAIN/.work"; do test -d "$d/items" && { export WI_ROOT="$d"; break; }; done
+for d in "$MAIN/.work-items" "$MAIN/.claude-sandbox/work" "$MAIN/.work"; do test -d "$d/items" && { export WORK_ITEMS_ROOT="$d" WI_ROOT="$d"; break; }; done
 WI_PY=$(ls "$MAIN"/plugins/*/skills/work-items/scripts/wi.py 2>/dev/null | head -1)
 P="${CLAUDE_CONFIG_DIR:-$HOME/.claude}/plugins"
 IP="$(python3 -I - "$P/installed_plugins.json" work-items@kmacmcfarlane "$MAIN" 2>/dev/null <<'PY'
@@ -539,9 +542,9 @@ deepest, `local` before `project`), else the `user` entry; another project's ins
 answers. The pick is the `dev-cycle` skill's `references/bindings.md` § Store's, kept in
 step with it.
 
-Rule 4's test is `test -n "$WI_ROOT" && test -f "$WI_PY"` after the snippet (`no wi found`
-fails it): when it fails, rule 4, and no `wi` command runs. Run the snippet once, at the
-record's opening, and from then on use the `wi:` and `item_file:` lines the state file
+Rule 4's test is `test -n "$WORK_ITEMS_ROOT" && test -f "$WI_PY"` after the snippet (`no wi
+found` fails it): when it fails, rule 4, and no `wi` command runs. Run the snippet once, at
+the record's opening, and from then on use the `wi:` and `item_file:` lines the state file
 carries (with no state file — a quick run, `chain-of-verification` — re-run the snippet in
 each Bash call that needs `wi`, and carry the item id in the conversation). This snippet
 restates the `dev-cycle` skill's store resolution in research's own home, by the operator's
@@ -581,9 +584,9 @@ the new one.
   On such an item the run's `agent:` lines count in the open phase's spend, as every agent
   line on an item does (the `dev-cycle` skill's spend check), so a named item's owner sees
   the research it asked for in its next `cost:` line.
-- **The item file is the run's one tracked write besides its destination.** The run never
-  commits it; the report's `LANDED` names it (`item <id>`; `chain-of-verification`: its
-  `Record:` line).
+- **The item file is the run's one write in the repo besides its destination** (and is
+  tracked only when the store is). The run never commits it; the report's `LANDED` names it
+  (`item <id>`; `chain-of-verification`: its `Record:` line).
 
 ## Recording
 

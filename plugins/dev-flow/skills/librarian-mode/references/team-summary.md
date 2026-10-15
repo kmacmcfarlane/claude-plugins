@@ -19,7 +19,7 @@ read it in Slack, Teams, an email or on a phone. Pointed at from SKILL.md § Rep
   decision (nothing reached origin; it goes under `decisions needed`) — a rejection
   merged through and pushed gets its summary, of this session's landings, not the
   incoming commits — or for a push that carries no landed change, only work-item store
-  or checkpoint commits.
+  commits (which exist only for a tracked store) or checkpoint commits.
 
 ## Shape
 
@@ -61,9 +61,9 @@ Plain text, in this order:
    behind it; and never a commit subject, an item id, a tier, a model, a review round, a fix
    round or a verdict. Several items that make one visible change share a title and its
    bullet; maintenance and plumbing (tests, refactors, dependency bumps) collapse the same
-   way, under one title such as `**Housekeeping**`. Work-item store and checkpoint commits
-   get no bullet at all. Order the areas by what the reader feels: the change most people
-   will notice first, invisible plumbing last.
+   way, under one title such as `**Housekeeping**`. Work-item store commits (only for a
+   tracked store) and checkpoint commits get no bullet at all. Order the areas by what the
+   reader feels: the change most people will notice first, invisible plumbing last.
 
 3. **No tables, no sub-bullets, no lists of files or commit shas under an item.** The
    bullet is the whole change area's text — flat, one level, nothing nested under it.

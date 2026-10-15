@@ -422,8 +422,8 @@ the tags in its own store through the two regexes' captured group, a `decided:` 
 with no time included (`decided: <tag> — …`, its tag token the only thing rewritten):
 
 ```bash
-grep -nP '^decided: (\S+ )?[a-z-]+ — ' "$WI_ROOT"/items/*.md
-grep -nP '^\s+why ask: [a-z-]+ — ' "$WI_ROOT"/items/*.md
+grep -nP '^decided: (\S+ )?[a-z-]+ — ' "$WORK_ITEMS_ROOT"/items/*.md
+grep -nP '^\s+why ask: [a-z-]+ — ' "$WORK_ITEMS_ROOT"/items/*.md
 ```
 
 and writes only on a hit: a captured tag this table lists, or a `trade-off` whose text opens
@@ -431,7 +431,8 @@ with one of the eight impacts and a colon. No hit, no write. On a hit it rewrite
 line in place — the tag token and the prefix the row names, every other character as
 written — reads each `ruled-rule-case` and `relay` by hand, skips an item `doing` under
 another `owner:` (that owner's Rehydrate migrates it), stages only the files it rewrote, and
-commits the store once.
+commits the store once — a git-ignored store (`git -C "$MAIN" check-ignore -q
+"$WORK_ITEMS_ROOT"` exits 0) is never committed to the host repo: skip that commit.
 
 **Removal.** `wi estate` does not parse tags: the removal check is the same captured-tag grep,
 run in each repo's store. The librarian of this marketplace files the removal item when this

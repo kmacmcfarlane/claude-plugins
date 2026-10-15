@@ -53,8 +53,9 @@ a pin's ask below the quota reserve (the `dev-cycle` skill's `references/model-r
 weekly reading is at or above 50% used, or with no fresh reading, a plan's estimate over
 its build's default, a round past the fourth review that a hold or the quota stops. A
 planner's blocking questions pass through the reasons first (`decide-alone.md` § A
-planner's questions). **Durable**: the question lives in the committed item body and is
-answered to whichever session is librarian next. Shown per the
+planner's questions). **Durable**: the question lives in the item body, which outlives the
+session on this checkout (and is in git when the store is tracked), and is answered to
+whichever session is librarian next. Shown per the
 `operator-interaction:decisions` skill when it is loaded (`decisions.md`).
 
 **Spend budget** (the `dev-cycle` skill's `references/bindings.md` §§ Spend budget,

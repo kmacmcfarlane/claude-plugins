@@ -8,16 +8,22 @@ checkout. The opt-in that writes `## Librarian` runs before any of it:
 
 ## No store yet (Rehydrate step 1)
 
-**First start:** the store lookup (Rehydrate step 1) exported no `WI_ROOT`? It checks
-`.work/` too, so an existing `.work/` store is used, never shadowed by a fresh one. Truly
-no store during `start` or `intake` → resolve the custody layer (step 2) first; no
-`## Librarian` section means the opt-in dialog (`opt-in.md`), and its `Not now` means
-stop, creating nothing. Once a Scope is written, run `$WI init --track` or
-`$WI init --no-track` (idempotent), the flag chosen by the `work-items` skill's rule for
-`$WI init` (never the no-flag default), with
-`WI_ROOT="$MAIN/.claude-sandbox/work"`, relay its output (it explains any host
-`.gitignore` decision), and add one line: "initialised .claude-sandbox/work/ — first start
-on this repo". `status` never creates a store:
+**First start:** the store lookup (Rehydrate step 1) exported no `WORK_ITEMS_ROOT`? It
+checks the old `.claude-sandbox/work/` and `.work/` locations too, so an existing store
+there is used, never shadowed by a fresh one. Truly no store during `start` or `intake` →
+resolve the custody layer (step 2) first; no `## Librarian` section means the opt-in dialog
+(`opt-in.md`), and its `Not now` means stop, creating nothing. Once a Scope is written, run
+
+```bash
+WORK_ITEMS_ROOT="$MAIN/.work-items" WI_ROOT="$MAIN/.work-items" $WI init --no-track
+```
+
+(idempotent; both names, so an older installed `wi` creates the same store). The flag is
+the `work-items` skill's rule for `$WI init` (never the no-flag default): a new store is
+git-ignored by the host repo, so `--no-track`, and `--track` only when the operator asked
+for a tracked store. Relay its output (it explains the host `.gitignore` line it wrote),
+and add one line: "initialised .work-items/ — first start on this repo". `status` never
+creates a store:
 with no `## Librarian` section it prints "not opted in; `start` offers opt-in"
 (`opt-in.md`), otherwise "no store", and stops.
 
@@ -30,8 +36,9 @@ correction is a work item that edits `## Librarian`. `start` commits the opt-in 
 
 ## First-start dirt at Land
 
-The main checkout must be on `main` and clean before a merge — except first-start dirt
-(the store and any `.gitignore` line `wi init` wrote): commit it with the first landed
-item or leave it for the operator; it never blocks a merge. On another branch with
-uncommitted work, stop and raise it as a numbered decision rather than stashing around
-it.
+The main checkout must be on `main` and clean before a merge — except first-start dirt (the
+`.gitignore` line `wi init` wrote, and the store itself when it is tracked): commit it with
+the first landed item or leave it for the operator; it never blocks a merge. A git-ignored
+store (`git -C "$MAIN" check-ignore -q "$WORK_ITEMS_ROOT"` exits 0) is never committed to
+the host repo: skip it, and only the `.gitignore` line is dirt. On another branch with
+uncommitted work, stop and raise it as a numbered decision rather than stashing around it.

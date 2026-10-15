@@ -131,15 +131,17 @@ compacts when convenient, and it continues. Finish the step in hand, then:
    Custody holds throughout: its residue goes into item bodies
    (append) or new items (`$WI add` with `--short-display-name`, as `intake.md` § Step 1
    says), never into CLAUDE.md or a skill file; its commits
-   are store-only — the work-item store. The manifest is never committed: it lives in the
+   are store-only — the work-item store, and only when the store is tracked: a git-ignored
+   store (`git -C "$MAIN" check-ignore -q "$WORK_ITEMS_ROOT"` exits 0) is never committed to
+   the host repo, so skip the commit. The manifest is never committed: it lives in the
    config dir, one per session, and the store and the investigation series carry the
    durable record.
    Anything that would change a custody file becomes a work item. The manifest names
    this skill as its standing mode, `mode_skill: /dev-flow:librarian-mode start`, so the
    opener re-enters librarian mode.
-3. **Push** — `main`, as above, after the checkpoint so its store commits reach origin; a
-   rejection is merged through the same way, its `incoming:` lines (or its decision) in
-   the closing message.
+3. **Push** — `main`, as above, after the checkpoint so its store commits (a tracked
+   store's) reach origin; a rejection is merged through the same way, its `incoming:` lines
+   (or its decision) in the closing message.
 4. **Prompt the operator to compact, and stop.** The closing message is the final Report
    of the sequence above: the four-line Report for anything landed since the last one, the
    push outcome with its `incoming:` lines, then its team summary, then the in-flight

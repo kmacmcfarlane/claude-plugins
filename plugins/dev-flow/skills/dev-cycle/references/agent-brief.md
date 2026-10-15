@@ -51,7 +51,7 @@ First verify it exists and is on branch `worktree-<name>`
 ## The change
 
 <with a work item:>
-Store: export WI_ROOT=<absolute path of the store>
+Store: export WORK_ITEMS_ROOT=<absolute path of the store> WI_ROOT=<the same path>
 CLI:   WI="python3 <absolute path of wi.py, resolved per bindings.md § Store>"
 Read it first, in full:  $WI show <id>
 Item: <id> — <title>
@@ -65,8 +65,9 @@ Acceptance: <one or two lines, copied from the item, plan or brief; a build of a
             item's `findings: carried` lines (`bindings.md` § Decisions), whoever
             dispatches it — a slug or plan path with a store finds that item as the
             series-path hit that carries them, archived or not:
-            `grep -l "<series path>" "$WI_ROOT"/items/*.md "$WI_ROOT"/archive/*/*.md
-            2>/dev/null | xargs -r grep -l '^findings: carried'`>
+            `grep -l "<series path>" "$WORK_ITEMS_ROOT"/items/*.md
+            "$WORK_ITEMS_ROOT"/archive/*/*.md 2>/dev/null | xargs -r grep -l
+            '^findings: carried'`>
 Base branch: <the Base binding>
 Ground: <the Ground binding — the only ground you may touch>
 Files in scope: <explicit list, inside Ground; anything else is out of scope — or

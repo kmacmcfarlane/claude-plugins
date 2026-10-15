@@ -46,8 +46,9 @@ serialization, so it does little itself: it files, factors, runs each item throu
   landing) until the merge is committed or aborted; the `incoming:` lines and the rest:
   `references/troubleshooting.md` § Push rejected. Never rebase, reset or `--force`.
   `Push: none`: land to local `main`, never push.
-- **State lives in the work-item store and git, not in this transcript.** `/clear` is safe
-  once every open item carries a current handoff.
+- **State lives in the work-item store, which outlives the session on this checkout, and in
+  git only when the store is tracked — not in this transcript.** `/clear` is safe once every
+  open item carries a current handoff.
 
 ## Usage
 
@@ -64,8 +65,8 @@ serialization, so it does little itself: it files, factors, runs each item throu
 
 At session start and after any `/clear` or compaction; never `ls` the whole store.
 
-1. **Locate the main checkout and the store** — `MAIN`, `WI_ROOT` and `wi`; `no wi found`
-   stops here with a repair notice (`references/rehydrate.md` § Step 1).
+1. **Locate the main checkout and the store** — `MAIN`, `WORK_ITEMS_ROOT` and `wi`; `no wi
+   found` stops here with a repair notice (`references/rehydrate.md` § Step 1).
 2. **Read the custody docs** — `## Librarian`, README, CLAUDE.md, dev-cycle's SKILL.md,
    and the `operator-interaction` skills the session lists
    (`references/rehydrate.md` § Step 2).
