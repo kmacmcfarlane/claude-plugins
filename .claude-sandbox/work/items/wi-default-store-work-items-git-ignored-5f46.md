@@ -70,3 +70,6 @@ dispatch: implementer opus medium — F5 ralph backlog-yaml and ownership claim_
 agent: implementer a5e878c739c73bc30 F3 round 1
 agent: implementer a8d929df520e959a2 F4 round 1
 agent: implementer a659b29ac5cfe5ebe F5 round 1
+result: DONE F5 round 1 at 809f6ad1 (ralph backlog-yaml loop exports both names; claim_check STORES with .work-items first; checks.md; test; claim-md 72 OK)
+dispatch: reviewer opus medium — F5 (small, two plugins)
+agent: reviewer a34c31257d1312d48 F5 round 1 at 809f6ad1
