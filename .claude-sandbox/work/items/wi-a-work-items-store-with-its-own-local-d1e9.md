@@ -18,3 +18,7 @@ Answer 232 a (operator 2026-10-15; claude-sandbox 117 a, 118 a): every .work-ite
 - next: —
 - blocked: —
 - learned: —
+target: series .claude-sandbox/investigations/wi-a-work-items-store-with-its-own-local-d1e9/
+budget: waived (operator 2026-10-08); spend measured
+dispatch: planner opus high — plan the nested store repo (answer 232 a)
+agent: planner ac5d8b6d969db2d50 round 1
