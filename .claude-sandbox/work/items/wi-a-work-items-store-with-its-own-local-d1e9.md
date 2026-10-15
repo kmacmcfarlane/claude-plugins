@@ -119,3 +119,4 @@ dispatch: reviewer opus high — fresh (rule 4), d1e9 F5 (security-sensitive)
 agent: reviewer a7a477b3d31a6408e F5 round 1 at 281efed9
 verdict: NEEDS_CHANGES F5 round 1 at 281efed9 (medium reproduced: wi export into items/.gitattributes is journaled and committed, the store's clean filter runs — narrow the journal to wi's own shapes, export refuses an output inside the store, re-walk before add; lows: an ignored new item skipped silently, 200-char cut hides index.lock, format.md overstates never-swept; nit: pyright false positive at _host_repo; departures 1-8 accepted; concurrency verified)
 dispatch: implementer opus high — resume, F5 fix round 1
+agent: implementer aa14330e5be79d2bc F5 round 2
