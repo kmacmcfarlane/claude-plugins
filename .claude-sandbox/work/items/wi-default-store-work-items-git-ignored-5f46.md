@@ -79,3 +79,4 @@ agent: reviewer a392a869cf34323d1 F4 round 1 at 45696581
 result: DONE F3 round 1 at e7f140b3 (both lookup copies, first-start --no-track per answer 232 a, brief Store: lines, skip-commit clauses, durable wording; test_store_lookup.py; dev-flow 101 OK; opt-in.md:51 Scope note deferred to this repo's store move)
 dispatch: reviewer opus high — fresh (rule 4), F3
 agent: reviewer a30965ea7fa25cb55 F3 round 1 at e7f140b3
+verdict: CLEAR F5 round 1 at 809f6ad1 (nit: checks.md:29-30 wording; declined, optional)
