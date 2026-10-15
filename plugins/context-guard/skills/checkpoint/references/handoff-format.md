@@ -175,9 +175,10 @@ TOC, read on demand: `path — one line on what it holds`.
   counting both sides — commits ahead plus commits behind, so a HEAD 50 behind is STALE — goal
   lines must be re-confirmed with the operator), LANDED (`mode: land*` — header-only, the work
   is done; the checkpoint skill no longer writes it, and the hook still reads it on a
-  manifest an older version wrote). Drift never counts commits that touch only `.claude-sandbox/work` (store chores),
-  so a HEAD rewound over (or diverged by) store-only commits is no code drift: it reads FRESH
-  with Next shown, not "not an ancestor"; and when the only commits HEAD lacks are store-only
+  manifest an older version wrote). Drift never counts commits that touch only a work-item
+  store location (`.work-items`, `.claude-sandbox/work` or `.work`: store chores), so a HEAD
+  rewound over (or diverged by) store-only commits is no code drift: it reads FRESH with Next
+  shown, not "not an ancestor"; and when the only commits HEAD lacks are store-only
   while HEAD gained code, it reads as plain forward movement (`AGED`, "N commits since"). The
   label and the Next withhold read the same ancestry check, so a withheld Next is never FRESH:
   a recorded head missing locally reads `AGED (recorded head not found locally)`, one that is
@@ -197,7 +198,8 @@ TOC, read on demand: `path — one line on what it holds`.
 - **`items:`** (optional) lists the work-item ids the author expects open or in flight —
   Step 4b fills it with the `wi` ids of open or doing items the manifest mentions — the set
   Step 4a½ fixed and wrote residue into before the manifest. When a
-  store is found (`WI_ROOT`, else `.claude-sandbox/work`, else `.work`), the hook names each
+  store is found (`WORK_ITEMS_ROOT`, else the deprecated `WI_ROOT`, else the first of
+  `.work-items`, `.claude-sandbox/work` and `.work` holding `items/`), the hook names each
   id now done, dropped or missing as `DEAD CLAIM <id> (<status>)`, in every tier. Ids resolve
   as `wi` does (id, alias, unique prefix); `# comments` are ignored; only the first 50 are read;
   entries that are not id-shaped are skipped and counted on one line
@@ -246,8 +248,8 @@ TOC, read on demand: `path — one line on what it holds`.
 
   `wi prime and ` appears in the line only when a work-item store is found (the same lookup
   as `items:` below); with none it ends `run git log.`.
-  Other sections stay. Commits touching only `.claude-sandbox/work` (store chores) do not
-  count toward N or M. No time-based expiry — the head check covers it.
+  Other sections stay. Commits touching only `.work-items`, `.claude-sandbox/work` or `.work`
+  (store chores) do not count toward N or M. No time-based expiry — the head check covers it.
 - A LANDED manifest skips both checks (no dead claims, Next not withheld): the work is done.
   Either check degrades to the plain manifest if git or the store fails.
 - Injection tiers: `compact` → full + ledger digest; `resume`/`fork` → full only when the file

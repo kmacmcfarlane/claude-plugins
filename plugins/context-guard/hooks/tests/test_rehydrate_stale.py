@@ -35,6 +35,15 @@ def put(path, text, mode="w"):
         fh.write(text)
 
 
+def _clean_env(**extra):
+    """os.environ minus every WI_* and WORK_ITEMS_* key (wi's old and new
+    names), so the developer's shell never picks the store; then `extra`."""
+    env = {k: v for k, v in os.environ.items()
+           if not k.startswith(("WI_", "WORK_ITEMS_"))}
+    env.update(extra)
+    return env
+
+
 ITEM = "---\nid: {id}\ntitle: t\ntype: chore\nstatus: {status}\n{extra}---\nbody\n"
 
 
@@ -42,8 +51,7 @@ class TestRehydrateStale(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
         self.cfg = tempfile.TemporaryDirectory()
-        self.env = dict(os.environ, CLAUDE_CONFIG_DIR=self.cfg.name)
-        self.env.pop("WI_ROOT", None)
+        self.env = _clean_env(CLAUDE_CONFIG_DIR=self.cfg.name)
         self.env.pop("CLAUDE_PLUGIN_DATA", None)
         self.repo = self.tmp.name
         self.g("init", "-q")
@@ -126,16 +134,60 @@ class TestRehydrateStale(unittest.TestCase):
         self.assertNotIn("## Doing", c)
         self.assertIn("DEAD CLAIM build-the-widget-aaaa (done)", c)
 
-    def test_wi_root_env_wins(self):
+    def env_store(self, status):
+        """A store outside the repo holding zz-1111 at `status`; its path."""
         other = tempfile.TemporaryDirectory()
         self.addCleanup(other.cleanup)
         os.makedirs(os.path.join(other.name, "items"))
         put(os.path.join(other.name, "items", "zz-1111.md"),
-            ITEM.format(id="zz-1111", status="done", extra=""))
+            ITEM.format(id="zz-1111", status=status, extra=""))
+        return other.name
+
+    def test_work_items_root_env_wins(self):
+        other = self.env_store("done")
         self.item("zz-1111", "doing")          # repo store says doing; env says done
         self.manifest("items:\n  - zz-1111\n")
-        c = self.hook(env=dict(self.env, WI_ROOT=other.name))
+        c = self.hook(env=dict(self.env, WORK_ITEMS_ROOT=other))
         self.assertIn("DEAD CLAIM zz-1111 (done)", c)
+
+    def test_wi_root_env_is_the_fallback(self):
+        other = self.env_store("done")
+        self.item("zz-1111", "doing")
+        self.manifest("items:\n  - zz-1111\n")
+        c = self.hook(env=dict(self.env, WI_ROOT=other))
+        self.assertIn("DEAD CLAIM zz-1111 (done)", c)
+        c = self.hook(env=dict(self.env, WORK_ITEMS_ROOT="", WI_ROOT=other))
+        self.assertIn("DEAD CLAIM zz-1111 (done)", c)   # empty counts as unset
+
+    def test_work_items_root_beats_wi_root(self):
+        new, old = self.env_store("done"), self.env_store("doing")
+        self.manifest("items:\n  - zz-1111\n")
+        c = self.hook(env=dict(self.env, WORK_ITEMS_ROOT=new, WI_ROOT=old))
+        self.assertIn("DEAD CLAIM zz-1111 (done)", c)
+        c = self.hook(env=dict(self.env, WORK_ITEMS_ROOT=old, WI_ROOT=new))
+        self.assertNotIn("DEAD CLAIM", c)
+
+    def put_item(self, store, iid, status):
+        d = os.path.join(self.repo, store, "items")
+        os.makedirs(d, exist_ok=True)
+        put(os.path.join(d, iid + ".md"), ITEM.format(id=iid, status=status, extra=""))
+
+    def test_work_items_store_found_with_no_env(self):
+        self.put_item(".work-items", "zz-1111", "done")
+        self.manifest("items:\n  - zz-1111\n")
+        self.assertIn("DEAD CLAIM zz-1111 (done)", self.hook())
+
+    def test_old_work_store_still_found(self):
+        self.put_item(".work", "zz-1111", "done")
+        self.manifest("items:\n  - zz-1111\n")
+        self.assertIn("DEAD CLAIM zz-1111 (done)", self.hook())
+
+    def test_work_items_store_comes_first(self):
+        self.put_item(".work-items", "zz-1111", "done")
+        self.put_item(".claude-sandbox/work", "zz-1111", "doing")
+        self.put_item(".work", "zz-1111", "doing")
+        self.manifest("items:\n  - zz-1111\n")
+        self.assertIn("DEAD CLAIM zz-1111 (done)", self.hook())
 
     def test_no_store_is_silent(self):
         self.manifest("items:\n  - build-the-widget-aaaa\n")
@@ -181,7 +233,7 @@ class TestRehydrateStale(unittest.TestCase):
         os.makedirs(os.path.join(other.name, "items"))
         self.manifest()
         self.commit("code", "src/a.txt")
-        c = self.hook(env=dict(self.env, WI_ROOT=other.name))
+        c = self.hook(env=dict(self.env, WORK_ITEMS_ROOT=other.name))
         self.assertIn("; run wi prime and git log.", c)
 
     def test_withheld_line_once_in_full_and_in_header_tier(self):
@@ -197,6 +249,20 @@ class TestRehydrateStale(unittest.TestCase):
         c = self.hook()
         self.assertIn("wi show build-the-widget-aaaa", c)
         self.assertNotIn("Next withheld", c)
+
+    def test_store_only_commits_at_every_location_do_not_count(self):
+        self.manifest()
+        self.commit("chore", ".work-items/items/x.md")
+        self.commit("chore2", ".work/items/y.md")
+        c = self.hook()
+        self.assertIn("wi show build-the-widget-aaaa", c)
+        self.assertNotIn("Next withheld", c)
+
+    def test_a_work_items_lookalike_is_code(self):
+        self.manifest()
+        self.commit("code", ".work-items-old/items/x.md")
+        self.commit("code2", ".workbench/y.md")
+        self.assertIn("head moved 2 commits since", self.hook())
 
     def test_mixed_commits_count_only_code(self):
         self.manifest()
@@ -291,6 +357,8 @@ class TestRehydrateStale(unittest.TestCase):
         self.env_patch = mock.patch.dict(os.environ, {"CLAUDE_CONFIG_DIR": self.cfg.name})
         self.env_patch.start()
         self.addCleanup(self.env_patch.stop)
+        for k in [k for k in os.environ if k.startswith(("WI_", "WORK_ITEMS_"))]:
+            del os.environ[k]                       # restored by the patch's stop
         sys.path.insert(0, HOOKS)
         self.addCleanup(sys.path.remove, HOOKS)
         rh = importlib.import_module("rehydrate")
