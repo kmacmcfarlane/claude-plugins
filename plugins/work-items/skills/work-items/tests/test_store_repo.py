@@ -2106,6 +2106,25 @@ class TestInitReview(InitCase):
                 shutil.rmtree(self.tmp / "host")
         self.assertEqual(self.marked(), [])
 
+    def test_callers_command_scope_config_does_not_fail_the_read_back(self):
+        # the caller's env sets core.hooksPath at command scope; the pinned
+        # calls override it, and the read-back ignores it, so init succeeds
+        hooks = self.tmp / "env-hooks"
+        hooks.mkdir()
+        shutil.copy(self.marker("pre-commit"), hooks / "pre-commit")
+        envs = {"count": {"GIT_CONFIG_COUNT": "1",
+                          "GIT_CONFIG_KEY_0": "core.hooksPath",
+                          "GIT_CONFIG_VALUE_0": str(hooks)},
+                "parameters": {"GIT_CONFIG_PARAMETERS":
+                               f"'core.hookspath'='{hooks}'"}}
+        for i, (name, env) in enumerate(envs.items()):
+            with self.subTest(name):
+                store = self.make_host(f"cmd{i}", ignore=False) / ".work-items"
+                r = self.init(store, "--no-track", env=env)
+                self.assertIn("committed ", r.stdout)
+                self.assertTrue(wi.read_repo_own(store))
+        self.assertEqual(self.marked(), [])
+
     def test_other_files_in_head_but_not_the_index_are_refused(self):
         store = self.make_own(own=False)
         (store / "src").mkdir()

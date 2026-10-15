@@ -1427,12 +1427,18 @@ def _store_git(root, *args, timeout=STORE_GIT_TIMEOUT, stdin=None,
     pathspecs for every call but check-ignore, which refuses them. Args are
     a list, never a shell. None when git is missing or times out, or when
     the store's parent holds os.pathsep, which would split the ceiling into
-    two paths; output decoded as _git does. pins=False drops the -c pins and
-    nothing else: only for reading the config a hand-run git resolves."""
+    two paths; output decoded as _git does. pins=False drops the -c pins,
+    and the caller's command-scope config (GIT_CONFIG_PARAMETERS,
+    GIT_CONFIG_COUNT and its KEY_n/VALUE_n), which would win over the repo's
+    and blame it: only for reading the config a hand-run git resolves."""
     real = os.path.realpath(root)
     if os.pathsep in os.path.dirname(real):
         return None
     env = {k: v for k, v in os.environ.items() if k not in STORE_GIT_SCRUB}
+    if not pins:
+        env = {k: v for k, v in env.items()
+               if k not in ("GIT_CONFIG_PARAMETERS", "GIT_CONFIG_COUNT")
+               and not k.startswith(("GIT_CONFIG_KEY_", "GIT_CONFIG_VALUE_"))}
     # GIT_NO_LAZY_FETCH: a missing object never fetches from a promisor
     # remote, whose uploadpack or ssh command the store's config could name
     env.update(GIT_CEILING_DIRECTORIES=os.path.dirname(real),

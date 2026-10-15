@@ -90,8 +90,9 @@ verbs, capability differences and canonical state mapping are in
   from `prime` or `lint` asks for exactly that run). An existing store with no
   recorded choice keeps what git already does with it. A store at an old location
   (`.claude-sandbox/work/`, `.work/`), or one beside the store being made, makes every `init`
-  refuse until it is moved, and `init` makes no new store there: stop and route the move to the operator (`references/format.md`
-  § Moving a store), never `--allow-old-location` by reflex. From the main checkout:
+  refuse until it is moved, and `init` makes no new store there: stop and route the move to
+  the operator (`references/format.md` § Moving a store), never `--allow-old-location` by
+  reflex. From the main checkout:
   - a sidecar store (`test -e .claude-sandbox/.git`, store at `.claude-sandbox/work/`) →
     `--track` (wi refuses an ignored one), with `--allow-old-location` only when the operator
     keeps it there;

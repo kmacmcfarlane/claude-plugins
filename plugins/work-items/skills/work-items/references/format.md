@@ -55,10 +55,10 @@ old path" when the root was not named with `--root`, and prints no deprecation l
 besides.
 
 `--allow-old-location` overrides it, only when the operator keeps the store at the old
-location, or the directory is the project's own and not a work-item store. It works with `--track`, `--no-track`, the
-menu and an existing store; with it, `--no-track` at an old location makes a plain ignored
-store, never an own repo. It is never recorded: every `init` there needs it again, and
-`prime` and `lint` keep the deprecation line. Passed where there is nothing to override (a
+location, or the directory is the project's own and not a work-item store. It works with
+`--track`, `--no-track`, the menu and an existing store; with it, `--no-track` at an old
+location makes a plain ignored store, never an own repo. It is never recorded: every `init`
+there needs it again, and `prime` and `lint` keep the deprecation line. Passed where there is nothing to override (a
 root not at an old location, with no old location holding `items/` beside it), it is refused,
 exit 1.
 
