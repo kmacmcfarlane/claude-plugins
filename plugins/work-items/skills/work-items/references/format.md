@@ -38,9 +38,10 @@ recorded choice, and `wi lint` reports it, as it does more than one `tracking:` 
 
 - **Making the choice.** `wi init --track` or `wi init --no-track` (mutually exclusive).
   With neither, a terminal on stdin and stdout gets a two-line menu (tracked, git-ignored;
-  Enter takes git-ignored). With neither and no terminal (an agent's Bash call, a script),
-  `init` creates an ignored store, says so on stderr with how to choose tracked instead
-  (`wi init --track`, then remove the store's line from `.gitignore`), and exits 0.
+  Enter takes git-ignored, or tracked in a sidecar layout). With neither and no terminal
+  (an agent's Bash call, a script), `init` creates an ignored store, says so on stderr with
+  how to choose tracked instead (`wi init --track`, then remove the store's line from
+  `.gitignore`), and exits 0 (in a sidecar layout, refused: see below).
 - **Ignoring** (`--no-track`, the menu's git-ignored, the no-terminal default) adds
   `/<store path>/` — `/.work/` or `/.claude-sandbox/work/` — to the root `.gitignore` of the
   repo that holds the store (glob characters in the path escaped). The file is created when
@@ -57,9 +58,9 @@ recorded choice, and `wi lint` reports it, as it does more than one `tracking:` 
 - **A sidecar store is never ignored.** In a sidecar layout (`.claude-sandbox/.git`
   exists, so `.claude-sandbox/` is its own git repo, which the host does not track) a
   git-ignored store would land in no repo. `init` refuses any git-ignored choice there
-  (`--no-track`, the menu's git-ignored, the no-terminal default) before anything is
-  written, exits 1, and names `wi init --track`; an existing store keeps its recorded
-  choice.
+  (`--no-track`, the no-terminal default) before anything is written, exits 1, and names
+  `wi init --track`; an existing store keeps its recorded choice. The menu there defaults
+  to tracked, and answering git-ignored asks again.
 - **What init refuses.** It never writes through a symlink: a symlinked `.gitignore` gets no
   line (`init` names the line to add by hand), and a store directory that is a symlink to a
   place outside the repo holding it is refused outright, with nothing written. A store that

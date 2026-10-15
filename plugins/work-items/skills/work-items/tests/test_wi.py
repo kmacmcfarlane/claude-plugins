@@ -4545,6 +4545,23 @@ class TestChooseTracking(unittest.TestCase):
             with self.subTest(text=text):
                 self.assertEqual(self.choose(text)[0], want)
 
+    def test_sidecar_menu_defaults_to_tracked_and_refuses_ignored(self):
+        # 3c06: Enter, end of input, and git-ignored-then-Enter all track
+        for text in ("\n", "", "2\n\n"):
+            with self.subTest(text=text):
+                out = io.StringIO()
+                choice = wi.choose_tracking(io.StringIO(text), out,
+                                            sidecar=True)
+                shown = out.getvalue()
+                self.assertEqual(choice, "tracked")
+                default_line = next(ln for ln in shown.splitlines()
+                                    if "[default]" in ln)
+                self.assertIn("1) tracked", default_line)
+                self.assertIn("2) git-ignored  refused here", shown)
+                self.assertIn("[1]", shown)
+                self.assertEqual("refused in a sidecar" in shown,
+                                 text.startswith("2"))
+
     def test_bad_answer_asks_again(self):
         choice, shown = self.choose("maybe\n1\n")
         self.assertEqual(choice, "tracked")
@@ -4710,6 +4727,14 @@ class TestInitTracking(unittest.TestCase):
         self.menu_init(store, "\n")
         self.assertEqual(self.tracking(store), "ignored")
         self.assertEqual(self.gi(repo), "/.work/\n")
+
+    def test_menu_enter_in_a_sidecar_tracks_the_store(self):
+        repo, store = self.repo("menu-sc", sandbox=True)
+        self.git(repo / ".claude-sandbox", "init", "-q")
+        shown = self.menu_init(store, "\n")
+        self.assertIn("choose 1 or 2 [1]", shown)
+        self.assertEqual(self.tracking(store), "tracked")
+        self.assertFalse((repo / ".claude-sandbox" / ".gitignore").exists())
 
     def test_existing_unrecorded_store_is_left_alone_without_a_flag(self):
         repo, store = self.repo(gi="*.pyc\n")

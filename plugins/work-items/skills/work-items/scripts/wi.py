@@ -1570,26 +1570,43 @@ def _interactive():
     return sys.stdin.isatty() and sys.stdout.isatty()
 
 
-def choose_tracking(inp, out):
+def choose_tracking(inp, out, sidecar=False):
     """The init menu: 'tracked' or 'ignored'. Enter, or end of input, takes
-    the default, git-ignored."""
-    out.write("wi init: should git track this work-item store?\n"
-              "  1) tracked      items are committed with the repo\n"
-              "  2) git-ignored  items stay in this checkout only "
-              "[default]\n")
+    the default, git-ignored. In a sidecar layout (3c06) git-ignored is
+    refused, so tracked is the default and git-ignored is shown but not
+    taken: the menu never returns 'ignored' there."""
+    default = "tracked" if sidecar else "ignored"
+    if sidecar:
+        out.write("wi init: should git track this work-item store?\n"
+                  "  1) tracked      items are committed with the sidecar "
+                  "repo [default]\n"
+                  "  2) git-ignored  refused here: in a sidecar layout new "
+                  "items would land in no repo\n")
+    else:
+        out.write("wi init: should git track this work-item store?\n"
+                  "  1) tracked      items are committed with the repo\n"
+                  "  2) git-ignored  items stay in this checkout only "
+                  "[default]\n")
+    prompt = f"choose 1 or 2 [{1 if sidecar else 2}]: "
     while True:
-        out.write("choose 1 or 2 [2]: ")
+        out.write(prompt)
         out.flush()
         line = inp.readline()
         if not line:
             out.write("\n")
-            return "ignored"
+            return default
         answer = line.strip().lower()
+        if answer == "":
+            return default
         if answer in ("1", "t", "track", "tracked"):
             return "tracked"
-        if answer in ("", "2", "i", "ignore", "ignored", "g", "git-ignored",
+        if answer in ("2", "i", "ignore", "ignored", "g", "git-ignored",
                       "n", "no-track"):
-            return "ignored"
+            if not sidecar:
+                return "ignored"
+            out.write("git-ignored is refused in a sidecar layout; choose "
+                      "1, or Ctrl-C to stop\n")
+            continue
         out.write(f"not a choice: {line.strip()!r}\n")
 
 
@@ -1748,7 +1765,9 @@ def cmd_init(args):
                   f"one with {flags}", file=sys.stderr)
         elif _interactive():
             try:
-                choice = choose_tracking(sys.stdin, sys.stdout)
+                choice = choose_tracking(
+                    sys.stdin, sys.stdout,
+                    sidecar=sandbox_shape(root)[0] == "sidecar")
             except KeyboardInterrupt:
                 print("\nwi init: interrupted; nothing written",
                       file=sys.stderr)
