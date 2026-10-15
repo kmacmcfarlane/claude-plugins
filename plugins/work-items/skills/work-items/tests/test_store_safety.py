@@ -206,6 +206,13 @@ class TestClean(GitBox):
             with self.subTest(args=args):
                 out = self.git(h, "clean", *args, "-e", "/.work-items/").stdout
                 self.assertNotIn(".work-items", out)
+        # Under -X, -e turns the exclusion into an ignore rule: the new item
+        # becomes ignored, so -X lists it.
+        out = self.git(h, "clean", "-n", "-fdX").stdout
+        self.assertEqual(out.split(), ["Would", "remove", ".work-items/.lock",
+                                       "Would", "remove", ".work-items/items/y.md.tmp1"])
+        out = self.git(h, "clean", "-n", "-fdX", "-e", "/.work-items/").stdout
+        self.assertIn(".work-items/items/new.md", out)
         self.git(h, "clean", "-f")
         self.assertFalse((s / "items" / "new.md").exists())
 
@@ -451,18 +458,19 @@ class TestDocs(unittest.TestCase):
         self.assertTrue(SAFETY_MD.is_file())
         # SKILL.md stays under the 5000-token line; ~4 bytes a token.
         self.assertLess(len(self.skill.encode()), 5000 * 4)
-        self.assertLess(len(self.rules.strip().splitlines()), 30)
+        self.assertLess(len(self.rules.strip().splitlines()), 40)
 
     def test_skill_carries_each_rule(self):
         for needle in ("git clean -n -fdx -e /.work-items/",
-                       "never a doubled `-f` (or `--force` twice) near a store: a doubled force "
+                       "Never a doubled `-f` (or `--force` twice) near a store: a doubled force "
                        "deletes linked worktrees and nested repos even when the store is excluded",
                        "Never `-x` near a store without excluding it",
                        "then run it without `-n`: `git clean -fdx -e /.work-items/` (one `-f` only)",
                        "`-X` is never safe while the clean reaches a store "
                        "(from the cwd down, or through its pathspec)",
                        "then run `git clean -fdX -- build/ dist/`",
-                       "loses new items to any clean: always add `-e /<store>/`",
+                       "loses new items to any clean without `-X`: add `-e /<store>/` "
+                       "(under `-X`, name the directories as above)",
                        "deleted by `git clean -fd` and moved by `git stash -u`",
                        "`git clean -fdX -- build/ dist/`",
                        "never `--all`/`-a`",
@@ -500,6 +508,7 @@ class TestDocs(unittest.TestCase):
                        "commit first under the lock (§ Safe forms)",
                        "The committed items and",
                        "2026-10-15 with git 2.39.5",
+                       "`-e /<store>/` keeps both, except under `-X`, where it deletes the new items",
                        "tests/test_store_safety.py",
                        "(one `-f` only: a doubled force, `-ff` or `--force` twice, deletes linked "
                        "worktrees and nested repos that the one-`-f` preview skipped, even when "
@@ -520,6 +529,15 @@ class TestDocs(unittest.TestCase):
         # it" escape must not come back.
         flat = " ".join(self.rules.split())
         self.assertNotRegex(flat, r"doubled `-f`[^.]*without excluding it")
+
+    def test_clean_bullet_is_split_by_rule(self):
+        bullet = re.search(r"^- `git clean`:\n((?:  - .*\n(?:    .*\n)*)+)", self.rules, re.M)
+        self.assertIsNotNone(bullet, "the git clean bullet has sub-bullets")
+        subs = re.findall(r"^  - (.*)", bullet.group(1), re.M)
+        for start in ("Never a doubled `-f`", "Never `-x`", "`-X` is never safe",
+                      "A tracked store", "A plain store that is not ignored"):
+            with self.subTest(start=start):
+                self.assertEqual(sum(s.startswith(start) for s in subs), 1)
 
     def test_one_home_per_rule(self):
         # The reference cites the rules, it does not restate them.
@@ -553,6 +571,7 @@ class TestDocs(unittest.TestCase):
                "Run `git clean -fdX -- . ':!.work-items'`.",
                "Run `git clean -fdX -- ./`.",
                "Run `git clean -fdX -- :/`.",
+               "Run `git clean -fdX -- ../`.",
                "Run `git clean -fdX -- '*.o'`.",
                "Run `git clean -fdX`.",
                "Never mind that. Run `git clean -fdx`.",
@@ -679,7 +698,8 @@ def _unsafe_examples(text):
         forces, x, X, excl, paths = _parse_clean(ex)
         store_excl = any(_norm(e) in _STORES for e in excl)
         wide = [p for p in paths
-                if _norm(p) in ("", ".") or p.startswith(":/") or _norm(p) in _STORES
+                if _norm(p) in ("", ".") or _norm(p).startswith("..") or p.startswith(":/")
+                or _norm(p) in _STORES
                 or any(c in p for c in "*?[")]
         if forces >= 2:
             bad.append(ex)

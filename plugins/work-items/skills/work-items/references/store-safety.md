@@ -53,8 +53,8 @@ Also observed:
   command is harmless in one directory and destroys the store from another.
 - **A tracked store** (an old location the host tracks) loses an untracked new item to
   `git clean -f`, and its `.lock` and `*.tmp*` files to `git clean -fx`, `-d` or not.
-  `-e /<store>/` keeps both. A deleted `.lock` under a running session splits wi's lock: the
-  next writer locks a new file.
+  `-e /<store>/` keeps both, except under `-X`, where it deletes the new items. A deleted
+  `.lock` under a running session splits wi's lock: the next writer locks a new file.
 - **Git run inside a plain store acts on the host repo** (`git rev-parse --show-toplevel`
   prints the host's root), and `git clean -fdx .` from inside it empties the store.
 - **Inside an own-repo store**, `git reset --hard` reverts an uncommitted item edit and
@@ -78,10 +78,11 @@ the next push.
   (`-e /.claude-sandbox/work/`).
 - **Clean, `-X`:** exclusions do not protect a store under `-X`, so name only the
   directories to clean: preview with `git clean -n -fdX -- build/ dist/`, then run
-  `git clean -fdX -- build/ dist/` (one `-f` only). Never `.`, `./`, `:/`, a glob, or a
+  `git clean -fdX -- build/ dist/` (one `-f` only). Never `.`, `./`, `..`, `:/`, a glob, or a
   directory holding a store as the pathspec.
 - **Clean, tracked store:** even `git clean -f` takes its new items; add `-e /<store>/`:
-  `git clean -f -e /.claude-sandbox/work/`.
+  `git clean -f -e /.claude-sandbox/work/`. Not under `-X`, where `-e` deletes them: there,
+  name the directories to clean, as above.
 - **Stash:** don't. Commit to a branch, or copy the files to the scratchpad.
 - **rm:** name exact paths; never `.`, `..`, a repo root or a parent of one.
 - **Git in an own-repo store:** set `S=<absolute store path>`, then

@@ -113,17 +113,20 @@ in git until committed: git cannot bring either back, and a lost store takes its
 numbers with it. Near a store (the harm, the evidence, observed with git 2.39.5, and
 the full safe forms are in `references/store-safety.md`):
 
-- `git clean`: never a doubled `-f` (or `--force` twice) near a store: a doubled force
-  deletes linked worktrees and nested repos even when the store is excluded. Never `-x` near
-  a store without excluding it. Preview, then exclude: `git clean -n -fdx -e /.work-items/`,
-  then run it without `-n`:
-  `git clean -fdx -e /.work-items/` (one `-f` only). `-X` is never safe while the clean
-  reaches a store (from the cwd down, or through its pathspec): `-e` and `:!` do not protect
-  it under `-X`. Name only the directories to clean instead: preview with
-  `git clean -n -fdX -- build/ dist/`, then run `git clean -fdX -- build/ dist/`. A tracked
-  store (`.claude-sandbox/work/`, `.work/`) loses new items to any clean: always add
-  `-e /<store>/`. A plain store that is not ignored is deleted by `git clean -fd` and moved
-  by `git stash -u`.
+- `git clean`:
+  - Never a doubled `-f` (or `--force` twice) near a store: a doubled force deletes linked
+    worktrees and nested repos even when the store is excluded.
+  - Never `-x` near a store without excluding it. Preview, then exclude:
+    `git clean -n -fdx -e /.work-items/`, then run it without `-n`:
+    `git clean -fdx -e /.work-items/` (one `-f` only).
+  - `-X` is never safe while the clean reaches a store (from the cwd down, or through its
+    pathspec): `-e` and `:!` do not protect it under `-X`. Name only the directories to
+    clean instead: preview with `git clean -n -fdX -- build/ dist/`, then run
+    `git clean -fdX -- build/ dist/`.
+  - A tracked store (`.claude-sandbox/work/`, `.work/`) loses new items to any clean without
+    `-X`: add `-e /<store>/` (under `-X`, name the directories as above).
+  - A plain store that is not ignored is deleted by `git clean -fd` and moved by
+    `git stash -u`.
 - `git stash`: never `--all`/`-a`. Commit, or copy files to the scratchpad, instead.
 - `rm -r`: never on the store, its repo root or any directory above it, and never "delete
   the checkout and clone again" while it holds a store. Back up first (§ Backing up there).
