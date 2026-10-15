@@ -366,12 +366,18 @@ repo, a submodule's git dir under the host's `.git/modules/`) is "broken: `.git`
 outside the store", and so is a bare repository, and an empty or damaged `.git` (git's
 first error line). The runner's ceiling stops git from falling through to the host there.
 
-**Attribute files.** An own or own-unrecorded store that holds an attribute file is broken,
-with the reason "`<path>` selects git attributes (a filter there can run commands); remove
-it". `wi` writes none. It is found by a walk of the whole store (`.git` skipped) for any
-`.gitattributes`, by an `lstat` of `<git-dir>/info/attributes`, and by any `.gitattributes`
-the store's index lists, which counts even when it is gone from disk. A dedicated store keeps
-its attributes: its repo's rules are the user's.
+**Attribute files and nested repos.** An own or own-unrecorded store that holds an attribute
+file is broken, with the reason "`<path>` selects git attributes (a filter there can run
+commands); remove it". `wi` writes none. It is found by a walk of the whole store (the
+store's `.git` skipped) for any `.gitattributes`, by an `lstat` of
+`<git-dir>/info/attributes`, and by any `.gitattributes` the store's index lists, which
+counts even when it is gone from disk. Names are compared case-blind. Such a store is also
+broken when it holds a nested repo, since git recursing into one reads that repo's own,
+unpinned config and attributes: a `.git` anywhere below the store's root, or a gitlink (mode
+160000) in its index, with the reason "`<path>` is a nested git repo or gitlink; remove it".
+Every runner call that compares the work tree (`status`, and `diff` when commits come) also
+passes `--ignore-submodules=all`. A dedicated store keeps its attributes: its repo's rules
+are the user's.
 
 **The store runner.** Every git call that acts in a store with its own `.git` (validation,
 the custody check's `check-ignore` and `ls-files`, `git config user.name` for the claimant,
@@ -392,8 +398,10 @@ does the host track it) use plain git, since they read the host.
   `GIT_AUTHOR_*`, `GIT_COMMITTER_*`, `GIT_CONFIG_GLOBAL` and `GIT_CONFIG_NOSYSTEM` pass
   through.
 - So no hook, fsmonitor, signing program, background gc or global or system attributes file
-  runs, and a clean filter can be selected only by a store attribute file, which makes the
-  store broken.
+  runs, and a clean filter can be selected only by a store attribute file or a nested repo,
+  either of which makes the store broken.
+- A store whose parent path holds `:` (the path-list separator) would split the ceiling, so
+  the runner does not run there: the store reads as git missing, and every check is silent.
 
 **Pathspecs.** A store path goes into a git pathspec only when it exists on disk or the
 store's index lists it (a removal to stage): git fails on a pathspec that matches nothing.
@@ -401,8 +409,9 @@ The store's own paths are `items`, `archive`, `README.md`, `store.yaml` and `.gi
 
 **What `prime` and `lint` report.** Problems are a `prime` header line and a `lint` problem
 (exit 3); notices are a `prime` header line and a `lint` stderr line, exit unchanged.
-`prime` shows at most one of these lines, the first in this order, and runs only the stat
-checks and one lock-free `git status`: no host or remote reads.
+`prime` shows at most one of these lines, the first in this order. It runs no host or remote
+read, takes no lock, and makes at most five short git reads (validation, host lookup,
+attribute and pathspec listings, one `status`).
 
 | Check | When | Tier | Fix named |
 |---|---|---|---|

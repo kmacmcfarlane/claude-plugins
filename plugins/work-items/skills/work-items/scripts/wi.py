@@ -1389,7 +1389,9 @@ STORE_GIT_PINS = (
 STORE_GIT_SCRUB = frozenset((
     "GIT_DIR", "GIT_WORK_TREE", "GIT_INDEX_FILE", "GIT_OBJECT_DIRECTORY",
     "GIT_ALTERNATE_OBJECT_DIRECTORIES", "GIT_COMMON_DIR", "GIT_NAMESPACE",
-    "GIT_PREFIX", "GIT_ATTR_SOURCE"))
+    "GIT_PREFIX", "GIT_ATTR_SOURCE",
+    # the runner picks its own pathspec magic: literal, or none
+    "GIT_ICASE_PATHSPECS", "GIT_GLOB_PATHSPECS", "GIT_NOGLOB_PATHSPECS"))
 STORE_GIT_TIMEOUT = 10.0
 # the store's own paths: what wi writes, and all a store repo commits
 OWN_PATHS = ("items", "archive", "README.md", STORE_FILE, ".gitignore")
@@ -1402,9 +1404,12 @@ def _store_git(root, *args, timeout=STORE_GIT_TIMEOUT, stdin=None):
     .git never falls through to the host), the host's GIT_* scrubbed,
     GIT_ATTR_NOSYSTEM, optional locks off, no prompt, LC_ALL=C, and literal
     pathspecs for every call but check-ignore, which refuses them. Args are
-    a list, never a shell. None when git is missing or times out; output
-    decoded as _git does."""
+    a list, never a shell. None when git is missing or times out, or when
+    the store's parent holds os.pathsep, which would split the ceiling into
+    two paths; output decoded as _git does."""
     real = os.path.realpath(root)
+    if os.pathsep in os.path.dirname(real):
+        return None
     env = {k: v for k, v in os.environ.items() if k not in STORE_GIT_SCRUB}
     env.update(GIT_CEILING_DIRECTORIES=os.path.dirname(real),
                GIT_OPTIONAL_LOCKS="0", GIT_TERMINAL_PROMPT="0",
@@ -1472,26 +1477,46 @@ def _validate_store_git(root):
     return git_dir, common, None
 
 
-def _attribute_file(root, git_dir, common_dir):
-    """The first attribute file that would select git attributes in the
-    store's repo, store-relative, else None (d1e9 D1''): a .gitattributes
-    anywhere in the store (.git skipped), <git-dir>/info/attributes, or a
-    .gitattributes only the index holds. A filter it named could run."""
+ATTR_REASON = ("{} selects git attributes (a filter there can run "
+               "commands); remove it")
+NESTED_REASON = "{} is a nested git repo or gitlink; remove it"
+
+
+def _unsafe_path(root, git_dir, common_dir):
+    """Why the store's repo could run a command it did not choose, else
+    None (d1e9 D1''): an attribute file (a .gitattributes anywhere in the
+    store, <git-dir>/info/attributes, or a .gitattributes only the index
+    holds), or a nested repo (a .git below the store's root, or a gitlink,
+    mode 160000, in the index), whose own config and attributes git can
+    reach by recursing into it. Names are compared case-blind, as a
+    case-insensitive file system matches them."""
     real = os.path.realpath(root)
     for dirpath, dirs, files in os.walk(real):
-        dirs[:] = sorted(d for d in dirs if d != ".git")
-        if ".gitattributes" in files or ".gitattributes" in dirs:
-            return os.path.relpath(os.path.join(dirpath, ".gitattributes"),
-                                   real)
+        names = sorted(dirs + files)
+        if dirpath != real:
+            for name in names:
+                if name.lower() == ".git":
+                    return NESTED_REASON.format(os.path.relpath(
+                        os.path.join(dirpath, name), real))
+        for name in names:
+            if name.lower() == ".gitattributes":
+                return ATTR_REASON.format(os.path.relpath(
+                    os.path.join(dirpath, name), real))
+        dirs[:] = sorted(d for d in dirs if d.lower() != ".git")
     for d in dict.fromkeys((git_dir, common_dir)):
         p = os.path.join(d, "info", "attributes")
         if os.path.lexists(p):
-            return os.path.relpath(p, real)
-    r = _store_git(root, "ls-files", "-z", timeout=GIT_TIMEOUT)
+            return ATTR_REASON.format(os.path.relpath(p, real))
+    r = _store_git(root, "ls-files", "-s", "-z", timeout=GIT_TIMEOUT)
     if r is not None and r.returncode == 0:
-        for path in r.stdout.split("\0"):
-            if path.rsplit("/", 1)[-1] == ".gitattributes":
-                return path
+        for rec in r.stdout.split("\0"):
+            meta, _, path = rec.partition("\t")
+            if not path:
+                continue
+            if meta.split(" ", 1)[0] == "160000":
+                return NESTED_REASON.format(path)
+            if path.rsplit("/", 1)[-1].lower() == ".gitattributes":
+                return ATTR_REASON.format(path)
     return None
 
 
@@ -1524,10 +1549,9 @@ def store_repo_state(root):
     if not own and host is None:
         # a dedicated repo keeps its attributes: its rules are the user's
         return StoreRepo("dedicated", git_dir=git_dir, common_dir=common)
-    attr = _attribute_file(root, git_dir, common)
-    if attr:
-        return StoreRepo("broken", f"{attr} selects git attributes (a filter "
-                         "there can run commands); remove it")
+    unsafe = _unsafe_path(root, git_dir, common)
+    if unsafe:
+        return StoreRepo("broken", unsafe)
     return StoreRepo("own" if own else "unrecorded", git_dir=git_dir,
                      common_dir=common, host=host)
 
@@ -1569,7 +1593,10 @@ def _uncommitted(root):
     paths = existing_paths(root, OWN_PATHS)
     if not paths:
         return 0
-    r = _store_git(root, "status", "--porcelain", "-z", "--", *paths,
+    # never recurse into a submodule: its own config and attributes are
+    # not pinned (F5's `diff --cached` takes --ignore-submodules=all too)
+    r = _store_git(root, "status", "--porcelain", "-z",
+                   "--ignore-submodules=all", "--", *paths,
                    timeout=GIT_TIMEOUT)
     if r is None or r.returncode != 0:
         return None
@@ -1607,10 +1634,14 @@ def store_repo_checks(root, rs, full=True):
             try:
                 with Lock(Path(root), timeout=2.0):
                     n = _uncommitted(root)
-            except WiError:
+            except (WiError, OSError) as e:
+                # busy, or the lock file cannot be opened (a read-only store)
                 n = None
-                print(f"wi: note: store {root} is locked by a write in "
-                      "progress: uncommitted check skipped", file=sys.stderr)
+                why = (" is locked by a write in progress"
+                       if isinstance(e, WiError)
+                       else f"'s lock cannot be taken ({e.strerror})")
+                print(f"wi: note: store {root}{why}: uncommitted check "
+                      "skipped", file=sys.stderr)
         else:
             n = _uncommitted(root)
         if n:
@@ -1667,7 +1698,8 @@ def _host_checks(root, host):
                     f"ignore store {root}, which is its own repo (the host "
                     "would commit it as a gitlink); fix: `wi init "
                     "--no-track` (it adds the line)"))
-    r = _git(host, "ls-files", "-s", "--", f":(literal){rel}")
+    r = _git(host, "-c", "core.fsmonitor=false", "ls-files", "-s", "--",
+             f":(literal){rel}")
     if r is not None and r.returncode == 0 and r.stdout.strip():
         n = len(r.stdout.splitlines())
         out.append(("problem", f"wi: WARNING the repo at {host} tracks {n} "

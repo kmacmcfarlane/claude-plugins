@@ -513,7 +513,10 @@ class TestRunner(StoreRepoCase):
 
         with mock.patch.dict(os.environ, {"GIT_LITERAL_PATHSPECS": "1",
                                           "GIT_ATTR_SOURCE": "HEAD",
-                                          "GIT_OBJECT_DIRECTORY": "/x"}), \
+                                          "GIT_OBJECT_DIRECTORY": "/x",
+                                          "GIT_ICASE_PATHSPECS": "1",
+                                          "GIT_GLOB_PATHSPECS": "1",
+                                          "GIT_NOGLOB_PATHSPECS": "1"}), \
                 mock.patch.object(wi.subprocess, "run", fake):
             wi._store_git(store, "status")
             wi._store_git(store, "check-ignore", "-q", "items")
@@ -532,8 +535,99 @@ class TestRunner(StoreRepoCase):
         self.assertEqual(env["GIT_LITERAL_PATHSPECS"], "1")
         self.assertNotIn("GIT_ATTR_SOURCE", env)
         self.assertNotIn("GIT_OBJECT_DIRECTORY", env)
+        for name in ("GIT_ICASE_PATHSPECS", "GIT_GLOB_PATHSPECS",
+                     "GIT_NOGLOB_PATHSPECS"):
+            self.assertNotIn(name, env)
+            self.assertNotIn(name, env2)
         self.assertNotIn("GIT_LITERAL_PATHSPECS", env2)
         self.assertEqual(argv2[-3:], ["check-ignore", "-q", "items"])
+
+
+class TestNestedRepo(StoreRepoCase):
+    """Review round 1: git status recurses into a gitlink, where the nested
+    repo's own config and attributes are not pinned."""
+
+    def nested(self):
+        store = self.make_own()
+        sub = store / "items" / "sub"
+        sub.mkdir()
+        self.git(sub, "init", "-q", "--template=")
+        (sub / "f.txt").write_text("one\n")
+        self.git(sub, "add", "f.txt")
+        self.git(sub, "commit", "-q", "-m", "sub")
+        self.git(store, "add", "items/sub")
+        self.git(store, "commit", "-q", "-m", "gitlink")
+        (sub / ".git" / "info").mkdir()
+        (sub / ".git" / "info" / "attributes").write_text("* filter=mark\n")
+        self.git(sub, "config", "filter.mark.clean",
+                 str(self.marker("clean", passthrough=True)))
+        (sub / "f.txt").write_text("two\n")
+        return store, sub
+
+    def test_nested_repo_filter_never_runs(self):
+        store, _ = self.nested()
+        self.git(store, "status", "--porcelain")
+        self.assertIn("clean", self.marked())      # control
+        self.clear_marks()
+        rs = self.state(store)
+        self.assertEqual(rs.state, "broken")
+        self.assertIn("items/sub/.git is a nested git repo or gitlink",
+                      rs.reason)
+        for cmd in (["prime"], ["lint"]):
+            r = self.wi(cmd, store)
+            self.assertIn("nested git repo or gitlink", r.stdout)
+        # the status call itself never recurses, whatever the state says
+        wi._uncommitted(store)
+        self.assertEqual(self.marked(), [])
+
+    def test_index_only_gitlink_is_broken(self):
+        store, sub = self.nested()
+        shutil.rmtree(sub)
+        rs = self.state(store)
+        self.assertEqual(rs.state, "broken")
+        self.assertIn("items/sub is a nested git repo or gitlink", rs.reason)
+
+    def test_git_file_below_root_is_broken(self):
+        store = self.make_own()
+        (store / "items" / ".git").write_text("gitdir: /nowhere\n")
+        rs = self.state(store)
+        self.assertEqual(rs.state, "broken")
+        self.assertIn("items/.git is a nested git repo", rs.reason)
+
+    def test_gitattributes_name_is_case_blind(self):
+        store = self.make_own()
+        (store / "items" / ".GitAttributes").write_text("* filter=mark\n")
+        rs = self.state(store)
+        self.assertEqual(rs.state, "broken")
+        self.assertIn("items/.GitAttributes selects git attributes",
+                      rs.reason)
+
+
+class TestEdges(StoreRepoCase):
+    """Review round 1: a ceiling that would split, a read-only store."""
+
+    def test_pathsep_in_parent_reads_as_unknown(self):
+        base = self.tmp / "a:b"
+        base.mkdir()
+        store = base / ".work-items"
+        self.store_files(store)
+        self.git(store, "init", "-q", "--template=")
+        self.assertIsNone(wi._store_git(store, "status"))
+        self.assertEqual(self.state(store).state, "unknown")
+        r = self.wi(["lint"], store)
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+
+    @unittest.skipIf(os.geteuid() == 0, "root ignores file modes")
+    def test_read_only_store_lint_skips_uncommitted(self):
+        store = self.make_own()
+        (store / "items" / "one-aaaa.md").write_text(
+            ITEM.format(iid="one-aaaa") + "edit\n")
+        store.chmod(0o555)
+        self.addCleanup(store.chmod, 0o755)
+        r = self.wi(["lint"], store)
+        self.assertNotIn("Traceback", r.stderr)
+        self.assertIn("uncommitted check skipped", r.stderr)
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
 
 
 class TestCustody(StoreRepoCase):
