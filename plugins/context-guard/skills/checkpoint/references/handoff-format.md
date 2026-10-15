@@ -175,9 +175,10 @@ TOC, read on demand: `path — one line on what it holds`.
   counting both sides — commits ahead plus commits behind, so a HEAD 50 behind is STALE — goal
   lines must be re-confirmed with the operator), LANDED (`mode: land*` — header-only, the work
   is done; the checkpoint skill no longer writes it, and the hook still reads it on a
-  manifest an older version wrote). Drift never counts commits that touch only a work-item store location (`.work-items`, `.claude-sandbox/work` or `.work`: store chores),
-  so a HEAD rewound over (or diverged by) store-only commits is no code drift: it reads FRESH
-  with Next shown, not "not an ancestor"; and when the only commits HEAD lacks are store-only
+  manifest an older version wrote). Drift never counts commits that touch only a work-item
+  store location (`.work-items`, `.claude-sandbox/work` or `.work`: store chores), so a HEAD
+  rewound over (or diverged by) store-only commits is no code drift: it reads FRESH with Next
+  shown, not "not an ancestor"; and when the only commits HEAD lacks are store-only
   while HEAD gained code, it reads as plain forward movement (`AGED`, "N commits since"). The
   label and the Next withhold read the same ancestry check, so a withheld Next is never FRESH:
   a recorded head missing locally reads `AGED (recorded head not found locally)`, one that is
