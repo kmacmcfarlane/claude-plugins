@@ -3,10 +3,11 @@ id: wi-lint-misses-a-sidecar-store-recorded-3c06
 title: wi lint misses a sidecar store recorded ignored
 short_display_name: lint misses ignored sidecar store
 type: bug
-status: todo
+status: done
 priority: 2
 created: 2026-10-13
-updated: 2026-10-13
+updated: 2026-10-15
+closed: 2026-10-15
 refs:
   - work-items-wi-init-rule-a-sidecar-store-00fc
 ---
@@ -43,3 +44,6 @@ result: DONE round 3 at ffb900ae after merging main (3d5dcb6d): sidecar menu def
 dispatch: reviewer opus high — resume, round 2
 agent: reviewer a93ea09796cd7b81e round 2 at ffb900ae
 verdict: CLEAR round 2 at ffb900ae (low: keep the sidecar refusal when 5f46 moves the default, carried into 5f46's brief; nits: choose_tracking docstring, an old commit message; declined, cosmetic)
+
+## Notes
+- 2026-10-15 done
