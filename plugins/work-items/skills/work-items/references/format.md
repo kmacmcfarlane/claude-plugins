@@ -8,8 +8,10 @@ CLI adds locking, validation and budgeted views on top. Spec of record:
 
 `wi` finds its root in this order; `init` is the only command that creates it.
 
-1. `$WI_ROOT` (or `--root PATH`) — worktree workers point this at the main
-   checkout so claims are visible to each other.
+1. `--root PATH`, else `$WORK_ITEMS_ROOT` — worktree workers point this at the
+   main checkout so claims are visible to each other. The deprecated `$WI_ROOT`
+   is read when `$WORK_ITEMS_ROOT` is unset or empty; when both are set,
+   `$WORK_ITEMS_ROOT` wins. An empty value counts as unset.
 2. `.claude-sandbox/work/` when `.claude-sandbox/` exists in the cwd.
 3. `.work/` otherwise.
 
@@ -67,7 +69,7 @@ recorded choice, and `wi lint` reports it, as it does more than one `tracking:` 
   is the repo root cannot be ignored: a new one is refused before anything is created
   (its own `*.tmp*` line would ignore files across the repo), and an existing one gets no
   line. A symlink on the store's path that sits inside a repo and points out of it (a
-  linked `.claude-sandbox/`, a `WI_ROOT` under a linked dir) is refused the same way; a
+  linked `.claude-sandbox/`, a `WORK_ITEMS_ROOT` under a linked dir) is refused the same way; a
   link above every repo, such as a home-directory alias, is left alone. When the store cannot be made
   ignored, `ignored` is not recorded and `init` exits 1: the ignore comes first and the
   record after, so within a git repo, a recorded `ignored` means git ignores the store.
@@ -209,8 +211,10 @@ with `wi set`).
 
 `claim` (and `prime`'s "you") names the caller as the first of:
 
-1. `WI_OWNER` — the explicit override, used verbatim (host included). Set it
-   to pin one spelling across machines, containers or sessions.
+1. `WORK_ITEMS_OWNER` — the explicit override, used verbatim (host included).
+   Set it to pin one spelling across machines, containers or sessions. The
+   deprecated `WI_OWNER` is read when it is unset or empty; when both are set,
+   `WORK_ITEMS_OWNER` wins.
 2. `$USER`, verbatim, as `<user>@<host>`.
 3. `git config user.name`, read from the store's repo (2 s timeout; any
    failure skips it).
@@ -226,7 +230,21 @@ or the `@host` suffix; a name with nothing left falls through to the next
 step. `owner` is compared as an exact string: a claim recorded under an older
 spelling (say `unknown@<host>` from before step 3 existed) reads as someone
 else's — `release` still clears it, a re-claim needs `--steal`, or pin
-`WI_OWNER` to the old spelling.
+`WORK_ITEMS_OWNER` to the old spelling.
+
+### Deprecated environment names
+
+`WI_ROOT` and `WI_OWNER` are the old names of `WORK_ITEMS_ROOT` and
+`WORK_ITEMS_OWNER`, kept as fallbacks. When an old name is used (its new name
+unset or empty), or is set to a different value from its new name, `prime`
+(a header line on stdout, reserved from the budget like the custody warning),
+`lint` (stderr; not a problem, the exit is unchanged) and `init` (stderr) print
+one line each, at most once per run: `wi: deprecated: WI_ROOT is set; use
+WORK_ITEMS_ROOT`, or `wi: deprecated: WI_ROOT and WORK_ITEMS_ROOT differ;
+WORK_ITEMS_ROOT wins` (the same for `_OWNER`). No other command prints them.
+Both names set to the same value is silent: that is the transition export, which
+works with an older wi too. `wi --help` names `WORK_ITEMS_ROOT` in a wi that
+reads it.
 
 ## Editing fields: `wi set <id> <field> <value>`
 
