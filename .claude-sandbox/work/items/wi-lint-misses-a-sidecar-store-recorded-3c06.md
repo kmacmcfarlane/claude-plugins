@@ -39,3 +39,7 @@ note: 2026-10-15T02:14Z decision 214 is superseded by answer 227 (the default st
 decided: 2026-10-15T02:30Z scope — decision 214 is moot (answer 227 b: a bare wi init no longer targets a sidecar store); the build keeps its refusal of ignored choices in a sidecar; the remaining round-1 findings 2, 4, 5 go in now, as 5f46 needs 3c06 landed first
 dispatch: implementer opus medium — resume, merge main, findings 2, 4, 5
 agent: implementer ac34548631423ee4a round 3
+result: DONE round 3 at ffb900ae after merging main (3d5dcb6d): sidecar menu defaults to tracked and re-asks on git-ignored; format.md and SKILL.md cell reworded to match; 375 OK
+dispatch: reviewer opus high — resume, round 2
+agent: reviewer a93ea09796cd7b81e round 2 at ffb900ae
+verdict: CLEAR round 2 at ffb900ae (low: keep the sidecar refusal when 5f46 moves the default, carried into 5f46's brief; nits: choose_tracking docstring, an old commit message; declined, cosmetic)
