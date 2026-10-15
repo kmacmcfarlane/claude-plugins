@@ -47,3 +47,7 @@ return: planner DONE .claude-sandbox/investigations/work-items-guidance-and-a-gu
 baseline: 4a58600911b3adc583227e7d97a325d7235640b203d290887c3aa6cccde7b2da  00_initial.md 057d212d0023c838f298c7bded4a9d0bdf5d77c6f91186fe0a9d95941ffa76c4  01_review-round-1.md 4cf41d4b466e84438fb2da508408540967a7942f44095bd1930a22d065eb1387  02_review-round-2.md 5e9c6b2f41d0fb2d72adcb1d1c0b0b8885bd9754b89c8fce4fe5063ad0bc1d13  INDEX.md 
 dispatch: reviewer opus high — resume, plan review round 3
 agent: reviewer a465a62b18f0b778d plan round 3
+verdict: NEEDS_CHANGES plan round 3 (all nine round-2 closed; 2 medium exact: F1 no longer rides the 5f46 push, so push it alone and hold the migration until then; landed store-commit lines need flock or wi's commit before stores nest (F-R5 to d1e9); low: -c alias; nit: provenance)
+decided: 2026-10-15T04:48Z cap — only exact text fixes: one plan finish round, read by the librarian (authority answer 145)
+dispatch: planner opus high — resume, plan finish round
+agent: planner a2cdd001d65a75437 round 4 (finish)

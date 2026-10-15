@@ -22,3 +22,4 @@ target: series .claude-sandbox/investigations/wi-a-work-items-store-with-its-own
 budget: waived (operator 2026-10-08); spend measured
 dispatch: planner opus high — plan the nested store repo (answer 232 a)
 agent: planner ac5d8b6d969db2d50 round 1
+note: F-R1..F-R5 from b2df handed to the d1e9 planner (F-R5: landed store commits under flock or wi before stores nest)
