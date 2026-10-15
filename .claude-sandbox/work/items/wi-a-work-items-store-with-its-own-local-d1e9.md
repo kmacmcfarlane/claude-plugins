@@ -123,3 +123,5 @@ agent: implementer aa14330e5be79d2bc F5 round 2
 result: DONE F5 round 2 at 66c64d59 (journal narrowed to wi shapes; export refuses inside the store; re-walk before add; ignored-item warning; index.lock reason; format.md wording; _git annotated; 616/107/762/21 OK; 23 mutants)
 dispatch: reviewer opus high — resume, F5 round 2
 agent: reviewer a7a477b3d31a6408e F5 round 2 at 66c64d59
+verdict: CLEAR F5 round 2 at 66c64d59 (nits: re-walk before add skips <git-dir>/info/attributes; export refuses any output inside a store)
+declined: nit 1 for this push — the gap needs a write into the store's .git/info inside one command's lock window, by a party that can already write the store's config; filed as a follow-up rather than delaying the push claude-sandbox waits on. nit 2: kept, as the reviewer allows.
