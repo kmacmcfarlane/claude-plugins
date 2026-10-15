@@ -108,14 +108,20 @@ verbs, capability differences and canonical state mapping are in
 
 ## Protecting the store
 
-A `.work-items/` store is git-ignored and has no remote: git cannot bring it back, and a lost
-store takes its decision numbers with it. Near a store (the harm, the evidence, observed with
-git 2.39.5, and the full safe forms are in `references/store-safety.md`):
+A `.work-items/` store is git-ignored with no remote, and a tracked store's new items are not
+in git until committed: git cannot bring either back, and a lost store takes its decision
+numbers with it. Near a store (the harm, the evidence, observed with git 2.39.5, and
+the full safe forms are in `references/store-safety.md`):
 
-- `git clean`: never `-x` or a doubled `-f` near a store without excluding it — preview,
-  then exclude: `git clean -n -fdx -e /.work-items/`, then `-f` for `-n`. `-X` is never safe
-  while a store is covered: `-e` and `:!` do not protect it under `-X`. Name only the
-  directories to clean instead: `git clean -fdX -- build/ dist/`.
+- `git clean`: never `-x` or a doubled `-f` near a store without excluding it. Preview, then
+  exclude: `git clean -n -fdx -e /.work-items/`, then run it without `-n`:
+  `git clean -fdx -e /.work-items/` (one `-f` only). `-X` is never safe while the clean
+  reaches a store (from the cwd down, or through its pathspec): `-e` and `:!` do not protect
+  it under `-X`. Name only the directories to clean instead: preview with
+  `git clean -n -fdX -- build/ dist/`, then run `git clean -fdX -- build/ dist/`. A tracked
+  store (`.claude-sandbox/work/`, `.work/`) loses new items to any clean: always add
+  `-e /<store>/`. A plain store that is not ignored is deleted by `git clean -fd` and moved
+  by `git stash -u`.
 - `git stash`: never `--all`/`-a`. Commit, or copy files to the scratchpad, instead.
 - `rm -r`: never on the store, its repo root or any directory above it, and never "delete
   the checkout and clone again" while it holds a store. Back up first (§ Backing up there).

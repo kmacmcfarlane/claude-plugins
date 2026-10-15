@@ -14,6 +14,7 @@ global config, so no real repo or store is ever touched.
 import fcntl
 import os
 import re
+import shlex
 import shutil
 import subprocess
 import tempfile
@@ -55,7 +56,7 @@ class GitBox(unittest.TestCase):
                         "[advice]\n\tdetachedHead = false\n")
         self.gcfg = gcfg
         env = {k: v for k, v in os.environ.items()
-               if not k.startswith("GIT_") and k != "EMAIL"}
+               if not k.startswith(("GIT_", "WORK_ITEMS_", "WI_")) and k != "EMAIL"}
         env.update(HOME=str(self.tmp), XDG_CONFIG_HOME=str(self.tmp / "xdg"),
                    GIT_CONFIG_NOSYSTEM="1", GIT_CONFIG_GLOBAL=str(gcfg),
                    GIT_CEILING_DIRECTORIES=str(self.tmp), LC_ALL="C")
@@ -156,6 +157,23 @@ class TestClean(GitBox):
         self.assertFalse((h / "build").exists())
         self.assertTrue(self.kept(h))
 
+    def test_doubled_force_deletes_what_the_preview_skipped(self):
+        # A linked worktree under an ignored dir: the one-f preview says it
+        # would skip it, and a second -f deletes it (and an own-repo store).
+        h = self.host("own")
+        with open(h / ".gitignore", "a") as f:
+            f.write("/wt/\n")
+        self.git(h, "worktree", "add", "-q", "wt/x")
+        preview = self.git(h, "clean", "-n", "-fdx").stdout
+        self.assertIn("Would skip repository wt/x", preview)
+        self.git(h, "clean", "-fdx", "-e", "/.work-items/")
+        self.assertTrue((h / "wt" / "x" / "README.md").exists())
+        self.git(h, "clean", "-f", "-fdx", "-e", "/.work-items/")
+        self.assertFalse((h / "wt" / "x").exists())
+        self.assertTrue(self.kept(h))
+        self.git(h, "clean", "-f", "-fdx")
+        self.assertFalse(self.kept(h))
+
     def test_no_pathspec_works_from_cwd_down(self):
         h = self.host("plain")
         (h / "sub" / "x.log").write_text("l\n")
@@ -249,6 +267,31 @@ class TestStashAndAdd(GitBox):
         self.git(h, "add", "-f", ".work-items")
         staged = self.git(h, "diff", "--cached", "--name-only").stdout
         self.assertIn(".work-items/items/a.md", staged)
+
+    def test_add_force_own_repo_store_makes_gitlink(self):
+        h = self.host("own")
+        self.git(h, "add", "-f", ".work-items")
+        entry = self.git(h, "ls-files", "-s", ".work-items").stdout
+        head = self.git(h / ".work-items", "rev-parse", "HEAD").stdout.strip()
+        self.assertTrue(entry.startswith("160000 " + head), entry)
+
+    def test_dropped_stash_recovery(self):
+        # The § Recovering commands: fsck finds the dropped stash, the one
+        # with three parents; its ^3 holds the store; apply <sha> restores it.
+        h = self.host("plain")
+        self.git(h, "stash", "--all")
+        sha = self.git(h, "rev-parse", "stash@{0}").stdout.strip()
+        self.git(h, "stash", "drop", "-q")
+        self.assertFalse(self.kept(h))
+        out = self.git(h, "fsck", "--unreachable").stdout
+        commits = [ln.split()[-1] for ln in out.splitlines() if "commit" in ln]
+        three = [c for c in commits
+                 if len(self.git(h, "rev-list", "--parents", "-n1", c).stdout.split()) == 4]
+        self.assertEqual(three, [sha])
+        stat = self.git(h, "show", "--stat", "--format=", sha + "^3").stdout
+        self.assertIn(".work-items/items/a.md", stat)
+        self.git(h, "stash", "apply", sha)
+        self.assertTrue(self.kept(h))
 
     def test_add_own_repo_store_makes_gitlink(self):
         h = self.host("own", ignored=False)
@@ -351,6 +394,7 @@ class TestBackup(GitBox):
         (s / "items" / "b.md").write_text("b\n")
         self.git(s, "add", "-A")
         self.git(s, "commit", "-q", "-m", "second")
+        (s / "items" / "uncommitted.md").write_text("u\n")
         script = (self._b_line() + '\n'
                   'git -C "$S" bundle create "$B/store.bundle" --all\n'
                   'printf %s "$B"')
@@ -367,6 +411,8 @@ class TestBackup(GitBox):
         self.git(s, "remote", "remove", "origin")
         self.assertTrue(self.kept(h))
         self.assertTrue((s / "items" / "b.md").exists())
+        # A bundle holds only commits: hence "commit first" in § Backing up.
+        self.assertFalse((s / "items" / "uncommitted.md").exists())
         self.assertEqual(self.git(s, "rev-list", "--count", "HEAD").stdout.strip(), "2")
         self.assertEqual(self.git(s, "remote").stdout.strip(), "")
 
@@ -382,7 +428,11 @@ class TestBackup(GitBox):
         b = Path(r.stdout)
         self.git(h, "clean", "-fdx")
         self.assertFalse(self.kept(h))
-        r = self.bash(h, f'tar -C "{h}" -xzf "{b}/store.tgz"')
+        restore = re.search(r'`(tar -C "\$\(dirname "\$S"\)" -xzf "\$B/)<date>(\.tgz")`',
+                            _section(SAFETY_MD.read_text(), "Backing up"))
+        self.assertIsNotNone(restore, "the plain restore line")
+        r = self.bash(h, restore.group(1) + "store" + restore.group(2),
+                      {"S": str(s), "B": str(b)})
         self.assertEqual(r.returncode, 0, r.stderr)
         self.assertTrue(self.kept(h))
 
@@ -405,7 +455,12 @@ class TestDocs(unittest.TestCase):
 
     def test_skill_carries_each_rule(self):
         for needle in ("git clean -n -fdx -e /.work-items/",
-                       "`-X` is never safe while a store is covered",
+                       "then run it without `-n`: `git clean -fdx -e /.work-items/` (one `-f` only)",
+                       "`-X` is never safe while the clean reaches a store "
+                       "(from the cwd down, or through its pathspec)",
+                       "then run `git clean -fdX -- build/ dist/`",
+                       "loses new items to any clean: always add `-e /<store>/`",
+                       "deleted by `git clean -fd` and moved by `git stash -u`",
                        "`git clean -fdX -- build/ dist/`",
                        "never `--all`/`-a`",
                        "`rm -r`: never on the store",
@@ -437,6 +492,10 @@ class TestDocs(unittest.TestCase):
                        "git clean -n -fdX -- build/ dist/",
                        "git clean -n -fdx -e /.work-items/",
                        "git stash apply stash@{n}",
+                       "git stash apply <sha>",
+                       "git show --stat <sha>^3",
+                       "commit first under the lock (§ Safe forms)",
+                       "The committed items and",
                        "2026-10-15 with git 2.39.5",
                        "tests/test_store_safety.py"):
             with self.subTest(needle=needle):
@@ -466,83 +525,157 @@ class TestDocs(unittest.TestCase):
         self.assertIsNotNone(_section(self.safety, "Backing up"))
 
     def test_every_clean_example_is_safe_or_under_never(self):
-        seen = 0
         for name, text in (("SKILL.md", self.skill), ("store-safety.md", self.safety)):
-            seen += len(_clean_examples(text))
             with self.subTest(file=name):
+                self.assertGreater(len(_clean_examples(text)), 3)
                 self.assertEqual(_unsafe_examples(text), [])
-        self.assertGreater(seen, 10)
 
     def test_example_lint_catches_unsafe_forms(self):
-        # Each mutation must be caught; the "never" lead-in exempts.
         bad = ["Run `git clean -fdx`.",
                "Run `git clean -ffd`.",
+               "Run `git clean -f -fdx -e /.work-items/`.",
+               "Run `git clean --force -fdx -e /.work-items/`.",
+               "Run `git clean -fdx -e /build/`.",
+               "Run `git clean -fdx -- . ':!build'`.",
                "Run `git clean -fdX -e /.work-items/`.",
                "Run `git clean -fdX -- . ':!.work-items'`.",
+               "Run `git clean -fdX -- ./`.",
+               "Run `git clean -fdX -- :/`.",
+               "Run `git clean -fdX -- '*.o'`.",
                "Run `git clean -fdX`.",
+               "Never mind that. Run `git clean -fdx`.",
+               "It is never slow: `git clean -fdx`.",
+               "Run it\n  `git clean\n  -fdx`.",
                "```bash\ngit clean -fdx\n```"]
         for text in bad:
             with self.subTest(text=text):
                 self.assertTrue(_unsafe_examples(text))
         good = ["Never run `git clean -fdx`.",
                 "Run `git clean -fdx -e /.work-items/`.",
+                "Run `git clean -fdx -e /.claude-sandbox/work/`.",
+                "Run `git clean -fdx -- . ':!.work-items'`.",
                 "Run `git clean -fdX -- build/`.",
                 "## What destroys it (never run these)\n\n| `git clean -fdX` | deleted |"]
         for text in good:
             with self.subTest(text=text):
                 self.assertEqual(_unsafe_examples(text), [])
 
+    def test_example_lint_catches_mutations_of_the_skill(self):
+        for old, new in (("`git clean -fdX -- build/ dist/`", "`git clean -fdX -e /.work-items/`"),
+                         ("`git clean -n -fdx -e /.work-items/`", "`git clean -n -fdx`"),
+                         ("`git clean -fdx -e /.work-items/`", "`git clean -f -fdx -e /.work-items/`")):
+            with self.subTest(old=old):
+                self.assertIn(old, self.rules)
+                self.assertTrue(_unsafe_examples(self.skill.replace(old, new, 1)))
+
 
 _EXCL = (":!", ":^", ":(exclude)")
+_STORES = {".work-items", ".claude-sandbox/work", ".work"}
 
 
 def _clean_examples(text):
-    """(example, exempt) for every `git clean …` in a code span or a fence;
-    exempt when its heading, or its own paragraph before it, says never."""
+    """(example, exempt) for every `git clean …` in a code span (which may
+    wrap) or a fence. Exempt when its heading says never, or when "never"
+    falls in its own clause: the text since the last `:`, `—`, `|` or
+    sentence-ending `.` before it, code spans left out."""
     out = []
-    heading = para = ""
+    heading = ""
+    block = []
+
+    def flush():
+        para = "\n".join(block)
+        for m in re.finditer(r"`([^`]+)`", para):
+            span = " ".join(m.group(1).split())
+            if not span.startswith("git clean"):
+                continue
+            before = re.sub(r"`[^`]*`", "C", para[:m.start()])
+            clause = re.split(r":|—|\||\.(?:\s|$)", before)[-1]
+            out.append((span, "never" in heading.lower() or "never" in clause.lower()))
+        block.clear()
+
     in_fence = False
     for line in text.splitlines():
-        if line.startswith("```"):
+        if line.strip().startswith("```"):
+            flush()
             in_fence = not in_fence
             continue
-        if line.startswith("#") and not in_fence:
-            heading, para = line, ""
+        if in_fence:
+            for m in re.finditer(r"git clean[^\n#]*", line):
+                out.append((m.group(0).strip(), "never" in heading.lower()))
+            continue
+        if line.startswith("#"):
+            flush()
+            heading = line
             continue
         if not line.strip() or re.match(r"\s*(- |\| |\d+\. )", line):
-            para = ""
-        if in_fence:
-            spans = re.findall(r"git clean[^\n#]*", line)
-        else:
-            spans = [s for s in re.findall(r"`([^`]*)`", line) if s.startswith("git clean")]
-        pos = 0
-        for span in spans:
-            i = line.find(span, pos)
-            before = (para + line[:i]).lower()
-            out.append((span, "never" in heading.lower() or "never" in before))
-            pos = i + len(span)
-        para += line + "\n"
+            flush()
+        block.append(line)
+    flush()
     return out
 
 
+def _norm(p):
+    p = p.strip("'\"")
+    for magic in _EXCL:
+        if p.startswith(magic):
+            p = p[len(magic):]
+    return p.strip("/")
+
+
+def _parse_clean(ex):
+    """(forces, has -x, has -X, exclusion patterns, positive pathspecs)."""
+    try:
+        argv = shlex.split(ex)[2:]
+    except ValueError:
+        argv = ex.split()[2:]
+    forces, x, X, excl, paths = 0, False, False, [], []
+    i, opts = 0, True
+    while i < len(argv):
+        a = argv[i]
+        if opts and a == "--":
+            opts = False
+        elif opts and a == "--force":
+            forces += 1
+        elif opts and a.startswith("--exclude="):
+            excl.append(a.split("=", 1)[1])
+        elif opts and a.startswith("-") and not a.startswith("--") and len(a) > 1:
+            for j, c in enumerate(a[1:], 1):
+                if c == "e":
+                    rest = a[j + 1:]
+                    if not rest and i + 1 < len(argv):
+                        i += 1
+                        rest = argv[i]
+                    excl.append(rest)
+                    break
+                forces += c == "f"
+                x = x or c == "x"
+                X = X or c == "X"
+        elif not a.startswith("-") or not opts:
+            (excl if a.startswith(_EXCL) else paths).append(a)
+        i += 1
+    return forces, x, X, excl, paths
+
+
 def _unsafe_examples(text):
-    """Examples not exempt that use -x or a doubled -f without an exclusion,
-    or -X without a positive pathspec (or relying on an exclusion)."""
+    """Examples not exempt that: force twice; use -x without excluding a
+    store path; or use -X without a positive pathspec that leaves the store
+    out, or with any exclusion (none protects under -X)."""
     bad = []
     for ex, exempt in _clean_examples(text):
         if exempt:
             continue
-        argv = ex.split()
-        flags = [a for a in argv[2:] if a.startswith("-") and not a.startswith("--")]
-        after = argv[argv.index("--") + 1:] if "--" in argv else []
-        excl = "-e" in argv or any(a.strip("'\"").startswith(_EXCL) for a in after)
-        positive = [a for a in after if not a.strip("'\"").startswith(_EXCL)]
-        if any("X" in f for f in flags):
-            if not positive or "." in positive or excl:
+        forces, x, X, excl, paths = _parse_clean(ex)
+        store_excl = any(_norm(e) in _STORES for e in excl)
+        wide = [p for p in paths
+                if _norm(p) in ("", ".") or p.startswith(":/") or _norm(p) in _STORES
+                or any(c in p for c in "*?[")]
+        if forces >= 2:
+            bad.append(ex)
+        elif X:
+            if not paths or wide or excl:
                 bad.append(ex)
-        elif any("x" in f for f in flags) or sum(f.count("f") for f in flags) >= 2:
-            if not excl:
-                bad.append(ex)
+        elif x and not store_excl:
+            bad.append(ex)
     return bad
 
 

@@ -41,7 +41,7 @@ Run in the host repo, with the store ignored unless the row says otherwise:
 | `git stash -u` (store ignored) | kept | kept |
 | `git stash -u` (store not ignored) | **moved into the stash** | kept |
 | `git checkout -f <branch>`, `git reset --hard` | kept | kept |
-| `git add -f .work-items` | items staged into the host repo | — |
+| `git add -f .work-items` | items staged into the host repo | a gitlink (mode 160000), as below |
 | `git add .work-items` (store not ignored) | items staged | a gitlink (mode 160000) at the store's current commit, which no clone can fetch |
 
 Also observed:
@@ -70,12 +70,15 @@ the next push.
 
 ## Safe forms
 
-- **Clean, `-x`:** preview, then run: `git clean -n -fdx -e /.work-items/`, then the same
-  with `-f` for `-n`. A pathspec does the same: `git clean -fdx -- . ':!.work-items'`. Add one
-  `-e` per other store location the repo holds (`-e /.claude-sandbox/work/`).
+- **Clean, `-x`:** preview with `git clean -n -fdx -e /.work-items/`, then run it without
+  `-n`: `git clean -fdx -e /.work-items/` (one `-f` only; a second `-f` also deletes nested
+  repos, linked worktrees among them, that the preview skipped). A pathspec does the same:
+  `git clean -fdx -- . ':!.work-items'`. Add one `-e` per other store location the repo holds
+  (`-e /.claude-sandbox/work/`).
 - **Clean, `-X`:** exclusions do not protect a store under `-X`, so name only the
-  directories to clean: `git clean -n -fdX -- build/ dist/`, then `-f` for `-n`. Never `.`
-  or a directory holding a store as the pathspec.
+  directories to clean: preview with `git clean -n -fdX -- build/ dist/`, then run
+  `git clean -fdX -- build/ dist/` (one `-f` only). Never `.`, `./`, `:/`, a glob, or a
+  directory holding a store as the pathspec.
 - **Clean, tracked store:** even `git clean -f` takes its new items; add `-e /<store>/`:
   `git clean -f -e /.claude-sandbox/work/`.
 - **Stash:** don't. Commit to a branch, or copy the files to the scratchpad.
@@ -131,13 +134,14 @@ which persists inside a sandbox (the project tree is mounted). From the host che
 B="$(git rev-parse --path-format=absolute --git-common-dir)/work-items-backup"; mkdir -p "$B"
 ```
 
-- **Own-repo store:** `git -C "$S" bundle create "$B/$(date +%F).bundle" --all`.
+- **Own-repo store:** commit first under the lock (§ Safe forms), since a bundle holds only
+  commits, then `git -C "$S" bundle create "$B/$(date +%F).bundle" --all`.
 - **Plain store:** `tar -C "$(dirname "$S")" -czf "$B/$(date +%F).tgz" "$(basename "$S")"`.
 - **Restore, own repo:** `git clone -q "$B/<date>.bundle" .work-items`, then
-  `git -C .work-items remote remove origin` (the store keeps no remote). The items and their
-  history come back. A bundle in `"$B"` survives a doubled-force clean, `-ffdx`, in the
+  `git -C .work-items remote remove origin` (the store keeps no remote). The committed items and
+  their history come back. A bundle in `"$B"` survives a doubled-force clean, `-ffdx`, in the
   host (observed).
-- **Restore, plain:** `tar -C <host checkout> -xzf "$B/<date>.tgz"`.
+- **Restore, plain:** `tar -C "$(dirname "$S")" -xzf "$B/<date>.tgz"`.
 - **When:** before a move, before any wholesale checkout operation (a re-clone, a large
   clean), and at the end of a long session.
 - **Limits:** this copy dies with the checkout or the disk. If this machine's own backup
@@ -148,6 +152,7 @@ B="$(git rev-parse --path-format=absolute --git-common-dir)/work-items-backup"; 
 
 - **A stash took it:** find the entry with `git stash list`, then
   `git stash apply stash@{n}` (apply, not pop, until the items are checked).
-- **A dropped stash:** `git fsck --unreachable | grep commit`; for a stash commit,
-  `git show <sha>^3` holds the untracked and ignored files. Recoverable until gc.
+- **A dropped stash:** `git fsck --unreachable | grep commit` lists candidates; the stash
+  commit is the one with three parents, and `git show --stat <sha>^3` lists the untracked
+  and ignored files it holds. Restore with `git stash apply <sha>`. Recoverable until gc.
 - **`git clean` or `rm`:** no undo. Restore the latest backup (§ Backing up).
