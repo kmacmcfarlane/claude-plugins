@@ -63,3 +63,10 @@ dispatch: implementer opus medium — resume, F2 finish round
 agent: implementer aeaab9c573ce82b95 F2 round 2 (finish)
 result: DONE F2 finish at cc3a4f64 (all five exact; read by the librarian)
 verdict: CLEAR F2 after 0 fix rounds, 1 finish at cc3a4f64
+landed: F2 locally e9ce3961 (Checks 12/12 OK)
+dispatch: implementer opus medium — F3 dev-flow store lookups (worktree off e9ce3961)
+dispatch: implementer opus medium — F4 context-guard rehydrate and checkpoint (worktree off e9ce3961)
+dispatch: implementer opus medium — F5 ralph backlog-yaml and ownership claim_check (worktree off e9ce3961)
+agent: implementer a5e878c739c73bc30 F3 round 1
+agent: implementer a8d929df520e959a2 F4 round 1
+agent: implementer a659b29ac5cfe5ebe F5 round 1
