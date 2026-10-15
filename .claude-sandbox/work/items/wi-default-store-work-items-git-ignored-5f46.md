@@ -63,3 +63,30 @@ dispatch: implementer opus medium — resume, F2 finish round
 agent: implementer aeaab9c573ce82b95 F2 round 2 (finish)
 result: DONE F2 finish at cc3a4f64 (all five exact; read by the librarian)
 verdict: CLEAR F2 after 0 fix rounds, 1 finish at cc3a4f64
+landed: F2 locally e9ce3961 (Checks 12/12 OK)
+dispatch: implementer opus medium — F3 dev-flow store lookups (worktree off e9ce3961)
+dispatch: implementer opus medium — F4 context-guard rehydrate and checkpoint (worktree off e9ce3961)
+dispatch: implementer opus medium — F5 ralph backlog-yaml and ownership claim_check (worktree off e9ce3961)
+agent: implementer a5e878c739c73bc30 F3 round 1
+agent: implementer a8d929df520e959a2 F4 round 1
+agent: implementer a659b29ac5cfe5ebe F5 round 1
+result: DONE F5 round 1 at 809f6ad1 (ralph backlog-yaml loop exports both names; claim_check STORES with .work-items first; checks.md; test; claim-md 72 OK)
+dispatch: reviewer opus medium — F5 (small, two plugins)
+agent: reviewer a34c31257d1312d48 F5 round 1 at 809f6ad1
+result: DONE F4 round 1 at 45696581 (rehydrate STORE_DIRS, env precedence, store-only commits at all three; checkpoint loop exports both, skip-commit clause for an ignored store; handoff-format, design-rationale; 757 OK)
+dispatch: reviewer opus high — fresh (rule 4), F4
+agent: reviewer a392a869cf34323d1 F4 round 1 at 45696581
+result: DONE F3 round 1 at e7f140b3 (both lookup copies, first-start --no-track per answer 232 a, brief Store: lines, skip-commit clauses, durable wording; test_store_lookup.py; dev-flow 101 OK; opt-in.md:51 Scope note deferred to this repo's store move)
+dispatch: reviewer opus high — fresh (rule 4), F3
+agent: reviewer a30965ea7fa25cb55 F3 round 1 at e7f140b3
+verdict: CLEAR F5 round 1 at 809f6ad1 (nit: checks.md:29-30 wording; declined, optional)
+verdict: NEEDS_CHANGES F4 round 1 at 45696581 (1 medium: the skip-commit clause asks the host repo, so a sidecar store, which wi records tracked, and a nested-repo store are wrongly skipped; ask the repo holding the store and commit there — the same fix applies to F3's copies; 2 low: design-rationale wording under 232 a, Lean OPEN line; 2 nits)
+dispatch: implementer opus medium — resume, F4 fix round 1
+agent: implementer a8d929df520e959a2 F4 round 2
+verdict: CLEAR F3 round 1 at e7f140b3 (L1 ending-the-session tracked wording; nits opt-in Scope, exit 128, first-start line); plus F4's medium applies here: the skip-commit clause must ask the repo holding the store, not the host (a sidecar store is host-ignored yet tracked)
+decided: 2026-10-15T04:31Z cap — one finish round on F3 with F4's exact clause, L1 and the nits (authority answer 145)
+closed 229: superseded by answer 232 (d)
+closed 230: superseded by answer 232 (b)
+closed 231: superseded by answer 232 (librarian stores follow the ignored default, history in their own repo)
+dispatch: implementer opus medium — resume, F3 finish round
+agent: implementer a5e878c739c73bc30 F3 round 2 (finish)

@@ -558,9 +558,16 @@ class Coverage(Base):
     def test_unclaimed(self):
         self.e.repo("s1", store=".work/items")
         self.e.repo("s2", store=".claude-sandbox/work/items")
+        self.e.repo("s3", store=".work-items/items")
         self.e.repo("plain")
         self.e.repo("ok", {"CLAIM.md": claim("ok")}, store=".work/items")
-        self.assertEqual(self.estate(), [("UNCLAIMED", None, "s1"), ("UNCLAIMED", None, "s2")])
+        self.assertEqual(self.estate(), [("UNCLAIMED", None, "s1"), ("UNCLAIMED", None, "s2"),
+                                         ("UNCLAIMED", None, "s3")])
+
+    def test_work_items_store_alone_has_a_store(self):
+        self.e.repo("only", store=".work-items/items")
+        self.e.repo("ok", {"CLAIM.md": claim("ok")}, store=".work-items/items")
+        self.assertEqual(self.estate(), [("UNCLAIMED", None, "only")])
 
     def test_unclaimed_single_repo(self):
         self.e.repo("plain")

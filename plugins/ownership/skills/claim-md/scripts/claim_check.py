@@ -38,7 +38,7 @@ GIT_TIMEOUT_S = 30
 
 CLAIM = "CLAIM.md"
 CLAUDE = "CLAUDE.md"
-STORES = (".work/items", ".claude-sandbox/work/items")
+STORES = (".work-items/items", ".claude-sandbox/work/items", ".work/items")
 FORMAT_MD = Path(__file__).resolve().parent.parent / "references" / "format.md"
 
 EM = " — "  # an em dash with a space on each side
