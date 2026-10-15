@@ -113,3 +113,4 @@ review: self — finish round at 980558dc: exactly the two leftovers (command-sc
 landed: F3 locally 6e5140fb (Checks 12/12 OK; cc_scan clean: own tags only); NOT pushed — ships with F1, F2, F5
 target: an agent worktree off main (6e5140fb); per-change commits from every write verb (F5)
 dispatch: implementer opus high — d1e9 F5: each change committed under the lock
+agent: implementer aa14330e5be79d2bc F5 round 1
