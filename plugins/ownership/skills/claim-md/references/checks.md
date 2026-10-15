@@ -25,8 +25,9 @@ claim_check.py [--repo DIR] [--claim PATH] [--estate] [--dir DIR] [--today YYYY-
   for one repo the neighbour checks are skipped and a note says so.
 - A **sibling** is a direct child of the sibling dir holding a `.git` directory. A child whose
   `.git` is a file (a linked worktree or a submodule) is listed as skipped, and so is a child
-  that resolves outside the dir. A sibling "has a store" when `.work/items/` or
-  `.claude-sandbox/work/items/` exists in it.
+  that resolves outside the dir. A sibling "has a store" when `.work-items/items/`,
+  `.claude-sandbox/work/items/` or `.work/items/` exists in it (the default location first,
+  then the two old ones).
 - **Without `--estate`** the script checks this repo's claim and CLAUDE.md, and compares its
   claim with the claims of the siblings it names. **With `--estate`** it checks every
   sibling. With `--estate`, the files of `--repo` replace its main checkout's entry, so a
