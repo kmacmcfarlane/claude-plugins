@@ -16,6 +16,7 @@ Constraints this file lives under:
 """
 import argparse
 import base64
+import contextlib
 import fcntl
 import fnmatch
 import getpass
@@ -1277,12 +1278,20 @@ def _sidecar_ignored_warning(root):
     return msg
 
 
-def _ignore_rule(root, *extra):
+def _ignore_rule(root, *extra, where=None):
     """The (source, line, pattern) of the rule that ignores a new item's
-    path in the store, None when nothing does, False when git cannot say."""
-    git = _git if extra else _custody_git(root)
-    r = git(root, "check-ignore", "-v", "-z", *extra, "--stdin",
-            stdin=f"items\0{PROBE_ITEM}\0")
+    path in the store, None when nothing does, False when git cannot say.
+    where=(repo, rel) asks from that repo's top on the store's paths there
+    (rel/items, rel/<probe>), so a store that is its own repo is judged by
+    the repo around it, not by its own (d1e9 D3 step 4); the source git
+    names is relative to the repo's top either way."""
+    if where is None:
+        r = _custody_git(root)(root, "check-ignore", "-v", "-z", *extra,
+                               "--stdin", stdin=f"items\0{PROBE_ITEM}\0")
+    else:
+        repo, rel = where
+        r = _git(repo, "check-ignore", "-v", "-z", *extra, "--stdin",
+                 stdin=f"{rel}/items\0{rel}/{PROBE_ITEM}\0")
     if r is None or r.returncode not in (0, 1):
         return False
     fields = r.stdout.split("\0")
@@ -1492,14 +1501,10 @@ PROMISOR_REASON = ("the store's git config sets {} (a lazy fetch from a "
                    "promisor remote can run commands); remove it")
 
 
-def _unsafe_path(root, git_dir, common_dir):
-    """Why the store's repo could run a command it did not choose, else
-    None (d1e9 D1''): an attribute file (a .gitattributes anywhere in the
-    store, <git-dir>/info/attributes, or a .gitattributes only the index
-    holds), or a nested repo (a .git below the store's root, or a gitlink,
-    mode 160000, in the index), whose own config and attributes git can
-    reach by recursing into it. Names are compared case-blind, as a
-    case-insensitive file system matches them."""
+def _unsafe_walk(root):
+    """The part of _unsafe_path a walk of the store's files decides, with no
+    git: a .gitattributes anywhere in the store, or a .git below its root.
+    Run alone on a store `init` is about to give a repo (d1e9 F3)."""
     real = os.path.realpath(root)
     for dirpath, dirs, files in os.walk(real):
         names = sorted(dirs + files)
@@ -1513,6 +1518,21 @@ def _unsafe_path(root, git_dir, common_dir):
                 return ATTR_REASON.format(os.path.relpath(
                     os.path.join(dirpath, name), real))
         dirs[:] = sorted(d for d in dirs if d.lower() != ".git")
+    return None
+
+
+def _unsafe_path(root, git_dir, common_dir):
+    """Why the store's repo could run a command it did not choose, else
+    None (d1e9 D1''): an attribute file (a .gitattributes anywhere in the
+    store, <git-dir>/info/attributes, or a .gitattributes only the index
+    holds), or a nested repo (a .git below the store's root, or a gitlink,
+    mode 160000, in the index), whose own config and attributes git can
+    reach by recursing into it. Names are compared case-blind, as a
+    case-insensitive file system matches them."""
+    unsafe = _unsafe_walk(root)
+    if unsafe:
+        return unsafe
+    real = os.path.realpath(root)
     for d in dict.fromkeys((git_dir, common_dir)):
         p = os.path.join(d, "info", "attributes")
         if os.path.lexists(p):
@@ -1548,6 +1568,9 @@ def _host_repo(root):
     did not answer or failed otherwise, so a store is never taken for one
     with no host on a timeout. A host read: plain _git, in the C locale."""
     parent = os.path.dirname(os.path.realpath(root))
+    # a store `init` has yet to create: ask from its nearest existing parent
+    while not os.path.isdir(parent) and os.path.dirname(parent) != parent:
+        parent = os.path.dirname(parent)
     r = _git(parent, "rev-parse", "--show-toplevel",
              extra_env={"LC_ALL": "C"})
     if r is None:
@@ -1701,6 +1724,16 @@ def store_repo_checks(root, rs, full=True):
                 out.append(("notice", f"wi: note: store {root}'s repo has a "
                             f"remote ({', '.join(names)}); a work-item store "
                             "repo is meant to be local (answer 232 a)"))
+    # d1e9 F3: the two shapes `wi init --no-track` turns into an own store
+    if rs.state == "unrecorded":
+        out.append(("notice", f"wi: note: store {root} is its own git repo, "
+                    "not set up by wi, so wi commits nothing there; fix: "
+                    "`wi init --no-track` adopts it, history kept"))
+    if (rs.state == "plain" and read_tracking(root) == "ignored"
+            and not old_location(root) and shutil.which("git") is not None):
+        out.append(("notice", f"wi: note: store {root} has no history of "
+                    f"its own (tracking: ignored in {STORE_FILE}, no .git); "
+                    "fix: `wi init --no-track` gives it its own local repo"))
     values = _store_key_values(root, "repo") or []
     if len(values) > 1:
         out.append(("problem", f"{root / STORE_FILE}: more than one repo: "
@@ -2402,8 +2435,8 @@ def choose_tracking(inp, out, sidecar=False):
     else:
         out.write("wi init: should git track this work-item store?\n"
                   "  1) tracked      items are committed with the repo\n"
-                  "  2) git-ignored  items stay in this checkout only "
-                  "[default]\n")
+                  "  2) git-ignored  the repo ignores the store, which keeps "
+                  "its own local history [default]\n")
     prompt = f"choose 1 or 2 [{1 if sidecar else 2}]: "
     while True:
         out.write(prompt)
@@ -2478,11 +2511,18 @@ def _gitignore_lines(gi):
             data.decode("utf-8", "surrogateescape").splitlines()]
 
 
-def ensure_ignored(root):
+_FROM_STORE = object()   # ensure_ignored: the repo found from the store
+
+
+def ensure_ignored(root, repo=_FROM_STORE):
     """Make git ignore the store: add its dir to its repo's root .gitignore
     unless git already ignores it from one of the repo's .gitignore files.
-    (ok, message); ok False means the store may not be ignored."""
-    repo = _store_repo(root)
+    (ok, message); ok False means the store may not be ignored. repo: the
+    repo around the store (None outside git), which `init` passes for a
+    store getting its own repo (d1e9 D3 step 4: _host_repo, asked from the
+    store's parent); by default, the repo that holds the store."""
+    if repo is _FROM_STORE:
+        repo = _store_repo(root)
     if repo is None:
         return True, "not in a git repo: no .gitignore written"
     try:
@@ -2500,7 +2540,7 @@ def ensure_ignored(root):
     # git decides (a negation after a literal line un-ignores it); a rule
     # only in info/exclude or an excludesFile does not travel with the
     # repo, so the line is still added for those
-    rule = _ignore_rule(root, "--no-index")
+    rule = _ignore_rule(root, "--no-index", where=(repo, rel))
     if rule is False:
         # git unavailable: the literal lines are all there is to go on
         for ln in _gitignore_lines(gi):
@@ -2524,7 +2564,7 @@ def ensure_ignored(root):
     ok, msg = append_gitignore_line(gi, line)
     if not ok:
         return ok, msg
-    after = _ignore_rule(root, "--no-index")
+    after = _ignore_rule(root, "--no-index", where=(repo, rel))
     if after is not False and not after:
         return False, f"{line} did not make git ignore the store"
     return True, msg
@@ -2563,7 +2603,200 @@ def _create_if_absent(path, text):
         # appeared since the check: it is there, leave it
 
 
+# d1e9 F3: `init` and a git-ignored store's own repo (format.md § Store
+# tracking, § The store's own repo). Every git call init makes, plain _git
+# and the store runner alike, runs without a caller's steering: a host
+# hook's GIT_DIR, GIT_COMMON_DIR or GIT_INDEX_FILE, pathspec magic, or a
+# template directory for `git init`.
+INIT_SCRUB = TRACKED_SCRUB | {"GIT_TEMPLATE_DIR"}
+# local config an own store's repo gets, so a hand-run git there (the hand
+# commit form in store-safety.md) runs no hook or fsmonitor either
+STORE_REPO_CONFIG = (("core.hooksPath", "/dev/null"),
+                     ("core.fsmonitor", "false"))
+INIT_BRANCH = "refs/heads/main"
+OWN_PATH_FILES = ("README.md", STORE_FILE, ".gitignore")
+STORE_README = ("# Work items\n\nOne markdown file per item, managed by `wi` "
+                "(the work-items plugin's skills/work-items).\nStart with "
+                "`wi prime`, then `wi show <id> --brief` for the item you "
+                "will work.\nFormat: the work-items plugin's "
+                "skills/work-items/references/format.md\n")
+STORE_GITIGNORE = ".lock\n*.tmp*\n"
+_DEDICATED = object()   # _own_repo_check: a store at the top of its own repo
+
+
+@contextlib.contextmanager
+def _env_without(names):
+    """os.environ without `names` for the block, put back after it."""
+    saved = {k: os.environ.pop(k) for k in list(os.environ) if k in names}
+    try:
+        yield
+    finally:
+        os.environ.update(saved)
+
+
+def _is_own_path(path):
+    """True for a store-relative path among the store's own paths."""
+    return path in OWN_PATH_FILES or path.startswith(("items/", "archive/"))
+
+
+def _own_repo_check(root):
+    """d1e9 D3 step 2: refuse (WiError 1, nothing written) a store that may
+    not get its own repo; else the repo around it (None outside git).
+    _DEDICATED for a store at the top of a repo with no repo around it and
+    no `repo: own` recorded, which keeps the repo-root refusal it had."""
+    host = _host_repo(root)
+    if host is HOST_UNKNOWN:
+        raise WiError(1, f"git did not say whether a repo is around {root}; "
+                         "nothing written")
+    adopt = "refusing to adopt it as a store repo; nothing written"
+    if os.path.lexists(root / ".git"):
+        git_dir, common, reason = _validate_store_git(root)
+        if reason:
+            raise WiError(1, f"{root} has a .git that is not a usable store "
+                             f"repo: {reason}; {adopt}")
+        if git_dir is None:
+            raise WiError(1, f"git did not answer in {root}'s repo; nothing "
+                             "written")
+        if host is None and not read_repo_own(root):
+            return _DEDICATED
+        reason = _unsafe_path(root, git_dir, common)
+        if reason:
+            raise WiError(1, f"{root}: {reason}; {adopt}")
+        r = _store_git(root, "ls-files", "-z")
+        if r is None or r.returncode != 0:
+            why = "git did not answer" if r is None else _why(r)
+            raise WiError(1, f"cannot list the files {root}'s repo tracks "
+                             f"({why}); {adopt}")
+        other = next((p for p in r.stdout.split("\0")
+                      if p and not _is_own_path(p)), None)
+        if other is not None:
+            raise WiError(1, f"{root} is a git repo holding other files "
+                             f"({other}): {adopt}")
+    elif all(os.path.isdir(root / d) for d in ("objects", "refs")) \
+            and os.path.isfile(root / "HEAD"):
+        raise WiError(1, f"{root} is a git directory, not a store; nothing "
+                         "written")
+    else:
+        reason = _unsafe_walk(root)
+        if reason:
+            raise WiError(1, f"{root}: {reason}; refusing to give it its own "
+                             "repo; nothing written")
+    if host is not None:
+        try:
+            rel = Path(os.path.realpath(root)).relative_to(
+                os.path.realpath(host)).as_posix()
+        except ValueError:
+            rel = None
+        if rel:
+            r = _git(host, "-c", "core.fsmonitor=false", "ls-files", "-z",
+                     "--", f":(literal){rel}")
+            if r is None or r.returncode != 0:
+                why = "git did not answer" if r is None else _why(r)
+                raise WiError(1, f"cannot tell whether the repo at {host} "
+                                 f"tracks files under {rel} ({why}); "
+                                 "nothing written")
+            n = len([p for p in r.stdout.split("\0") if p])
+            if n:
+                raise WiError(1, f"the host repo at {host} tracks {n} "
+                                 f"path(s) under {rel}: untrack them first "
+                                 f"({MOVING_A_STORE}); nothing written")
+    return host
+
+
+def _track_refusal(root):
+    """`--track` on a store with its own valid repo inside a host: the host
+    would commit a gitlink (d1e9 D3). None when it may be tracked."""
+    if old_location(root) or not os.path.lexists(root / ".git"):
+        return None
+    git_dir, _, reason = _validate_store_git(root)
+    if reason or git_dir is None or not isinstance(_host_repo(root), Path):
+        return None
+    return (f"{root} is its own git repo; the host cannot track it (that "
+            "commits a gitlink, mode 160000): use `wi init --no-track`; "
+            "nothing written")
+
+
+def _set_up_store_repo(root, adopt):
+    """D3 step 5: a new repo (`git init` with an empty template, so no
+    sample hooks; HEAD on main), or an existing one adopted as it is; both
+    get STORE_REPO_CONFIG. Every call through the store runner. None on
+    success, else why not."""
+    steps = [] if adopt else [("init", "-q", "--template="),
+                              ("symbolic-ref", "HEAD", INIT_BRANCH)]
+    steps += [("config", key, value) for key, value in STORE_REPO_CONFIG]
+    for args in steps:
+        r = _store_git(root, *args)
+        if r is None:
+            return ("git not found" if shutil.which("git") is None
+                    else "git did not answer")
+        if r.returncode != 0:
+            return _why(r)
+    git_dir, common, reason = _validate_store_git(root)
+    if reason or git_dir is None:
+        return reason or "git did not answer"
+    return None
+
+
+def _init_own(root, host, defaulted):
+    """D3 steps 3-7, under the store's lock: the store files, the host
+    ignore line (before any `git init`, F-R4), the repo, the record, then
+    the first commit through `wi commit`'s own-store path."""
+    adopt = os.path.lexists(root / ".git")
+    (root / "items").mkdir(parents=True, exist_ok=True)
+    with Lock(root):
+        _create_if_absent(root / "README.md", STORE_README)
+        _create_if_absent(root / ".gitignore", STORE_GITIGNORE)
+        ok, msg = ensure_ignored(root, host)
+        if not ok:
+            print(f"wi: WARNING {msg}; own repo not set up and tracking not "
+                  "recorded (run `wi init --no-track` again once that is "
+                  "fixed)", file=sys.stderr)
+            print(f"created {root}; tracking not recorded")
+            return 1
+        print(msg)
+        why = _set_up_store_repo(root, adopt)
+        if why:
+            print(f"wi: WARNING own repo not set up: {why}; tracking not "
+                  "recorded (a rerun of `wi init --no-track` is safe)",
+                  file=sys.stderr)
+            print(f"created {root}; own repo not set up; tracking not "
+                  "recorded")
+            return 1
+        print(f"own repo: {'adopted' if adopt else 'created'} "
+              f"{root / '.git'}"
+              + (" (its history kept)" if adopt else " (branch main)"))
+        write_tracking(root, "tracked", repo=REPO_OWN)
+        print(f"tracking: tracked, repo: {REPO_OWN} (recorded in "
+              f"{root / STORE_FILE}): the repo around the store ignores it, "
+              "and it keeps its own local history")
+        n = len(item_paths(root, archived=True))
+        message = (f"wi init: adopted {n} items" if n
+                   else "wi init: store created")
+        run = _own_runner(root, store_repo_state(root))
+        try:
+            sha = _commit_own_paths(root, run, message,
+                                    _fallback_ident(root, run))
+            print(f"committed {sha} ({message})" if sha
+                  else "nothing to commit")
+        except CommitFailed as e:
+            print(f"wi: WARNING store not committed: {e} (the change is "
+                  "saved; `wi commit` commits it)", file=sys.stderr)
+    if defaulted:
+        print(f"wi: WARNING no terminal and no --track/--no-track: created "
+              f"{root} as a git-ignored store with its own local repo. To "
+              "have the repo around it track it instead, the store's .git "
+              "must go first (`wi init --track` refuses a store with its "
+              "own repo): ask the operator", file=sys.stderr)
+    print(f"initialised {root}")
+    return 0
+
+
 def cmd_init(args):
+    with _env_without(INIT_SCRUB):
+        return _init(args)
+
+
+def _init(args):
     for notice in env_notices():
         print(notice, file=sys.stderr)
     refusal = worktree_init_refusal() if not args.root else None
@@ -2581,7 +2814,11 @@ def cmd_init(args):
     recorded = read_tracking(root)
     choice = "tracked" if args.track else "ignored" if args.no_track else None
     defaulted = False
-    if choice is None and not (existed and recorded):
+    if (choice is None and existed and os.path.lexists(root / ".git")
+            and store_repo_state(root).state == "unrecorded"):
+        print(f"wi: note: {root} is its own git repo, not set up by wi; "
+              "`wi init --no-track` adopts it, history kept", file=sys.stderr)
+    elif choice is None and not (existed and recorded):
         if existed:
             # an existing store with no recorded choice is left as it is:
             # an Enter or a missing terminal must not ignore a tracked store
@@ -2601,15 +2838,27 @@ def cmd_init(args):
                 return 130
         else:
             choice, defaulted = "ignored", True
+    how = (" (no terminal and no --track/--no-track picked git-ignored)"
+           if defaulted else "")
     if choice == "ignored" and sandbox_shape(root)[0] == "sidecar":
         # 3c06: the host ignores a sidecar's .claude-sandbox/, so a store
         # its own repo ignores lands in no repo; refuse first, as for the
         # repo root below
-        how = (" (no terminal and no --track/--no-track picked git-ignored)"
-               if defaulted else "")
         raise WiError(1, f"{root} is {SIDECAR_NO_REPO}: a git-ignored store "
                          f"there lands in no repo{how}; nothing written (use "
                          "`wi init --track`)")
+    if choice == "tracked":
+        refusal = _track_refusal(root)
+        if refusal:
+            raise WiError(1, refusal)
+    git_found = shutil.which("git") is not None
+    # d1e9 D3: a git-ignored store gets its own repo, except at an old
+    # location, which never holds one (it keeps today's plain ignored
+    # store, with a note to move it), or with no git to make one
+    if choice == "ignored" and git_found and not old_location(root):
+        host = _own_repo_check(root)
+        if host is not _DEDICATED:
+            return _init_own(root, host, defaulted)
     if choice == "ignored" and not existed:
         # a store at the repo root cannot be ignored, and its own *.tmp*
         # line would ignore files across the whole repo: refuse first
@@ -2621,14 +2870,8 @@ def cmd_init(args):
                              "`wi init --track`, or put the store in a "
                              "subdirectory)")
     (root / "items").mkdir(parents=True, exist_ok=True)
-    _create_if_absent(
-        root / "README.md",
-        "# Work items\n\nOne markdown file per item, managed by `wi` "
-        "(the work-items plugin's skills/work-items).\nStart with "
-        "`wi prime`, then `wi show <id> --brief` for the item you will "
-        "work.\nFormat: the work-items plugin's "
-        "skills/work-items/references/format.md\n")
-    _create_if_absent(root / ".gitignore", ".lock\n*.tmp*\n")
+    _create_if_absent(root / "README.md", STORE_README)
+    _create_if_absent(root / ".gitignore", STORE_GITIGNORE)
     shape, repo = sandbox_shape(root)
     effective = choice or recorded
     if shape == "private" and effective == "tracked":
@@ -2662,6 +2905,16 @@ def cmd_init(args):
                   "--no-track` again once that is fixed, or `wi init "
                   "--track`)", file=sys.stderr)
             rc = 1
+        # d1e9 D3: today's plain ignored store, said to have no history
+        if rc == 0 and old_location(root):
+            print(f"wi: note: {root} is at an old location, so it gets no "
+                  "repo of its own and keeps no history; move it to "
+                  f"{DEFAULT_STORE}/ for one ({MOVING_A_STORE})",
+                  file=sys.stderr)
+        elif rc == 0 and not git_found:
+            print(f"wi: WARNING git not found: {root} has no history of its "
+                  "own; run `wi init --no-track` again where git is "
+                  "available", file=sys.stderr)
     elif choice == "tracked":
         write_tracking(root, choice)
         print(f"tracking: {choice} (recorded in {root / STORE_FILE})")
@@ -5254,7 +5507,8 @@ def build_parser():
     sub = p.add_subparsers(dest="command", required=True)
     spec = {
         ("init", cmd_init, "create the work-item root, or record an "
-         "existing one's tracking choice"): [],
+         "existing one's tracking choice; a git-ignored store gets its own "
+         "local repo"): [],
         ("next", cmd_next, "what to work on"): [
             ("--json",), ("--plain",), ("--limit", dict(type=int, default=7)),
             ("--stale", dict(default="24h")), ("--pipeline",), ("--one",),
@@ -5339,7 +5593,9 @@ def build_parser():
     track.add_argument("--track", action="store_true",
                        help="git tracks the store")
     track.add_argument("--no-track", action="store_true",
-                       help="git ignores the store: adds it to .gitignore")
+                       help="the repo ignores the store (its line added to "
+                            ".gitignore), which keeps its own local git "
+                            "repo: created, or adopted with its history")
     return p
 
 
