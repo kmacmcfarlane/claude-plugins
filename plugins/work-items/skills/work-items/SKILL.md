@@ -32,7 +32,7 @@ the TODO.md failure mode with extra steps.
 
 | | |
 | --- | --- |
-| `$WI init --track\|--no-track` | creates the store (`.work-items/` unless a root is named), or records an existing one's tracking choice in `store.yaml` without re-creating anything; `--no-track` adds the store's directory to the repo's root `.gitignore` (never a duplicate line, never glued onto a last line with no newline). Neither flag: a menu on a terminal (git-ignored is the default); with no terminal, an ignored store and a stderr warning. A git-ignored choice in a sidecar layout (`.claude-sandbox/.git` exists), including the no-terminal default, is refused, exit 1, nothing written; there the menu defaults to tracked and does not take git-ignored (`references/format.md` § Store tracking). In a linked worktree with no store and no root named it refuses, exit 1, nothing written |
+| `$WI init --track\|--no-track` | creates the store (`.work-items/` unless a root is named), or records an existing one's tracking choice in `store.yaml` without re-creating anything; `--no-track` adds the store's directory to the repo's root `.gitignore` (never a duplicate line, never glued onto a last line with no newline), then gives the store its own local repo (`git init`, or adopting a repo already there, history kept) and commits it; with no git, a plain ignored store. `--track` refuses a store that is its own repo (the host would commit a gitlink). Neither flag: a menu on a terminal (git-ignored is the default); with no terminal, a git-ignored store with its own repo and a stderr warning. `init` makes or keeps no store at an old location (`.work/`, `.claude-sandbox/work/`), new or existing, and makes none beside one holding `items/`: it refuses, exit 1, nothing written, until the old store is moved (`references/format.md` § Moving a store); `--allow-old-location` is only for a store the operator keeps there, or a directory that is the project's own, never passed by reflex. A git-ignored choice in a sidecar layout (`.claude-sandbox/.git` exists), including the no-terminal default, is refused, exit 1, nothing written; there the menu defaults to tracked and does not take git-ignored (`references/format.md` § Store tracking). In a linked worktree with no store and no root named it refuses, exit 1, nothing written |
 | `$WI next [--plain\|--json]` | ready-ranked queue: `todo` with every dep met (done, dropped or in UAT, archived or not), priority then age |
 | `$WI show <id> [--brief]` | one item; `--brief` for front matter + handoff only |
 | `$WI add "<title>" [--short-display-name "<name>"]` | new item (`<slug>-<4hex>` id); describe, don't dump — path and key, never value; `--short-display-name` is the optional name agents give it to the operator, stripped and 40 characters or fewer (over that exits 1, nothing written: shorten it and re-run), shown as `[<name>] <title>` in text rows (`references/format.md` § Short display name and tag) |
@@ -51,9 +51,9 @@ the TODO.md failure mode with extra steps.
 | `$WI set <id> <field> <value> [--force]` | one front-matter field; list fields (`tags deps refs`) take `a,b` and are **replaced whole**; `""` (or `—`) clears any field; `deps`/`parent` targets must resolve — `ext:` deps exempt, `--force` bypasses; `short_display_name` is stripped and must be 40 characters or fewer (exit 1 over), and a blank value clears it |
 | `$WI import-todo TODO.md` | idempotent migration; then replace TODO.md with the deprecation notice from `references/format.md` |
 | `$WI export/import --format backlog-yaml` | the ralph bridge — backlog.yaml stays authoritative for unattended runs |
-| `$WI lint` | format + secret-shape + store-custody check; run before committing hand edits |
+| `$WI lint` | format + secret-shape + store-custody check; run after hand edits, then `$WI commit` |
 | `$WI commit [-m "<message>"]` | the one way to commit the store, never `git` by hand: under the store's lock it commits the store's own files into the repo that holds them (the store's own repo, or the host or sidecar repo that tracks it, whose hooks run), and prints `nothing to commit` for a store that repo ignores. Refuses (exit 1, nothing committed) a message `lint` would flag as a secret, and an own repo `wi` did not set up (unrecorded) or cannot trust (broken); exit 3 when git fails, or is missing for a store with its own repo (`references/format.md` § Committing the store) |
-| `$WI archive` | moves closed items to `archive/` — its own commit when the store is tracked, nothing else in it |
+| `$WI archive` | moves closed items to `archive/` — its own commit (`$WI commit` right after it) in the store's repo or the repo that tracks it, nothing else in it |
 
 Exit codes: 0 ok · 1 usage/validation · 2 not found/empty (e.g. `next` with nothing ready —
 report "nothing ready", don't retry) · 3 file/parser error · 4 lock/claim conflict (someone
@@ -84,10 +84,18 @@ verbs, capability differences and canonical state mapping are in
   in a wi that reads it.
 - `$WI init` always gets `--track` or `--no-track` from an agent; never rely on the
   no-terminal default. A new store is `.work-items/` at the repo root and is git-ignored:
-  pass `--no-track` unless the operator asked for a tracked store. An existing store with no
-  recorded choice keeps what git already does with it. From the main checkout:
+  pass `--no-track` unless the operator asked for a tracked store. `--no-track` gives a new
+  store its own local repo, and adopts a `.work-items/` that is already one (a
+  `wi: note: … is its own git repo, not set up by wi` or `… has no history of its own` line
+  from `prime` or `lint` asks for exactly that run). An existing store with no
+  recorded choice keeps what git already does with it. A store at an old location
+  (`.claude-sandbox/work/`, `.work/`), or one beside the store being made, makes every `init`
+  refuse until it is moved, and `init` makes no new store there: stop and route the move to
+  the operator (`references/format.md` § Moving a store), never `--allow-old-location` by
+  reflex. From the main checkout:
   - a sidecar store (`test -e .claude-sandbox/.git`, store at `.claude-sandbox/work/`) →
-    `--track` (wi refuses an ignored one);
+    `--track` (wi refuses an ignored one), with `--allow-old-location` only when the operator
+    keeps it there;
   - `git ls-files <store> | head -1` prints a path → `--track`;
   - `git check-ignore -q <store>` exits 0 → `--no-track`;
   - otherwise ask the operator.
@@ -100,7 +108,8 @@ verbs, capability differences and canonical state mapping are in
   `git rev-parse --path-format=absolute --git-common-dir` minus its trailing `/.git`. In a
   linked worktree with no store and no root named, `wi` fails with the `export
   WORK_ITEMS_ROOT=…` line to run, and `init` refuses rather than make a stray store.
-- Item files are hand-editable; run `$WI lint` after hand edits, in the same turn.
+- Item files are hand-editable; run `$WI lint`, then `$WI commit`, after hand edits, in the
+  same turn.
 - A `wi: WARNING store … is silently untracked` line (second line of `prime`; a problem, exit 3, in `lint`) means new items are git-ignored, or the store holds ≥10 items and none is tracked (below 10, an uncommitted store is treated as new). The line names the ignore rule (file:line) and the remedies for that cause; fix the cause rather than working around it. A store recorded as git-ignored (`tracking: ignored`) gets no warning; one recorded as tracked that git ignores anyway does, since that contradicts the choice; a store with no recorded choice keeps the warning, whose fix ends by recording the choice (`$WI init --track`, or `--no-track` when it is meant to stay local). A sidecar store recorded as git-ignored warns too (`… is recorded git-ignored … so new items land in no repo`), naming `$WI init --track` and any ignore line in the sidecar repo to remove.
 - One session claims an item before working it; two sessions on one item is what `claim` is
   for — respect a conflict.

@@ -86,8 +86,11 @@ the next push.
 - **Stash:** don't. Commit to a branch, or copy the files to the scratchpad.
 - **rm:** name exact paths; never `.`, `..`, a repo root or a parent of one.
 - **Git in an own-repo store:** set `S=<absolute store path>`, then
-  `git -C "$S" status|log|diff|show`. To commit, take the store's lock, and pass the
-  fallback identity only when git has none:
+  `git -C "$S" status|log|diff|show`. To commit, run `$WI commit -m "<what>"`
+  (`references/format.md` § Committing the store): it takes the store's lock, commits only
+  the store's own files, runs no hook and falls back to the `wi` identity when git has
+  none. With a `wi` that has no `commit` (`invalid choice: 'commit'`, exit 2), take the
+  store's lock by hand, and pass the fallback identity only when git has none:
 
   ```bash
   if git -C "$S" var GIT_AUTHOR_IDENT >/dev/null 2>&1; then id=(); else id=(-c user.name=wi -c user.email=wi@localhost); fi
@@ -97,7 +100,10 @@ the next push.
 
   The store's own `.gitignore` keeps `.lock` and `*.tmp*` out of the `add`. `flock(1)` on
   `<store>/.lock` takes the same lock wi takes. With no `flock` (macOS), commit only when no
-  session is working the store.
+  session is working the store. A store `wi init` set up has `core.hooksPath=/dev/null` in
+  its own config, and `init` refused it unless a git run without wi's pins resolves that
+  value (no include or worktree config overriding it), so this hand form runs no hook there
+  either.
 
 ## Worktrees and clones
 
@@ -114,9 +120,9 @@ made there restarts decision numbering.
 
 ## Commit failures
 
-- **No identity** (`Author identity unknown`): the § Safe forms commit passes the fallback
-  identity exactly when `git var GIT_AUTHOR_IDENT` fails, which is exactly when a plain
-  commit would fail.
+- **No identity** (`Author identity unknown`): `wi commit` falls back to the `wi` identity
+  by itself; the § Safe forms hand commit passes the fallback identity exactly when
+  `git var GIT_AUTHOR_IDENT` fails, which is exactly when a plain commit would fail.
 - **No git:** the item write still lands (wi needs no git to write). Report "store not
   committed", and leave the commit to a session that has git.
 

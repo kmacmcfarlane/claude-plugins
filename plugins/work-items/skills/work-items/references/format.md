@@ -40,6 +40,28 @@ problem, the exit is unchanged) and `init` (stderr), at most once per run:
 A root from the flag, the env or the lookup is judged alike. No other command
 prints it.
 
+**`init` makes or keeps no store at an old location.** `wi init` exits 1, writing
+nothing, when the store root is an old location, a new store there included (so `init` never
+makes a store the next `init` refuses), or when an old location beside the top of the repo
+around the root (or beside the root's own parent directory) holds `items/`: an un-migrated
+store next to a new `.work-items/`. A store beside counts only by its `items/` directory,
+never by its name alone or by an ignore line naming it, so a store already moved away, with
+`/work/` still in a sidecar `.gitignore`, does not trip it. The refusal covers every `init`
+there, a re-run on an existing store and the no-flag note included, and comes after the
+sidecar refusal of `--no-track` (§ Store tracking), which keeps its message. It names the
+old location's path and this file's § Moving a store ("use `.work-items/`, moving the old
+store first if there is one"), adds "then change any WORK_ITEMS_ROOT export that names the
+old path" when the root was not named with `--root`, and prints no deprecation line
+besides.
+
+`--allow-old-location` overrides it, only when the operator keeps the store at the old
+location, or the directory is the project's own and not a work-item store. It works with
+`--track`, `--no-track`, the menu and an existing store; with it, `--no-track` at an old
+location makes a plain ignored store, never an own repo. It is never recorded: every `init`
+there needs it again, and `prime` and `lint` keep the deprecation line. Passed where there is nothing to override (a
+root not at an old location, with no old location holding `items/` beside it), it is refused,
+exit 1.
+
 **More than one store.** When the store in use is one of the three locations
 under a directory D (by real path), and another of them under D also holds
 `items/`, `prime` shows a header line and `lint` counts a problem (exit 3),
@@ -98,11 +120,23 @@ no `init` set up. A `.git` in a store at an old location is never own: it is a `
 problem, fixed by moving the store (§ Moving a store).
 
 - **Making the choice.** `wi init --track` or `wi init --no-track` (mutually exclusive).
-  With neither, a terminal on stdin and stdout gets a two-line menu (tracked, git-ignored;
-  Enter takes git-ignored, or tracked in a sidecar layout). With neither and no terminal
-  (an agent's Bash call, a script), `init` creates an ignored store, says so on stderr with
-  how to choose tracked instead (`wi init --track`, then remove the store's line from
-  `.gitignore`), and exits 0 (in a sidecar layout, refused: see below).
+  With neither, a terminal on stdin and stdout gets a two-line menu (1) tracked: items are
+  committed with the repo; 2) git-ignored: the repo ignores the store, which keeps its own
+  local history; Enter takes git-ignored, or tracked in a sidecar layout). With neither and
+  no terminal (an agent's Bash call, a script), `init` creates a git-ignored store with its
+  own repo, says so on stderr (tracking it in the repo instead needs the store's `.git`
+  gone first, which is the operator's call), and exits 0 (in a sidecar layout, refused: see
+  below).
+- **The git-ignored choice is the store's own repo.** `--no-track`, the menu's
+  git-ignored and the no-terminal default each mean that the repo around the store (the
+  host) does not track it: the host ignores it, and the store keeps its history in its own
+  local repo, which `init` creates or adopts (§ The store's own repo, Setting it up). The
+  record is then `tracking: tracked` plus `repo: own`: the flag names the host, which does
+  not track the store, and the record names git, which does, in the store's own repo. At an
+  old location (with `--allow-old-location`), or with no git on `PATH`, the choice makes a
+  plain ignored store, recorded
+  `ignored`, as the bullets below describe, with a stderr line saying it has no history of
+  its own.
 - **Ignoring** (`--no-track`, the menu's git-ignored, the no-terminal default) adds
   `/<store path>/` — `/.work-items/`, or at an old location `/.work/` or
   `/.claude-sandbox/work/` — to the root `.gitignore` of the
@@ -125,8 +159,12 @@ problem, fixed by moving the store (§ Moving a store).
   to tracked, and answering git-ignored asks again. The refusal covers a named
   `.claude-sandbox/work` root and an existing one the lookup finds; a bare `wi init` with no
   store makes `.work-items/`, which is never a sidecar store.
-- **A `.work-items/` that is its own git repo** is the root of that repo, so it is refused as
-  git-ignored by the rule below; `--track` records it.
+- **A store that is already its own git repo** inside a host (a `.work-items/.git` that no
+  `init` set up) is adopted by the git-ignored choice, its history kept. `--track` refuses a
+  store whose own valid repo sits inside a host, exit 1, nothing written: "`<root>` is its
+  own git repo; the host cannot track it (that commits a gitlink, mode 160000): use `wi init
+  --no-track`". A store at the top of a repo with no repo around it is that repo's root: the
+  git-ignored choice is refused there by the rule below, and `--track` records it.
 - **What init refuses.** It never writes through a symlink: a symlinked `.gitignore` gets no
   line (`init` names the line to add by hand), and a store directory that is a symlink to a
   place outside the repo holding it is refused outright, with nothing written. A store that
@@ -144,6 +182,8 @@ problem, fixed by moving the store (§ Moving a store).
   `.gitignore` line. Without a flag, a recorded choice is kept; a store with no recorded
   choice (every store made before this file existed) is left as it is, with no menu, and a
   stderr note names the two flags. Such a store is treated as unrecorded until one is run.
+  An existing store that is its own repo, not set up by `wi` (own, unrecorded), gets a note
+  naming `wi init --no-track`, which adopts it.
 - **prime and lint.** A store recorded `ignored` gets no custody warning, unless it is a
   sidecar store: that one gets a warning that it is recorded git-ignored and new items land
   in no repo, with the fix `wi init --track`, followed by the ignore line to remove when the
@@ -157,7 +197,8 @@ problem, fixed by moving the store (§ Moving a store).
 `status:` is the only authority on state. `done` never moves a file — a
 status-only close is a two-line front-matter change that merges cleanly
 against any body edit. `wi archive --older-than 90d` moves closed items in a
-dedicated commit (when the store is tracked).
+dedicated commit (`wi commit` right after it), in the store's own repo or the repo
+that tracks it.
 
 A write killed mid-way never blocks the store. An item in both `items/` and
 `archive/` as one file (a kill between hard link and unlink) is a move half
@@ -320,12 +361,29 @@ store (their claims and its `.lock`), and update every `WORK_ITEMS_ROOT` (or
 ends with `wi --root .work-items lint`, and leaves no old directory behind (the
 two-store warning catches one). `<old>` is the old store path, `.claude-sandbox/work` or `.work`.
 
-- **Tracked → tracked.** `git mv <old> .work-items`, then
-  `wi --root .work-items init --track`, then commit.
-- **Tracked → git-ignored.** `git rm -r -q --cached <old>`, `mv <old>
-  .work-items`, `wi --root .work-items init --no-track` (it adds `/.work-items/`
-  to the root `.gitignore` and records `ignored`), then commit the removal and the
-  `.gitignore` line. Past history stays in `git log`.
+A git-ignored store keeps its history in its own local repo (§ The store's own repo), so
+most recipes end at one `wi --root .work-items init --no-track`: it adds `/.work-items/` to
+the root `.gitignore` when no rule there ignores the store yet, makes or adopts the store's
+repo, records `tracking: tracked` plus `repo: own`, and commits the store
+(`wi init: adopted <n> item(s)`). An old-location store left in place stops every `init`
+until it is moved (§ Root resolver, Old locations).
+
+- **Git-ignored at `.work-items/` → its own repo, in place.** `wi --root .work-items init
+  --no-track`. It finds the `/.work-items/` line and adds none, so nothing in the host
+  changes. `prime` and `lint` name such a store, recorded `ignored` with no `.git`, with the
+  "no history" notice until then.
+- **Its own repo made by hand → adopted.** A `.work-items/.git` that no `init` set up (the
+  "own, unrecorded" notice): `wi --root .work-items init --no-track`. Its commits, branch and
+  any remote are kept, wi's set-up is added, and the outstanding changes are committed;
+  history is never rewritten. A repo holding other files, a broken `.git`, an attribute
+  file or a promisor config is refused, with nothing written (§ The store's own repo,
+  Setting it up).
+- **Tracked → its own repo.** `git rm -r -q --cached <old>`, `mv <old> .work-items`,
+  `wi --root .work-items init --no-track` (it adds `/.work-items/`, makes the store's repo
+  and commits the items), then commit the host's removal and the `.gitignore` line. The
+  history before the move stays in the host's `git log` (or a backup bundle); the store's
+  repo starts at the move. `init` refuses while the host still tracks paths under
+  `.work-items/`, so the `git rm --cached` comes first.
 
   **Other clones.** The move commit deletes the store's files from git, so every
   other clone that pulls it loses its working copy of the store. Do one of these:
@@ -335,32 +393,103 @@ two-store warning catches one). `<old>` is the old store path, `.claude-sandbox/
        just before the move commit (`<move>` is the move commit);
     2. `mv <old> .work-items`;
     3. `wi --root .work-items init --no-track`, which finds the `/.work-items/`
-       line already present and records `ignored`;
+       line already present, makes the store's repo and commits its items;
     4. `wi --root .work-items lint`.
 
-  From then on each clone's ignored store is its own: nothing syncs them. A clone
-  with uncommitted edits to tracked store files has its pull refused by git until
+  From then on each clone's store is its own, with its own history: nothing syncs them. A
+  clone with uncommitted edits to tracked store files has its pull refused by git until
   they are committed or stashed.
-- **Git-ignored → git-ignored.** `mv <old> .work-items`, then
-  `wi --root .work-items init --no-track` (it adds `/.work-items/` and records
-  `ignored`), then remove the old store's own ignore line from `.gitignore` if it
-  has one (`/.work/`) and commit that `.gitignore` change. Nothing else is in git.
+- **Git-ignored at an old location → its own repo.** `mv <old> .work-items`, then
+  `wi --root .work-items init --no-track`, then remove the old store's own ignore line from
+  `.gitignore` if it has one (`/.work/`) and commit that `.gitignore` change. Nothing else is
+  in git.
 - **Sidecar → root.** A store at `.claude-sandbox/work/` in a sidecar layout has
   its history in `.claude-sandbox/.git`. Copy it out (`cp -a .claude-sandbox/work
-  .work-items`), `wi --root .work-items init --track` or `--no-track`, then remove
-  it from the sidecar with a commit in the sidecar repo `.claude-sandbox/` (ask the
-  operator before committing there).
+  .work-items`), remove it from the sidecar with a commit in the sidecar repo
+  `.claude-sandbox/` (ask the operator before committing there; the sidecar keeps the old
+  history), then `wi --root .work-items init --no-track` (or `--track`, for a repo whose
+  operator wants the host to track it). `init` refuses while `.claude-sandbox/work/items/`
+  is still there.
+- **Tracked → tracked**, for a repo whose operator wants the host to track the store.
+  `git mv <old> .work-items`, then `wi --root .work-items init --track`, then commit.
 
 ## The store's own repo
 
 A store at `.work-items/` can be its own local git repo, with no remote: the repo around it
 (the host) ignores it, and the store's history is in `<root>/.git`.
 
+**Setting it up: `wi init --no-track`.** The git-ignored choice (`--no-track`, the menu's
+git-ignored, the no-terminal default) gives a store that is not at an old location its own
+repo, new or adopted, in this order:
+
+1. **Refusals**, exit 1, nothing written, after the ones every `init` makes (a linked
+   worktree, a symlink out of the repo, a sidecar layout):
+   - git does not say whether a repo is around the store;
+   - the store's `.git` is broken (below: the reason);
+   - an attribute file, a nested repo or gitlink, or a promisor config (below: the
+     reasons), in the store's files or, for a store with a `.git`, in its repo;
+   - the store's repo tracks a file outside the store's own paths, in its index or in the
+     commit `HEAD` names: "`<root>` is a git repo holding other files (`<first>`): refusing
+     to adopt it as a store repo";
+   - the store's own git config has `include.path` or an `includeIf.<condition>.path`, which
+     could set `core.hooksPath` over the `/dev/null` `init` writes, for a hand-run git;
+   - the store directory is itself a bare git directory ("a git directory, not a store");
+   - a store with no `.git` holds, at its top, anything but `items`, `archive`,
+     `README.md`, `store.yaml`, `.gitignore`, `.lock` and a write's `*.tmp*` file:
+     "`<root>` holds `<name>`, which is not a store file: refusing to give it its own repo",
+     since `git init` would make a repo of it all;
+   - the host tracks paths under the store: "the host repo at `<host>` tracks `<n>` path(s)
+     under `<rel>`: untrack them first" (§ Moving a store).
+
+   A store at the top of a repo with no repo around it and no `repo: own` recorded keeps the
+   repo-root refusal (§ Store tracking).
+2. **The store files**, as for any store: `items/`, `README.md`, the store's `.gitignore`.
+   From here to the first commit, `init` holds the store's lock (a 10 s wait, then exit 4).
+   When a `.git` came or went while it waited, the refusals run again first.
+3. **The host's ignore line, before any `git init`.** The host is asked from the store's
+   parent, and `check-ignore --no-index` runs from the host's top on `<rel>/items` and a new
+   item's path, so a store that is already its own repo is judged by the host, not by its
+   own repo. A rule from a file inside the store (its own `.gitignore` holding `items/` or
+   `*`) never counts: the host must ignore the store itself, or its `add -A` stages it. Outside
+   git: "not in a git repo: no .gitignore written", and set-up goes on. A failure here records
+   nothing and runs no `git init`, exit 1.
+4. **The repo.** A new one is `git init -q --template=`: the empty template installs no
+   sample hooks, and wins over `init.templateDir` and `GIT_TEMPLATE_DIR`; then
+   `symbolic-ref HEAD refs/heads/main`. An existing valid one is adopted as it is: its
+   history, branch and any remote are kept (`lint` names a remote). Both get the local
+   config `core.hooksPath=/dev/null` and `core.fsmonitor=false`, so a hand-run git there
+   (`references/store-safety.md` § Safe forms) runs no hook either. Then both keys are read
+   back as that hand-run git resolves them, with git run without the store runner's `-c`
+   pins (its ceiling and scrub kept); an include, an `includeIf` or a worktree config
+   (`extensions.worktreeConfig`) that sets either over the written value stops set-up:
+   "`<key>` resolves to `<value>` for a hand-run git there". A failure: exit 1,
+   `own repo not set up: <why>; tracking not recorded`; a rerun is safe.
+5. **The record**, `tracking: tracked` plus `repo: own`, once the repo is valid, so `repo:
+   own` always names a repo that was valid at `init`.
+6. **The first commit**, as `wi commit` makes one in an own store (its pathspec, deadline,
+   retries and identity fallback): `wi init: store created` for a new repo in a store with
+   no items, else `wi init: adopted <n> item(s)` (`1 item`, `2 items`). A failure prints `wi: WARNING store not committed: <why> (the
+   change is saved; `wi commit` commits it)`, and `init` still exits 0; `lint` then shows
+   the uncommitted notice.
+
+Every git call `init` makes, the host's reads included, runs without the caller's git
+steering: the runner's scrubbed names, `GIT_LITERAL_PATHSPECS` and `GIT_TEMPLATE_DIR` are
+dropped, so a host hook's `GIT_DIR` or `GIT_INDEX_FILE` never sends `init` into the host's
+repo. A rerun on an own store commits whatever is outstanding. At an old location (with
+`--allow-old-location`) the git-ignored choice makes a plain ignored
+store, recorded `ignored`, and says on stderr that an old location gets no repo of its own
+(move it: § Moving a store). With no git on `PATH` it
+makes the same plain store and warns `wi: WARNING git not found: <root> has no history of
+its own; run `wi init --no-track` again where git is available`, exit 0.
+
 **What is valid.** When `<root>/.git` exists, one git call decides it, `git rev-parse
 --path-format=absolute --is-bare-repository --git-dir --git-common-dir --show-toplevel`,
 run through the store runner (below) with a 2 s bound, before any lock is taken. The `.git`
 is valid when that call exits 0, the repo is not bare, its top is the store (real paths),
-and its git dir and common dir both lie inside the store. So a `.git` directory, a `.git`
+and its git dir and common dir both lie inside the store but in none of its own paths
+(`items`, `archive`, `README.md`, `store.yaml`, `.gitignore`: a git dir there would be
+committed with them, "`.git` points into the store's own path `<path>`"). So a `.git`
+directory, a `.git`
 file whose `gitdir:` lies inside the store, and a `.git` symlink to a place inside it are
 valid; a `.git` file or symlink pointing outside the store (a linked worktree of another
 repo, a submodule's git dir under the host's `.git/modules/`) is "broken: `.git` points
@@ -391,7 +520,8 @@ silent, `wi commit` exit 3), never as a store with no repo around it.
 
 **The store runner.** Every git call that acts in a store with its own `.git` (validation,
 the custody check's `check-ignore` and `ls-files`, `git config user.name` for the claimant,
-the checks below, and `wi commit` in an own store) goes through one runner. The host's own
+the checks below, `init`'s set-up and first commit, and `wi commit` in an own store) goes
+through one runner. The host's own
 reads (is the store ignored, does the host track it) use plain git, since they read the host.
 - argv: `git -c core.hooksPath=/dev/null -c core.fsmonitor=false -c commit.gpgSign=false
   -c core.autocrlf=false -c core.safecrlf=false -c gc.auto=0 -c maintenance.auto=false
@@ -433,9 +563,11 @@ promisor config read, attribute and pathspec listings, one `status`).
 | broken | `.git` present and not valid | problem | the reason; never `rm -rf` the `.git` unasked |
 | uncommitted | own; `git status --porcelain -z` on the own paths lists any | notice | `wi commit` |
 | stale `index.lock` | own; `<git-dir>/index.lock` older than 10 minutes | problem | remove it only when no git process runs in the store (never while a session works it) |
-| host does not ignore the store | own; the host's `check-ignore --no-index` on a new item's path exits 1 | problem | `wi init --no-track` (it adds the line) |
+| host does not ignore the store | own; the host's `check-ignore --no-index` from its top on `<rel>/items` and a new item's path names no rule from outside the store (the store's own `.gitignore` does not count) | problem | `wi init --no-track` (it adds the line) |
 | host tracks the store | own; `git -C <host> ls-files -s -- <rel>` lists a path (mode 160000 is a gitlink) | problem | `git -C <host> rm -r -q --cached -- <rel>` (the files stay on disk), then commit in the host |
 | a remote | own; `git remote` lists names | notice | names only, never URLs: a work-item store repo is meant to be local |
+| own, unrecorded | a valid `.git`, no `repo: own`, a repo around the store | notice | `wi init --no-track` adopts it, history kept |
+| no history | not at an old location, recorded `ignored`, no `.git`, git found | notice | `wi init --no-track` gives it its own local repo |
 | `repo:` not `own`, or more than one `repo:` line | — | problem | `wi init --no-track` rewrites it |
 | a `.git` in an old-location store | — | problem | move the store (§ Moving a store) |
 
@@ -905,7 +1037,8 @@ the Handoff's `next:` needs it. Never `cat` the items directory. Hand off with
 Item files may be tracked in git, now or later (an ignored store can become
 tracked), so the rule holds for every store: record **the path and the key, never
 the value**. Write `creds: clusterenv.yaml key DISCORD_WEBHOOK_BACKUPS`, not
-the webhook URL. `wi lint` flags PEM blocks, `KEY=value` assignments (bare,
+the webhook URL. In a store that is its own repo, every past text is in its history;
+rewriting that history is the operator's. `wi lint` flags PEM blocks, `KEY=value` assignments (bare,
 or after a bullet, date, tag, bold or other leading text, unless the key is
 glued to a word or follows a URL's `?` or `&`) and
 `token/secret/password/webhook`-style pairs that look like live values. It
