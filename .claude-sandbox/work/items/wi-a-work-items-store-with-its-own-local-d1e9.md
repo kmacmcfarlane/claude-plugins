@@ -14,8 +14,8 @@ refs:
 Answer 232 a (operator 2026-10-15; claude-sandbox 117 a, 118 a): every .work-items/ store gets its own local git repo with no remote; the host ignores /.work-items/. wi treats such a store as tracked, init sets the repo up, and wi commits each item change into it under its lock; a failed commit never loses the item write (save first, warn), with a fallback identity only when git var GIT_AUTHOR_IDENT fails; lint warns about git clean -ff near a store. Builds on 5f46.
 
 ## Handoff
-- doing: —
-- next: —
+- doing: F2 building (wi commit + sites); F1 on local main unpushed
+- next: F2 review; then F3, F5, F4 relays; one push
 - blocked: —
 - learned: —
 target: series .claude-sandbox/investigations/wi-a-work-items-store-with-its-own-local-d1e9/
@@ -63,3 +63,6 @@ note: 2026-10-15T06:26Z operator: checkpoint and compact as soon as this dev cyc
 verdict: CLEAR F1 round 2 at f91ae111 (22-case sweep silent; 50k-file store prime 147 ms; nit: no test pins the host ls-files fsmonitor pin — carried into F2's brief; nit: .GIT dir counted, no change)
 findings: carried — add a host core.fsmonitor marker to TestChecks.test_host_tracks_the_store and assert none after lint
 landed: F1 locally 6fb686d2 (Checks 12/12 OK); NOT pushed — F1 ships only with F2, F3, F5 (its fix texts name wi commit and init adoption)
+target: an agent worktree off main (eee4e1d2); wi.py commit verb, tests, and the dev-flow and context-guard store-commit sites (F2)
+dispatch: implementer opus high — d1e9 F2: wi commit and every store-commit site (same file and effort as F1: one tier for the whole build)
+agent: implementer ad0e653ee6fafc636 F2 round 1
