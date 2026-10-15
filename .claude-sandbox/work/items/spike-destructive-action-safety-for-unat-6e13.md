@@ -37,3 +37,4 @@ dispatch: planner opus high — resume, plan fix round 2
 agent: planner a17fe67421b5a97f3 round 3
 return: planner DONE (02_review-round-2.md; A-G applied; D chose drop G2; 233 stays as revised card (a) build / (c) guidance only; OQ1-OQ9 + b2df 233)
 dispatch: reviewer opus high — resume, plan review round 3
+agent: reviewer afdc46fe247e2b56b plan round 3
