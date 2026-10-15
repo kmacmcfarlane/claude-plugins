@@ -109,3 +109,4 @@ verdict: CLEAR F3 round 3 at 13c9f4ee (lows: caller GIT_CONFIG_COUNT/PARAMETERS 
 decided: finish round of exact leftovers (finding 1 scrub for the read-back, nit 3) — authority answer 145
 dispatch: implementer opus high — resume, F3 finish round
 agent: implementer a56d080820c81b88a F3 finish round
+review: self — finish round at 980558dc: exactly the two leftovers (command-scope config stripped for the pins=False read-back only; two lines rewrapped); test added; work-items 589 OK, kit-dev 21 OK
