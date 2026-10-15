@@ -31,7 +31,7 @@ ralph's one copy of the lookup; run it before either bridge command:
 
 ```bash
 MAIN=$(git rev-parse --path-format=absolute --git-common-dir 2>/dev/null) && MAIN=${MAIN%/.git} || MAIN=$PWD
-for d in "$MAIN/.claude-sandbox/work" "$MAIN/.work"; do test -d "$d/items" && { export WI_ROOT="$d"; break; }; done
+for d in "$MAIN/.work-items" "$MAIN/.claude-sandbox/work" "$MAIN/.work"; do test -d "$d/items" && { export WORK_ITEMS_ROOT="$d" WI_ROOT="$d"; break; }; done
 WI_PY=$(ls "$MAIN"/plugins/*/skills/work-items/scripts/wi.py 2>/dev/null | head -1)
 P="${CLAUDE_CONFIG_DIR:-$HOME/.claude}/plugins"
 IP="$(python3 -I - "$P/installed_plugins.json" work-items@kmacmcfarlane "$MAIN" 2>/dev/null <<'PY'
@@ -63,8 +63,12 @@ per install scope, so the read takes the entry that applies to this repo, never 
 listed: a `local` or `project` entry whose `projectPath` is the main checkout or a
 directory above it (the deepest, `local` before `project`), else the `user` entry; another
 project's install never answers. On `no wi found`, run neither command and say that the
-work items and `backlog.yaml` were not synced because `work-items` is not installed. No
-store (no `WI_ROOT` exported) means there is nothing to bridge.
+work items and `backlog.yaml` were not synced because `work-items` is not installed. The
+store is the first of `.work-items/`, `.claude-sandbox/work/` and `.work/` that holds
+`items/`, the order `wi` itself uses (the last two are old locations, still read). The loop
+exports both `WORK_ITEMS_ROOT` and the deprecated `WI_ROOT`, so an older installed `wi`
+finds the same store. No store (no `WORK_ITEMS_ROOT` exported) means there is nothing to
+bridge.
 
 The tool is canonical in the claude-sandbox repo (`scaffold-ralph/scripts/backlog/`) and is seeded into a project by `claude-sandbox init-ralph`. If `.claude-sandbox/scripts/backlog/backlog.py` is missing, run `claude-sandbox init-ralph` (idempotent — it only fills gaps).
 
