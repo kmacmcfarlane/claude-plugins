@@ -2749,6 +2749,121 @@ class TestPerChange(StoreRepoCase):
             with self.subTest(cmd=args[0]):
                 self.assertEqual(self.git_calls_of(store, *args), [])
 
+    # -- review round 1 ----------------------------------------------------
+
+    def evil_filter(self, store):
+        """A marker clean filter in the store's own config, selected by any
+        attribute file naming `filter=evil`."""
+        self.git(store, "config", "filter.evil.clean",
+                 str(self.marker("evil", passthrough=True)))
+
+    def test_export_into_the_store_is_refused(self):
+        store = self.make_own()
+        self.evil_filter(store)
+        (store / "items" / "one-aaaa.md").write_text(
+            ITEM.format(iid="one-aaaa") + "*.md filter=evil\n")
+        self.w(store, "commit", "-m", "desc")
+        before = self.log(store)
+        target = store / "items" / ".gitattributes"
+        for args in ((str(target),),
+                     (str(self.tmp / "out.yaml"), "--done-out", str(target))):
+            with self.subTest(args=args):
+                r = self.w(store, "export", *args, "--format", "backlog-yaml",
+                           code=1)
+                self.assertIn("lies inside the store", r.stderr)
+                self.assertIn("nothing written", r.stderr)
+                self.assertFalse(os.path.lexists(target))
+                self.assertFalse((self.tmp / "out.yaml").exists())
+        self.assertEqual(self.marked(), [])
+        self.assertEqual(self.log(store), before)
+        self.assertNotIn(".gitattributes", self.git(
+            store, "ls-files").stdout)
+        # control: the same attribute file does run the filter under git
+        target.write_text("*.md filter=evil\n")
+        item = store / "items" / "one-aaaa.md"
+        item.write_text(item.read_text() + "changed\n")
+        self.git(store, "add", "items/one-aaaa.md")
+        self.assertIn("evil", self.marked())
+
+    def test_journal_keeps_only_what_wi_writes(self):
+        store = self.make_own()
+        written = ["items/a.md", "items/.gitattributes", "items/.x.md",
+                   "items/sub/b.md", "items/c.md.tmp1", "archive/2026/d.md",
+                   "archive/d.md", "archive/2026/sub/e.md",
+                   "archive/26/f.md", "README.md", "store.yaml",
+                   ".gitignore", ".gitattributes", "items", "../out.md"]
+        with mock.patch.object(wi, "_JOURNAL",
+                               [store / p for p in written]):
+            self.assertEqual(wi._journal_paths(store),
+                             ["items/a.md", "archive/2026/d.md", "README.md",
+                              "store.yaml", ".gitignore"])
+
+    def test_attribute_file_appearing_after_validation(self):
+        """The walk runs again just before `add`: an attribute file planted
+        between validation and commit stops the commit, and no filter runs."""
+        store = self.make_own()
+        self.evil_filter(store)
+        real = wi.store_repo_state
+
+        def plant(root):
+            rs = real(root)
+            (Path(root) / "items" / ".gitattributes").write_text(
+                "*.md filter=evil\n")
+            return rs
+
+        before = self.log(store)
+        with mock.patch.object(wi, "store_repo_state", plant):
+            code, _, err = self.main(store, "note", "one-aaaa", "--", "x")
+        self.assertEqual(code, 0, err)
+        lines = [ln for ln in err.splitlines() if ln.startswith(NOT_COMMITTED)]
+        self.assertEqual(len(lines), 1, err)
+        self.assertIn("items/.gitattributes selects git attributes", lines[0])
+        self.assertEqual(self.marked(), [])
+        self.assertEqual(self.log(store), before)
+        self.assertIn(" x\n", (store / "items" / "one-aaaa.md").read_text())
+
+    def test_ignored_new_item_warns(self):
+        store = self.make_own()
+        excludes = self.tmp / "excludes"
+        excludes.write_text("*.md\n")
+        self.git(self.tmp, "config", "--global", "core.excludesFile",
+                 str(excludes))
+        before = self.log(store)
+        r = self.w(store, "add", "Ignored thing")
+        iid = r.stdout.split()[-1]
+        lines = [ln for ln in r.stderr.splitlines()
+                 if ln.startswith(NOT_COMMITTED)]
+        self.assertEqual(lines, [NOT_COMMITTED + f" items/{iid}.md ignored "
+                                 "by git (see `wi lint`) (the change is "
+                                 "saved; `wi commit` commits it)"])
+        self.assertEqual(self.log(store), before)
+        # a tracked item is still listed, so its change commits as before
+        self.step(store, ["note", "one-aaaa", "--", "x"],
+                  "wi note: one-aaaa", "items/one-aaaa.md")
+
+    def test_index_lock_reason_names_the_whole_path(self):
+        deep = self.tmp / ("d" * 100) / ("e" * 100)
+        deep.mkdir(parents=True)
+        host = self.make_host(name=f"{'d' * 100}/{'e' * 100}/host")
+        store = host / ".work-items"
+        self.store_files(store)
+        self.git(store, "init", "-q", "--template=")
+        self.git(store, "add", "-A")
+        self.git(store, "commit", "-q", "-m", "init")
+        lock = store / ".git" / "index.lock"
+        lock.write_text("")
+        self.assertGreater(len(f"fatal: Unable to create '{lock}': File "
+                               "exists."), 200)
+        r = self.w(store, "note", "one-aaaa", "--", "x")
+        lines = [ln for ln in r.stderr.splitlines()
+                 if ln.startswith(NOT_COMMITTED)]
+        self.assertEqual(lines, [NOT_COMMITTED + f" another git process "
+                                 f"holds {lock} (retried "
+                                 f"{wi.INDEX_LOCK_RETRIES} times; never "
+                                 "deleted) (the change is saved; `wi "
+                                 "commit` commits it)"])
+        self.assertTrue(lock.exists())
+
     def test_docs_name_the_warning_and_the_commands(self):
         """format.md owns the wording: its warning line is the one wi prints,
         and it lists every command whose lock commits; SKILL.md points at it."""

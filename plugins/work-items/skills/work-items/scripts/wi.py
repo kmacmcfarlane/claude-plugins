@@ -32,6 +32,7 @@ import subprocess
 import sys
 import tempfile
 import time
+import typing
 import unicodedata
 from datetime import datetime, timezone
 from pathlib import Path
@@ -1119,7 +1120,7 @@ PROBE_ITEM = "items/wi-custody-probe-0000.md"   # a new item's would-be path
 
 
 def _git(cwd, *args, stdin=None, timeout=GIT_TIMEOUT, extra_env=None,
-         scrub=()):
+         scrub=()) -> "subprocess.CompletedProcess[str] | None":
     """Run git; None when it is missing, the cwd is gone, or it times out.
     Output is decoded here, not by subprocess: -z output is raw bytes (no
     quotePath), and a non-UTF-8 path must neither crash nor depend on the
@@ -1136,7 +1137,7 @@ def _git(cwd, *args, stdin=None, timeout=GIT_TIMEOUT, extra_env=None,
                            capture_output=True, timeout=timeout)
         r.stdout = r.stdout.decode("utf-8", "backslashreplace")
         r.stderr = r.stderr.decode("utf-8", "backslashreplace")
-        return r
+        return typing.cast("subprocess.CompletedProcess[str]", r)
     except (OSError, ValueError, subprocess.SubprocessError):
         return None
 
@@ -1865,6 +1866,18 @@ def _index_lock_conflict(r):
             and "File exists" in r.stderr)
 
 
+def _failed_why(r):
+    """Why a commit step failed: for an index.lock conflict a reason of its
+    own, naming the lock file whole (git's line, cut to 200 characters,
+    could lose the cause behind a long store path); else _why."""
+    if not _index_lock_conflict(r):
+        return _why(r)
+    m = re.search(r"'([^']*index\.lock)'", r.stderr)
+    lock = m.group(1) if m else "the repo's index.lock"
+    return (f"another git process holds {lock} (retried "
+            f"{INDEX_LOCK_RETRIES} times; never deleted)")
+
+
 def _own_runner(root, rs):
     """`run(*args)` for an own store's commit: the hardened store runner,
     every call bounded by what is left of one shared deadline (d1e9 D4').
@@ -1937,20 +1950,22 @@ def _retrying(run, *args):
 
 
 def _commit_own_paths(root, run, message, ident=(), candidates=OWN_PATHS,
-                      sha=True):
+                      sha=True, listed=False):
     """Stage and commit the candidates git can match (d1e9 D4 steps 2-5,
     D4'): the store's own paths, or a write's journal (F5). `add -A`,
     `diff --cached --quiet`, `commit -- <paths>`, all on one pathspec, so a
     file staged by hand outside it stays staged and out of the commit. The
-    short sha (True with sha=False), or None when nothing changed. Raises
+    short sha (True with sha=False), or None when nothing changed. With
+    `listed`, the candidates already passed existing_paths. Raises
     CommitFailed."""
-    paths = existing_paths(root, candidates, git=run)
+    paths = (list(candidates) if listed
+             else existing_paths(root, candidates, git=run))
     if not paths:
         return None
     spec = ("--", *paths)
     r = _retrying(run, "add", "-A", *spec)
     if r.returncode != 0:
-        raise CommitFailed(_why(r))
+        raise CommitFailed(_failed_why(r))
     r = run("diff", "--cached", "--quiet", "--no-ext-diff", "--no-textconv",
             "--ignore-submodules=all", *spec)
     if r.returncode == 0:
@@ -1959,7 +1974,7 @@ def _commit_own_paths(root, run, message, ident=(), candidates=OWN_PATHS,
         raise CommitFailed(_why(r))
     r = _retrying(run, *ident, "commit", "-q", "-m", message, *spec)
     if r.returncode != 0:
-        raise CommitFailed(_why(r))
+        raise CommitFailed(_failed_why(r))
     if not sha:
         return True
     r = run("rev-parse", "--short", "HEAD")
@@ -1998,10 +2013,22 @@ def _not_own_why(rs):
     return rs.reason or "git did not answer"
 
 
+# what wi itself writes in a store: an item one level under items/, an
+# archived one under archive/<year>/, and the three store files. A name with
+# a leading dot is never an item, so a .gitattributes written there (an
+# export aimed into the store) is never committed (d1e9 F5 review)
+_JOURNAL_ITEM = re.compile(r"(items|archive/[0-9]{4})/[^/.][^/]*\.md")
+
+
+def _journal_own(rel):
+    return rel in OWN_PATH_FILES or bool(_JOURNAL_ITEM.fullmatch(rel))
+
+
 def _journal_paths(root):
-    """The journal's store-relative POSIX paths among the store's own paths,
-    in the order first written. A path is placed by its parent's real path,
-    so an archive source, gone from disk, still resolves."""
+    """The journal's store-relative POSIX paths that wi writes
+    (_journal_own), in the order first written. A path is placed by its
+    parent's real path, so an archive source, gone from disk, still
+    resolves."""
     real = os.path.realpath(root)
     out = []
     for p in _JOURNAL:
@@ -2010,7 +2037,7 @@ def _journal_paths(root):
         rel = os.path.relpath(full, real)
         if os.sep != "/":
             rel = rel.replace(os.sep, "/")
-        if _is_own_path(rel) and rel not in out:
+        if _journal_own(rel) and rel not in out:
             out.append(rel)
     return out
 
@@ -2044,10 +2071,26 @@ def _commit_journal(root, rs):
         if rs.state != "own":
             print(NOT_COMMITTED.format(_not_own_why(rs)), file=sys.stderr)
             return
+        # an attribute file or nested repo that appeared since validation
+        # would select a filter `add` runs: the same walk, again, no git
+        unsafe = _unsafe_walk(root)
+        if unsafe:
+            print(NOT_COMMITTED.format(unsafe), file=sys.stderr)
+            return
         run = _own_runner(root, rs)
-        _commit_own_paths(root, run, _journal_message(_COMMAND[0], rels),
-                          _fallback_ident(root, run), candidates=rels,
-                          sha=False)
+        kept = existing_paths(root, rels, git=run)
+        # a file wi wrote that git does not list is ignored by a rule (a
+        # global excludesFile `*.md`): say so, never drop it silently
+        ignored = [r for r in rels if r not in kept
+                   and os.path.lexists(os.path.join(root, r))]
+        if ignored:
+            print(NOT_COMMITTED.format(f"{', '.join(ignored)} ignored by git "
+                                       "(see `wi lint`)"), file=sys.stderr)
+        if kept:
+            _commit_own_paths(root, run,
+                              _journal_message(_COMMAND[0], kept),
+                              _fallback_ident(root, run), candidates=kept,
+                              sha=False, listed=True)
     except CommitFailed as e:
         print(NOT_COMMITTED.format(e), file=sys.stderr)
     except Exception as e:  # never fail a write that landed
@@ -4845,6 +4888,13 @@ def cmd_export(args):
     out = Path(args.path)
     done_out = Path(args.done_out) if args.done_out else \
         out.with_name(out.stem + "_done" + out.suffix)
+    store = os.path.realpath(root)
+    for p in (out, done_out):
+        # an output inside the store would land among its files: an item
+        # overwritten, or a .gitattributes whose filter git then runs
+        if _inside(os.path.realpath(p), store):
+            raise WiError(1, f"{p} lies inside the store {root}: export "
+                             "writes outside it; nothing written")
     with Lock(root):
         items = load_all(root, archived=True)
         by_id = {it.id: it for it in items}

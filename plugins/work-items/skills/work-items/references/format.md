@@ -599,13 +599,23 @@ What it does:
 - **Before the lock**, the store's repo is validated as above (What is valid, with the
   attribute, nested-repo and promisor checks), each git call bounded at 2 s. No git runs for
   validation while the lock is held.
-- **Only what the command wrote** is committed: the files it wrote under the store, among
-  the store's own paths, and for `archive` each moved item's source too, so the history
-  shows the move as a rename. The pathspec rule applies (Pathspecs, above): a source that
-  was never committed and is gone from disk drops out, and only its destination is
-  committed. A hand edit, a file staged by hand, or an earlier change whose commit failed
-  is never swept into a command's commit; it stays for `wi commit`, and `lint`'s
-  uncommitted notice counts it.
+- **Only what the command wrote** is committed, and only the shapes `wi` writes: an item
+  file one level under `items/` (`items/<name>.md`, no leading dot), an archived one
+  (`archive/<year>/<name>.md`), and `README.md`, `store.yaml` and `.gitignore`. For
+  `archive` each moved item's source is committed too, so the history shows the move as a
+  rename. The pathspec rule applies (Pathspecs, above): a source that was never committed
+  and is gone from disk drops out, and only its destination is committed. A file the
+  command wrote that git does not list (an ignore rule matches it, such as a global
+  excludes file holding `*.md`) is not committed, and gets the warning below with `<path>
+  ignored by git (see `wi lint`)`. A hand edit, a file staged by hand, or an earlier change
+  whose commit failed is never swept into a command's commit unless it is in a file the
+  command itself wrote: a hand edit, a failed commit's change, or a second session's edit
+  to the same item file goes into the next commit of that file. Any other stays for
+  `wi commit`, and `lint`'s uncommitted notice counts it.
+- **Just before `add`**, the store is walked again for an attribute file or a nested repo
+  (no git): one that appeared since validation would select a filter `add` runs, so the
+  commit is skipped with the warning below, naming it. `export` refuses an output path
+  inside the store, exit 1, nothing written.
 - **The steps** are `wi commit`'s in an own store (§ Committing the store): the identity
   fallback, `add -A`, `diff --cached --quiet` (no change: no commit), `commit -q -m`, with
   `index.lock` retried three times 0.2 s apart and never deleted, through the store runner,
@@ -619,10 +629,12 @@ What it does:
   saved; `wi commit` commits it)`, and leaves the command's exit code and stdout as they
   would be: a caller that saw a failure could retry a write that landed, and a `note`
   would then be appended twice. `<why>` is git's first error line (200 characters at
-  most), `timed out` (with the `index.lock` sentence when a call was killed), `git not
-  found`, `git did not answer`, or why the store's repo cannot take a commit (broken: the
-  reason; own, missing: "`repo: own` is recorded in store.yaml but there is no .git"; a
-  `.git` at an old location). Run `wi commit` once the cause is gone.
+  most), `another git process holds <git-dir>/index.lock (retried 3 times; never
+  deleted)` for an `index.lock` conflict, `timed out` (with the `index.lock` sentence when
+  a call was killed), `git not found`, `git did not answer`, or why the store's repo
+  cannot take a commit (broken: the reason; own, missing: "`repo: own` is recorded in
+  store.yaml but there is no .git"; a `.git` at an old location). Run `wi commit` once the
+  cause is gone.
 - **Cost.** A write in a store without `repo: own` adds one read of `store.yaml` and no git
   process. In an own store it adds about ten short git processes: four before the lock
   (validation, the host lookup, the promisor config read, the index listing), and under it
@@ -654,8 +666,9 @@ before the lock is taken.
 | own, missing; broken; a `.git` at an old location | Refuses with the reason `lint` gives. | 1 |
 
 - **Output.** `committed <short sha>`, or `nothing to commit`. A failure is one stderr line,
-  `wi: store <root> not committed: <why>`: git's first error line (200 characters at most),
-  or `timed out`, which for a killed git call adds "if `<git-dir>/index.lock` is left,
+  `wi: store <root> not committed: <why>`: git's first error line (200 characters at most);
+  for an `index.lock` conflict, `another git process holds <git-dir>/index.lock (retried 3
+  times; never deleted)`, which names the lock file whole; or `timed out`, which for a killed git call adds "if `<git-dir>/index.lock` is left,
   remove it only when no git process runs in the store" (for a tracked store, the git dir
   and the repo that holds it).
 - **The message** is the caller's (`chore: work-item store - …` stays as it is); without
