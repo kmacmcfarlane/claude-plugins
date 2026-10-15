@@ -69,3 +69,6 @@ agent: implementer ad0e653ee6fafc636 F2 round 1
 result: DONE F2 round 1 at 4324cdfd (wi commit; dev-flow and context-guard sites; carried host fsmonitor test; 536/105/762/21 OK; 21 mutations caught; departures: intensity-and-routing edit deferred to F5, gc --auto overrides gc.auto pin, recorded-ignored never committed, git missing exit 0, validation timeout exit 3)
 dispatch: reviewer opus high — fresh (rule 4), d1e9 F2 (security-sensitive)
 agent: reviewer add9a9ef6d85711e5 F2 round 1 at 4324cdfd
+verdict: NEEDS_CHANGES F2 round 1 at 4324cdfd (high: own store config runs commands via promisor lazy fetch (uploadpack/sshCommand) — GIT_NO_LAZY_FETCH=1 plus broken-store check; medium: wi commit exits 3 on an empty items/ (pathspec unmatched; breaks F3's first commit); lows: host lookup failure reads as dedicated, git missing exit 0 on an own store; nits: tracked path pathspec env scrub, index.lock note, SKILL row wording; departures 1,2,3,5 accepted)
+carry: F5's brief carries research intensity-and-routing.md's clause (departure 1)
+dispatch: implementer opus high — resume, F2 fix round 1
