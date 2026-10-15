@@ -1014,20 +1014,47 @@ def write_tracking(root, choice):
 def custody_warning(root):
     """One-line warning when the store is silently untracked, else None.
     Silent outside git, when git is missing or slow, or on any git error,
-    and for a store whose recorded choice is `ignored` (39a2)."""
+    and for a store whose recorded choice is `ignored` (39a2), except a
+    sidecar store, which lands in no repo when ignored (3c06)."""
     tracking = read_tracking(root)
+    sidecar = sandbox_shape(root)[0] == "sidecar"
     if tracking == "ignored":
-        return None
+        # 3c06: a sidecar's host ignores .claude-sandbox/ as a whole, so a
+        # store its own repo ignores too lands in no repo at all
+        return _sidecar_ignored_warning(root) if sidecar else None
     if tracking == "tracked":
         head = (f"wi: WARNING store {root} is silently untracked, against "
                 f"its recorded choice (tracking: tracked in {STORE_FILE}): ")
-        tail = "; or, if it is meant to stay local, run `wi init --no-track`"
+        tail = ("" if sidecar else
+                "; or, if it is meant to stay local, run `wi init --no-track`")
     else:
         head = f"wi: WARNING store {root} is silently untracked: "
-        tail = ("; then record the choice: `wi init --track`, or "
+        tail = ("; then record the choice: `wi init --track`" if sidecar else
+                "; then record the choice: `wi init --track`, or "
                 "`wi init --no-track` if it is meant to stay local")
     body = _custody_body(root)
     return None if body is None else head + body + tail
+
+
+SIDECAR_NO_REPO = ("a sidecar store (.claude-sandbox/ is its own git repo, "
+                   "which the host does not track)")
+
+
+def _sidecar_ignored_warning(root):
+    """The warning for a sidecar store recorded `ignored` (3c06). Raised on
+    the record alone; when git names the sidecar repo's rule, the fix names
+    it too, since `wi init --track` never edits a .gitignore."""
+    msg = (f"wi: WARNING {root} is {SIDECAR_NO_REPO}, recorded git-ignored "
+           f"(tracking: ignored in {STORE_FILE}), so new items land in no "
+           "repo; fix: `wi init --track`")
+    rule = _ignore_rule(root)
+    if rule:
+        src, lineno, pattern = rule
+        where = f"{src}:{lineno} '{pattern}'"
+        if not os.path.isabs(src):
+            where += " in the sidecar repo .claude-sandbox/"
+        msg += f", then remove the ignore line {where}"
+    return msg
 
 
 def _ignore_rule(root, *extra):
@@ -1543,26 +1570,43 @@ def _interactive():
     return sys.stdin.isatty() and sys.stdout.isatty()
 
 
-def choose_tracking(inp, out):
+def choose_tracking(inp, out, sidecar=False):
     """The init menu: 'tracked' or 'ignored'. Enter, or end of input, takes
-    the default, git-ignored."""
-    out.write("wi init: should git track this work-item store?\n"
-              "  1) tracked      items are committed with the repo\n"
-              "  2) git-ignored  items stay in this checkout only "
-              "[default]\n")
+    the default, git-ignored. In a sidecar layout (3c06) git-ignored is
+    refused, so tracked is the default and git-ignored is shown but not
+    taken: the menu never returns 'ignored' there."""
+    default = "tracked" if sidecar else "ignored"
+    if sidecar:
+        out.write("wi init: should git track this work-item store?\n"
+                  "  1) tracked      items are committed with the sidecar "
+                  "repo [default]\n"
+                  "  2) git-ignored  refused here: in a sidecar layout new "
+                  "items would land in no repo\n")
+    else:
+        out.write("wi init: should git track this work-item store?\n"
+                  "  1) tracked      items are committed with the repo\n"
+                  "  2) git-ignored  items stay in this checkout only "
+                  "[default]\n")
+    prompt = f"choose 1 or 2 [{1 if sidecar else 2}]: "
     while True:
-        out.write("choose 1 or 2 [2]: ")
+        out.write(prompt)
         out.flush()
         line = inp.readline()
         if not line:
             out.write("\n")
-            return "ignored"
+            return default
         answer = line.strip().lower()
+        if answer == "":
+            return default
         if answer in ("1", "t", "track", "tracked"):
             return "tracked"
-        if answer in ("", "2", "i", "ignore", "ignored", "g", "git-ignored",
+        if answer in ("2", "i", "ignore", "ignored", "g", "git-ignored",
                       "n", "no-track"):
-            return "ignored"
+            if not sidecar:
+                return "ignored"
+            out.write("git-ignored is refused in a sidecar layout; choose "
+                      "1, or Ctrl-C to stop\n")
+            continue
         out.write(f"not a choice: {line.strip()!r}\n")
 
 
@@ -1714,18 +1758,31 @@ def cmd_init(args):
         if existed:
             # an existing store with no recorded choice is left as it is:
             # an Enter or a missing terminal must not ignore a tracked store
+            # 3c06: a sidecar store cannot be ignored, so only --track
+            flags = ("`wi init --track`" if sandbox_shape(root)[0] == "sidecar"
+                     else "`wi init --track` or `wi init --no-track`")
             print(f"wi: note: {root} has no recorded tracking choice; record "
-                  "one with `wi init --track` or `wi init --no-track`",
-                  file=sys.stderr)
+                  f"one with {flags}", file=sys.stderr)
         elif _interactive():
             try:
-                choice = choose_tracking(sys.stdin, sys.stdout)
+                choice = choose_tracking(
+                    sys.stdin, sys.stdout,
+                    sidecar=sandbox_shape(root)[0] == "sidecar")
             except KeyboardInterrupt:
                 print("\nwi init: interrupted; nothing written",
                       file=sys.stderr)
                 return 130
         else:
             choice, defaulted = "ignored", True
+    if choice == "ignored" and sandbox_shape(root)[0] == "sidecar":
+        # 3c06: the host ignores a sidecar's .claude-sandbox/, so a store
+        # its own repo ignores lands in no repo; refuse first, as for the
+        # repo root below
+        how = (" (no terminal and no --track/--no-track picked git-ignored)"
+               if defaulted else "")
+        raise WiError(1, f"{root} is {SIDECAR_NO_REPO}: a git-ignored store "
+                         f"there lands in no repo{how}; nothing written (use "
+                         "`wi init --track`)")
     if choice == "ignored" and not existed:
         # a store at the repo root cannot be ignored, and its own *.tmp*
         # line would ignore files across the whole repo: refuse first
