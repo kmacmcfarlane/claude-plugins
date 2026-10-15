@@ -52,3 +52,7 @@ agent: implementer a00b3d4405bafe651 F1 round 1
 result: DONE F1 round 1 at 0582a34a (store_repo_state, _store_git with every pin incl. attr.tree, custody and claimant via the runner, F1 prime/lint rows; test_store_repo.py 52 tests, 11 mutations caught; work-items 467 OK, 2 skipped on git 2.39.5; departures: commit on an unmatched pathspec exits 1; attr.tree pin replaces the broken rule)
 dispatch: reviewer opus high — fresh (rule 4), d1e9 F1 (security-sensitive)
 agent: reviewer a399339a8327c6ba6 F1 round 1 at 0582a34a
+note: 2026-10-15T05:50Z a background commit security review flagged 'command-execution in wi.py' with no detail; forwarded to the F1 reviewer to sweep every subprocess path (config-driven execution: include.path, core.*, filter.*, diff.*, credential/ssh/askpass, editors; shell use)
+verdict: NEEDS_CHANGES F1 round 1 at 0582a34a (1 medium: git status recurses into a gitlink submodule and runs its clean filter from prime and lint; lows: ceiling with ':' in the parent path, GIT_*_PATHSPECS not scrubbed, read-only store lint traceback, case-insensitive attribute names; nit: prime wording; sweep: no shell, only two subprocess sites, host ls-files runs host fsmonitor (by spec; harden anyway); departures accepted, F1 never pushed without F2 and F3)
+dispatch: implementer opus high — resume, F1 fix round 1
+agent: implementer a00b3d4405bafe651 F1 round 2
