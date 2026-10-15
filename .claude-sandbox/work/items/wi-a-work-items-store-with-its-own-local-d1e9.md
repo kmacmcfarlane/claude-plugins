@@ -122,3 +122,4 @@ dispatch: implementer opus high — resume, F5 fix round 1
 agent: implementer aa14330e5be79d2bc F5 round 2
 result: DONE F5 round 2 at 66c64d59 (journal narrowed to wi shapes; export refuses inside the store; re-walk before add; ignored-item warning; index.lock reason; format.md wording; _git annotated; 616/107/762/21 OK; 23 mutants)
 dispatch: reviewer opus high — resume, F5 round 2
+agent: reviewer a7a477b3d31a6408e F5 round 2 at 66c64d59
