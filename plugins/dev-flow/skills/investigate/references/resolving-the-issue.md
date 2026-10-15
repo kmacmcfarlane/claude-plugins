@@ -6,11 +6,11 @@ file holds them in full.
 The argument is a problem description, a pointer to one, or absent.
 
 **A work-item reference** (an id like `etcd-alerting-3f9a`, or a title fragment, in a repo
-with a `.work/` or `.claude-sandbox/work/` store): resolve it with the `work-items` skill's
-CLI — `wi show <id>` for an id, `wi ls --plain` to match a fragment — and use the item's
-description and `## Handoff` block as the starting description. `wi claim` it once the
-investigation begins. With **no argument** in such a repo, offer `wi next --plain` (the
-ready-ranked queue) before falling back to the conversation.
+with a work-item store: `.work-items/`, or an old `.claude-sandbox/work/` or `.work/`):
+resolve it with the `work-items` skill's CLI — `wi show <id>` for an id, `wi ls --plain` to
+match a fragment — and use the item's description and `## Handoff` block as the starting
+description. `wi claim` it once the investigation begins. With **no argument** in such a repo,
+offer `wi next --plain` (the ready-ranked queue) before falling back to the conversation.
 
 `wi` is found by the `dev-cycle` skill's `references/bindings.md` § Store snippet, dev-flow's
 canonical copy of the lookup: the repo's own tree, else the installed plugin's copy; every `wi`

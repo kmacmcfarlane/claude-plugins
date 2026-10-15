@@ -56,7 +56,7 @@ Full diff:   git -C $WORKTREE diff <base>...HEAD
 
 <with a work item:>
 Item: <id> — <title>
-Store: export WI_ROOT=<absolute path of the store>
+Store: export WORK_ITEMS_ROOT=<absolute path of the store> WI_ROOT=<the same path>
 CLI:   WI="python3 <absolute path of wi.py, resolved per bindings.md § Store>"
 Read it in full first: $WI show <id>
 <without one:>

@@ -21,7 +21,7 @@ order given, and asks the user only where the table says so.
 | **Base** | The branch the worktree starts from and the merge lands on | Named by the item or plan (implement's recorded base, re-verified); otherwise the default branch, § Base |
 | **Model floor** | The lowest tier any role on this change may run; and its second pin kind, the **effort pin**: the lowest effort for planner and implementer dispatches (SKILL.md § Step 2 rule 8) | A `model: <tier>` line and/or an `effort: xhigh` line in the item body, or the invocation's own words ("at least opus", "at xhigh"); otherwise none |
 | **Record sink** | Where the run's record lines are appended (`record-lines.md`) | The item body when a store holds the target; otherwise always the scratchpad run record, `<scratchpad>/dev-cycle/<slug>/record.md`. Never a file in an investigation series: series files belong to `/implement` and are append-only. An item body is durable across sessions; **a scratchpad sink is session-scoped by contract**, so a store-less run's record cannot be read outside the session that wrote it (or one that inherits the same scratchpad) — Step 0's summary says so |
-| **Decision channel** | How a decision reaches a human, and the channel's **durability**: **durable** when the question outlives the session that raised it and a human answers it to whichever session reads it next (a caller's channel on a committed item), **ephemeral** when it exists only as a live prompt in this session. A caller states the durability with the channel; a channel supplied without it is a missing binding. A caller may also bind a **caller's stop** with it: what, besides § Decisions' guard, stops a round past the fourth review from opening unasked; none bound means none | AskUserQuestion, or § Decisions' numbered prose list for two or more or with an agent in flight — both **ephemeral**; written per the `operator-interaction:decisions` skill when the session lists it (§ Decisions) |
+| **Decision channel** | How a decision reaches a human, and the channel's **durability**: **durable** when the question outlives the session that raised it and a human answers it to whichever session reads it next (a caller's channel on an item in the store), **ephemeral** when it exists only as a live prompt in this session. A caller states the durability with the channel; a channel supplied without it is a missing binding. A caller may also bind a **caller's stop** with it: what, besides § Decisions' guard, stops a round past the fourth review from opening unasked; none bound means none | AskUserQuestion, or § Decisions' numbered prose list for two or more or with an agent in flight — both **ephemeral**; written per the `operator-interaction:decisions` skill when the session lists it (§ Decisions) |
 | **Terminal action** | What Land does with a `CLEAR`, checked branch | Asked once at Land, § Landing |
 | **Series home** | Where the plan phase writes an investigation series | `$MAIN/.claude-sandbox/investigations/<slug>/`, the canonical path `/implement` reads |
 
@@ -538,7 +538,7 @@ estimate is read again:
 - at or under the default: it is the amount (`plan <slug> estimate`);
 - over it, with an answered budget decision on the plan item — the item whose
   `target: plan` line ends in the series slug,
-  `grep -l "^target: plan .*/<series slug>/\?$" "$WI_ROOT"/items/*.md "$WI_ROOT"/archive/*/*.md`,
+  `grep -l "^target: plan .*/<series slug>/\?$" "$WORK_ITEMS_ROOT"/items/*.md "$WORK_ITEMS_ROOT"/archive/*/*.md`,
   else the build item: the amount the answer chose (`plan <slug> estimate (answer N)`;
   `default <kind>` for the default; another amount `answer N (was $<default>)`);
 - over it with no answer — a series written outside a dev-cycle plan run, a pending
@@ -589,7 +589,7 @@ The last line runs the reader only when a file was found: with none, every looku
 empty name, run whatever the working directory holds. `no reader found` is then the
 reason on the `cost:` line, word for word.
 
-The record sink file is the item's `$WI_ROOT/items/<id>.md`, or the scratchpad
+The record sink file is the item's `$WORK_ITEMS_ROOT/items/<id>.md`, or the scratchpad
 `record.md`. Phase spend is `phases.<phase>.usd` when that phase's `reading` is `read`.
 **No reading** is any of: no reader found; a reader too old (`item` exits 2 with an
 "invalid choice": an installed context-guard older than the reader — reason `reader too
@@ -688,10 +688,19 @@ housekeeping area.
 
 ## Store
 
-A work-item store is optional. Look in the main checkout for `.claude-sandbox/work/`, then
-`.work/`; the first that holds `items/` is the store. No store: the record sink is the scratchpad
-run record, and nothing is filed. Never run `wi init` from a
-cycle.
+A work-item store is optional. Look in the main checkout for `.work-items/`, then
+`.claude-sandbox/work/`, then `.work/` (the last two are old locations `wi` still finds); the
+first that holds `items/` is the store. No store: the record sink is the scratchpad run
+record, and nothing is filed. Never run `wi init` from a cycle.
+
+The snippet exports the store under both `WORK_ITEMS_ROOT` and the deprecated `WI_ROOT`, so an
+installed `wi` older than this copy still finds it; every later assignment of either name sets
+both. A step that commits the store follows one rule: the store's commit goes to the repo that
+holds it (`git -C "$WORK_ITEMS_ROOT"`); when that repo ignores the store (`git -C
+"$WORK_ITEMS_ROOT" check-ignore -q "$WORK_ITEMS_ROOT"` exits 0), skip this commit. Any exit
+other than 0 or 1 means the snippet was not run in this call: re-run it first. The store still
+outlives the session on this checkout, and any history it keeps lives in the store's own
+repository, never the host's.
 
 `wi` itself comes from the repo's own tree when it carries the `work-items` plugin, else
 from the installed plugin. This is dev-flow's canonical copy of the lookup: every dev-flow
@@ -703,7 +712,7 @@ to `wi`'s install path touches both:
 
 ```bash
 MAIN=$(git rev-parse --path-format=absolute --git-common-dir 2>/dev/null) && MAIN=${MAIN%/.git} || MAIN=$PWD
-for d in "$MAIN/.claude-sandbox/work" "$MAIN/.work"; do test -d "$d/items" && { export WI_ROOT="$d"; break; }; done
+for d in "$MAIN/.work-items" "$MAIN/.claude-sandbox/work" "$MAIN/.work"; do test -d "$d/items" && { export WORK_ITEMS_ROOT="$d" WI_ROOT="$d"; break; }; done
 WI_PY=$(ls "$MAIN"/plugins/*/skills/work-items/scripts/wi.py 2>/dev/null | head -1)
 P="${CLAUDE_CONFIG_DIR:-$HOME/.claude}/plugins"
 IP="$(python3 -I - "$P/installed_plugins.json" work-items@kmacmcfarlane "$MAIN" 2>/dev/null <<'PY'

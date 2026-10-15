@@ -19,13 +19,13 @@ steps 2 and 4, `rehydrate.md` § Step 3, `report.md`, `idle-turn.md` and
   after its Scope check `accepted <their id> for <our repo> <id>` or
   `declined for <our repo> <id>: <why>`; path and key, never a value. Then
   `$WI block <id> "forwarded to <peer>, awaiting accept"`. An id alone is not acceptance.
-- **Watched.** `accepted`, from `<peer>`: `$WI block <id> "watching <repo> <their id>"`.
-  It is in the owner's store now, so the owner's session ending does not land it back.
-  `landed` from `<peer>` closes ours: `$WI done <id> --note "landed: <repo> <their id>"`.
-  Where the owner's store sits beside ours (`$(dirname "$MAIN")/<repo>`, its
-  `.claude-sandbox/work` or `.work`), Rehydrate step 3 also reads it, read-only, with
-  `$WI --root <its store> show <their id> --brief`: `status: done` closes ours the same
-  way; `status: dropped` is a `dropped`.
+- **Watched.** `accepted`, from `<peer>`: `$WI block <id> "watching <repo> <their id>"`. It
+  is in the owner's store now, so the owner's session ending does not land it back. `landed`
+  from `<peer>` closes ours: `$WI done <id> --note "landed: <repo> <their id>"`. Where the
+  owner's store sits beside ours (`$(dirname "$MAIN")/<repo>`, its `.work-items`, else its
+  old `.claude-sandbox/work` or `.work`), Rehydrate step 3 also reads it, read-only, with
+  `$WI --root <its store> show <their id> --brief`: `status: done` closes ours the same way;
+  `status: dropped` is a `dropped`.
 - **Lands back** — re-block it `"operator: forward to <repo> <what happened>"`, a Groom
   row: at once on a decline, a `dropped`, any other reply from `<peer>`, or `<peer>` gone
   from ListAgents before it accepts; on silence, at our first reply, Report or Idle turn

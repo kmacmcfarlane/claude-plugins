@@ -456,7 +456,7 @@ reserve excludes its unit, in either arm (§ Below the quota reserve).
   § Store).
 
   ```bash
-  STORES=$($WI estate --json | python3 -I -c 'import json,sys; print("\n".join(r["path"] + "/" + r["store"] for r in json.load(sys.stdin)["repos"]))') || STORES=$WI_ROOT
+  STORES=$($WI estate --json | python3 -I -c 'import json,sys; print("\n".join(r["path"] + "/" + r["store"] for r in json.load(sys.stdin)["repos"]))') || STORES=$WORK_ITEMS_ROOT
   for s in $STORES; do
     grep -lx 'trial: xhigh-planner bump' "$s"/items/*.md             # the bump arm's lines...
     grep -l '^trial: xhigh-planner bump excluded' "$s"/items/*.md     # ...minus these

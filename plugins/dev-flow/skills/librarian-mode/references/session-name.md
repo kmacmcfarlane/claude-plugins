@@ -96,7 +96,7 @@ so a `"`, `$` or backtick in it reaches the store as typed, then use only `"$N"`
 N='<current name>'
 $WI add "keep session name: $N" -t chore -p 4 \
     --desc "Operator <date>, verbatim: '<their words>'." --ref "operator <date>"
-printf 'name kept: %s\n' "$N" >> "$WI_ROOT/items/<id>.md"
+printf 'name kept: %s\n' "$N" >> "$WORK_ITEMS_ROOT/items/<id>.md"
 $WI done <id> --note "operator kept the session name"
 ```
 
@@ -104,7 +104,7 @@ The gate's lookup, on a `mismatch` only, with `N` set the same way to the name t
 printed:
 
 ```bash
-grep -rqxF "name kept: $N" "$WI_ROOT" && echo kept   # kept → no gate
+grep -rqxF "name kept: $N" "$WORK_ITEMS_ROOT" && echo kept   # kept → no gate
 ```
 
 A decline covers the name it was given for: after a later `/rename` to anything but the

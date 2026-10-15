@@ -109,8 +109,8 @@ destination: <resolved path, and which rule fired>
 staging: <scratchpad>/research/<run>/   # where lanes, the verifier and the synthesis write
 status: PLANNING | RUNNING | VERIFYING | SYNTHESIZING | HELD | DONE | DONE_WITH_CONCERNS | BLOCKED
 item: <id> | none — <reason>   # the run's work item (intensity-and-routing.md § The work item)
-wi: python3 <absolute wi.py> --root <absolute WI_ROOT>   # only with an item
-item_file: <WI_ROOT>/items/<id>.md                      # only with an item
+wi: python3 <absolute wi.py> --root <absolute WORK_ITEMS_ROOT>   # only with an item
+item_file: <WORK_ITEMS_ROOT>/items/<id>.md                       # only with an item
 ---
 # 00 — Research brief: <question>
 
