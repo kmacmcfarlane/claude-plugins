@@ -60,6 +60,7 @@ a tracked old store beside the git-ignored `.work-items/`.
   archive/YYYY/<id>.md closed items moved by `wi archive` (explicit, batched)
   store.yaml           the store's recorded tracking choice (§ Store tracking)
   .lock                gitignored; flock target for same-machine mutations
+  .git/                the store's own repo, when it has one (§ The store's own repo)
 ```
 
 ## Store tracking
@@ -72,9 +73,29 @@ Whether git tracks the store is a choice `wi init` records in `<root>/store.yaml
 tracking: tracked
 ```
 
-`tracking:` is the one key, on a line of its own; `tracked` and `ignored` its values. `wi`
+`tracking:` is a key on a line of its own; `tracked` and `ignored` its values. `wi`
 reads the first `tracking:` line and ignores comment lines. Any other value counts as no
 recorded choice, and `wi lint` reports it, as it does more than one `tracking:` line.
+
+A second key, `repo: own`, says the store is its own git repo (`<root>/.git`), set up by
+`wi init`, which `wi` commits into; it goes with `tracking: tracked`, since git tracks the
+store there, in the store's own repo. `own` is its only value: any other value, or more than
+one `repo:` line, is a `wi lint` problem. A `wi` older than this key reads only `tracking:`,
+so it sees such a store as tracked. From the `.git` (an `lstat`, no git) and the record,
+a store is in one of these states (§ The store's own repo says what is valid):
+
+| State | `.git` | `repo: own` | `wi` commits there? |
+|---|---|---|---|
+| plain | absent | no | no |
+| own | valid | yes | yes |
+| own, unrecorded | valid, with a repo around the store | no | no |
+| dedicated | valid, no repo around the store (a store at the top of its own repo, `--track`) | no | no: it is tracked by the repo that holds it |
+| own, missing | absent | yes | no; a `lint` problem |
+| broken | present, not valid | either | no; a `lint` problem |
+
+Commits follow the record, never the `.git` alone: `wi` never starts committing into a repo
+no `init` set up. A `.git` in a store at an old location is never own: it is a `lint`
+problem, fixed by moving the store (§ Moving a store).
 
 - **Making the choice.** `wi init --track` or `wi init --no-track` (mutually exclusive).
   With neither, a terminal on stdin and stdout gets a two-line menu (tracked, git-ignored;
@@ -328,6 +349,78 @@ two-store warning catches one). `<old>` is the old store path, `.claude-sandbox/
   .work-items`), `wi --root .work-items init --track` or `--no-track`, then remove
   it from the sidecar with a commit in the sidecar repo `.claude-sandbox/` (ask the
   operator before committing there).
+
+## The store's own repo
+
+A store at `.work-items/` can be its own local git repo, with no remote: the repo around it
+(the host) ignores it, and the store's history is in `<root>/.git`.
+
+**What is valid.** When `<root>/.git` exists, one git call decides it, `git rev-parse
+--path-format=absolute --is-bare-repository --git-dir --git-common-dir --show-toplevel`,
+run through the store runner (below) with a 2 s bound, before any lock is taken. The `.git`
+is valid when that call exits 0, the repo is not bare, its top is the store (real paths),
+and its git dir and common dir both lie inside the store. So a `.git` directory, a `.git`
+file whose `gitdir:` lies inside the store, and a `.git` symlink to a place inside it are
+valid; a `.git` file or symlink pointing outside the store (a linked worktree of another
+repo, a submodule's git dir under the host's `.git/modules/`) is "broken: `.git` points
+outside the store", and so is a bare repository, and an empty or damaged `.git` (git's
+first error line). The runner's ceiling stops git from falling through to the host there.
+
+**Attribute files.** An own or own-unrecorded store that holds an attribute file is broken,
+with the reason "`<path>` selects git attributes (a filter there can run commands); remove
+it". `wi` writes none. It is found by a walk of the whole store (`.git` skipped) for any
+`.gitattributes`, by an `lstat` of `<git-dir>/info/attributes`, and by any `.gitattributes`
+the store's index lists, which counts even when it is gone from disk. A dedicated store keeps
+its attributes: its repo's rules are the user's.
+
+**The store runner.** Every git call that acts in a store with its own `.git` (validation,
+the custody check's `check-ignore` and `ls-files`, `git config user.name` for the claimant,
+and the checks below) goes through one runner. The host's own reads (is the store ignored,
+does the host track it) use plain git, since they read the host.
+- argv: `git -c core.hooksPath=/dev/null -c core.fsmonitor=false -c commit.gpgSign=false
+  -c core.autocrlf=false -c core.safecrlf=false -c gc.auto=0 -c maintenance.auto=false
+  -c core.attributesFile=/dev/null -c attr.tree=<the empty tree>`, then the arguments, as a
+  list, never through a shell. `/dev/null` can never hold a hook, wherever git looks; the
+  empty tree as `attr.tree` makes a git that reads that key take no attributes from any
+  tree.
+- cwd: the store. env: a copy without `GIT_DIR`, `GIT_WORK_TREE`, `GIT_INDEX_FILE`,
+  `GIT_OBJECT_DIRECTORY`, `GIT_ALTERNATE_OBJECT_DIRECTORIES`, `GIT_COMMON_DIR`,
+  `GIT_NAMESPACE`, `GIT_PREFIX` and `GIT_ATTR_SOURCE` (a host hook that calls `wi` has them
+  set to the host's), and with `GIT_CEILING_DIRECTORIES` the store's real parent,
+  `GIT_ATTR_NOSYSTEM=1`, `GIT_OPTIONAL_LOCKS=0`, `GIT_TERMINAL_PROMPT=0`, `LC_ALL=C`, and
+  `GIT_LITERAL_PATHSPECS=1` for every call but `check-ignore`, which refuses it.
+  `GIT_AUTHOR_*`, `GIT_COMMITTER_*`, `GIT_CONFIG_GLOBAL` and `GIT_CONFIG_NOSYSTEM` pass
+  through.
+- So no hook, fsmonitor, signing program, background gc or global or system attributes file
+  runs, and a clean filter can be selected only by a store attribute file, which makes the
+  store broken.
+
+**Pathspecs.** A store path goes into a git pathspec only when it exists on disk or the
+store's index lists it (a removal to stage): git fails on a pathspec that matches nothing.
+The store's own paths are `items`, `archive`, `README.md`, `store.yaml` and `.gitignore`.
+
+**What `prime` and `lint` report.** Problems are a `prime` header line and a `lint` problem
+(exit 3); notices are a `prime` header line and a `lint` stderr line, exit unchanged.
+`prime` shows at most one of these lines, the first in this order, and runs only the stat
+checks and one lock-free `git status`: no host or remote reads.
+
+| Check | When | Tier | Fix named |
+|---|---|---|---|
+| own, missing | `repo: own`, no `.git` | problem | restore the store's repo from a backup, or `wi init --no-track` to start new history |
+| broken | `.git` present and not valid | problem | the reason; never `rm -rf` the `.git` unasked |
+| uncommitted | own; `git status --porcelain -z` on the own paths lists any | notice | `wi commit` |
+| stale `index.lock` | own; `<git-dir>/index.lock` older than 10 minutes | problem | remove it only when no git process runs in the store (never while a session works it) |
+| host does not ignore the store | own; the host's `check-ignore --no-index` on a new item's path exits 1 | problem | `wi init --no-track` (it adds the line) |
+| host tracks the store | own; `git -C <host> ls-files -s -- <rel>` lists a path (mode 160000 is a gitlink) | problem | `git -C <host> rm -r -q --cached -- <rel>` (the files stay on disk), then commit in the host |
+| a remote | own; `git remote` lists names | notice | names only, never URLs: a work-item store repo is meant to be local |
+| `repo:` not `own`, or more than one `repo:` line | — | problem | `wi init --no-track` rewrites it |
+| a `.git` in an old-location store | — | problem | move the store (§ Moving a store) |
+
+`lint`'s uncommitted check takes the store's lock with a 2 s wait, so a write in flight is
+never reported; when the lock is busy it skips the check and says so on stderr. The custody
+check runs inside the store's own repo, where nothing is ignored unless the store's own
+`.gitignore` ignores `items/`, which it then names. Every check is silent when git is
+missing or slow.
 
 ## Editing fields: `wi set <id> <field> <value>`
 

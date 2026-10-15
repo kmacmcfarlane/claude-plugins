@@ -1154,6 +1154,8 @@ def _dir_level(pattern, root):
 # line) has no recorded choice.
 STORE_FILE = "store.yaml"
 TRACKING_CHOICES = ("tracked", "ignored")
+# d1e9: `repo: own` says the store is its own git repo and wi commits there
+REPO_OWN = "own"
 
 
 def read_tracking(root):
@@ -1162,19 +1164,32 @@ def read_tracking(root):
     return raw if raw in TRACKING_CHOICES else None
 
 
-def _store_tracking_values(root):
-    """Every tracking: value as written, in order, or None when there is no
-    readable store file."""
+def _store_key_values(root, key):
+    """Every `key:` value in store.yaml as written, in order, or None when
+    there is no readable store file. The file has two keys, `tracking:` and
+    `repo:` (d1e9); lines with other keys are skipped."""
     try:
         text = (root / STORE_FILE).read_text(encoding="utf-8")
     except (OSError, UnicodeDecodeError):
         return None
     values = []
     for line in text.splitlines():
-        m = re.match(r"^tracking:\s*(.*?)\s*$", line)
+        m = re.match(rf"^{key}:\s*(.*?)\s*$", line)
         if m:
             values.append(m.group(1).strip("\"'"))
     return values
+
+
+def _store_tracking_values(root):
+    """Every tracking: value as written, in order, or None when there is no
+    readable store file."""
+    return _store_key_values(root, "tracking")
+
+
+def read_repo_own(root):
+    """True when store.yaml records `repo: own` (its first `repo:` line):
+    the store is its own git repo, set up by `wi init` (d1e9)."""
+    return (_store_key_values(root, "repo") or [""])[0] == REPO_OWN
 
 
 def _store_tracking_raw(root):
@@ -1186,18 +1201,36 @@ def _store_tracking_raw(root):
     return values[0] if values else ""
 
 
-def write_tracking(root, choice):
+def write_tracking(root, choice, repo=None):
     atomic_write(root / STORE_FILE,
                  "# wi store settings; format: the work-items skill's "
                  "references/format.md\n"
-                 f"tracking: {choice}\n")
+                 f"tracking: {choice}\n"
+                 + (f"repo: {repo}\n" if repo else ""))
 
 
-def custody_warning(root):
+def _custody_git(root):
+    """The git runner custody uses for this store: the hardened store runner
+    (with custody's 2 s bound) when the store has a .git of its own, so its
+    config's fsmonitor and hooks never run (d1e9 D6'); else _git, which reads
+    the host or sidecar repo the user's own git runs anyway."""
+    if os.path.lexists(Path(root) / ".git"):
+        return lambda cwd, *args, stdin=None: _store_git(
+            cwd, *args, stdin=stdin, timeout=GIT_TIMEOUT)
+    return _git
+
+
+def custody_warning(root, repo_state=None):
     """One-line warning when the store is silently untracked, else None.
     Silent outside git, when git is missing or slow, or on any git error,
     and for a store whose recorded choice is `ignored` (39a2), except a
-    sidecar store, which lands in no repo when ignored (3c06)."""
+    sidecar store, which lands in no repo when ignored (3c06). Silent too for
+    a store whose own .git is broken: the store-repo check reports it."""
+    if os.path.lexists(Path(root) / ".git"):
+        if repo_state is None:
+            repo_state = store_repo_state(root)
+        if repo_state.state in ("broken", "unknown"):
+            return None
     tracking = read_tracking(root)
     sidecar = sandbox_shape(root)[0] == "sidecar"
     if tracking == "ignored":
@@ -1207,7 +1240,7 @@ def custody_warning(root):
     if tracking == "tracked":
         head = (f"wi: WARNING store {root} is silently untracked, against "
                 f"its recorded choice (tracking: tracked in {STORE_FILE}): ")
-        tail = ("" if sidecar else
+        tail = ("" if sidecar or read_repo_own(root) else
                 "; or, if it is meant to stay local, run `wi init --no-track`")
     else:
         head = f"wi: WARNING store {root} is silently untracked: "
@@ -1242,8 +1275,9 @@ def _sidecar_ignored_warning(root):
 def _ignore_rule(root, *extra):
     """The (source, line, pattern) of the rule that ignores a new item's
     path in the store, None when nothing does, False when git cannot say."""
-    r = _git(root, "check-ignore", "-v", "-z", *extra, "--stdin",
-             stdin=f"items\0{PROBE_ITEM}\0")
+    git = _git if extra else _custody_git(root)
+    r = git(root, "check-ignore", "-v", "-z", *extra, "--stdin",
+            stdin=f"items\0{PROBE_ITEM}\0")
     if r is None or r.returncode not in (0, 1):
         return False
     fields = r.stdout.split("\0")
@@ -1304,7 +1338,7 @@ def _custody_body(root):
     n = len(item_paths(root))
     if n < UNTRACKED_MIN_ITEMS:
         return None
-    r = _git(root, "ls-files", "--", ".")
+    r = _custody_git(root)(root, "ls-files", "--", ".")
     if r is None or r.returncode != 0 or r.stdout.strip():
         return None
     return f"it holds {n} items and git tracks none; fix: `git add` the store"
@@ -1332,6 +1366,315 @@ class Lock:
     def __exit__(self, *exc):
         fcntl.flock(self.fh, fcntl.LOCK_UN)
         self.fh.close()
+
+
+# d1e9: a store that is its own git repo (.work-items/.git), recorded
+# `repo: own` in store.yaml. Every git call that acts in such a store goes
+# through one hardened runner, so the store's config, the user's global
+# config, a host hook's environment and a damaged .git can neither run
+# commands nor send git into another repo. format.md § The store's own repo.
+EMPTY_TREE = "4b825dc642cb6eb9a060e54bf8d69288fbee4904"
+STORE_GIT_PINS = (
+    "-c", "core.hooksPath=/dev/null",      # no hook, wherever it sits
+    "-c", "core.fsmonitor=false",
+    "-c", "commit.gpgSign=false",
+    "-c", "core.autocrlf=false", "-c", "core.safecrlf=false",
+    "-c", "gc.auto=0", "-c", "maintenance.auto=false",
+    "-c", "core.attributesFile=/dev/null",  # no global attributes file
+    # a git that reads attr.tree takes attributes from that tree: pinned to
+    # the empty tree, a value in any config file selects nothing
+    "-c", f"attr.tree={EMPTY_TREE}",
+)
+# a host hook that calls wi has these set to the host's
+STORE_GIT_SCRUB = frozenset((
+    "GIT_DIR", "GIT_WORK_TREE", "GIT_INDEX_FILE", "GIT_OBJECT_DIRECTORY",
+    "GIT_ALTERNATE_OBJECT_DIRECTORIES", "GIT_COMMON_DIR", "GIT_NAMESPACE",
+    "GIT_PREFIX", "GIT_ATTR_SOURCE"))
+STORE_GIT_TIMEOUT = 10.0
+# the store's own paths: what wi writes, and all a store repo commits
+OWN_PATHS = ("items", "archive", "README.md", STORE_FILE, ".gitignore")
+STALE_INDEX_LOCK = 600   # seconds
+
+
+def _store_git(root, *args, timeout=STORE_GIT_TIMEOUT, stdin=None):
+    """Run git in a store with its own repo, hardened (d1e9 D2): the pins
+    above, cwd the store, GIT_CEILING_DIRECTORIES its real parent (a broken
+    .git never falls through to the host), the host's GIT_* scrubbed,
+    GIT_ATTR_NOSYSTEM, optional locks off, no prompt, LC_ALL=C, and literal
+    pathspecs for every call but check-ignore, which refuses them. Args are
+    a list, never a shell. None when git is missing or times out; output
+    decoded as _git does."""
+    real = os.path.realpath(root)
+    env = {k: v for k, v in os.environ.items() if k not in STORE_GIT_SCRUB}
+    env.update(GIT_CEILING_DIRECTORIES=os.path.dirname(real),
+               GIT_OPTIONAL_LOCKS="0", GIT_TERMINAL_PROMPT="0",
+               GIT_ATTR_NOSYSTEM="1", LC_ALL="C")
+    if args[:1] == ("check-ignore",):
+        env.pop("GIT_LITERAL_PATHSPECS", None)
+    else:
+        env["GIT_LITERAL_PATHSPECS"] = "1"
+    try:
+        r = subprocess.run(["git", *STORE_GIT_PINS, *args], cwd=real, env=env,
+                           input=None if stdin is None else stdin.encode(),
+                           capture_output=True, timeout=timeout)
+        r.stdout = r.stdout.decode("utf-8", "backslashreplace")
+        r.stderr = r.stderr.decode("utf-8", "backslashreplace")
+        return r
+    except (OSError, ValueError, subprocess.SubprocessError):
+        return None
+
+
+class StoreRepo:
+    """What a store's own .git is (d1e9 D1). state:
+    plain       no .git, no `repo: own`
+    own         a valid .git, `repo: own` recorded: wi commits there
+    unrecorded  a valid .git, no `repo: own`, a host repo around the store
+    dedicated   a valid .git, no `repo: own`, no host: a store at the top of
+                its own repo, tracked by it (`--track`); not wi's to commit
+    missing     `repo: own` recorded, no .git
+    broken      a .git that is not a valid store repo (reason says why)
+    old         a .git in an old-location store: never own
+    unknown     git missing or slow: every check stays silent"""
+
+    def __init__(self, state, reason=None, git_dir=None, common_dir=None,
+                 host=None):
+        self.state, self.reason = state, reason
+        self.git_dir, self.common_dir, self.host = git_dir, common_dir, host
+
+
+def _inside(path, base):
+    return path == base or path.startswith(base.rstrip(os.sep) + os.sep)
+
+
+def _validate_store_git(root):
+    """(git_dir, common_dir, reason): one hardened rev-parse with the 2 s
+    bound. reason is None when the .git is a valid repo of the store's own;
+    all three are None when git did not answer."""
+    r = _store_git(root, "rev-parse", "--path-format=absolute",
+                   "--is-bare-repository", "--git-dir", "--git-common-dir",
+                   "--show-toplevel", timeout=GIT_TIMEOUT)
+    if r is None:
+        return None, None, None
+    lines = r.stdout.splitlines()
+    if lines[:1] == ["true"]:
+        return None, None, ".git is a bare repository"
+    if r.returncode != 0 or len(lines) != 4:
+        first = (r.stderr.strip().splitlines() or ["git rev-parse failed"])[0]
+        return None, None, f".git is not a usable repository: {first[:200]}"
+    real = os.path.realpath(root)
+    git_dir, common, top = (os.path.realpath(ln) for ln in lines[1:])
+    for d in (git_dir, common):
+        if not _inside(d, real):
+            return None, None, f".git points outside the store ({d})"
+    if top != real:
+        return None, None, (f".git makes {top} the top of its repo, not the "
+                            "store")
+    return git_dir, common, None
+
+
+def _attribute_file(root, git_dir, common_dir):
+    """The first attribute file that would select git attributes in the
+    store's repo, store-relative, else None (d1e9 D1''): a .gitattributes
+    anywhere in the store (.git skipped), <git-dir>/info/attributes, or a
+    .gitattributes only the index holds. A filter it named could run."""
+    real = os.path.realpath(root)
+    for dirpath, dirs, files in os.walk(real):
+        dirs[:] = sorted(d for d in dirs if d != ".git")
+        if ".gitattributes" in files or ".gitattributes" in dirs:
+            return os.path.relpath(os.path.join(dirpath, ".gitattributes"),
+                                   real)
+    for d in dict.fromkeys((git_dir, common_dir)):
+        p = os.path.join(d, "info", "attributes")
+        if os.path.lexists(p):
+            return os.path.relpath(p, real)
+    r = _store_git(root, "ls-files", "-z", timeout=GIT_TIMEOUT)
+    if r is not None and r.returncode == 0:
+        for path in r.stdout.split("\0"):
+            if path.rsplit("/", 1)[-1] == ".gitattributes":
+                return path
+    return None
+
+
+def _host_repo(root):
+    """The top of the git repo around the store, asked from the store's real
+    parent, so a store that is its own repo still finds its host; None
+    outside git or when git cannot say. A host read: plain _git."""
+    parent = os.path.dirname(os.path.realpath(root))
+    r = _git(parent, "rev-parse", "--show-toplevel")
+    if r is None or r.returncode != 0 or not r.stdout.strip():
+        return None
+    return Path(r.stdout.strip())
+
+
+def store_repo_state(root):
+    """The store's StoreRepo (d1e9 D1). No git call for a store without
+    .git: one lstat and a read of store.yaml."""
+    has_git = os.path.lexists(Path(root) / ".git")
+    own = read_repo_own(root)
+    if has_git and old_location(root):
+        return StoreRepo("old")
+    if not has_git:
+        return StoreRepo("missing" if own else "plain")
+    git_dir, common, reason = _validate_store_git(root)
+    if reason:
+        return StoreRepo("broken", reason)
+    if git_dir is None:
+        return StoreRepo("unknown")
+    host = _host_repo(root)
+    if not own and host is None:
+        # a dedicated repo keeps its attributes: its rules are the user's
+        return StoreRepo("dedicated", git_dir=git_dir, common_dir=common)
+    attr = _attribute_file(root, git_dir, common)
+    if attr:
+        return StoreRepo("broken", f"{attr} selects git attributes (a filter "
+                         "there can run commands); remove it")
+    return StoreRepo("own" if own else "unrecorded", git_dir=git_dir,
+                     common_dir=common, host=host)
+
+
+def _kept_by_listing(candidates, listed):
+    """The candidates a git listing holds: a printed path equal to one, or
+    under it as a directory. `archive` is kept by archive/2026/x.md;
+    items/x.md is not kept by items/x.md.tmp1."""
+    return [c for c in candidates
+            if any(p == c or p.startswith(c + "/") for p in listed)]
+
+
+def existing_paths(root, candidates):
+    """The candidates that exist on disk, or that the store's index still
+    holds (a removal to stage), in order (d1e9 D4'). A pathspec naming
+    neither makes `add` and `commit` exit 128. One ls-files call, for the
+    candidates not on disk."""
+    on_disk = {c for c in candidates if os.path.lexists(Path(root) / c)}
+    rest = [c for c in candidates if c not in on_disk]
+    kept = set()
+    if rest:
+        r = _store_git(root, "ls-files", "-z", "--", *rest,
+                       timeout=GIT_TIMEOUT)
+        if r is not None and r.returncode == 0:
+            kept = set(_kept_by_listing(rest, r.stdout.split("\0")))
+    return [c for c in candidates if c in on_disk or c in kept]
+
+
+def _age(seconds):
+    seconds = int(seconds)
+    if seconds >= 3600:
+        return f"{seconds // 3600}h{seconds % 3600 // 60:02d}m"
+    return f"{seconds // 60}m"
+
+
+def _uncommitted(root):
+    """How many own paths `git status` lists in an own store; None when git
+    cannot say."""
+    paths = existing_paths(root, OWN_PATHS)
+    if not paths:
+        return 0
+    r = _store_git(root, "status", "--porcelain", "-z", "--", *paths,
+                   timeout=GIT_TIMEOUT)
+    if r is None or r.returncode != 0:
+        return None
+    # -z records are 'XY path'; a rename or copy is followed by its source
+    # as a bare record, which is not counted
+    n, recs = 0, iter(r.stdout.split("\0"))
+    for rec in recs:
+        if not rec:
+            continue
+        n += 1
+        if "R" in rec[:2] or "C" in rec[:2]:
+            next(recs, None)
+    return n
+
+
+def store_repo_checks(root, rs, full=True):
+    """The store-repo findings as (tier, line), in format.md's table order;
+    tier 'problem' or 'notice' (d1e9 D6). full=False is prime's set: the
+    stat checks and one lock-free status, no host or remote reads. With
+    full, the uncommitted check takes the store's lock with a 2 s wait, and
+    is skipped, said on stderr, when the lock is busy."""
+    out = []
+    if rs.state == "missing":
+        out.append(("problem", f"wi: WARNING store {root} records `repo: "
+                    f"own` in {STORE_FILE} but has no .git; fix: restore the "
+                    "store's repo from a backup (the work-items skill's "
+                    "references/store-safety.md § Backing up, when present), "
+                    "or run `wi init --no-track` to start new history"))
+    if rs.state == "broken":
+        out.append(("problem", f"wi: WARNING store {root} has a .git that is "
+                    f"not a usable store repo: {rs.reason}; wi commits "
+                    "nothing there (never `rm -rf` the .git unasked)"))
+    if rs.state == "own":
+        if full:
+            try:
+                with Lock(Path(root), timeout=2.0):
+                    n = _uncommitted(root)
+            except WiError:
+                n = None
+                print(f"wi: note: store {root} is locked by a write in "
+                      "progress: uncommitted check skipped", file=sys.stderr)
+        else:
+            n = _uncommitted(root)
+        if n:
+            out.append(("notice", f"wi: note: store {root} has {n} "
+                        "uncommitted path(s) in its own repo; fix: "
+                        "`wi commit`"))
+        lock = os.path.join(rs.git_dir, "index.lock")
+        try:
+            age = time.time() - os.lstat(lock).st_mtime
+        except OSError:
+            age = None
+        if age is not None and age > STALE_INDEX_LOCK:
+            out.append(("problem", f"wi: WARNING {lock} is {_age(age)} old; "
+                        "remove it only when no git process runs in the "
+                        "store (never while a session works it)"))
+        if full and rs.host is not None:
+            out.extend(_host_checks(root, rs.host))
+        if full:
+            r = _store_git(root, "remote", timeout=GIT_TIMEOUT)
+            names = (r.stdout.split() if r is not None and r.returncode == 0
+                     else [])
+            if names:
+                # names only: a URL can carry a password
+                out.append(("notice", f"wi: note: store {root}'s repo has a "
+                            f"remote ({', '.join(names)}); a work-item store "
+                            "repo is meant to be local (answer 232 a)"))
+    values = _store_key_values(root, "repo") or []
+    if len(values) > 1:
+        out.append(("problem", f"{root / STORE_FILE}: more than one repo: "
+                    "line; fix: `wi init --no-track` rewrites it with one"))
+    if values and values[0] != REPO_OWN:
+        out.append(("problem", f"{root / STORE_FILE}: repo must be "
+                    f"{REPO_OWN} (got '{values[0]}'); fix: `wi init "
+                    "--no-track` rewrites it"))
+    if rs.state == "old":
+        out.append(("problem", f"wi: WARNING store {root} holds a git repo "
+                    "at an old location; a store with its own repo lives at "
+                    f"{DEFAULT_STORE}/: move the store ({MOVING_A_STORE})"))
+    return out
+
+
+def _host_checks(root, host):
+    """An own store's host must ignore it and track nothing under it
+    (b2df F-R3). Host reads use _git: they read the host, as custody does."""
+    out = []
+    try:
+        rel = Path(os.path.realpath(root)).relative_to(
+            os.path.realpath(host)).as_posix()
+    except ValueError:
+        return out
+    r = _git(host, "check-ignore", "-q", "--no-index", f"{rel}/{PROBE_ITEM}")
+    if r is not None and r.returncode == 1:
+        out.append(("problem", f"wi: WARNING the repo at {host} does not "
+                    f"ignore store {root}, which is its own repo (the host "
+                    "would commit it as a gitlink); fix: `wi init "
+                    "--no-track` (it adds the line)"))
+    r = _git(host, "ls-files", "-s", "--", f":(literal){rel}")
+    if r is not None and r.returncode == 0 and r.stdout.strip():
+        n = len(r.stdout.splitlines())
+        out.append(("problem", f"wi: WARNING the repo at {host} tracks {n} "
+                    f"path(s) under {rel} (mode 160000 is a gitlink); fix: "
+                    f"`git -C {host} rm -r -q --cached -- {rel}` (the files "
+                    "stay on disk), then commit in the host"))
+    return out
 
 
 def read_raw(path):
@@ -2111,7 +2454,8 @@ def _git_user_name(root):
     """`git config user.name` as judged from the store's repo; None on any
     failure (no git, not a repo, unset, timeout)."""
     cwd = root if root is not None and Path(root).is_dir() else None
-    r = _git(cwd, "config", "user.name")
+    git = _custody_git(cwd) if cwd is not None else _git
+    r = git(cwd, "config", "user.name")
     if r is None or r.returncode != 0:
         return None
     return _owner_token(r.stdout.strip())
@@ -2820,8 +3164,12 @@ def cmd_prime(args):
     # are reserved from the budget, and they are inserted after trimming so
     # trimming never drops them. The two-store check runs however the root
     # was found (5f46).
-    header = [w for w in (custody_warning(root), two_store_warning(root))
-              if w] + env_notices() + location_notices(root)
+    # d1e9: at most one store-repo line, the first in table order; prime
+    # stays lock-free (stat checks and one status, no host or remote reads)
+    rs = store_repo_state(root)
+    repo_line = [line for _, line in store_repo_checks(root, rs, full=False)]
+    header = [w for w in (custody_warning(root, rs), two_store_warning(root))
+              if w] + repo_line[:1] + env_notices() + location_notices(root)
     reserved = sum(tokens(h) + 1 for h in header)
     spent = tokens(lines[0]) + reserved
 
@@ -4548,9 +4896,16 @@ def cmd_lint(args):
                         "`wi init --track` or `wi init --no-track`")
     # lint has no warning tier: every finding it prints is a problem, exit 3
     # 5f46: a second store under the same dir, however the root was found
-    for warning in (custody_warning(root), two_store_warning(root)):
+    rs = store_repo_state(root)
+    for warning in (custody_warning(root, rs), two_store_warning(root)):
         if warning:
             problems.append(warning)
+    # d1e9: the store-repo checks; a notice goes to stderr, exit unchanged
+    for tier, line in store_repo_checks(root, rs):
+        if tier == "problem":
+            problems.append(line)
+        else:
+            print(line, file=sys.stderr)
     for p in problems:
         print(p)
     if problems:
