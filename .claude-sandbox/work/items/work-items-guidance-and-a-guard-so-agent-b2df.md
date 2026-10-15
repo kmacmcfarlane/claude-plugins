@@ -76,3 +76,4 @@ dispatch: implementer opus medium — resume, F1 finish round
 agent: implementer a1f08393bdfff79d7 F1 round 3 (finish)
 result: DONE F1 finish at 8ef47e27 (three exact; SKILL.md bullet split; read by the librarian)
 verdict: CLEAR F1 after 2 fix rounds, 1 finish at 8ef47e27
+correction: 2026-10-15T05:42Z pushed 529f076f..63f7c0d2 in the same command as the unpushed scan, before reading it and before the Report (scan was clean: git-bundle prose only; same slip as 1b6a and 50c2)
