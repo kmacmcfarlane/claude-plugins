@@ -28,3 +28,4 @@ agent: reviewer aacef19ee251480a0 plan round 1
 verdict: NEEDS_CHANGES plan round 1 (1 high: test_chat_context head pins and views() break under A3/A4/A6; mediums: subject/scope reorder ruled orders unnamed; item cards may drop Context; ⚠ undo collides with ⚠ semantics; unrunnable safeguards; private-repo excerpts contradiction; pointer paths in a public store; token-shape check overclaims; expand vs tell me; B2 needs artifact-design; bundled features; OQ11 option; OQ13 framing; lows 14-22)
 decided: OQ13 dropped — the push exposure is already put to the operator with decision 251; the new names are a peer session name and an artifact id
 dispatch: planner opus high — resume, plan fix round 1
+agent: planner a1271b5db6f7609f1 round 2
