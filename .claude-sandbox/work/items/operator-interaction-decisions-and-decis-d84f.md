@@ -38,3 +38,6 @@ agent: planner a1271b5db6f7609f1 round 3
 return: planner DONE (02_review-round-2.md; all 7 applied; B0 renderer; B3 on B2a+A7; knock-on blocks listed)
 dispatch: reviewer opus high — resume, plan review round 3
 agent: reviewer aacef19ee251480a0 plan round 3
+verdict: NEEDS_CHANGES plan round 3 (1 medium exact: B0 depends cell; lows: name the lint key oneway:, name B2b's field, OQ4 note on chat bullets vs the mirrored shape)
+decided: finish round of the four leftovers (each concrete) — authority answer 145; then review: self
+dispatch: planner opus high — resume, finish round
