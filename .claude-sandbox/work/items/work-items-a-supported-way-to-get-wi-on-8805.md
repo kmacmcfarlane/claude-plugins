@@ -23,3 +23,5 @@ dispatch: planner opus high — plan: wi on PATH (docs check for plugin bin/ sup
 agent: planner aad36ca72d09d8143 plan round 1
 return: planner DONE (00_initial.md; plugin bin/wi launcher on the Bash tool PATH (plugins-reference § Standard layout); person: copy to ~/.local/bin/wi, resolves the install from installed_plugins.json; snippets get a command -v wi step; non-git init supported (format.md); OQ1-OQ4 incl. workspace dir became a git repo 2026-10-16 01:20)
 dispatch: reviewer opus high — plan review round 1 (fresh)
+agent: reviewer a7ab74622040b4c11 plan round 1
+note: asked claude-sandbox whether it made the workspace dir a git repo (OQ4); alert raised to the operator
