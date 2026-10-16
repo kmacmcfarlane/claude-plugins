@@ -36,3 +36,6 @@ agent: planner a1e112ecae0cf2d30 round 3
 return: planner DONE (02_review-round-2.md; 14-20 applied; scope now 38 items (4 filed, not started); OQ9 (d) strict split loses 10/38; shared-tag guard)
 dispatch: reviewer opus high — resume, plan review round 3
 agent: reviewer a03d55da9a00e63ad plan round 3
+verdict: NEEDS_CHANGES plan round 3 (14-20 fixed; recount 38 and 10-of-38 reproduce; 21 medium: out-of-scope merges never a row, header counts them (exact text given); 22-24 exact wording)
+decided: finish round of exact leftovers 21-24 (texts given by the reviewer) — authority answer 145
+dispatch: planner opus high — resume, finish round
