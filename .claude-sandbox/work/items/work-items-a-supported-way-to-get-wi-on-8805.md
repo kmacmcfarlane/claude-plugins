@@ -31,3 +31,4 @@ dispatch: planner opus high — resume, plan fix round 1
 agent: planner aad36ca72d09d8143 round 2
 return: planner DONE (01_review-round-1.md; all 14 applied, 10 in its first form; OQ1 now (a)-(d)+(z), blocks F1-F2; OQ4 closed)
 dispatch: reviewer opus high — resume, plan review round 2
+agent: reviewer a7ab74622040b4c11 plan round 2
