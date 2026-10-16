@@ -121,7 +121,7 @@ decision 257: 0a0e OQ6 — may the costly tier read conversation text — option
   (z) decide later — the costly tier waits
   rec: (a) · basis strong — chunked readers, harness-injected text dropped by a parser
   unknown: the real per-session cost (estimate $1.6-4)
-decision 258: 0a0e OQ8 — a counts line in the checkpoint manifest — options: (a) later, as a context-guard item | (b) no | (z) decide later
+decision 258: 0a0e OQ8 — a counts line in the checkpoint manifest — options: (a) later, as a context-guard item | (b) no | (z) decide later [recommended]
   raised: 2026-10-16T02:08Z
   what: whether checkpoints record done/in-flight/not-done counts
   why now: the spike plan cleared review; the build needs these
