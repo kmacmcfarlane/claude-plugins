@@ -29,3 +29,4 @@ dispatch: planner opus high — resume, plan fix round 1
 agent: planner a1e112ecae0cf2d30 round 2
 return: planner DONE (01_review-round-1.md; all 13 applied; home now a split with claude-analytics; OQ1-OQ9, OQ1/OQ3'/OQ9 block)
 dispatch: reviewer opus high — resume, plan review round 2
+agent: reviewer a03d55da9a00e63ad plan round 2
