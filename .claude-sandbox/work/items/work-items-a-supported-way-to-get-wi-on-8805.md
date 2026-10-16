@@ -26,3 +26,5 @@ dispatch: reviewer opus high — plan review round 1 (fresh)
 agent: reviewer a7ab74622040b4c11 plan round 1
 note: asked claude-sandbox whether it made the workspace dir a git repo (OQ4); alert raised to the operator
 peer: claude-sandbox 2026-10-16 — workspace .git is the operator's ("a new meta-repo on kmacmcfarlane's dir"); sidecar .claude-sandbox/.git and .gitignore lines are claude-sandbox layout on launch; it is raising the git clean -ffdx exposure with the operator. OQ3/OQ4 to be re-read against a deliberate workspace meta-repo.
+verdict: NEEDS_CHANGES plan round 1 (1 high: absolute-path guard untested, ./bin PATH binds a cwd wi.py; mediums: launcher tests not isolated from the real install, install form copies the first wi on PATH, F2 not landable without OQ1, OQ1 trade-off incomplete (scripts/ alternative, companion plugin, soft-edge reach), F3 misses the defaulted warning, README :89/:344/:686, workspace repo is the operator's (OQ3/OQ4); lows 9-14)
+dispatch: planner opus high — resume, plan fix round 1
