@@ -25,3 +25,6 @@ return: planner DONE (00_initial.md; 11 points mapped; reversals: point 2 (2026-
 note: OQ13 (private project names in the tracked item) — the store already carries many such names, pushed for weeks (kappa-*, sussex paths); claude-sandbox's part B history rewrite strips .claude-sandbox/ from all history. Not new exposure; told to the operator with decision 251.
 dispatch: reviewer opus high — plan review round 1 (fresh)
 agent: reviewer aacef19ee251480a0 plan round 1
+verdict: NEEDS_CHANGES plan round 1 (1 high: test_chat_context head pins and views() break under A3/A4/A6; mediums: subject/scope reorder ruled orders unnamed; item cards may drop Context; ⚠ undo collides with ⚠ semantics; unrunnable safeguards; private-repo excerpts contradiction; pointer paths in a public store; token-shape check overclaims; expand vs tell me; B2 needs artifact-design; bundled features; OQ11 option; OQ13 framing; lows 14-22)
+decided: OQ13 dropped — the push exposure is already put to the operator with decision 251; the new names are a peer session name and an artifact id
+dispatch: planner opus high — resume, plan fix round 1
