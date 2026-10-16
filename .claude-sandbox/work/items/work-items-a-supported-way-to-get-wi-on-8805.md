@@ -29,3 +29,5 @@ peer: claude-sandbox 2026-10-16 — workspace .git is the operator's ("a new met
 verdict: NEEDS_CHANGES plan round 1 (1 high: absolute-path guard untested, ./bin PATH binds a cwd wi.py; mediums: launcher tests not isolated from the real install, install form copies the first wi on PATH, F2 not landable without OQ1, OQ1 trade-off incomplete (scripts/ alternative, companion plugin, soft-edge reach), F3 misses the defaulted warning, README :89/:344/:686, workspace repo is the operator's (OQ3/OQ4); lows 9-14)
 dispatch: planner opus high — resume, plan fix round 1
 agent: planner aad36ca72d09d8143 round 2
+return: planner DONE (01_review-round-1.md; all 14 applied, 10 in its first form; OQ1 now (a)-(d)+(z), blocks F1-F2; OQ4 closed)
+dispatch: reviewer opus high — resume, plan review round 2
