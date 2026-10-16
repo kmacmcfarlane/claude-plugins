@@ -37,3 +37,4 @@ dispatch: planner opus high — resume, plan fix round 2
 agent: planner a1271b5db6f7609f1 round 3
 return: planner DONE (02_review-round-2.md; all 7 applied; B0 renderer; B3 on B2a+A7; knock-on blocks listed)
 dispatch: reviewer opus high — resume, plan review round 3
+agent: reviewer aacef19ee251480a0 plan round 3
