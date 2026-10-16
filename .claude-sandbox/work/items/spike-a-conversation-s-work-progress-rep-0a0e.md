@@ -27,3 +27,5 @@ verdict: NEEDS_CHANGES plan round 1 (3 high: ledger join misattributes swept sto
 decided: closing the five drifted items (05fbbb85) was librarian bookkeeping — merged, pushed and CLEAR, only the status write missed; class: record upkeep, authority: the land step; reported to the operator 2026-10-16 as done alone. OQ5 narrows to the land-step fix.
 dispatch: planner opus high — resume, plan fix round 1
 agent: planner a1e112ecae0cf2d30 round 2
+return: planner DONE (01_review-round-1.md; all 13 applied; home now a split with claude-analytics; OQ1-OQ9, OQ1/OQ3'/OQ9 block)
+dispatch: reviewer opus high — resume, plan review round 2
