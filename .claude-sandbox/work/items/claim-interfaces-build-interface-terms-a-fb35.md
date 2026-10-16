@@ -3,10 +3,11 @@ id: claim-interfaces-build-interface-terms-a-fb35
 title: "claim interfaces build: interface terms are a phase-2 part of the claim, approved at the design gate"
 short_display_name: claim interface terms at design gate
 type: feature
-status: todo
+status: done
 priority: 2
 created: 2026-10-14
-updated: 2026-10-14
+updated: 2026-10-16
+closed: 2026-10-16
 refs:
   - foundation-is-filling-a-claim-interfaces-8ee2
 ---
@@ -32,3 +33,7 @@ result: DONE round 2 at dea9e93f (M1 Step 2 drafting and G2 display; M2 terms de
 dispatch: reviewer opus high — resume, round 2
 agent: reviewer abaae5cdc3a4f6ace round 2 at dea9e93f
 verdict: CLEAR round 2 at dea9e93f (nit: the merge message names foundation only)
+landed: merged d171e2b7, on origin; closed 2026-10-16 (store drift found by 0a0e's plan: merged and pushed, never closed)
+
+## Notes
+- 2026-10-16 done

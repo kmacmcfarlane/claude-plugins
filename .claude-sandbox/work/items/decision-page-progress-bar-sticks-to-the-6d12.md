@@ -3,10 +3,11 @@ id: decision-page-progress-bar-sticks-to-the-6d12
 title: "decision-page: progress bar sticks to the top when scrolled past; page titled after the session name"
 short_display_name: sticky progress, session-name title
 type: feature
-status: todo
+status: done
 priority: 1
 created: 2026-10-14
-updated: 2026-10-14
+updated: 2026-10-16
+closed: 2026-10-16
 refs:
   - operator message 2026-10-14
 ---
@@ -34,3 +35,7 @@ result: DONE round 2 at 2646a1bf after merging main (0f4ba6eb); ResizeObserver l
 dispatch: reviewer opus high — resume, round 2
 agent: reviewer a67b6d52f6064e806 round 2 at 2646a1bf
 verdict: CLEAR round 2 at 2646a1bf (all eight fixes exact; guarded observer sound; merge clean)
+landed: merged 352641d7, on origin; closed 2026-10-16 (store drift found by 0a0e's plan: merged and pushed, never closed)
+
+## Notes
+- 2026-10-16 done

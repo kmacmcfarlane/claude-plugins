@@ -3,10 +3,11 @@ id: decisions-skill-chat-cards-and-blocks-sh-aa4e
 title: "decisions skill: chat cards and blocks show each option's effect, reach, undo and cost, with Effect across all options"
 short_display_name: per-option impact in chat cards
 type: feature
-status: todo
+status: done
 priority: 2
 created: 2026-10-14
-updated: 2026-10-14
+updated: 2026-10-16
+closed: 2026-10-16
 refs:
   - decision-page-tldr-first-levels-shaped-s-1e00
 ---
@@ -38,3 +39,7 @@ result: DONE merge at 64397fcb (main with 3769 merged; four conflicts resolved, 
 dispatch: reviewer opus high — resume, round 2
 agent: reviewer a0253b12d610cb762 round 2 at 64397fcb
 verdict: CLEAR round 2 at 64397fcb (nit: chat stricter than the page on a bare undo; no action)
+landed: merged d97ef4ed, on origin; closed 2026-10-16 (store drift found by 0a0e's plan: merged and pushed, never closed)
+
+## Notes
+- 2026-10-16 done

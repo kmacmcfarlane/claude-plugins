@@ -2,15 +2,14 @@
 id: usage-report-report-command-skill-doc-re-7e8f
 title: "usage-report: report command, skill doc, README catalog row"
 type: feature
-status: doing
+status: done
 priority: 2
 deps:
   - usage-report-transcript-parser-dedupe-pr-eff1
 parent: spike-analyze-claude-code-usage-across-c-e5a7
-owner: Kyle-McFarlane@2d49f8460283
-claimed: 2026-10-13T19:34Z
 created: 2026-09-16
-updated: 2026-10-13
+updated: 2026-10-16
+closed: 2026-10-16
 refs:
   - operator approval 2026-09-16
 ---
@@ -59,3 +58,5 @@ dispatch: implementer opus medium — resume, finish round
 agent: implementer ace9ac624032a18b2 round 2 (finish)
 result: DONE finish at 5469e412 (four exact; read by the librarian; usage-report 82 OK)
 verdict: CLEAR after 0 fix rounds, 1 finish at 5469e412
+landed: merged 3734b36b, on origin; closed 2026-10-16 (store drift found by 0a0e's plan: merged and pushed, never closed)
+- 2026-10-16 done
