@@ -33,3 +33,5 @@ agent: reviewer a03d55da9a00e63ad plan round 2
 verdict: NEEDS_CHANGES plan round 2 (1-13 fixed; new mediums: OQ9 (a) says claude-analytics reads sub-agent files but F1 reads them; OQ9 lacks a strict-split option, (z) cost understated, OQ3'/OQ7/OQ9 precedence; tags not unique (05bb, 81ae); Done table lost 'what landed'; lows: three untagged cells, scope rule wording, dropped/parked/grooming unmapped)
 dispatch: planner opus high — resume, plan fix round 2
 agent: planner a1e112ecae0cf2d30 round 3
+return: planner DONE (02_review-round-2.md; 14-20 applied; scope now 38 items (4 filed, not started); OQ9 (d) strict split loses 10/38; shared-tag guard)
+dispatch: reviewer opus high — resume, plan review round 3
