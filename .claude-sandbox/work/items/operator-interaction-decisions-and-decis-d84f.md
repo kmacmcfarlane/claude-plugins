@@ -31,3 +31,4 @@ dispatch: planner opus high — resume, plan fix round 1
 agent: planner a1271b5db6f7609f1 round 2
 return: planner DONE (01_review-round-1.md; all applied but 17a (line numbers right); subject in Context + per-item impact lines, scope on title; features split; OQ1-OQ12, OQ13 withdrawn)
 dispatch: reviewer opus high — resume, plan review round 2
+agent: reviewer aacef19ee251480a0 plan round 2
