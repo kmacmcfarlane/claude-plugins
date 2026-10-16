@@ -21,3 +21,5 @@ claude-sandbox relayed an operator report 2026-10-16: wi init in /home/rt/work/s
 note: outside a git repo, wi init is supported as built at d1e9 F3 (local main f77dab82, unpushed): the store reads as dedicated (no host), --no-track gives it its own repo, --track records tracked with no repo; the installed wi predates that, which the plan must check
 dispatch: planner opus high — plan: wi on PATH (docs check for plugin bin/ support), non-git init
 agent: planner aad36ca72d09d8143 plan round 1
+return: planner DONE (00_initial.md; plugin bin/wi launcher on the Bash tool PATH (plugins-reference § Standard layout); person: copy to ~/.local/bin/wi, resolves the install from installed_plugins.json; snippets get a command -v wi step; non-git init supported (format.md); OQ1-OQ4 incl. workspace dir became a git repo 2026-10-16 01:20)
+dispatch: reviewer opus high — plan review round 1 (fresh)
