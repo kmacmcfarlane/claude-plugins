@@ -24,3 +24,4 @@ agent: planner a1271b5db6f7609f1 plan round 1
 return: planner DONE (00_initial.md; 11 points mapped; reversals: point 2 (2026-10-06, answer 206), point 6 on the page (TLDR first 2026-10-09), point 10 narrows no-ids; attachments proposal drafted; features A1-A7, B1-B3, C1-C3; OQ1-OQ13)
 note: OQ13 (private project names in the tracked item) — the store already carries many such names, pushed for weeks (kappa-*, sussex paths); claude-sandbox's part B history rewrite strips .claude-sandbox/ from all history. Not new exposure; told to the operator with decision 251.
 dispatch: reviewer opus high — plan review round 1 (fresh)
+agent: reviewer aacef19ee251480a0 plan round 1
