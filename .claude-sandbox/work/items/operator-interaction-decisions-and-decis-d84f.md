@@ -34,3 +34,4 @@ dispatch: reviewer opus high — resume, plan review round 2
 agent: reviewer aacef19ee251480a0 plan round 2
 verdict: NEEDS_CHANGES plan round 2 (17a withdrawn; mediums: A4a breaks the Context one-line pin; per-item impact lines favour the fix; oneway refusal blanks old ⚠ pages; knock-on blocks between OQs; B2b-e need artifact-design; lows: group heading form, personal data from any source)
 dispatch: planner opus high — resume, plan fix round 2
+agent: planner a1271b5db6f7609f1 round 3
