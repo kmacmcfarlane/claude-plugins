@@ -22,3 +22,4 @@ dispatch: planner opus high — spike plan: progress report options by data cost
 agent: planner a1e112ecae0cf2d30 plan round 1
 return: planner DONE (00_initial.md; mock tables from this session; T1 store/git/ledger <1s but measurably wrong; T2 script joins record lines, scope by session agent ids, reasons + owners, spend; T3 transcript reads $2-6/session; home: new dev-flow skill progress-report; OQ1-OQ8; found store drift: 3769 6d12 fb35 aa4e 7e8f merged and pushed but open; 8/25 landed: lines; 215 answered not acted)
 dispatch: reviewer opus high — plan review round 1 (fresh)
+agent: reviewer a03d55da9a00e63ad plan round 1
