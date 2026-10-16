@@ -29,3 +29,5 @@ verdict: NEEDS_CHANGES plan round 1 (1 high: test_chat_context head pins and vie
 decided: OQ13 dropped — the push exposure is already put to the operator with decision 251; the new names are a peer session name and an artifact id
 dispatch: planner opus high — resume, plan fix round 1
 agent: planner a1271b5db6f7609f1 round 2
+return: planner DONE (01_review-round-1.md; all applied but 17a (line numbers right); subject in Context + per-item impact lines, scope on title; features split; OQ1-OQ12, OQ13 withdrawn)
+dispatch: reviewer opus high — resume, plan review round 2
