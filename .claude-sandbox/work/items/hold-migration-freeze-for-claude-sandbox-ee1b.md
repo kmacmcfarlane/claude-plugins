@@ -19,3 +19,4 @@ Operator 2026-10-19, verbatim: "once the planner completes, we need to freeze an
 - next: —
 - blocked: —
 - learned: —
+freeze: in force from 2026-10-19T17:53Z, after 8805's planner returned; claude-sandbox told

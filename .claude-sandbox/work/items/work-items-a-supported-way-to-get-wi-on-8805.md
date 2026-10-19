@@ -35,3 +35,5 @@ agent: reviewer a7ab74622040b4c11 plan round 2
 verdict: NEEDS_CHANGES plan round 2 (1-14 closed; R2-1 medium: the bare-wi rule contradicts 27 files and the checkpoint's fenced bare wi, and sits where authors don't read it — fix the two checkpoint blocks, put the rule in CLAUDE.md § Conventions; R2-2 medium exact: relative installPath test vacuous; lows R2-3..R2-8)
 dispatch: planner opus high — resume, plan fix round 2
 agent: planner aad36ca72d09d8143 round 3
+return: planner DONE (02_review-round-2.md; R2-1..R2-8 applied; rule in CLAUDE.md § Conventions + kit-dev test_fenced_wi.py; OQ1 (a) premise for the operator to confirm)
+next: plan review round 3 — after the wave 1 freeze lifts (hold ee1b)
