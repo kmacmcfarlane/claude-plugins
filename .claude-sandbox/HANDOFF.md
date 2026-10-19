@@ -1,69 +1,61 @@
 ---
 handoff: 4
 repo: claude-plugins
-session: a1a4c97c-600f-424d-99f5-cd70cb575f79
-written: <stamped>
-head: <stamped>
+session: e9bb00fc-c89f-4c8e-a7ca-b4c1e9ccbc73
+written: 2026-09-23T00:15:53Z
+head: 84a9d8c
 branch: main
-mode: handoff
+mode: continue
 by: checkpoint
 mode_skill: /dev-flow:librarian-mode start
 items:
-  - context-guard-the-manifest-read-path-tak-0836
-  - librarian-mode-codify-the-accepted-team-1f7f
-  - context-guard-8cc2-f3b-where-handoff-md-a49b
-  - dev-cycle-design-resume-whole-split-from-e770
+  - read-list-accept-t-headings-say-so-when-c121
+  - context-guard-correct-the-1-4-compaction-8519
+  - context-guard-tests-testlegacyarmmatches-ba8f
+  - librarian-f2-idle-turn-modes-concurrency-c79e
   - librarian-work-unblocked-items-and-pre-i-1222
-  - librarian-loop-use-claude-code-s-native-8ab6
-  - context-guard-compact-and-clear-handoffs-5039
+top: /home/rt/work/src/github.com/kmacmcfarlane/claude-plugins
 ---
 ## Holds
-- HOLD nothing is pushed but fast-forward main; a rejection is merged through per librarian-mode § Push rejected — why: operator rule — until: standing
-- HOLD decisions 64, 65, 66 and 67 are the operator's — why: 65 blocks F3b-5, 67 blocks 1f7f; 64 and 66 block nothing — until: answered
+None. (Operator rule, standing: push only fast-forward main.)
 
 ## In flight
-None. Every agent this session dispatched has returned, every worktree is removed, and every
-branch is merged or deleted.
+- c121 reviewer a63655af1d1d84f24 round 2 at db28bed (worktree .claude/worktrees/read-list-accept-t-headings-say-so-when-c121); implementer a700b6bf753d6f0b8 for a fix round.
+- 8519 reviewer a0a81a13103b14bc3 round 2 at 95cba7f (worktree .claude/worktrees/context-guard-correct-the-1-4-compaction-8519); implementer a94723f9f73124a7c.
+- ba8f implementer afaf2a529d1566917 round 1, no return yet (worktree .claude/worktrees/context-guard-tests-testlegacyarmmatches-ba8f); on return dispatch an opus reviewer.
+Each item body carries its dispatch:/agent: record lines; resume per the dev-cycle skill's references/resume.md.
 
 ## Goal
-mode: handoff — the session reached its context limit with the queue live. Resume the librarian
-and keep working the queue; report the weekly burn rate, do not enforce a cap.
+Operator 2026-09-22: "create a plan to work through the rest of the work items. Use your new approach to mind the quota and see how much you can get done without overrunning the reserve. Then work on the items in turn continuously." Continue the queue under the quota rule recorded in item 1222 ("Queue plan under the quota meter": hard stop weekly 85 / 5h 75, soft checkpoint weekly 64, meter each wave).
 
-## Read in full
-- .claude-sandbox/work/items/context-guard-the-manifest-read-path-tak-0836.md — the confirmed
-  P1 against landed code; dispatch it first.
-- .claude-sandbox/work/items/context-guard-8cc2-f3b-where-handoff-md-a49b.md — the plan of record
-  (serials 04-08), five plan-review rounds, and what F3b-3's and F3b-4's briefs must carry.
-- .claude-sandbox/work/items/dev-cycle-design-resume-whole-split-from-e770.md — the plan of record
-  (serials 00-04); F1 landed, F2 is next.
-- ~/.claude/claude-kit/ledger/a1a4c97c-600f-424d-99f5-cd70cb575f79.md — this session's decisions.
+## Doing
+- Landing the three in flight above, then the next wave from the 1222 handoff next line.
+- c79e (librarian F2 idle modes) is BLOCKED on decisions 68, 69, 70 (plan at the 4-round review cap; series .claude-sandbox/investigations/1222-unattended-librarian/ 00-04; review notes in its reviews/).
 
-## Copy forward
-- /home/rt/.claude/tmp/claude-1000/-home-rt-work-src-github-com-kmacmcfarlane-claude-plugins/a1a4c97c-600f-424d-99f5-cd70cb575f79/scratchpad/common-brief.md — the dispatch brief template
-- /home/rt/.claude/tmp/claude-1000/-home-rt-work-src-github-com-kmacmcfarlane-claude-plugins/a1a4c97c-600f-424d-99f5-cd70cb575f79/scratchpad/common-review.md — the review brief template
+## Decisions and why
+- Every item runs dev-cycle: sonnet only for doc-only/one-file items with no signal; opus for scripts/, hooks, >1 plugin, doctrine; reviewer floor opus; fable only for security/gating code (0836 was fable).
+- Scope widened by the librarian when a fix could not land alone (F2 durable binding; bb7e/cd09 soft-dependency declarations; F3b-4 mark-step install).
+- One-line typo/path fixes applied directly under the librarian bypass (d22b, F4 wording, 26b0 pointer).
+- Brief templates: scratchpad common-brief.md / common-review.md (see Copy forward).
 
 ## Aware of
-- LANDED and pushed today, sixteen changes: 9882, d182, 220b, 5126, 5ef7, 2edb, 7117, a934, 25fa,
-  426a, 5039 H1-H6, 3adc, e770 F1, F3b-1, F3b-2. Origin is at 273be71.
-- CORRECTION 0836 is a hole in code that has LANDED: a symlink at <store>/<sid>/HANDOFF.md makes
-  resolve_manifest return kind "own" with a peer's body, injected in full. Confirmed by probe.
-  mark_checkpoint's own_store_manifest is the ready-made fix and test. Dispatch it first.
-- DECIDED operator answers 46-63 are in the items. 64, 65, 66 and 67 are open.
-- CORRECTION a landing runs `git merge-tree` first and checks MERGE_HEAD after; a script that ran
-  past a conflict left a half-done merge on main once (aborted clean, nothing committed).
-- CORRECTION a fail-first `git checkout <ref> -- <path>` wipes uncommitted edits; three
-  implementers lost work that way, and the brief template now warns.
-- F3b-4's brief carries: checkpoint SKILL.md:213 (four machine fields where handoff-format says
-  five), operator-playbook.md:154 ("run from the repo"), handoff_path.py's argv contract.
-- F3b-3's brief carries: the four plan-delta lows, plus F3b-1's trim-budget low (the notice
-  subtracted from the budget costs protected content in trim's extreme regime).
-- e770 F3's brief carries: the § Record line shapes move into references/record.md with the
-  reviewer's three riders, and fix-loop.md's "paste none" sentence.
-- UNVERIFIED whether an agent can arm /loop itself, and whether a dynamic loop survives compaction.
+- Meter at checkpoint: weekly 47% (~3.3 pts/h), 5h ~2%, resets weekly in ~130 h. Soft checkpoint at 64 not reached.
+- Decisions pending: 68 (c79e cap ruling), 69 (B1 /loop probe), 70 (B2 enforce the pool). Nothing else awaits the operator.
+- Known false red: context-guard TestLegacyArmMatchesMain fails in worktrees cut before a context-guard change lands (ba8f fixes it); passes on main.
+- One flaky context-guard failure was seen once under heavy CPU load (f381 review) — watch.
+- wi claimant is now Kyle-McFarlane@<container> (59ce); old unknown@<host> claims need --steal to re-claim.
+- The installed context-guard plugin (aa54bffb43a3) predates F3b-4: this checkpoint used the old repo-file path. After /plugin marketplace update + /reload-plugins the store path applies.
+
+## Read in full
+- .claude-sandbox/work/items/librarian-work-unblocked-items-and-pre-i-1222.md — the queue plan and next wave
+- .claude-sandbox/work/items/librarian-f2-idle-turn-modes-concurrency-c79e.md — decisions 68-70
+- ~/.claude/claude-kit/ledger/e9bb00fc-c89f-4c8e-a7ca-b4c1e9ccbc73.md — this session's decisions
+
+## Copy forward
+- /home/rt/.claude/tmp/claude-1000/-home-rt-work-src-github-com-kmacmcfarlane-claude-plugins/e9bb00fc-c89f-4c8e-a7ca-b4c1e9ccbc73/scratchpad/common-brief.md — the dispatch brief template (retarget its scratchpad path)
+- /home/rt/.claude/tmp/claude-1000/-home-rt-work-src-github-com-kmacmcfarlane-claude-plugins/e9bb00fc-c89f-4c8e-a7ca-b4c1e9ccbc73/scratchpad/common-review.md — the review brief template
 
 ## Next
-1. Dispatch 0836 first (P1, confirmed, against landed code; fable signal, opus fallback).
-2. Then F3b-4, then F3b-3, then F3b-5 on decision 65.
-3. Then e770 F2, F3, F4 in order.
-4. Then 1f7f on decision 67, the H7 spike, caef (fable), the 8ab6 loop items, 0599, ee7b, 8e14
-   and the review-low follow-ups.
+1. Resume the three in flight by id (SendMessage); land each on CLEAR (merge-tree first, check on main, push).
+2. Then the 1222 next wave: wi.py serial (9197, 0aaa, fc04, 8e14, 6f1c), 3c4f, 87fd, 6641, 0d6b (fable), caef (fable), 8ab6 items, 0599, ee7b, 09f1, 3460, d05d, bfd6, b8d6, 5a18, 0900.
+3. On answers 68-70: c79e per the item's handoff next line.

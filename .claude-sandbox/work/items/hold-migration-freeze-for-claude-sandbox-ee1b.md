@@ -20,3 +20,4 @@ Operator 2026-10-19, verbatim: "once the planner completes, we need to freeze an
 - blocked: —
 - learned: —
 freeze: in force from 2026-10-19T17:53Z, after 8805's planner returned; claude-sandbox told
+answer 271: a (operator, chat, 2026-10-19, verbatim: "271a go") — prune merged worktrees, run part A (G0..A9 + store guard), report; part B deferred
