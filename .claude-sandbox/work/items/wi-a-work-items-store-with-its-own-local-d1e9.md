@@ -129,3 +129,4 @@ landed: F5 locally f77dab82 (Checks 12/12 OK); F1-F5 all on local main; pre-push
 follow-up: re-walk before add also checks <git-dir>/info/attributes (F5 review nit 1)
 decision 251: push local main (d1e9 F1-F5 and 66 commits) to origin now? — options: (a) push now: ships the nested store repo, lifts claude-sandbox's no-nested-.git hold, and lets its part A start from a smaller diff [recommended] | (b) hold until a time you name | (z) decide later
   why ask: the librarian said it would put this push to the operator (2026-10-15); claude-sandbox asked for it before its part A
+answer 251: a (operator, chat, 2026-10-19, verbatim: "251a")
