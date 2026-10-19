@@ -1,15 +1,7 @@
 .idea
 .claude/settings.local.json
 .claude/worktrees/
-.claude-sandbox/env
-.claude-sandbox/temp/
-.claude-sandbox/ralph/
-!.claude-sandbox/Dockerfile
-
-# Local only in THIS repo — both reference a private work project by name.
-# Normally config.yaml is tracked and investigations are committed like reports/.
-.claude-sandbox/config.yaml
-.claude-sandbox/investigations/
 __pycache__/
 *.pyc
-!.claude-sandbox/config.yaml
+/.claude-sandbox/
+/.work-items/
