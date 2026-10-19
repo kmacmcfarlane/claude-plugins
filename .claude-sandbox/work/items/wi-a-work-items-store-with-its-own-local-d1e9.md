@@ -3,10 +3,11 @@ id: wi-a-work-items-store-with-its-own-local-d1e9
 title: "wi: a .work-items/ store with its own local git repo, committed under wi's lock"
 short_display_name: wi nested store repo
 type: feature
-status: todo
+status: done
 priority: 1
 created: 2026-10-15
-updated: 2026-10-15
+updated: 2026-10-19
+closed: 2026-10-19
 refs:
   - answer 232 a
 ---
@@ -130,3 +131,7 @@ follow-up: re-walk before add also checks <git-dir>/info/attributes (F5 review n
 decision 251: push local main (d1e9 F1-F5 and 66 commits) to origin now? — options: (a) push now: ships the nested store repo, lifts claude-sandbox's no-nested-.git hold, and lets its part A start from a smaller diff [recommended] | (b) hold until a time you name | (z) decide later
   why ask: the librarian said it would put this push to the operator (2026-10-15); claude-sandbox asked for it before its part A
 answer 251: a (operator, chat, 2026-10-19, verbatim: "251a")
+landed: pushed 63f7c0d2..c4374660 (F1-F5 on origin); relay 2 to claude-sandbox: hold lifted
+
+## Notes
+- 2026-10-19 done
