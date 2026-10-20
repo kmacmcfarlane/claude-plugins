@@ -21,7 +21,9 @@
         top level; levels are optional on every part, decision 201): a level not longer than the
         one below it; Background, an option's detail or the evidence thin where it carries
         levels, or long; an option but (z) with no blocks row; a card long in all; a detail key
-        the page does not show.
+        the page does not show;
+      - one-way options: a ⚠ card with no blocks row flagged oneway; a flagged row while the
+        Impact carries no undo.
       Lints are proxies.
 
    Prints one line per problem. Exit 0 clean; 1 on a refusal, or on a file or template that
@@ -53,7 +55,14 @@ const W = {two:2, three:3, four:4, five:5, six:6, seven:7, eight:8, nine:9, ten:
    slugs, hex colours (never a #tag after an id noun: item #4151 stays), dates and times, clock times
    and versions */
 const ID_NOUN = "(?:work item|item|commit|ticket|decision|answer|card)s?";
-const strip = s => s.replace(/`[^`]*`/g, " ").replace(/https:\/\/\S+/g, " ").replace(/\[\[[0-9]+\]\]/g, "")
+/* the source labels the page's cards declare ({id, name}), each passing only with its short name beside it:
+   F7 (oversize upload). Set by lint() from the file it checks */
+let DECLARED = [];
+const reEsc = x => x.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+const declare = cards => cards.map(c => c.label).filter(l => l && typeof l === "object" && typeof l.id === "string" && typeof l.name === "string")
+  .map(l => new RegExp("(?<![A-Za-z0-9])" + reEsc(l.id) + "\\s*\\(\\s*" + reEsc(l.name.trim()).replace(/\s+/g, "\\s+") + "\\s*\\)", "gi"));
+const unlabel = s => DECLARED.reduce((t, r) => t.replace(r, " "), s);
+const strip = s => unlabel(s).replace(/`[^`]*`/g, " ").replace(/https:\/\/\S+/g, " ").replace(/\[\[[0-9]+\]\]/g, "")
   .replace(new RegExp("(?<!\\b" + ID_NOUN + "\\s+)#[0-9a-fA-F]{3,8}\\b", "gi"), "")
   .replace(/\b\d{4}-\d{2}-\d{2}(T[0-9:.]+Z?)?\b/g, "").replace(/\b\d{1,2}:\d{2}\b/g, "").replace(/\bv?\d+(\.\d+)+\b/g, "");
 /* an id or label a cold reader cannot resolve: a source label (OQ3, G5), a ticket key (KAPPA-3570), a hash or item tag (7c41e0d, 2ff6) */
@@ -228,7 +237,7 @@ function depth(c, say) {
   for (const o of c.o) {
     const k = o[0], top = words(topOf(o[1], optLevels(c, k))), r = row(c, k);
     if (k === "z") { optWords += top + words(o[2]); continue; }
-    if (!r && !c.warn) say("row " + k, "depth: (" + k + ") has no blocks row: give it happens, who and undo, and cost where it has one");
+    if (!r && !c.warn) say("row " + k, "depth: (" + k + ") has no blocks row: give it happens and who, its undo where it is one-way or costly, and cost where it has one");
     const ow = top + (r ? words([r.happens, r.who, r.undo, r.cost]) : 0);
     optWords += ow + words(o[2]);
     if (optLevels(c, k).length && ow < 30) say("opt " + k, "depth: (" + k + ")'s detail is " + ow + " words (its fullest text and its blocks row): write it near 60–120, what happens, undo, who and cost, from the sources; or leave it knowingly");
@@ -245,6 +254,23 @@ function depth(c, say) {
       say("key " + k, "depth: detail." + k + " is not a part the page shows, so it is ignored: the parts are " + Object.keys(PART).join(", ") + " and o");
 }
 
+/* ---- the one-way lints: the page refuses a row flagged oneway without its undo; these catch what it lets
+   through, so an older ⚠ page still shows ---- */
+function oneway(c, say) {
+  const rows = c.blocks && typeof c.blocks === "object" ? Object.keys(c.blocks).filter(k => c.blocks[k] && c.blocks[k].oneway === true) : [];
+  if (c.warn && !rows.length)
+    say("oneway", "oneway: a ⚠ one-way card has no blocks row flagged one-way: set oneway: true, with its undo, on each option one-way or costly to undo; or leave it knowingly on a card the operator has answered");
+  if (rows.length && !(typeof c.impact.undo === "string" && c.impact.undo.trim()))
+    say("oneway impact", "oneway: (" + rows.join(", ") + ") is flagged one-way but the Impact carries no undo: name it there, (" + rows[0] + ") and how it is undone, or that it cannot be");
+}
+
+/* ---- the source label's short name: plain words, about 2 to 6 ---- */
+function labelName(c, say) {
+  const l = c.label;
+  if (l && typeof l === "object" && typeof l.name === "string" && words(l.name) > 6)
+    say("shape label", "shape: the label " + l.id + "'s short name is " + words(l.name) + " words: keep it to about 2–6 plain words");
+}
+
 /* ---- the id lint: no machine-readable id anywhere the page shows text; the page is the reader's only context ---- */
 const idLine = ([t, n], at) => t + " looks like an id (" + at + "): "
   + (n ? "name the decision by its slug [[" + n + "]]" : "name the thing by its short name or title, a decision by its slug [[N]]")
@@ -253,6 +279,7 @@ const idLine = ([t, n], at) => t + " looks like an id (" + at + "): "
 function cardTexts(c) {
   const out = [];
   const put = (at, v) => { for (const s of textsOf(v)) out.push([at, s]); };
+  if (c.label && typeof c.label === "object") put("label", c.label.name);
   for (const k of ["t", "context", "what", "class", "why", "whyask", "dep", "ifleft", "roundcosts", "ifunanswered", "reason", "unknown", "norec", "evidence"]) put(k, c[k]);
   put("impact", c.impact); put("tldr", c.tldr);
   for (const o of c.o) put("(" + o[0] + ")", o.slice(1));
@@ -277,6 +304,7 @@ function pageIds(d, out) {
 
 function lint(d) {
   const out = [];
+  DECLARED = declare(d.cards);
   pageIds(d, out);
   for (const c of d.cards) {
     const w = "lint: card " + c.n + ": ";
@@ -304,6 +332,8 @@ function lint(d) {
     shapes(c, say);
     recOnly(c, say);
     depth(c, say);
+    oneway(c, say);
+    labelName(c, say);
   }
   return out;
 }

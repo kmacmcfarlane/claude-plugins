@@ -17,6 +17,7 @@ import unittest
 
 from test_impact import NODE, PAGE, example
 from test_depth import card, node, run_page
+from test_context import runner
 
 
 def setUpModule():
@@ -114,7 +115,7 @@ class DecisionPageNone(unittest.TestCase):
         self.assertNotIn(">Cost<", more)
         self.assertNotIn(">Reach<", more)
         self.assertIn('<span class="lbl">Effect</span>', more)
-        self.assertIn('<span class="lbl">Undo</span>', more)
+        self.assertIn('<span class="lbl owu">⚠ Undo</span>', more)
 
     def test_a_none_undo_cell_always_shows(self):
         # on a one-way card the Undo cell decides the read-back: none there says it cannot be undone
@@ -126,8 +127,9 @@ class DecisionPageNone(unittest.TestCase):
 
     def test_a_one_way_more_shows_its_row_first(self):
         res = run_page(example())
-        more = card(res, 42)["more"]["a"]
-        pos = [more.index('<span class="lbl">%s</span>' % f) for f in ("Effect", "Reach", "Undo", "Cost")]
+        more = card(res, 42)["more"]["b"]
+        pos = [more.index(f) for f in ('<span class="lbl">Effect</span>', '<span class="lbl">Reach</span>',
+                                       '<span class="lbl owu">⚠ Undo</span>', '<span class="lbl">Cost</span>')]
         self.assertEqual(pos, sorted(pos))
         self.assertLess(pos[-1], more.index('class="sec"'))
         self.assertLess(more.index('class="sec"'), more.index('<p class="impact">'))
@@ -136,12 +138,22 @@ class DecisionPageNone(unittest.TestCase):
         self.assertLess(more.index('class="sec"'), more.index('<span class="lbl">Effect</span>'))
 
     def test_a_one_way_row_with_a_blank_cell_is_refused(self):
-        for cell in ("happens", "undo", "who"):
+        for cell in ("happens", "who"):
             d = example()
             d["cards"][1]["blocks"]["b"][cell] = "  "
             bad = run_page(d)["bad"]
-            self.assertTrue(any("card 42: a \u26a0 one-way card needs blocks {happens, undo, who} for every "
+            self.assertTrue(any("card 42: a \u26a0 one-way card needs blocks {happens, who} for every "
                                 "option but (z), each non-empty" in b for b in bad), (cell, bad))
+        # the undo is required only on a row flagged one-way
+        for undo in ("  ", None):
+            d = example()
+            if undo is None:
+                del d["cards"][1]["blocks"]["b"]["undo"]
+            else:
+                d["cards"][1]["blocks"]["b"]["undo"] = undo
+            self.assertEqual(run_page(d)["bad"], ["card 42: (b) is flagged one-way (oneway: true) but has no "
+                                                  "undo: say how it is reversed and at what cost, or that it "
+                                                  "cannot be and why"], undo)
         # a blank cell on any other card is not refused (the cell is just not shown)
         d = example()
         d["cards"][0]["blocks"]["b"]["who"] = ""
@@ -187,6 +199,73 @@ class DecisionPageNone(unittest.TestCase):
         self.assertIn('<div class="odet" id="d42-z-more" hidden>', h)
         self.assertIn('<div class="odet" id="d41-a-more" hidden>', card(res, 41)["html"])
 
+
+
+def older_warn_page():
+    """A ⚠ page written before undo went optional: undo on every row and on the Impact, no flag."""
+    d = example()
+    c = d["cards"][1]
+    c["impact"]["undo"] = "(a) remove the redirect lines; (b) none — lost search ranking does not come back"
+    c["blocks"]["a"]["undo"] = "Remove the redirect lines; nothing else changes."
+    del c["blocks"]["b"]["oneway"]
+    return d
+
+
+@unittest.skipUnless(NODE, "node is not installed")
+class OlderOneWayPages(unittest.TestCase):
+    """Undo is optional on a row; a row flagged `oneway: true` needs its undo; an older ⚠ page,
+    which carries no flag, still shows (answer 260 (a), the page's row flag)."""
+
+    def test_an_unflagged_older_warn_page_passes_the_page_check(self):
+        res = run_page(older_warn_page())
+        self.assertEqual(res["bad"], [])
+        # its undos show as written, with the plain label: nothing marks them one-way
+        more = card(res, 42)["more"]
+        for k in ("a", "b"):
+            self.assertIn('<span class="lbl">Undo</span>', more[k], k)
+            self.assertNotIn("⚠ Undo", more[k], k)
+        self.assertIn("<p><i>undo:</i> (a) remove", card(res, 42)["parts"]["imp"][0])
+
+    def test_an_unflagged_warn_card_lints_and_is_not_refused(self):
+        code, out, _ = runner(older_warn_page())
+        self.assertEqual(code, 2, out)
+        self.assertIn("lint: card 42: oneway: a ⚠ one-way card has no blocks row flagged one-way: "
+                      "set oneway: true, with its undo, on each option one-way or costly to undo", out)
+        # the example, flagged, is clean
+        self.assertEqual(runner(example())[:2], (0, ""))
+
+    def test_a_flagged_row_needs_the_impacts_undo(self):
+        d = example()
+        del d["cards"][1]["impact"]["undo"]
+        self.assertEqual(run_page(d)["bad"], [])
+        out = runner(d)[1]
+        self.assertIn("lint: card 42: oneway: (b) is flagged one-way but the Impact carries no undo", out)
+        # a narrow decision with an option costly to undo: no ⚠ label, that option flagged, the same rules
+        d = example()
+        d["cards"][2]["blocks"]["b"]["oneway"] = True
+        self.assertEqual(run_page(d)["bad"], ["card 43: (b) is flagged one-way (oneway: true) but has no "
+                                              "undo: say how it is reversed and at what cost, or that it "
+                                              "cannot be and why"])
+        d["cards"][2]["blocks"]["b"]["undo"] = "Retake every guide screenshot, about an hour."
+        self.assertEqual(run_page(d)["bad"], [])
+        self.assertIn("lint: card 43: oneway: (b) is flagged one-way but the Impact carries no undo",
+                      runner(d)[1])
+
+    def test_the_flag_is_true_or_false(self):
+        d = example()
+        d["cards"][1]["blocks"]["b"]["oneway"] = "yes"
+        self.assertTrue(any("card 42: blocks are keyed by option letter" in b for b in run_page(d)["bad"]))
+        d["cards"][1]["blocks"]["b"]["oneway"] = False
+        self.assertEqual(run_page(d)["bad"], [])
+
+    def test_a_row_without_undo_shows_none_and_a_flagged_one_is_marked(self):
+        res = run_page(example())
+        more = card(res, 42)["more"]
+        self.assertNotIn("Undo", more["a"])
+        self.assertIn('<span class="lbl owu">⚠ Undo</span>Cannot be fully undone', more["b"])
+        self.assertNotIn("undo", card(res, 43)["parts"]["imp"][0])
+        # the marker is styled from the theme's warn token
+        self.assertIn(".impline i.owu,.lbl.owu{color:var(--warn)", PAGE.read_text())
 
 if __name__ == "__main__":
     unittest.main()
