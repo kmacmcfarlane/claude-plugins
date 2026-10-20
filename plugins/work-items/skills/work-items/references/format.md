@@ -872,8 +872,9 @@ answer, which, indented, matches neither marker.
 from the store's one counter, so `needs-input` and the estate sweep see
 every ask; the caller's rules may name exceptions (librarian-mode's opt-in
 dialog and session-name gate). A source's own label — a series' `OQ3`, a
-gate's `G5` — is a tag in the decision's text, never a marker: `decision
-OQ3:` and `answer G5:` match neither.
+gate's `G5` — rides in the decision's text (first in the question,
+`decision 41: F7 (oversize upload) · …`), never a marker: `decision OQ3:`
+and `answer G5:` match neither.
 
 **Another repo's decision: `<repo>#N`.** A line that names a decision in
 another repo's store writes it `<repo>#N` (`agents#12`), `<repo>` being

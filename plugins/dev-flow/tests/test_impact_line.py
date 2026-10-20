@@ -87,6 +87,9 @@ class UndoMarker(unittest.TestCase):
         self.assertNotIn("every option line carries its `reach:` and `undo:`", text)
         self.assertNotIn("on a ⚠ decision every option line carries its undo", text)
         self.assertNotIn("a block's missing `undo:`", text)
+        # the backfill trigger honours an older card's plain undo read as the marker
+        self.assertIn("a ⚠ one-way decision with no option marked `⚠ undo:` (on a card stored "
+                      "before the marker, a plain `undo:` that reads as the marker counts)", text)
 
     def test_the_read_back_keys_on_the_marker(self):
         text = flat(DECISIONS)

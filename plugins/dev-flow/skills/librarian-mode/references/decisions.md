@@ -165,7 +165,7 @@ renders what the operator read instead of composing it again.
   card `revised: <time> — backfilled impact` before it renders anywhere, the Groom row
   included; a facet no record holds is `not recorded`.
   **A card or block renders only from stored fields**: a field it needs that the store
-  lacks — a headline-only entry, a ⚠ one-way decision with no option marked `⚠ undo:`, a card stored before `why ask:`
+  lacks — a headline-only entry, a ⚠ one-way decision with no option marked `⚠ undo:` (on a card stored before the marker, a plain `undo:` that reads as the marker counts), a card stored before `why ask:`
   existed (in the one form `decide-alone.md` § Raised gives it), one stored before the cue
   existed (no `context:` line; a line with no ` — then: ` is the card's Context as it
   stands, and carries no block facts), a block whose facts read `none` or are absent (a decision raised as
