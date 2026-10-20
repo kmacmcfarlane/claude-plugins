@@ -242,3 +242,10 @@ under `N`.
 - **The librarian list**, in the repo's CLAUDE.md: inside its `## Librarian` section, the
   line `Not owned:` and the `- <thing> — <owner>` lines after it, up to the first line that
   is not a list line. It is read as data, whichever plugins are installed.
+- **The librarian systems list**, in the same section: the line `Systems:` and the `- `
+  lines after it, up to the first line that is not a list line; each item is
+  `- <name> — <what it owns or does there>`, the name the text before the first ` — ` (the
+  whole item when it has none). `Systems: none` alone is the line with no items. A section
+  without either line has no list. The lines' meaning is the librarian's (dev-flow's
+  `librarian-mode`, defined by its responsibility interview, once landed); the check reads
+  only these forms.
