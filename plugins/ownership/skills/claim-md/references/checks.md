@@ -32,6 +32,14 @@ claim_check.py [--repo DIR] [--claim PATH] [--estate] [--dir DIR] [--today YYYY-
   claim with the claims of the siblings it names. **With `--estate`** it checks every
   sibling. With `--estate`, the files of `--repo` replace its main checkout's entry, so a
   worktree's draft and main's copy are never both loaded.
+- **The Systems pass** runs after the claim pass and apart from it. It reads the
+  `## Librarian` section of every repo's CLAUDE.md, whether or not that repo has a CLAIM.md;
+  a repo's `## Not ours` and `## Claim` areas enter it only when its claim parsed. Without
+  `--estate` it reads every sibling's CLAUDE.md (not only the siblings the claim names, and
+  with or without a claim here) and flags only this repo's own lines and the pairs that
+  include this repo; a sibling's CLAUDE.md that cannot be read is a `PROBLEM` at that
+  sibling's location, as with `--estate`. With `--estate` it covers every repo and every
+  pair. With no `Systems:` line anywhere it flags nothing.
 - `--today` fixes the clock, for tests.
 - **Read only.** The script never writes and never opens the network. It runs git with fixed
   arguments, drops git's stderr, reads git's stdout only for the paths `rev-parse` prints
@@ -51,14 +59,16 @@ The thresholds are two named constants in the script: `STALE_DAYS = 180` and
 | `UNRESOLVED` | `owner`, `neighbour`, `pointer` | a repo-form owner, a `### <neighbour>`, or a pointer's repo that is not a sibling. `operator` and `external:` are never flagged | GitHub skips owners without access; Gerrit ignores non-resolvable owners and validates on demand |
 | `DANGLING` | `file`, `heading`, `outside` | a `Defined in <repo> <file> § <heading>` whose file is missing or untracked, whose file lacks the heading (under `N`), or whose path is absolute, holds `..`, or resolves through a symlink out of the repo | Chromium `file://` includes must resolve |
 | `AWAITING` | — | `Defined in <repo> (no claim yet)` where `<repo>` now has a CLAIM.md | — |
-| `ONE-SIDED` | — | a `Defined here` item for a neighbour whose CLAIM.md has no `### <this repo>` | Backstage `providesApis` / `consumesApis` |
-| `CONFLICT` | `defined-twice`, `owner`, `claimed-and-not-ours` | the same item `Defined here` in A's `### B` and in B's `### A`; one thing under `## Not ours` in two claims with different owners; an area A claims that B lists under `## Not ours` with an owner other than A | RACI's single Accountable |
+| `ONE-SIDED` | —, `not-owned` | no kind: a `Defined here` item for a neighbour whose CLAIM.md has no `### <this repo>`. `not-owned`: A's librarian `Not owned: X — B`, where B is a sibling whose `## Librarian` has a `Systems:` line (`Systems: none` included) and neither B's `Systems:` items nor B's `## Claim` areas name X; given at A's `Not owned:` item | Backstage `providesApis` / `consumesApis` |
+| `CONFLICT` | `defined-twice`, `owner`, `claimed-and-not-ours`, `systems`, `systems-not-ours` | the same item `Defined here` in A's `### B` and in B's `### A`; one thing under `## Not ours` in two claims with different owners; an area A claims that B lists under `## Not ours` with an owner other than A; one system under the librarian `Systems:` list of two repos; a system A lists under `Systems:` that A's or a sibling's librarian `Not owned:` or `## Not ours` gives to an owner other than A | RACI's single Accountable |
 | `MOVED?` | `missing`, `outside` | an In transit `<repo>:<path>` that no longer exists in that repo, or that is absolute, holds `..`, or resolves out of the repo | — |
 | `MISMATCH` | `librarian-only`, `claim-only`, `owner` | the repo has a CLAIM.md **and** its CLAUDE.md has a `## Librarian` `Not owned:` list: a name in only one of the two lists, or in both with different owners. With either list absent there is no comparison | — |
 | `UNCLAIMED` | — | with `--estate`, a sibling with a store and no CLAIM.md; for one repo, the checked repo with no CLAIM.md | — |
-| `PROBLEM` | `unreadable`, `too-large`, `not-utf8`, `not-regular`, `symlink-out` | a CLAIM.md, a CLAUDE.md or a pointed-to file that cannot be read safely: over 256 KiB, not UTF-8, not a regular file, or a symlink out of its repo. It is not parsed | — |
+| `PROBLEM` | `unreadable`, `too-large`, `not-utf8`, `not-regular`, `symlink-out` | a CLAIM.md, a CLAUDE.md or a pointed-to file that cannot be read safely: over 256 KiB, not UTF-8, not a regular file, or a symlink out of its repo. It is not parsed. A CLAUDE.md gives one flag, however many passes read it | — |
 
-`MISMATCH` keys on the lines in the files, never on which plugins are installed.
+`MISMATCH` and the Systems pass key on the lines in the files, never on which plugins are
+installed. Names match under `N` only, so a Systems flag is a candidate: read both lines (the
+reading checks) before raising it.
 
 ## The output contract
 
@@ -95,11 +105,15 @@ disk, and command-line arguments:
 - `line` is a line number; `0` means the part is missing, or the flag is about the whole
   file.
 - `section` is one of `title`, `Status`, `Reviewed`, `Claim`, `Not ours`, `Boundaries`,
-  `In transit`, `Changing this claim`, `Librarian Not owned`, `file`, or
+  `In transit`, `Changing this claim`, `Librarian Not owned`, `Librarian Systems`, `file`, or
   `Boundaries / <repo>`, where `<repo>` is printed only when the subsection's name equals a
   sibling's directory name, in the listing's spelling; any other subsection is
   `Boundaries subsection`.
 - `other:` is only ever the location of the other line, in CONFLICT, ONE-SIDED and MISMATCH.
+  For `CONFLICT systems` it is the other repo's `Systems:` item; for `CONFLICT
+  systems-not-ours`, the `Not owned:` or `## Not ours` line that gives the system away; for
+  `ONE-SIDED not-owned`, B's `Systems:` line (`<B>:CLAUDE.md:<line>`), the list that lacks
+  the thing.
 - Path bytes that are not UTF-8 are escaped.
 
 **Exit codes:** 0, the run finished with no flag; 1, it finished with flags; 2, a usage error
@@ -130,8 +144,9 @@ is relayed to that repo's session as a request. Substance and upkeep are `format
 | `UNRESOLVED` owner, neighbour, pointer | correct the name | upkeep for a typo or a renamed repo; substance when the owner or neighbour no longer exists |
 | `DANGLING` file, heading, outside | fix the pointer | upkeep when it follows a landed neighbour change (a moved file or heading); substance when the defining text is gone, so the item needs a defining side: to the operator |
 | `AWAITING` | point at the neighbour's new claim | upkeep |
-| `ONE-SIDED` | nothing in this claim; the neighbour lacks a pointer | reported for the neighbour |
+| `ONE-SIDED` (no kind) | nothing in this claim; the neighbour lacks a pointer | reported for the neighbour |
 | `CONFLICT` defined-twice, owner, claimed-and-not-ours | — | substance: a decision to the operator |
+| `CONFLICT` systems, systems-not-ours; `ONE-SIDED` not-owned | — | substance: in a librarian session, one numbered decision per pair on the responsibility card of dev-flow's `librarian-mode` (`Who owns <system>: this repo or <other repo>?`); otherwise a plain lettered question to the operator |
 | `MOVED?` missing, outside | close the row, or correct the path | upkeep when the move landed or the path was renamed; otherwise to the operator |
 | `MISMATCH` librarian-only | add the line to `## Not ours` | substance: to the operator |
 | `MISMATCH` claim-only, `owner_form` repo or operator | copy the line into the librarian's `Not owned:` | upkeep, reported |

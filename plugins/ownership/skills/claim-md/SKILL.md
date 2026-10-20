@@ -80,7 +80,7 @@ skill degrades as below; when that changes the result, the result says so in one
 |---|---|---|---|---|
 | work-items (`work-items:work-items`, its `wi` tool) | files a claim change with its `decision N:` line, and the fix items a check finds | the change and its text are put in chat; the Status line has no `#N`; fixes are listed | "claim change not filed: no work-item tool" / "fix items not filed: no work-item tool" | yes, first |
 | kit-dev (`kit-dev:factor-analysis`) | analyses a split not yet made | the splitting rule is applied in the session; an unclear split goes to the operator | "split not analysed: no factoring tool" | yes, second |
-| dev-flow | its librarian section's `Not owned:` lines are compared; a librarian session lands a change through its cycle | nothing is lost: the comparison keys on the lines in the file, and a session that is not a librarian writes after the answer | none | none |
+| dev-flow | its librarian section's `Not owned:` lines are compared, and its `Systems:` lines are compared too, across repos; a librarian session lands a change through its cycle | nothing is lost: the comparison keys on the lines in the file, and a session that is not a librarian writes after the answer | none | none |
 | operator-interaction (`operator-interaction:decisions`) | shapes the approval decision | a plain lettered question with the same options | none: the same decision | none |
 
 - **A repo with no store** is not a missing peer: the result says "not filed: no work-item
