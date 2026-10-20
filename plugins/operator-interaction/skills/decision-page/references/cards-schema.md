@@ -81,7 +81,7 @@ Each field maps to a part of the `decisions` skill's card (its `references/rende
 | `class` | string | no | the class that opens Why ask, when the caller names classes | a pill, and the Background fold |
 | `warn` | boolean | no | `true` for ⚠ one-way (one-way and high impact) | a ⚠ pill |
 | `blocks` | object | expected on every card; required when `warn` | the block's Impact table row per option: keyed by letter, a row for every option but `z` (the check refuses a ⚠ card without them; on any other card a missing row is a runner lint), each `{happens, undo, who, cost}` — the Effect, Undo (plainly: it decides the read-back) and Reach cells, and Cost, optional; each cell a table cell's length (about 5–25 words) | each option's **More** detail, as its Effect, Reach, Undo and Cost lines, open from the start on a ⚠ card, where the row comes before the option's text; an Effect, Reach or Cost cell that is none is not shown; Undo always shows (*none* says the option is one-way); on a ⚠ card the check refuses a blank `happens`, `undo` or `who`; an option with no entry shows its `impact` as the Effect and nothing else |
-| `act` | object | when an option asks the operator to act; optional otherwise | the **To act on (x):** part (the `decisions` skill's floor, what it takes to act; its specifics in that skill's `references/rendering.md` § Card): keyed by option letter other than `z`, each a non-empty array of steps as text, in order; backtick code renders as code. A step names where a secret goes, never its value. A paste text that legitimately holds an angle-bracketed word (`<br>`, a tag in an HTML snippet) goes in a file named by its `/…` path in the step: the check refuses it inline, as it refuses a fill-in placeholder. The page renders no fenced block and folds line breaks: a paste text of more than one line goes in a file named by its `/…` path in the step, never inline; the check refuses a step with a line break | flat, as a numbered list under its option in the open card, never folded; not counted in the flat part's size (below) |
+| `act` | object | when an option asks the operator to act; optional otherwise | the **To act on (x):** part (the `decisions` skill's floor, what it takes to act; its specifics in that skill's `references/rendering.md` § Card): keyed by option letter other than `z`, each a non-empty array of steps as text, in order; backtick code renders as code. A step names where a secret goes, never its value. A paste text that legitimately holds an angle-bracketed word (`<br>`, a tag in an HTML snippet) goes in a file named by its `/…` path in the step: the check refuses it inline, as it refuses a fill-in placeholder. A step renders on one line (only an excerpt, § An excerpt, renders multi-line text): a paste text of more than one line goes in a file named by its `/…` path in the step, never inline; the check refuses a step with a line break | flat, as a numbered list under its option in the open card, never folded; not counted in the flat part's size (below) |
 | `dep` | string | no | what it depends on, usually slugs with the answer that matters (`[[41]] (b)`) | summary line, Dependencies fold; its medium and high in `detail`. Leave it out when the card depends on nothing: a card with no `dep`, or a none one, has neither the summary's *depends on* nor the fold |
 | `rec` | string or null | yes | the recommended option's letter; `null` with no recommendation | the one bold option, the rec line |
 | `norec` | string | when `rec` is null | the labelled exception: `your preference — no recommendation`, or `no recommendation — outside my authority` and why | in place of the rec |
@@ -304,6 +304,37 @@ counting answer, and each card revised anyway, gets its `impact` across the opti
 levels in their shapes and its ids replaced by names, each with a new `rev`, handed over as
 shown again. A card the operator has answered stays as it is, its lints left knowingly,
 unless it is revised for another reason; its effect may still read as the recommendation's.
+
+## An excerpt
+
+An excerpt is verbatim multi-line text (code, a log, a diff, a config block, test output),
+shown as a code block. No card field carries one yet: the finding body and the excerpt
+attachment will, and each checks and draws it the same way.
+
+| Key | Type | Required | What |
+|---|---|---|---|
+| `text` | string | yes | the lines, verbatim and non-blank. Line breaks and tabs are kept (CRLF and CR read as one break; one trailing break is dropped) |
+| `lang` | string | no | a short label for what the text is (`python`, `diff`, `log`): a letter or digit, then letters, digits and `+ # . _ -`, 24 at most. Shown as a tag over the block; nothing is highlighted |
+| `src` | string | no | where the text came from, on one line: a path and line range at a commit, or the command and when it ran. Plain text, shown over the block |
+
+**The text is data, never markup.** Every character is escaped, and nothing in an excerpt is
+parsed: a backtick, a `[[N]]`, an `https://` address, an HTML tag such as `</script>` or
+`<img onerror=…>`, and a fence (```` ``` ```` or `~~~`) all show as the characters they are.
+Write the lines bare, with no fence around them: the page draws the block. A control or
+bidirectional character (a zero-width space, a right-to-left override) shows as a visible
+tag naming it, `U+202E`, so the text cannot read other than it is. `src` is plain text the
+same way.
+
+**The page refuses**, wherever a field carries one, an excerpt that is not an object, with blank `text`, a `lang` outside its
+label shape, or a `src` that is not one line of text.
+
+**Size.** About 80 lines or 4 KB. Cut a longer one and say so where the cut is, in the text
+(`… lines 40–120 left out; full at <where> …`). Long lines scroll inside the block, never
+the page.
+
+**Safety.** Never a secret's value: the line shows `[redacted: key <name> in <path>]`. Never
+personal data from any source (logs, fixtures, configs, test output), and nothing from a third
+party's private source. Never Claude Code's source, prompts or internal names.
 
 ## The answers collection
 
