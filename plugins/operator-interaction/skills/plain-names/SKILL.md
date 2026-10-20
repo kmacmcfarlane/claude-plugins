@@ -71,7 +71,7 @@ plan's questions (OQ3), a review round's findings (R2-1), a plan's features (A4a
 take any shape, not only a letter and a number. Tracker ids are not source labels: work
 items, tickets, commits and ticket-style keys follow § The rule above, name first.
 
-- **Label first, then its short name in parentheses:** *F1 (memory pressure on startup)*. A
+- **Label first, then its short name in parentheses:** *F2 (stale cache after deploy)*. A
   source label is a handle the operator answers by, as a decision number is, so it leads.
 - **The short name is plain words**, about 2–6 of them, not a slug.
 - **Take it from the source** where the source has one (a finding's title, a question's
@@ -111,9 +111,9 @@ export retry fix (a1b2) can land.*
 
 A source label in a note:
 
-*As per F1 (memory pressure on startup), make a note that the cache warms lazily.*
+*As per F2 (stale cache after deploy), make a note that the cache warms lazily.*
 
-Not: *As per F1, make a note that the cache warms lazily.*
+Not: *As per F2, make a note that the cache warms lazily.*
 
 ## When it goes wrong
 
@@ -144,10 +144,10 @@ alternative not taken, in case practice argues for it.
 - **Bookkeeping commit subjects** (2026-09-29; delegated: the operator said "you decide") —
   these stay terse. Not taken: plain names there too.
 - **Source labels** (2026-10-20; decision 269, the operator's words: "expand Fn style labels
-  (in all forms, not just starting with "F") to include a human-readable short-name … or
-  generate one where missing") — every source label carries a short name beside it, label
-  first, taken from the source or written where it has none; tracker ids keep **Handle**.
-  It narrows *No ids on an answer page* (2026-10-09) for a label with its short name. Plain
-  words rather than a slug, and later mentions by label alone, are designs made in
-  planning, not the operator's. Not taken: the slug form
-  (*F1 (memory-pressure-risk-on-startup)*).
+  (in all forms, not just starting with "F") to include a human-readable short-name/slug/etc
+  or generate one where missing") — every source label carries a short name beside it, label
+  first, taken from the source or written where it has none; tracker ids keep **Handle**. It
+  narrows the decisions skill's *No ids on an answer page* (2026-10-09) for a label with its
+  short name. Plain words rather than a slug, and later mentions by label alone, are designs
+  made in planning, not the operator's. Not taken: the slug form (*F1
+  (memory-pressure-risk-on-startup)*).

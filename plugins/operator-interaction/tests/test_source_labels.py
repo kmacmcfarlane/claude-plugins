@@ -95,8 +95,8 @@ class SourceLabelsRule(unittest.TestCase):
 
     def test_example_and_not_this(self):
         examples = section(self.text, "Examples")
-        self.assertIn("*As per F1 (memory pressure on startup), make a note", examples)
-        self.assertIn("Not: *As per F1, make a note", examples)
+        self.assertIn("*As per F2 (stale cache after deploy), make a note", examples)
+        self.assertIn("Not: *As per F2, make a note", examples)
 
     def test_ruling(self):
         self.assertEqual(ruling_problems(self.text), [])
