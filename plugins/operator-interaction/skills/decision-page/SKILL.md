@@ -1,6 +1,6 @@
 ---
 name: decision-page
-description: "Put a set of decisions to the operator as an answer page: a published page of decision cards with one radio group per decision (its options and the follow-ups later, tell me, expand, dig into, you decide, drop), a words box, saved on click with no submit; then read the answers back and hand them to the caller to record, echoed before anything acts on them. A template plus a data file, so a new set is a data write and a republish. Needs claude.ai artifacts with the db capability (a docs connector optional); falls back to a doc with tick boxes, or to decisions in chat. Use when a session has several decisions to put to the operator at once and they want to answer them on a page rather than in chat, or says 'answer page', 'decision page', 'put these on a page', 'let me answer on a page', 'read my answers from the page'. Not for a single decision, or decisions answered in chat (the decisions skill)."
+description: "Put a set of decisions to the operator as an answer page: a published page of decision cards with one radio group per decision (its options and the follow-ups later, tell me, expand, dig into, you decide, drop), a words box, saved on click with no submit; then read the answers back and hand them to the caller to record, echoed before anything acts on them. A template plus a data file, so a new set is a data write and a republish. Needs claude.ai artifacts with the db capability (a docs connector optional); falls back to a doc with tick boxes, or to decisions in chat. Use when a session has several decisions to put to the operator at once and they want to answer them on a page rather than in chat, or says 'answer page', 'decision page', 'put these on a page', 'let me answer on a page', 'read my answers from the page'. Not for a single decision, a set of review or audit findings (chat, until the page shows findings), or decisions answered in chat (the decisions skill)."
 ---
 
 # Decision page
@@ -23,6 +23,9 @@ and a publish.
 
 - **Every decision meets the `decisions` skill's floor first** — load that skill (same
   plugin). The page renders its card; it does not replace it. Keep the caller's numbers.
+- **Not for a findings-style set** — decisions raised from the findings of a review, an
+  audit, a test run or a scan. Those go to chat until the page can show each finding (the
+  `decisions` skill's rendering reference, § Several decisions in one message).
 - **The caller supplies the decisions and records the answers.** This skill holds no store;
   it hands the answers over verbatim, and with them when each card was shown (step 3) and
   seen (step 6), for a caller that records shown and seen (the `decisions` skill's § Before

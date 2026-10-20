@@ -5,7 +5,11 @@ Effect across all the decision's options, favouring none (`(a) …; (b) …` whe
 differ); each option on a card carries its own effect, reach, undo and cost on an italic line
 under it, in facet order, a facet that does not apply left out; a block carries the same
 facets in its Impact table, under the card's Impact line; a list line carries none of an
-option's facets. Checked against the templates in `references/rendering.md`, every card and
+option's facets. Since answer 260 (2026-10-20), undo is shown only on an option that is
+one-way or costly to undo, marked `⚠ undo:`: on its line, in its block's Undo cell (`—` on a
+reversible row), and on the Impact line, which carries it only then. No program can tell a
+one-way option written without its marker; what is checked is that every undo shown is
+marked, and the cold read checks the rest. Checked against the templates in `references/rendering.md`, every card and
 block in `references/gallery.md`, and the stored card in the gallery.
 
 Run from the plugin dir: python3 -m unittest discover -s tests -q
@@ -23,7 +27,9 @@ WORKSHEET = REFS / "worksheet.md"
 OPTION = re.compile(r"^- (\*\*)?\(([a-y])\) ")
 DECIDE_LATER = re.compile(r"^- \(z\) ")
 FACET_LINE = re.compile(r"^  \*→ (.+)\*$")
-LABELS = ("reach", "undo", "cost")
+LABELS = ("reach", "⚠ undo", "cost")
+# an undo on the Impact line without its marker
+BARE_UNDO = re.compile(r"(?<!⚠ )\bundo: ")
 EMPTY = re.compile(r"(?i)^(none|n/a|—|-|nothing|not recorded)?$")
 
 
@@ -84,18 +90,25 @@ def favours_one(effect):
     return len(set(re.findall(r"\(([a-y])\) ", effect))) == 1
 
 
-def check_warn_card(test, where, body):
-    """On a ⚠ card every option's impact line carries its undo, as the block's table does.
-    Returns 1 when the card is ⚠, else 0."""
-    if "⚠" not in body[0]:
-        return 0
-    for k, line in enumerate(body):
-        m = OPTION.match(line)
-        if m:
-            fs = facets(body[k + 1]) if k + 1 < len(body) else None
-            test.assertTrue(fs and any(lab == "undo" for lab, _ in fs[1:]),
-                            f"{where}: ⚠ card, ({m.group(2)}) has no undo")
-    return 1
+def check_undo_marked(test, where, body):
+    """Every undo a card or block shows is marked: `⚠ undo:` on the Impact line and an
+    option's line, and a block's Undo cell either `—` (reversible) or opening on ⚠. Returns
+    the number of marked undos seen."""
+    marked = 0
+    for line in body:
+        if line.startswith("**Impact:**"):
+            test.assertIsNone(BARE_UNDO.search(line), f"{where}: an unmarked undo on the Impact line")
+            marked += line.count("⚠ undo: ")
+        fs = facets(line)
+        if fs:
+            test.assertNotIn("undo", [lab for lab, _ in fs], f"{where}: an unmarked undo on an option")
+            marked += sum(1 for lab, _ in fs if lab == "⚠ undo")
+        if line.startswith("| ") and not line.startswith(("| Impact", "|---")):
+            cell = line.split("|")[4].strip()
+            test.assertTrue(cell == "—" or cell.startswith("⚠ "),
+                            f"{where}: Undo cell {cell[:30]!r} is neither — nor marked")
+            marked += cell.startswith("⚠ ")
+    return marked
 
 
 class Templates(unittest.TestCase):
@@ -104,8 +117,10 @@ class Templates(unittest.TestCase):
         card = fenced(RENDERING.read_text(), "**N — Title as a question?**\n**What:**")
         self.assertGreaterEqual(check_options(self, "rendering.md card", card), 2)
         lines = [facets(x) for x in card if facets(x)]
-        # the template shows every facet once, in order
-        self.assertEqual([lab for lab, _ in lines[0]], ["effect", "reach", "undo", "cost"])
+        # the template shows every facet once, in order, the undo marked
+        self.assertEqual([lab for lab, _ in lines[0]], ["effect", "reach", "⚠ undo", "cost"])
+        # and a reversible option with none
+        self.assertNotIn("⚠ undo", [lab for lab, _ in lines[1]])
 
     def test_the_card_and_block_templates_give_the_effect_across_the_options(self):
         text = RENDERING.read_text()
@@ -147,14 +162,18 @@ class Checks(unittest.TestCase):
                       "- (z) Decide later — *it waits*"])
 
     def test_facets_out_of_order_or_empty_are_caught(self):
-        self.refused(["- (a) X", "  *→ it happens · undo: one edit · reach: staging*"])
+        self.refused(["- (a) X", "  *→ it happens · ⚠ undo: none, gone · reach: staging*"])
         self.refused(["- (a) X", "  *→ it happens · cost: none*"])
-        self.refused(["- (a) X", "  *→ it happens · undo: none*"])
+        self.refused(["- (a) X", "  *→ it happens · ⚠ undo: none*"])
         self.refused(["- (a) X", "  *→ it happens · stakes: narrow*"])
+
+    def test_an_unmarked_undo_is_caught(self):
+        # the form answer 260 retired: an undo on a reversible option, with no marker
+        self.refused(["- (a) X", "  *→ it happens · undo: one edit*"])
 
     def test_a_good_option_passes(self):
         self.assertEqual(check_options(self, "good", [
-            "- **(a) X**", "  *→ it happens · reach: staging · undo: one edit · cost: an hour*",
+            "- **(a) X**", "  *→ it happens · reach: staging · ⚠ undo: none, gone · cost: an hour*",
             "- (b) Y", "  *→ nothing happens*",
             "- (z) Decide later — *it waits*"]), 2)
 
@@ -166,16 +185,21 @@ class Checks(unittest.TestCase):
         settles = impact_effect("**Impact:** → sets which units the dashboard shows · later: x")
         self.assertFalse(favours_one(settles))
 
-    def test_a_warn_card_option_without_its_undo_is_caught(self):
-        card = ["**43 — Remove the old endpoint?** ⚠ one-way",
-                "- (a) Remove it", "  *→ partners break · reach: two partners*",
-                "- **(b) Keep it**", "  *→ nothing breaks · undo: drop the header*",
-                "- (z) Decide later — *it waits*"]
-        with self.assertRaises(AssertionError):
-            check_warn_card(self, "mutant", card)
-        card[2] = "  *→ partners break · reach: two partners · undo: a hotfix, after the outage*"
-        self.assertEqual(check_warn_card(self, "good", card), 1)
-        self.assertEqual(check_warn_card(self, "plain", ["**41 — Resume?**"]), 0)
+    def test_an_unmarked_undo_anywhere_is_caught(self):
+        good = ["**43 — Remove the old endpoint?**",
+                "**Impact:** → (a) x; (b) y · later: w · reach: r · ⚠ undo: (a) a hotfix, after the outage",
+                "- (a) Remove it", "  *→ partners break · ⚠ undo: a hotfix, after the outage*",
+                "- **(b) Keep it**", "  *→ nothing breaks*",
+                "| (a) Remove it | x | r | ⚠ a hotfix, after the outage | an hour |",
+                "| **(b) Keep it** | y | — | — | an hour |"]
+        self.assertEqual(check_undo_marked(self, "good", good), 3)
+        for k, bad in ((1, good[1].replace("⚠ undo", "undo")),
+                       (5, "  *→ nothing breaks · undo: drop the header*"),
+                       (7, "| **(b) Keep it** | y | — | drop the header | an hour |")):
+            card = list(good)
+            card[k] = bad
+            with self.assertRaises(AssertionError):
+                check_undo_marked(self, "mutant", card)
 
 
 class Gallery(unittest.TestCase):
@@ -195,15 +219,26 @@ class Gallery(unittest.TestCase):
             self.assertTrue(effect, f"gallery.md:{n}: no effect before later:")
             self.assertFalse(favours_one(effect), f"gallery.md:{n}: the effect favours one option")
 
-    def test_every_warn_card_gives_each_option_its_undo(self):
-        # gallery's ⚠ decisions are shown as blocks on first showing; a ⚠ card, when one
-        # appears, is held to the rule, and the template states it
+    def test_every_undo_shown_is_marked(self):
+        # undo only where it bites (answer 260): every undo the gallery shows is marked, and
+        # some are, on cards and on blocks
+        seen = {"card": 0, "block": 0}
         for n, kind, body in views(GALLERY):
-            if kind == "card":
-                check_warn_card(self, f"gallery.md:{n}", body)
+            seen[kind] += check_undo_marked(self, f"gallery.md:{n}", body)
+        self.assertGreaterEqual(seen["card"], 6)
+        self.assertGreaterEqual(seen["block"], 2)
         flat = " ".join(RENDERING.read_text().split())
-        self.assertIn("on a ⚠ decision every option's line carries its undo", flat)
-        self.assertIn("cannot be undone, or only at real cost, is never left out", flat)
+        self.assertIn("An option with no undo shown is reversible at little cost", flat)
+        self.assertIn("The marker marks the option only", flat)
+        self.assertNotIn("on a ⚠ decision every option's line carries its undo", flat)
+
+    def test_every_block_with_a_one_way_row_marks_it(self):
+        for n, kind, body in views(GALLERY):
+            if kind == "block":
+                cells = [x.split("|")[4].strip() for x in body
+                         if x.startswith("| ") and not x.startswith(("| Impact", "|---"))]
+                self.assertTrue(any(c.startswith("⚠ ") for c in cells), f"gallery.md:{n}")
+                self.assertIn("—", cells, f"gallery.md:{n}: a reversible row reads —")
 
     def test_every_block_carries_the_facets_in_its_table(self):
         seen = 0
@@ -221,7 +256,7 @@ class Gallery(unittest.TestCase):
     def test_a_one_way_option_keeps_its_undo(self):
         lines = GALLERY.read_text().splitlines()
         k = next(i for i, x in enumerate(lines) if x.startswith("- **(a) Delete it**"))
-        self.assertIn(("undo", "none, it cannot be recovered"), facets(lines[k + 1]))
+        self.assertIn(("⚠ undo", "none, it cannot be recovered"), facets(lines[k + 1]))
 
     def test_no_list_line_carries_an_options_facets(self):
         seen = 0
@@ -248,7 +283,9 @@ class Gallery(unittest.TestCase):
         self.assertRegex(imp, r"^impact: → \(a\) .+; \(b\) .+ · later: ")
         opts = [x for x in stored if re.match(r"^\([a-y]\) ", x)]
         self.assertEqual(len(opts), 2)
-        self.assertTrue(all(" — undo: " in x for x in opts))
+        # an undo is stored only where it bites, and marked; 85's options are both reversible
+        self.assertFalse(any(" — undo: " in x for x in opts))
+        self.assertIsNone(BARE_UNDO.search(imp))
 
 
 if __name__ == "__main__":

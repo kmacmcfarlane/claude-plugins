@@ -5,8 +5,11 @@ The decisions skill's cards and blocks follow the page's `context` field: the de
 one or two sentences at the page's summary size, ending on the resume cue; a block's is a
 bullet list at the page's medium size, its first bullet the card's Context, and a block's
 Impact line stands above its table. A list line
-carries none. Checked against the templates in `references/rendering.md` and every card and
-block in `references/gallery.md`.
+carries none. A card's why now and why ask share one **Why you, why now:** line just above
+its Rec line (answer 261, 2026-10-20); a block keeps them as two lines under its table. A
+bundle whose items need different answers is a group: a heading, then one whole card per
+item (answer 263). Checked against the templates in `references/rendering.md` and every card
+and block in `references/gallery.md`.
 
 Run from the plugin dir: python3 -m unittest discover -s tests -q
 """
@@ -25,6 +28,12 @@ CUE = " · "  # where you left it · what you decide now
 SENTENCE_END = re.compile(r"[.!?](?=\s+[A-Za-z`])")
 # a re-show's title: "**62 — back, as you asked (...):** the question?"
 RESHOW_HEAD = re.compile(r"^\*\*\d+ — back[^*]*:\*\* .+\?")
+# a group heading (a bundle, A4b) or a finding heading (finding first, when it lands): a view
+# stops at either, so neither is read as the tail of the card above it
+GROUP_OR_FINDING = re.compile(r"^\*\*(Group|Finding): ")
+GROUP_HEAD = re.compile(r"^\*\*Group: [^*]+\*\* — \*(\d+) decisions, [^*]+\*$")
+WHY_LINE = "**Why you, why now:**"
+REC_LINE = re.compile(r"^(Rec \*\*\(|\*No recommendation)")
 
 
 def fenced(text, opener):
@@ -41,7 +50,7 @@ def heads(lines):
     table head as 'table'; other lines dropped."""
     out = []
     for line in lines:
-        m = re.match(r"^\*\*([A-Za-z ]+):\*\*", line)
+        m = re.match(r"^\*\*([A-Za-z ,]+):\*\*", line)
         if m:
             out.append(m.group(1))
         elif line.startswith("| Impact |"):
@@ -64,7 +73,8 @@ def views(path):
             continue
         j = i + 1
         while j < len(lines) and not (title(lines[j]) or lines[j] == "---"
-                                      or lines[j].startswith("#")):
+                                      or lines[j].startswith("#")
+                                      or GROUP_OR_FINDING.match(lines[j])):
             j += 1
         body = lines[i:j]
         if RESHOW_HEAD.match(line) and not any(x.startswith("**What:**") for x in body):
@@ -95,8 +105,14 @@ class Templates(unittest.TestCase):
 
     def test_the_card_template_runs_what_context_impact(self):
         card = fenced(RENDERING.read_text(), "**N — Title as a question?**\n**What:**")
-        self.assertEqual(heads(card)[:5], ["What", "Context", "Impact", "Why now", "Why ask"])
+        self.assertEqual(heads(card)[:3], ["What", "Context", "Impact"])
+        self.assertNotIn("Why now", heads(card))
+        self.assertNotIn("Why ask", heads(card))
         self.assertNotIn("cold reader only", "\n".join(card))
+
+    def test_the_card_template_puts_the_why_line_above_the_rec_line(self):
+        card = fenced(RENDERING.read_text(), "**N — Title as a question?**\n**What:**")
+        check_why_line(self, "rendering.md card", card)
 
     def test_the_block_template_runs_what_context_bullets_table(self):
         block = fenced(RENDERING.read_text(), "**N — Title as a question?** ⚠ one-way")
@@ -115,6 +131,54 @@ class Templates(unittest.TestCase):
         text = RENDERING.read_text()
         self.assertIn("**Older stored cards render as before.**", text)
         self.assertIn("renders as it did before Context existed", text)
+
+
+def check_why_line(test, where, body):
+    """A card's one **Why you, why now:** line: after its options (and any To act on, If left
+    or If unanswered part), the line just above its Rec line, about 25 words at most; no
+    separate Why now or Why ask line."""
+    hs = heads(body)
+    test.assertNotIn("Why now", hs, f"{where}: a separate Why now line")
+    test.assertNotIn("Why ask", hs, f"{where}: a separate Why ask line")
+    test.assertEqual(hs.count("Why you, why now"), 1, f"{where}: one why line")
+    k = next(i for i, x in enumerate(body) if x.startswith(WHY_LINE))
+    z = max(i for i, x in enumerate(body) if x.startswith("- (z) "))
+    test.assertLess(z, k, f"{where}: the why line is above the options")
+    test.assertTrue(k + 1 < len(body) and REC_LINE.match(body[k + 1]),
+                    f"{where}: the why line is not just above the Rec line")
+    words = body[k][len(WHY_LINE):].split()
+    test.assertLessEqual(len(words), 30, f"{where}: the why line runs {len(words)} words")
+
+
+def groups(path):
+    """Each group heading in a file: (line number, the N it claims, the card titles after
+    it up to the next rule, heading or group)."""
+    lines = path.read_text().splitlines()
+    out = []
+    for i, line in enumerate(lines):
+        m = GROUP_HEAD.match(line)
+        if not m:
+            continue
+        cards = []
+        for x in lines[i + 1:]:
+            if x == "---" or x.startswith("#") or GROUP_OR_FINDING.match(x):
+                break
+            if CARD_HEAD.match(x):
+                cards.append(x)
+        out.append((i + 1, int(m.group(1)), cards, lines[i + 1] if i + 1 < len(lines) else ""))
+    return out
+
+
+def check_group(test, where, n, cards, after, bodies):
+    """A group heading counts its cards, carries its shared context on the next line, and
+    each card under it is whole: its own number and its own Rec line."""
+    test.assertTrue(after.startswith("**Shared context:**"), f"{where}: no shared context")
+    test.assertEqual(len(cards), n, f"{where}: the heading counts {n}, {len(cards)} follow")
+    nums = [re.match(r"^\*\*(\d+) — ", c).group(1) for c in cards]
+    test.assertEqual(len(set(nums)), len(nums), f"{where}: a number shared")
+    for body in bodies:
+        test.assertEqual(sum(1 for x in body if REC_LINE.match(x)), 1,
+                         f"{where}: {body[0][:30]} has no Rec line of its own")
 
 
 class GalleryContexts(unittest.TestCase):
@@ -177,6 +241,22 @@ class GalleryContexts(unittest.TestCase):
                 if LIST_LINE.match(line):
                     self.assertNotIn("Context", line, f"{path.name}:{n}")
 
+    def test_every_card_has_one_why_line_above_its_rec_line(self):
+        seen = 0
+        for n, kind, body in views(GALLERY):
+            if kind == "card":
+                seen += 1
+                check_why_line(self, f"gallery.md:{n}", body)
+        self.assertGreaterEqual(seen, 15)
+
+    def test_a_block_keeps_why_now_and_why_ask_under_its_table(self):
+        for n, kind, body in views(GALLERY):
+            if kind == "block":
+                hs = heads(body)
+                self.assertNotIn("Why you, why now", hs, f"gallery.md:{n}")
+                self.assertLess(hs.index("table"), hs.index("Why now"), f"gallery.md:{n}")
+                self.assertEqual(hs.index("Why now") + 1, hs.index("Why ask"), f"gallery.md:{n}")
+
     def test_the_stored_card_keeps_its_context_before_its_impact(self):
         lines = GALLERY.read_text().splitlines()
         k = next(i for i, x in enumerate(lines) if x.startswith("decision 85:"))
@@ -185,6 +265,67 @@ class GalleryContexts(unittest.TestCase):
         self.assertEqual(fields.index("context") + 1, fields.index("impact"))
         ctx = lines[k + 1 + fields.index("context")]
         self.assertIn(" — then: ", ctx)
+
+
+class Groups(unittest.TestCase):
+    """A bundle whose items need different answers is a group of whole item cards."""
+
+    def test_the_gallery_has_a_group_of_whole_cards(self):
+        gs = groups(GALLERY)
+        self.assertGreaterEqual(len(gs), 1)
+        bodies = {b[0]: b for _, kind, b in views(GALLERY)}
+        for n, count, cards, after in gs:
+            check_group(self, f"gallery.md:{n}", count, cards, after,
+                        [bodies[c] for c in cards])
+
+    def test_a_view_stops_at_a_group_or_finding_heading(self):
+        for n, kind, body in views(GALLERY):
+            for x in body[1:]:
+                self.assertIsNone(GROUP_OR_FINDING.match(x), f"gallery.md:{n}")
+
+    def test_the_rendering_names_the_group_heading(self):
+        text = RENDERING.read_text()
+        self.assertIn("## A bundle as a group", text)
+        self.assertIn("**Group: <plain name>** — *<N> decisions, <what they share>*", text)
+        self.assertIn("**Shared context:**", text)
+
+
+class Checks(unittest.TestCase):
+    """Each check fails on the form it exists to catch, so a clean run means something."""
+
+    CARD = ["**41 — Resume the backup?**", "**What:** x", "**Context:** y · z", "**Impact:** → a",
+            "- **(a) Resume**", "  *→ it finishes*", "- (z) Decide later — *it waits*", "",
+            "**Why you, why now:** the lease lapses at five.", "Rec **(a)** · basis **strong**"]
+
+    def test_a_good_why_line_passes(self):
+        check_why_line(self, "good", list(self.CARD))
+
+    def test_the_old_two_lines_on_a_card_are_caught(self):
+        card = list(self.CARD)
+        card[8:9] = ["**Why now:** the lease lapses.", "**Why ask:** it is yours."]
+        with self.assertRaises(AssertionError):
+            check_why_line(self, "mutant", card)
+
+    def test_a_why_line_above_the_options_or_too_long_is_caught(self):
+        card = list(self.CARD)
+        card.insert(4, card.pop(8))
+        with self.assertRaises(AssertionError):
+            check_why_line(self, "mutant", card)
+        card = list(self.CARD)
+        card[8] = "**Why you, why now:** " + "word " * 31
+        with self.assertRaises(AssertionError):
+            check_why_line(self, "mutant", card)
+
+    def test_a_group_that_miscounts_or_shares_a_rec_line_is_caught(self):
+        a = ["**51 — A?**", "Rec **(a)**"]
+        b = ["**52 — B?**", "Rec **(a)**"]
+        check_group(self, "good", 2, [a[0], b[0]], "**Shared context:** x", [a, b])
+        with self.assertRaises(AssertionError):
+            check_group(self, "mutant", 3, [a[0], b[0]], "**Shared context:** x", [a, b])
+        with self.assertRaises(AssertionError):
+            check_group(self, "mutant", 2, [a[0], b[0]], "**Shared context:** x", [a, b[:1]])
+        with self.assertRaises(AssertionError):
+            check_group(self, "mutant", 2, [a[0], b[0]], "", [a, b])
 
 
 if __name__ == "__main__":

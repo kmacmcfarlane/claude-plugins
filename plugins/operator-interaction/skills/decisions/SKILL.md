@@ -62,14 +62,17 @@ Every decision carries, at any level:
 1. **What is decided**, in plain words. Gloss every id, hash, file or item name on first use —
    a bare `a3f9` or `7c41e0d` tells a cold reader nothing. Define every term the operator may
    not know (a source document's label or number, an acronym, a term of art) where it first
-   appears in each view, preferring the words it stands for; the label trails as a tag at
-   most; on a card or block, its **Context:** is where the terms are introduced. Name items
-   in plain words, the id at most a trailing tag: load the `plain-names` skill (same plugin)
-   and follow it.
+   appears in each view, preferring the words it stands for; on a card or block, its
+   **Context:** is where the terms are introduced. A source's own label goes first with its
+   short name, *F7 (oversize upload)* (`references/rendering.md` § Source labels). Name
+   items in plain words, the id at most a trailing tag: load the `plain-names` skill (same
+   plugin) and follow it.
 2. **Its impact**, in five facets in this order: **Effect**, **Wait**, **Reach**, **Undo**,
-   **Cost** (`references/rendering.md` § Impact). Written when it is raised, as the Impact
-   line, its Effect across all the options, favouring none, and stored with the card where
-   the caller keeps one; each option's own impact is stored with the option.
+   **Cost** (`references/rendering.md` § Impact), Effect and Reach about the thing the work
+   builds, never the process (that is Wait), Undo only where an option is one-way or costly.
+   Written when it is raised, as the Impact line, its Effect across all the options,
+   favouring none, and stored with the card where the caller keeps one; each option's own
+   impact is stored with the option.
 3. **Why now**, and what it blocks (the Wait facet). When nothing forces it, say so —
    *why now: nothing forces it; raised because the audit turned it up* — and *blocks:
    nothing* is an honest answer.
@@ -77,9 +80,11 @@ Every decision carries, at any level:
    would go wrong if you took your recommendation alone (with no recommendation, why the call
    is not yours). It opens with the decision's **class** when the caller names classes of
    decision. A question that cannot fill it is decided alone when the FYI rule (§ Before you
-   write) allows; otherwise it is asked.
-5. **The options**, each with its consequence — what happens to the world if it is chosen —
-   and its own reach, undo and cost where they apply.
+   write) allows; otherwise it is asked. On a card, why now and why ask share one
+   **Why you, why now:** line of about 25 words at most, just above the Rec line.
+5. **The options**, each with its consequence — what happens to the world if it is chosen,
+   by what mechanism, to whom, before and after — and its own reach, undo and cost where
+   they apply.
    Include "do nothing" when it is a real option.
 6. **Decide later**, always, as its own option (`(z)`), distinct from "do nothing": it says what
    waiting costs, and when there is a deadline, what happens at the deadline.
@@ -165,10 +170,10 @@ Smallest to largest, each showing more of the impact in facet order (templates i
   any deadline; a round ask, its justification; a line-only decision, its
   why ask.
 - **Card** — in the answer page's order: the decision line (the title, then **What:**, what
-  is decided), then **Context:**, then an **Impact:** line; then why now, why ask (and a
-  round ask's justification), the options, each with its own impact (effect, reach, undo,
-  cost) on an italic line under it, decide later, any
-  **To act on (x):** part, then `Rec · basis — reason · unknown`. Its **Context:** is one or
+  is decided), then **Context:**, then an **Impact:** line; then the options, each with its
+  own impact (effect, reach, a one-way or costly option's `⚠ undo:`, cost) on an italic line
+  under it, decide later, any **To act on (x):** part, a round ask's justification, the
+  **Why you, why now:** line, then `Rec · basis — reason · unknown`. Its **Context:** is one or
   two sentences, the page's summary size: the terms the card uses, then the resume cue
   (where you left it · what you decide now). It is written for every decision when it is
   raised, stored with the card where the caller keeps one, and shown every time the card is
@@ -176,7 +181,8 @@ Smallest to largest, each showing more of the impact in facet order (templates i
 - **Block** — a card whose Context is fuller, a bullet list at the page's medium
   size that adds the context the reader may have lost, and whose Impact line is followed by
   a table (a row per option, its effect, reach, undo and cost, plus a Wait row) in place of
-  the options' impact lines; plus the basis drill-down with evidence links.
+  the options' impact lines, then why now and why ask on two lines; plus the basis
+  drill-down with evidence links.
 
 **The line-only rule.** A decision may stay a list line only when all of these hold: the
 reader is warm; the stakes are low (two-way and narrow); the basis is strong (for a
@@ -195,13 +201,16 @@ This holds for ⚠ too — the line keeps its ⚠ label, and `expand` brings the
 The higher the stakes, the more information and the slower the decision.
 
 **⚠ one-way** marks a decision that is one-way *and* high impact. Write it `⚠ one-way`, with a
-space after the symbol; its Undo states the one-way part. A narrow one-way decision is a card
-with no ⚠: its Undo says it cannot be undone.
+space after the symbol. An option one-way or costly to undo carries `⚠ undo:`, which marks
+the option, never the decision; a narrow one-way decision is a card with no ⚠ label. An
+option with no undo shown is reversible at little cost.
 
 ## Order
 
 Related decisions (same repo, same topic) form a **group**, kept together to spare the
-operator context switches; a lone decision is a group of one. Groups go in this order, each
+operator context switches; a lone decision is a group of one. A **bundle** whose items need
+different answers is a group of whole item cards (`references/rendering.md` § A bundle as a
+group); when one answer fits every item, it stays one card. Groups go in this order, each
 placed by its most pressing member, and the same precedence holds inside a group:
 
 1. **Breaks before the operator is back** — a stated deadline (a lock, a lease, a due time)
@@ -230,6 +239,8 @@ The decisions close the message — after any report, push outcome or summary:
 
 To put several decisions on a page the operator answers by clicking, instead of in the
 message, use the `decision-page` skill (same plugin); the cards it renders are this skill's.
+A **findings-style set** (raised from a review, an audit, a test run or a scan) goes to chat
+by default, until the page can show each finding, which is what the operator decides from.
 
 `expand` raises a decision one level in the next round (line → card → block); it keeps its
 number and position and stays raised on later re-shows.
@@ -251,6 +262,7 @@ Details, echo wording and edge cases: `references/replies.md`.
 | Reply | What you do |
 |---|---|
 | `N: letter`, or a choice in words | act — on a ⚠ decision, when the chosen option is one-way, repeat it back and act only once confirmed |
+| a source label for the number (`F7: a`) | read it as the decision whose title carries that label, and echo both (`references/replies.md`) |
 | `later [when]` | set the wake (a time, an event, or the next time you finish a piece of work and report); re-ask with what changed |
 | `tell me [what]` | answer under the same number with an **Added:** line and only the lines the fact changes |
 | `expand` | show it one level higher next round; on a block, say it is already at full detail |
@@ -288,7 +300,7 @@ it appears: **paging** on a cold re-show.
 ## References
 
 - `references/worksheet.md` — the six groups, their fields, who supplies each, the two clocks, the Context and the Impact line, the cold read
-- `references/rendering.md` — the impact facets and Impact line, the Context section, the tag size, list line, card and block templates, the message layout, labels, the re-show
+- `references/rendering.md` — the impact facets and Impact line, the Context section, the tag size, list line, card and block templates, the message layout, a bundle as a group, labels, source labels, the re-show
 - `references/replies.md` — reply parsing, echo, read-back, batch, later and re-ask, reframe
 - `references/evidence-basis.md` — the basis word, its tags and the rule
 - `references/rationale.md` — why each rule, with its sources
