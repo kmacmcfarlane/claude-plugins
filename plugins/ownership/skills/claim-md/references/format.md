@@ -247,4 +247,5 @@ under `N`.
   `- <name> — <what it owns or does there>`, the name the text before the first ` — ` (the
   whole item when it has none). `Systems: none` alone is the line with no items. A section
   without either line has no list. The lines' meaning is the librarian's (dev-flow's
-  `librarian-mode`); the check reads only these forms.
+  `librarian-mode`, defined by its responsibility interview, once landed); the check reads
+  only these forms.

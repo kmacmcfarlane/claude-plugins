@@ -703,8 +703,9 @@ class Systems(Base):
                 with self.subTest(mode=mode, extra=extra[0]):
                     self.assertEqual(code, 1)
                     self.assertNotIn(S, out + err)
-                    for k in ("systems", "systems-not-ours", "not-owned"):
-                        self.assertIn(k, out)
+                    for flag, k in (("CONFLICT", "systems"), ("CONFLICT", "systems-not-ours"),
+                                    ("ONE-SIDED", "not-owned")):
+                        self.assertIn(f'"{k}"' if mode else f"{flag} {k} ", out)
 
 
 # -- coverage --------------------------------------------------------------------------------

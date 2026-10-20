@@ -39,7 +39,8 @@ claim_check.py [--repo DIR] [--claim PATH] [--estate] [--dir DIR] [--today YYYY-
   with or without a claim here) and flags only this repo's own lines and the pairs that
   include this repo; a sibling's CLAUDE.md that cannot be read is a `PROBLEM` at that
   sibling's location, as with `--estate`. With `--estate` it covers every repo and every
-  pair. With no `Systems:` line anywhere it flags nothing.
+  pair. With no `Systems:` line anywhere it flags nothing; a CLAUDE.md it cannot read is
+  still a `PROBLEM`.
 - `--today` fixes the clock, for tests.
 - **Read only.** The script never writes and never opens the network. It runs git with fixed
   arguments, drops git's stderr, reads git's stdout only for the paths `rev-parse` prints
@@ -146,7 +147,7 @@ is relayed to that repo's session as a request. Substance and upkeep are `format
 | `AWAITING` | point at the neighbour's new claim | upkeep |
 | `ONE-SIDED` (no kind) | nothing in this claim; the neighbour lacks a pointer | reported for the neighbour |
 | `CONFLICT` defined-twice, owner, claimed-and-not-ours | — | substance: a decision to the operator |
-| `CONFLICT` systems, systems-not-ours; `ONE-SIDED` not-owned | — | substance: in a librarian session, one numbered decision per pair on the responsibility card of dev-flow's `librarian-mode` (`Who owns <system>: this repo or <other repo>?`); otherwise a plain lettered question to the operator |
+| `CONFLICT` systems, systems-not-ours; `ONE-SIDED` not-owned | — | substance: in a librarian session, one numbered decision per pair on the responsibility card of dev-flow's `librarian-mode` (defined by its responsibility interview, once landed) (`Who owns <system>: this repo or <other repo>?`); otherwise a plain lettered question to the operator |
 | `MOVED?` missing, outside | close the row, or correct the path | upkeep when the move landed or the path was renamed; otherwise to the operator |
 | `MISMATCH` librarian-only | add the line to `## Not ours` | substance: to the operator |
 | `MISMATCH` claim-only, `owner_form` repo or operator | copy the line into the librarian's `Not owned:` | upkeep, reported |
