@@ -364,7 +364,8 @@ function check(d){
     const full=b=>row(b)&&[b.happens,b.who].every(x=>x.trim());
     if(c.warn&&(typeof c.blocks!=="object"||!c.blocks||!ls.every(k=>k==="z"||full(c.blocks[k]))))bad.push(w+": a ⚠ one-way card needs blocks {happens, who} for every option but (z), each non-empty");
     if(c.blocks!=null&&(typeof c.blocks!=="object"||Object.keys(c.blocks).some(k=>k==="z"||!ls.includes(k)||!row(c.blocks[k]))))bad.push(w+": blocks are keyed by option letter, not (z), each {happens, who, undo?, cost?} as text, oneway? true or false");
-    /* a row flagged one-way decides the read-back: it says how it is undone, or that it cannot be */
+    /* a row flagged oneway (one-way or costly to undo) decides the read-back: it says how it is undone, and at
+       what cost, or that it cannot be */
     else if(c.blocks!=null)for(const k of Object.keys(c.blocks))if(c.blocks[k].oneway===true&&!(isStr(c.blocks[k].undo)&&c.blocks[k].undo.trim()))
       bad.push(w+": ("+k+") is flagged one-way (oneway: true) but has no undo: say how it is reversed and at what cost, or that it cannot be and why");
     if(c.act!=null){

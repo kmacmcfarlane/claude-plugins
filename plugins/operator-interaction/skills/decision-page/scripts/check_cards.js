@@ -259,7 +259,7 @@ function depth(c, say) {
 function oneway(c, say) {
   const rows = c.blocks && typeof c.blocks === "object" ? Object.keys(c.blocks).filter(k => c.blocks[k] && c.blocks[k].oneway === true) : [];
   if (c.warn && !rows.length)
-    say("oneway", "oneway: a ⚠ one-way card has no blocks row flagged one-way: set oneway: true, with its undo, on each option that cannot be taken back, or only at real cost; or leave it knowingly on a card the operator has answered");
+    say("oneway", "oneway: a ⚠ one-way card has no blocks row flagged one-way: set oneway: true, with its undo, on each option one-way or costly to undo; or leave it knowingly on a card the operator has answered");
   if (rows.length && !(typeof c.impact.undo === "string" && c.impact.undo.trim()))
     say("oneway impact", "oneway: (" + rows.join(", ") + ") is flagged one-way but the Impact carries no undo: name it there, (" + rows[0] + ") and how it is undone, or that it cannot be");
 }

@@ -163,6 +163,10 @@ class WriterDigest(unittest.TestCase):
         self.assertEqual(keyed(section(self.digest, "A card"), 1).get("label"), "no")
         self.assertIn("oneway", keyed(section(self.digest, "A card"), 2)["blocks"])
         self.assertIn("oneway", keyed(section(self.schema, "A card"), 3)["blocks"])
+        # the flag has the decisions skill's ⚠ undo: scope, one-way or costly, in both
+        for text in (self.digest, self.schema):
+            self.assertIn("`oneway: true` on each option one-way or costly to undo", text)
+            self.assertNotIn("costly but reversible", text)
         gone = self.digest.replace("| `label` | no |", "| label | no |")
         self.assertIn("A card: `label` missing", required_problems(self.schema, gone, "A card"))
 

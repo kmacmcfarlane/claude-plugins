@@ -68,7 +68,7 @@ must start `https://`, or it is not shown.
 | `whyask` | yes | what goes wrong if the recommendation were taken alone |
 | `class` | no | the class that opens Why ask, when the caller names classes |
 | `warn` | no | `true` for ⚠ one-way |
-| `blocks` | expected on every card; required when `warn` | `{letter: {happens, who, undo, cost, oneway}}` for every option but `z`, each cell ~5–25 words; `undo` only on an option one-way or costly to undo, `cost` optional; `oneway: true` on an option that cannot be taken back, or only at real cost, which then needs its `undo` (a costly but reversible one carries its undo unflagged); a ⚠ card flags its one-way rows; shown in the option's **More** |
+| `blocks` | expected on every card; required when `warn` | `{letter: {happens, who, undo, cost, oneway}}` for every option but `z`, each cell ~5–25 words; `undo` only on an option one-way or costly to undo, `cost` optional; `oneway: true` on each option one-way or costly to undo, which then needs its `undo`; a ⚠ card flags its one-way rows; shown in the option's **More** |
 | `act` | when an option asks the operator to act; optional otherwise | `{letter: ["step", …]}`, not `z`; each list non-empty, each step text on one line, no `<placeholder>`; a step names where a secret goes, never its value; a paste text holding an angle-bracketed word, or of more than one line, goes in a file named by its `/…` path |
 | `dep` | no | usually slugs with the answer that matters (`[[41]] (b)`); leave it out when there is none |
 | `rec` | yes | an option letter, or `null` |

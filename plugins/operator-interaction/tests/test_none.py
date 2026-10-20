@@ -230,7 +230,7 @@ class OlderOneWayPages(unittest.TestCase):
         code, out, _ = runner(older_warn_page())
         self.assertEqual(code, 2, out)
         self.assertIn("lint: card 42: oneway: a ⚠ one-way card has no blocks row flagged one-way: "
-                      "set oneway: true, with its undo, on each option", out)
+                      "set oneway: true, with its undo, on each option one-way or costly to undo", out)
         # the example, flagged, is clean
         self.assertEqual(runner(example())[:2], (0, ""))
 
@@ -240,7 +240,7 @@ class OlderOneWayPages(unittest.TestCase):
         self.assertEqual(run_page(d)["bad"], [])
         out = runner(d)[1]
         self.assertIn("lint: card 42: oneway: (b) is flagged one-way but the Impact carries no undo", out)
-        # a narrow one-way decision: no ⚠ label, its one-way option flagged, the same rules
+        # a narrow decision with an option costly to undo: no ⚠ label, that option flagged, the same rules
         d = example()
         d["cards"][2]["blocks"]["b"]["oneway"] = True
         self.assertEqual(run_page(d)["bad"], ["card 43: (b) is flagged one-way (oneway: true) but has no "

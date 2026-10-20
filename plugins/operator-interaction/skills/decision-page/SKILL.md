@@ -114,10 +114,11 @@ The rules below are what the digest condenses:
 - The TLDR comes first on the card: one or two terse fragment bullets. It names no
   recommendation: the options mark it. Say what is decided, and what rides on it.
 - Every card carries `impact`, the decision's Impact across all its options (effect, wait,
-  reach, cost where it has one, and undo only where an option is one-way or costly; the `decisions` skill's `references/rendering.md` § Impact), so every view on
-  the page shows it: the effect in the map and on a closed card, the facets one a line on an
-  open one, each option's own row in its **More**. Its `effect` says what the decision changes and
-  settles, favouring no option, written from the card's own option effects (`blocks`, each
+  reach, cost where it has one, and undo only where an option is one-way or costly; the
+  `decisions` skill's `references/rendering.md` § Impact), so every view on the page shows it:
+  the effect in the map and on a closed card, the facets one a line on an open one, each
+  option's own row in its **More**. Its `effect` says what the decision changes and settles,
+  favouring no option, written from the card's own option effects (`blocks`, each
   option's `impact`); copy a stored Effect only when it names each option's outcome or the
   card was stored or revised on or after 2026-10-14; otherwise write it from the option
   effects (the pre-publish check's rec-only lint backs this). Its `wait`, `reach` and `undo`
@@ -125,10 +126,10 @@ The rules below are what the digest condenses:
   options. Each option's own effect lives in its `blocks` row.
 - Every card carries `blocks`, its Impact row per option but (z) (effect, reach, cost where
   it has one, and undo only where the option is one-way or costly), shown in that option's
-  **More**; a ⚠ one-way card is refused without them. A row whose option cannot be taken back
-  carries `oneway: true` and its undo: the page refuses a flagged row without one, and the
-  runner lints a ⚠ card with no flagged row (an older page still shows). A round ask carries `ifleft` and
-  `roundcosts`; a status-quo default, `ifunanswered`.
+  **More**; a ⚠ one-way card is refused without them. A row whose option is one-way or costly
+  to undo carries `oneway: true` and its undo: the page refuses a flagged row without one, and
+  the runner lints a ⚠ card with no flagged row (an older page still shows). A round ask
+  carries `ifleft` and `roundcosts`; a status-quo default, `ifunanswered`.
 - Every card carries the depth the decisions skill's block holds, scaled to the decision, up to
   the soft sizes (`references/writer-digest.md` § Levels and their shapes): Why now and Why ask
   in full, a `blocks` row and a full text for every option but (z), and the basis drill-down in
