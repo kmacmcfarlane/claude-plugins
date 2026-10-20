@@ -926,10 +926,13 @@ under its headline (`raised:`, `what:`, `why now:`, `why ask:`,
 match neither marker, and `wi` reads none of them except the first
 `raised:` per N (the decision's age). `why ask: <class> — <reason>` is one
 physical line: why the question came to the operator, opening with its
-class. `impact: → <effect> · later: <wait> · reach: <reach> · undo:
-<undo>` is one physical line too: what the decision changes across its
+class. `impact: → <effect> · later: <wait> · reach: <reach> [· ⚠ undo:
+<undo>]` is one physical line too: what the decision changes across its
 options, written when it is raised, for the views of the decision to read;
-`wi` reads none of it.
+its undo is there only when some option is one-way or costly to undo,
+marked `⚠ undo:` and naming that option, as the option's own line marks
+it (a line stored before that rule may carry a plain `undo:`, read as
+written). `wi` reads none of it.
 
 `wi prime` also shows a `HOLD <n>: <id> (<title cell>) …` line, first under
 the header, for open items tagged `hold` — an operator hold gates what may
