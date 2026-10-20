@@ -333,7 +333,7 @@ def is_marker_path(cwd, path):
     """True when the lexical or the resolved target names
     .claude/allow-checkout-edits, compared case-folded."""
     lexical = os.path.normpath(os.path.join(cwd, path))
-    for cand in (lexical, os.path.realpath(lexical)):
+    for cand in (lexical, os.path.realpath(os.path.join(cwd, path))):
         parts = cand.split(os.sep)
         if (len(parts) >= 2 and parts[-1].casefold() == MARKER_NAME
                 and parts[-2].casefold() == MARKER_DIR):

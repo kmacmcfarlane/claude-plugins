@@ -429,6 +429,19 @@ class TestRules(RulesBase):
         os.symlink("claude-cfg", self.p(".claude"))
         self.assertEqual(self.edit(self.marker)[1], MARKER_EDIT)
 
+    def test_t18_dotdot_through_symlink_marker_write_denied(self):
+        # repo/a -> <tmp>/x/y and <tmp>/x/dir -> repo/.claude: the kernel
+        # resolves a/../dir to <tmp>/x/dir, i.e. repo/.claude, so the write
+        # lands on the marker even though normpath would drop "a/..".
+        os.makedirs(self.p(".claude"))
+        x = os.path.join(self.tmp.name, "x")
+        os.makedirs(os.path.join(x, "y"))
+        os.symlink(os.path.join(x, "y"), self.p("a"))
+        os.symlink(self.p(".claude"), os.path.join(x, "dir"))
+        target = self.p("a") + "/../dir/allow-checkout-edits"
+        rc, out, _ = self.edit(target, tool="Write")
+        self.assertEqual(out, MARKER_EDIT)
+
     def test_t19_process_paths_stay_exempt(self):
         for sub in (".claude/settings.json", ".claude-sandbox/x"):
             p = self.p(sub)
