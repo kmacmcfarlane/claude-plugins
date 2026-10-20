@@ -3242,9 +3242,11 @@ def _init(args):
         print(f"tracking: {choice} (recorded in {root / STORE_FILE})")
         if _host_repo(root) is None:
             # 8805 F3: tracked names a repo, and there is none around it
+            fix = (f"move it to {DEFAULT_STORE}/ for one ({MOVING_A_STORE})"
+                   if old_location(root) else
+                   "`wi init --no-track` gives it its own repo")
             print(f"wi: note: {root} is in no git repo, so nothing tracks "
-                  "it and it keeps no history; `wi init --no-track` gives "
-                  "it its own repo", file=sys.stderr)
+                  f"it and it keeps no history; {fix}", file=sys.stderr)
         warning = custody_warning(root)
         if warning:
             print(warning, file=sys.stderr)

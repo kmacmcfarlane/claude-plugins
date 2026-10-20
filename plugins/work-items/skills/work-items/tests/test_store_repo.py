@@ -2048,6 +2048,26 @@ class TestInitOutsideGit(InitCase):
         self.assertFalse(wi.read_repo_own(store))
         self.assertFalse(os.path.lexists(store / ".git"))
 
+    def test_track_at_an_old_location_outside_git_says_move_it(self):
+        store = self.tmp / "loose" / ".work"
+        self.assertIsNone(wi._host_repo(store))
+        r = self.init(store, "--track", "--allow-old-location")
+        self.assertIn(f"wi: note: {store} {self.NOTE}; move it to "
+                      f"{wi.DEFAULT_STORE}/ for one ({wi.MOVING_A_STORE})",
+                      r.stderr)
+        self.assertNotIn("`wi init --no-track` gives it its own repo",
+                         r.stderr)
+        self.assertEqual(wi.read_tracking(store), "tracked")
+
+    def test_track_with_host_unknown_prints_no_note(self):
+        store = self.loose()
+        with mock.patch.object(wi, "_host_repo",
+                               return_value=wi.HOST_UNKNOWN):
+            code, out, err = self.run_init(store, "--track")
+        self.assertEqual(code, 0, out + err)
+        self.assertIn("tracking: tracked (recorded in", out)
+        self.assertNotIn("is in no git repo", out + err)
+
     def test_inside_a_host_each_line_keeps_its_wording(self):
         store = self.make_host(ignore=False) / ".work-items"
         r = self.init(store, "--no-track")

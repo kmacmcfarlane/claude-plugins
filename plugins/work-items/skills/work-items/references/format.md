@@ -139,7 +139,7 @@ problem, fixed by moving the store (§ Moving a store).
   its own.
 - **Outside any git repo.** `--no-track` (and the no-terminal default) gives the store its
   own repo, recorded `tracked` + `repo: own`; `--track` records `tracked` with no repo, so
-  the store has no history, and `init` says so.
+  the store has no history, and `init` says so when git reports no repo around it.
 - **Ignoring** (`--no-track`, the menu's git-ignored, the no-terminal default) adds
   `/<store path>/` — `/.work-items/`, or at an old location `/.work/` or
   `/.claude-sandbox/work/` — to the root `.gitignore` of the
