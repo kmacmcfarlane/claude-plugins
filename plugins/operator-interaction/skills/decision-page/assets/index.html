@@ -6,7 +6,8 @@
    (the terms it uses), then its Impact, one facet a line; the popup the same, with the Impact at
    tag size. Every view shows the decision's impact across all its options: the map and a closed
    card its effect, an open card its Impact lines, each option's More its own effect, reach, undo
-   and cost. Inside a card the essentials are flat (TLDR, Context, Impact, options, follow-ups,
+   (only where it is one-way or costly; ⚠ on a row flagged one-way) and cost. A decision raised from
+   one labelled item of a source opens its title on the label and its short name. Inside a card the essentials are flat (TLDR, Context, Impact, options, follow-ups,
    words, recommendation); background, dependencies and evidence sit in folds. A part with a
    more-detail button, above or inside a fold, steps to more detail on a click (terse bullets)
    and again to full detail (headed sections); each level replaces the part's text, and the next
@@ -182,6 +183,10 @@ details.pane>div{padding:6px 0 2px;font-size:.92rem;max-width:70ch;display:flex;
 .impline{font-size:.92rem;max-width:70ch;border-left:3px solid var(--accent);padding:6px 12px;background:var(--sunk);border-radius:0 6px 6px 0;display:flex;flex-direction:column;gap:2px;min-width:0}
 .impline .lbl{display:block;margin-bottom:1px}
 .impline i{font-style:normal;font-family:var(--f-mono);font-size:.8rem;color:var(--muted)}
+/* the option marker for undo: an option one-way or costly to undo (its blocks row flagged oneway) */
+.impline i.owu,.lbl.owu{color:var(--warn);font-weight:600}
+/* a source label first in a title (F7), its short name after it */
+.slab{font-family:var(--f-mono);font-stretch:100%;font-weight:600;font-size:.92em}
 /* an excerpt's code block: verbatim lines on the sunk surface, a mono caption (lang, source) over them; long
    lines scroll inside the block, never the page; a control character shows as a warn-coloured U+ tag */
 .xc{margin:0;min-width:0;max-width:100%;display:flex;flex-direction:column;border:1px solid var(--line);border-radius:6px;background:var(--sunk);overflow:hidden}
@@ -248,6 +253,10 @@ const recHead=c=>recOpt(c)[3];
 /* the rec slot: "rec (b)", or the no-recommendation label */
 const recPill=c=>c.rec?'<span class="pill rec">rec ('+esc(c.rec)+')</span>':'<span class="pill none">'+esc(c.norec||"no recommendation")+'</span>';
 const recSub=c=>c.rec?fmtPlain(recHead(c)):"";
+/* a decision raised from one labelled item of a source opens its title on the label and its short name:
+   F7 (oversize upload) · Cap the upload size */
+const srcLabel=c=>isLabel(c.label)?'<span class="slab">'+esc(c.label.id)+'</span> ('+esc(c.label.name)+') · ':'';
+const titleHtml=c=>srcLabel(c)+esc(c.t);
 const metaPills=c=>(c.warn?'<span class="pill warn">⚠ one-way</span>':'')+(c.class?'<span class="pill cls">'+esc(c.class)+'</span>':'');
 const fid=k=>esc(k.replace(/\s/g,"_"));
 
@@ -256,13 +265,18 @@ const fid=k=>esc(k.replace(/\s/g,"_"));
 const tagEffect=c=>'<span class="eff"><b>→</b>'+fmtPlain(c.impact.effect)+'</span>';
 /* the facets in their one order: key, the label a line opens with, the heading at full detail */
 const IMP_FACETS=[["effect","→","Effect"],["wait","later:","Wait"],["reach","reach:","Reach"],["undo","undo:","Undo"],["cost","cost:","Cost"]];
-const impLabel=(k,l)=>k==="effect"?'<b>→</b>':'<i>'+l+'</i>';
-/* the facets the check requires (effect, wait, reach, undo) are decision-wide statements: shown whatever
-   they say ("undo: none" says the decision is one-way). Cost is optional: a none cost is not shown */
+/* a card with a blocks row flagged oneway: its undo is the one-way option's, marked ⚠ undo: (the decisions
+   skill's option marker). Undo is shown only where an option is one-way or costly; older data carries it
+   everywhere and keeps the plain label */
+const oneWay=c=>!!c&&isObj(c.blocks)&&Object.keys(c.blocks).some(k=>isObj(c.blocks[k])&&c.blocks[k].oneway===true);
+const impLabel=(k,l,ow)=>k==="effect"?'<b>→</b>':(k==="undo"&&ow?'<i class="owu">⚠ '+l+'</i>':'<i>'+l+'</i>');
+/* the facets the check requires (effect, wait, reach) and an undo when given are decision-wide statements:
+   shown whatever they say ("undo: none" says an option is one-way). Cost is optional: a none cost is not shown */
 const facetShown=(k,v,ok)=>ok(v)&&(k!=="cost"||!isNone(v));
-/* the card's Impact, across all its options: one facet a line, → effect, later:, reach:, undo:, and cost: when given */
-const impactLine=c=>{const i=c.impact;
-  return '<div class="impline"><span class="lbl">Impact</span>'+IMP_FACETS.map(([k,l])=>facetShown(k,i[k],isTxt)?'<p>'+impLabel(k,l)+' '+fmt(i[k])+'</p>':'').join("")+'</div>'};
+/* the card's Impact, across all its options: one facet a line, → effect, later:, reach:, undo: when an option
+   is one-way or costly, and cost: when given */
+const impactLine=c=>{const i=c.impact,ow=oneWay(c);
+  return '<div class="impline"><span class="lbl">Impact</span>'+IMP_FACETS.map(([k,l])=>facetShown(k,i[k],isTxt)?'<p>'+impLabel(k,l,ow)+' '+fmt(i[k])+'</p>':'').join("")+'</div>'};
 
 /* what it takes to act on option k (the decisions skill's To act on part): its numbered steps, flat
    under the option, never folded; empty when the option asks nothing of the operator */
@@ -306,6 +320,8 @@ const textsOf=x=>typeof x==="string"?[x]:Array.isArray(x)?x.reduce((a,y)=>a.conc
   :isObj(x)?("h" in x?[x.h].concat(textsOf(x.b)):[x.t].concat(textsOf(x.sub||[]))):[];
 /* an Impact level's facet value: text, one bullet, or a list of bullets */
 const isFacet=v=>isItem(v)||isList(v);
+/* a source label: {id, name}, the label one word on one line, its short name one line of plain words */
+const isLabel=v=>isObj(v)&&isTxt(v.id)&&!/\s/.test(v.id)&&isTxt(v.name)&&!/[\r\n]/.test(v.name);
 /* the detail keys whose renditions are text or a list (impact, tldr and o have their own shapes) */
 const DETAIL_TEXT=["context","rec","why","whyask","dep","evidence"];
 
@@ -322,10 +338,12 @@ function check(d){
   d.layers.forEach((l,i)=>{if(!Array.isArray(l)||!isStr(l[0])||!isStr(l[1]))bad.push("layer "+i+": needs [key, title, note]");else keys.add(l[0])});
   for(const c of d.cards){
     const w="card "+(Number.isInteger(c&&c.n)?c.n:"?");
-    if(c&&(!c.impact||typeof c.impact!=="object"||!["effect","wait","reach","undo"].every(k=>isStr(c.impact[k])&&c.impact[k].trim())||("cost" in c.impact&&!isStr(c.impact.cost))))bad.push(w+": impact needs effect, wait, reach and undo as text (cost optional)");
+    /* undo is optional: shown only where an option is one-way or costly (older data carries it everywhere) */
+    if(c&&(!c.impact||typeof c.impact!=="object"||!["effect","wait","reach"].every(k=>isStr(c.impact[k])&&c.impact[k].trim())||["undo","cost"].some(k=>k in c.impact&&!isStr(c.impact[k]))))bad.push(w+": impact needs effect, wait and reach as text (undo and cost optional, as text)");
     if(!c||!Number.isInteger(c.n)||c.n<0){bad.push(w+": n must be a whole number");continue}
     if(seen.has(c.n))bad.push(w+": number used twice");seen.add(c.n);
     if(!keys.has(c.L))bad.push(w+": L is not a layer key");
+    if(c.label!=null&&!isLabel(c.label))bad.push(w+": label must be {id, name}: the source's label as one word (F7), and its short name in plain words on one line");
     for(const k of ["t","why","whyask","basis","reason","unknown","rev"])if(!isStr(c[k]))bad.push(w+": "+k+" missing");
     if(isStr(c.rev)&&!c.rev.trim())bad.push(w+": rev is empty");
     if(!isStr(c.context)||!c.context.trim())bad.push(w+": context missing: give the card a Context that introduces the terms, items and concepts the rest of it uses");
@@ -339,11 +357,17 @@ function check(d){
     if(new Set(ls).size!==ls.length||ls.slice(0,-1).join("")!==ls.slice(0,-1).sort().join(""))bad.push(w+": options must be in letter order, each letter once");
     if(c.rec===null){if(!isStr(c.norec))bad.push(w+": rec null needs norec")}
     else if(!ls.includes(c.rec))bad.push(w+": rec is not one of its option letters");
-    const row=b=>!!b&&typeof b==="object"&&isStr(b.happens)&&isStr(b.undo)&&isStr(b.who)&&(!("cost" in b)||isStr(b.cost));
-    /* a one-way card's rows decide the read-back: each cell non-blank (a none Undo is a statement, kept) */
-    const full=b=>row(b)&&[b.happens,b.undo,b.who].every(x=>x.trim());
-    if(c.warn&&(typeof c.blocks!=="object"||!c.blocks||!ls.every(k=>k==="z"||full(c.blocks[k]))))bad.push(w+": a ⚠ one-way card needs blocks {happens, undo, who} for every option but (z), each non-empty");
-    if(c.blocks!=null&&(typeof c.blocks!=="object"||Object.keys(c.blocks).some(k=>k==="z"||!ls.includes(k)||!row(c.blocks[k]))))bad.push(w+": blocks are keyed by option letter, not (z), each {happens, undo, who, cost?} as text");
+    /* undo is optional on a row (an option with none is reversible at little cost); oneway, when given, is true or false */
+    const row=b=>!!b&&typeof b==="object"&&isStr(b.happens)&&isStr(b.who)&&["undo","cost"].every(k=>!(k in b)||isStr(b[k]))&&(!("oneway" in b)||typeof b.oneway==="boolean");
+    /* a one-way card's rows: happens and who non-blank; the undo is required only on a row flagged oneway (below),
+       so an older ⚠ file, which carries no flag, is never refused for it */
+    const full=b=>row(b)&&[b.happens,b.who].every(x=>x.trim());
+    if(c.warn&&(typeof c.blocks!=="object"||!c.blocks||!ls.every(k=>k==="z"||full(c.blocks[k]))))bad.push(w+": a ⚠ one-way card needs blocks {happens, who} for every option but (z), each non-empty");
+    if(c.blocks!=null&&(typeof c.blocks!=="object"||Object.keys(c.blocks).some(k=>k==="z"||!ls.includes(k)||!row(c.blocks[k]))))bad.push(w+": blocks are keyed by option letter, not (z), each {happens, who, undo?, cost?} as text, oneway? true or false");
+    /* a row flagged oneway (one-way or costly to undo) decides the read-back: it says how it is undone, and at
+       what cost, or that it cannot be */
+    else if(c.blocks!=null)for(const k of Object.keys(c.blocks))if(c.blocks[k].oneway===true&&!(isStr(c.blocks[k].undo)&&c.blocks[k].undo.trim()))
+      bad.push(w+": ("+k+") is flagged one-way (oneway: true) but has no undo: say how it is reversed and at what cost, or that it cannot be and why");
     if(c.act!=null){
       if(typeof c.act!=="object"||Array.isArray(c.act)||Object.keys(c.act).some(k=>k==="z"||!ls.includes(k)||!Array.isArray(c.act[k])||!c.act[k].length||!c.act[k].every(x=>isStr(x)&&x.trim())))bad.push(w+": act is keyed by option letter, not (z), each a non-empty list of steps as text");
       else for(const k in c.act)for(const x of c.act[k]){
@@ -445,16 +469,16 @@ const labelled=(lbl,x,pre)=>Array.isArray(x)
   :'<p><span class="lbl">'+esc(lbl)+'</span>'+(pre?pre+' — ':'')+fmtD(x)+'</p>';
 /* the Impact at more detail: one bullet per facet, its label first, the options in its sub-bullets
    (a list value, which the runner lints, shows as sub-bullets too) */
-const impactMedium=i=>'<div class="impline"><span class="lbl">Impact</span><ul class="lvl">'
-  +IMP_FACETS.map(([k,l])=>{const v=i[k];if(!facetShown(k,v,isFacet))return "";const lab=impLabel(k,l)+' ';
+const impactMedium=(i,ow)=>'<div class="impline"><span class="lbl">Impact</span><ul class="lvl">'
+  +IMP_FACETS.map(([k,l])=>{const v=i[k];if(!facetShown(k,v,isFacet))return "";const lab=impLabel(k,l,ow)+' ';
     if(Array.isArray(v))return '<li>'+lab+listHtml(v,fmtD,"lvl sub")+'</li>';
     return typeof v==="string"?'<li>'+lab+fmtD(v)+'</li>':'<li>'+lab+itemHtml(v,fmtD).slice(4)}).join("")+'</ul></div>';
 /* the Impact at full detail: a section per facet, headed Effect, Wait, Reach, Undo, Cost */
-const impactHigh=i=>'<div class="impline"><span class="lbl">Impact</span>'
+const impactHigh=(i,ow)=>'<div class="impline"><span class="lbl">Impact</span>'
   +IMP_FACETS.map(([k,,h])=>{const v=i[k];if(!facetShown(k,v,isFacet))return "";
-    return '<div class="lvs"><h4 class="lvh">'+h+'</h4>'+(typeof v==="string"?'<p>'+fmtD(v)+'</p>':listHtml(Array.isArray(v)?v:[v],fmtD))+'</div>'}).join("")+'</div>';
+    return '<div class="lvs"><h4 class="lvh">'+(k==="undo"&&ow?'⚠ '+h:h)+'</h4>'+(typeof v==="string"?'<p>'+fmtD(v)+'</p>':listHtml(Array.isArray(v)?v:[v],fmtD))+'</div>'}).join("")+'</div>';
 /* detail.impact's first level is its medium, its second its high */
-const impactLevel=(i,m)=>m===0?impactMedium(i):impactHigh(i);
+const impactLevel=(i,m,ow)=>m===0?impactMedium(i,ow):impactHigh(i,ow);
 const tldrHtml=(bs,f)=>'<div><span class="lbl">TLDR</span><ul class="tldr">'+bs.map(b=>'<li>'+f(b)+'</li>').join("")+'</ul></div>';
 const tldrLevel=x=>'<div><span class="lbl">TLDR</span>'+rend(x,fmtD)+'</div>';
 /* the rec line: its summary is the reason and the unknown; a level replaces both with one string */
@@ -476,7 +500,7 @@ function parts(c){
   const opt=(sum,lv,ph,f)=>shown(sum)?[f(sum)].concat(lv.map(f)):(lv.length?['<p class="evph">'+ph+'</p>'].concat(lv.map(f)):[""]);
   const P={
     ctx:[contextBlock(c)].concat(detOf(c,"context").map(x=>'<div class="ctx"><span class="lbl">Context</span>'+rend(x,fmtD)+'</div>')),
-    imp:[impactLine(c)].concat(detOf(c,"impact").map(impactLevel)),
+    imp:[impactLine(c)].concat(detOf(c,"impact").map((x,m)=>impactLevel(x,m,oneWay(c)))),
     tldr:[tldrHtml(c.tldr,fmt)].concat(detOf(c,"tldr").map(tldrLevel)),
     rec:[recLine(c,null)].concat(detOf(c,"rec").map(x=>recLine(c,x))),
     why:[labelled("Why now",c.why)].concat(detOf(c,"why").map(x=>labelled("Why now",x))),
@@ -500,7 +524,8 @@ function secHtml(c,key,label,rs,start){
    (less detail goes to its summary, then up again); then its impact line, static; then Effect, Reach, Undo
    and Cost from its blocks row. On a ⚠ one-way card the row comes first, so its Undo sits at the top as the
    block's table row did. With no blocks row its impact is its Effect ((z)'s, what waiting does, its Wait).
-   Each piece that is none is left out (isNone), but Undo: a none Undo says the option cannot be undone */
+   Each piece that is none is left out (isNone), but Undo: a none Undo says the option cannot be undone. A row
+   with no undo is reversible at little cost, and shows none; a row flagged oneway marks its Undo ⚠ */
 function optionDetail(c,k,P){
   const o=c.o.find(x=>x[0]===k);
   if(!o)return "";
@@ -511,13 +536,13 @@ function optionDetail(c,k,P){
   if(!b)return text+f(k==="z"?"Wait":"Effect",o[2]);
   const same=x=>String(x).trim().toLowerCase()===String(b.happens).trim().toLowerCase();
   const imp=shown(o[2])&&!same(o[2])?'<p class="impact">'+fmt(o[2])+'</p>':'';
-  const rowHtml=f("Effect",b.happens)+f("Reach",b.who)+(isTxt(b.undo)?'<p><span class="lbl">Undo</span>'+fmtD(b.undo)+'</p>':'')+f("Cost",b.cost);
+  const rowHtml=f("Effect",b.happens)+f("Reach",b.who)+(isTxt(b.undo)?'<p>'+(b.oneway===true?'<span class="lbl owu">⚠ Undo</span>':'<span class="lbl">Undo</span>')+fmtD(b.undo)+'</p>':'')+f("Cost",b.cost);
   return c.warn?rowHtml+text+imp:text+imp+rowHtml;
 }
 /* one open card, as renderCards places it in its group */
 function cardHtml(c){
   const n=esc(c.n),g="d"+n,P=parts(c);
-  let h='<details class="card" id="card-'+n+'"><summary><span class="n">'+n+'</span><h3>'+esc(c.t)+'</h3>'
+  let h='<details class="card" id="card-'+n+'"><summary><span class="n">'+n+'</span><h3>'+titleHtml(c)+'</h3>'
     +'<span class="meta">'+metaPills(c)+recPill(c)+tagEffect(c)+(shown(c.dep)?'<span>depends on: '+fmtPlain(c.dep)+'</span>':'')+'<span id="sum-'+n+'">'+ansLabel(c,answers[c.n])+'</span></span></summary>'
     +'<div class="body">'+secHtml(c,"tldr","TLDR",P.tldr)+secHtml(c,"ctx","Context",P.ctx)+secHtml(c,"imp","Impact",P.imp)
     +line("If left:",c.ifleft)+line("A round costs:",c.roundcosts)+line("If unanswered:",c.ifunanswered)
@@ -571,7 +596,7 @@ function renderHud(){
     for(const c of CARDS.filter(x=>x.L===key)){
       const n=esc(c.n);
       h+='<div class="row"><span class="n">'+n+'</span>'
-        +'<span class="t"><button type="button" data-open="'+n+'">'+esc(c.t)+'</button>'
+        +'<span class="t"><button type="button" data-open="'+n+'">'+titleHtml(c)+'</button>'
         +'<span class="sub">'+metaPills(c)+' '+recPill(c)+' '+recSub(c)+' '+tagEffect(c)+'</span></span>'
         +'<span class="quick">'+(c.rec?'<button class="btn" type="button" data-quick="rec" data-n="'+n+'">Use recommendation</button>':'')
         +'<button class="btn" type="button" data-quick="later" data-n="'+n+'">Later</button></span>'
@@ -657,7 +682,7 @@ const pop=$("#pop");let popKey=null,popPinned=false,popTimer=null,popAnchor=null
 function fillPop(k){
   const c=byN.get(k),r=REFS[k];let h="";
   if(c){
-    h='<div class="pop-h"><span class="n">'+esc(k)+'</span><span>'+esc(c.t)+'</span></div>'
+    h='<div class="pop-h"><span class="n">'+esc(k)+'</span><span>'+titleHtml(c)+'</span></div>'
      +'<p>'+metaPills(c)+recPill(c)+' '+recSub(c)+'</p>'
      +'<p><span class="lbl">Your answer</span>'+ansLabel(c,answers[c.n])+'</p>'
      +'<ul class="tldr">'+c.tldr.map(b=>'<li>'+fmtPlain(b)+'</li>').join("")+'</ul>'

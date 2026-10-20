@@ -5,7 +5,8 @@ answer document per decision to the artifact's `db`. This file is the schema for
 `assets/cards.example.json` is a complete, invented example: three decisions, each opening on
 its TLDR, then its Context, then its Impact across all its options. Its levels scale with the
 decision: a wide card with every part a click from more detail, a ⚠ one-way card (with its
-`blocks` rows) levelled too, and a small call with no recommendation and no levels. One
+`blocks` rows, its one-way option flagged) levelled too, and a small call raised from a
+source's labelled item with no recommendation and no levels. One
 option carries the steps the operator takes to act on it, and one slug names a decision not on
 the page.
 
@@ -19,10 +20,12 @@ opens with Rec, Recs, Recommend, Recommended or Recommendation followed by a col
 hyphen only with a space after it), a full stop, a bracket or nothing, unless *by* follows;
 or one that says `rec (b)`, I or we recommend, my or our recommendation, `(recommended)`, or
 `(b) is recommended`); an
-`impact` without its effect, wait, reach and undo as text; a `basis` word outside
+`impact` without its effect, wait and reach as text, or with an undo or cost that is not text;
+a `label` that is not `{id, name}`, the id one word and the name one line; a `basis` word outside
 the four; a `follow` list other than the fixed six; a `refs` key that is not a number; a ⚠
 card without its `blocks`; a `blocks` entry that is not an option letter other than `z`, or
-lacks its text; an `act` that is not keyed by option letters other than `z`, a key whose list
+lacks its text, or carries a `oneway` that is not true or false; a row flagged `oneway: true`
+without its undo; an `act` that is not keyed by option letters other than `z`, a key whose list
 of steps is empty or holds anything but text, a step holding a fill-in placeholder (an
 angle-bracketed word with no spaces, such as `<dir>` or `<path>`), or a step holding a line
 break; an `evidence` that is neither text nor a non-empty list of text; a `detail` that is not
@@ -44,7 +47,9 @@ Text fields are plain text: the page escapes them. Two marks are rendered:
 **No ids on the page.** The page is the reader's only context: they are not in the
 conversation. Refer to another decision by its slug, and to an item, a series, a branch or a
 commit by its short name or title, with no id after it, in every field, titles included (the
-page title, the layer titles). A fact that only an id carries (a commit hash the operator must
+page title, the layer titles). One exception: a source label a card declares in `label`
+(F7), written with its short name beside it, *F7 (oversize upload)*, anywhere on the page;
+bare, it is an id like any other. A fact that only an id carries (a commit hash the operator must
 check out, say) goes in backticks in `act` or `evidence`, where it is something to type or
 open. The runner lints an id anywhere the page shows text (SKILL.md step 2).
 
@@ -68,9 +73,10 @@ Each field maps to a part of the `decisions` skill's card (its `references/rende
 | `n` | integer | yes | the decision number, the caller's own, never reused | everywhere |
 | `L` | string | yes | its group: a `layers` key | groups the map and the cards |
 | `t` | string | yes | the short name, 2–6 words, a noun phrase (it is what a slug shows) | title |
+| `label` | object | no | the source label, when the decision is raised from one labelled item of a source (a review's finding, a plan's question or feature; never a tracker id such as a work item, ticket or commit): `{id, name}`, `id` the label as the source writes it, one word (`F7`), `name` its short name in plain words, about 2–6 (`oversize upload`), taken from the source where it has one (the `plain-names` skill's § Source labels). The decisions skill's rule (answer 269) | first in the title, on the open card, in the map and in the popup: **F7** (oversize upload) · `t`; a slug still shows `t` alone |
 | `rev` | string | yes | the card's revision: a label that changes whenever the card does. Any change to a card gets a new `rev`, Context included: an **Added:** line after `tell me`, more detail after `expand`, a `dig into` finding, a corrected fact, a re-ask. Only the one-time format migration keeps it: a card written before Context existed, whose own `what` and resume cue move into `context`, and whose terms are glossed from its own folds alone. A gloss drawn from anywhere outside the card is new information: a new `rev`. An ISO-8601 UTC time when you write it (`2026-01-12T09:30:00Z`) is the convention, but it is only ever compared for equality, never as a time | not shown; the page copies it into each answer, and it decides which answers count (below) |
 | `context` | string | yes | **Context:** one or two sentences: the terms, items and concepts the rest of the card uses, each introduced in plain words, by name and never by id; then where the operator left it (the `decisions` cue), when there is one. The TLDR says what is decided, so Context does not repeat it. Context introduces every specific thing the card names. Two shapes need it most: a count ("four changes", "the three"), for which Context says what the things are, or lists them; and a named mode, setting, review, plan or document ("content mode", "the review"), which Context gives a one-line gloss: what it is, and where it comes from. Written from the caller's stored What, its cue and the card's terms, with the cold read (below) run on it | flat on the open card, under the TLDR and above the Impact, and the same in the popup; not counted in the flat part's size (below); its medium and high in `detail` |
-| `impact` | object | yes | the **Impact** (the `decisions` skill's `references/rendering.md` § Impact), across all the decision's options, favouring none, `effect` and `reach` about the thing the work builds, never the process (that is `wait`): `effect` (what the decision changes and settles, whichever option is taken: *sets where the docs build runs, and who can publish*; where two or three outcomes fit, *(a) …; (b) …*), `wait` (what waiting costs, what it blocks), `reach` (who or what any option reaches), `undo` (each option's undo where they differ), each non-empty text; `cost` optional (the range across the options, when it is what the operator weighs; leave it out rather than write none: a none cost is not shown, § None is not shown). Its `effect` is written from the card's own option effects (`blocks`, each option's `impact`), and a stored Effect is copied only when it names each option's outcome or the card was stored or revised on or after 2026-10-14; otherwise it is written from the option effects (the pre-publish check's rec-only lint backs this); its `wait`, `reach` and `undo` are copied from the caller's stored line where it keeps one and they hold across the options. Each option's own effect lives in its `blocks` row and its **More** detail | `effect` at tag size (after an arrow) in the map, on the closed card and in the popup; on the open card one facet a line, under Context (`wait` as its later: line; (z)'s own `impact` is the Wait in its **More**); its medium and high in `detail` |
+| `impact` | object | yes | the **Impact** (the `decisions` skill's `references/rendering.md` § Impact), across all the decision's options, favouring none, `effect` and `reach` about the thing the work builds, never the process (that is `wait`): `effect` (what the decision changes and settles, whichever option is taken: *sets where the docs build runs, and who can publish*; where two or three outcomes fit, *(a) …; (b) …*), `wait` (what waiting costs, what it blocks), `reach` (who or what any option reaches), each non-empty text; `undo` optional, only when some option is one-way or costly to undo, naming that option (*(b) none — lost search ranking does not come back*): with none, every option is reversible at little cost; `cost` optional (the range across the options, when it is what the operator weighs; leave it out rather than write none: a none cost is not shown, § None is not shown). Its `effect` is written from the card's own option effects (`blocks`, each option's `impact`), and a stored Effect is copied only when it names each option's outcome or the card was stored or revised on or after 2026-10-14; otherwise it is written from the option effects (the pre-publish check's rec-only lint backs this); its `wait`, `reach` and `undo` are copied from the caller's stored line where it keeps one and they hold across the options. Each option's own effect lives in its `blocks` row and its **More** detail | `effect` at tag size (after an arrow) in the map, on the closed card and in the popup; on the open card one facet a line, under Context (`wait` as its later: line; (z)'s own `impact` is the Wait in its **More**; `undo` marked *⚠ undo:* when a `blocks` row is flagged `oneway`, the plain *undo:* otherwise, as older data carries it); its medium and high in `detail` |
 | `tldr` | array of strings | yes | one or two terse fragment bullets: the choice and what rides on it, no recommendation: the options mark it; the check refuses a bullet that opens with Rec or Recommend…, or says I or we recommend | first on the open card and in the popup; its medium and high in `detail` |
 | `ifleft` | string | no | **If left:** an ask for another round: each leftover finding and what it would break | flat |
 | `roundcosts` | string | no | **A round costs:** an ask for another round: time, quota, the operator's attention | flat |
@@ -80,7 +86,7 @@ Each field maps to a part of the `decisions` skill's card (its `references/rende
 | `whyask` | string | yes | **Why ask:** what would go wrong if the recommendation were taken alone | Background fold; its medium and high in `detail` |
 | `class` | string | no | the class that opens Why ask, when the caller names classes | a pill, and the Background fold |
 | `warn` | boolean | no | `true` for ⚠ one-way (one-way and high impact) | a ⚠ pill |
-| `blocks` | object | expected on every card; required when `warn` | the block's Impact table row per option: keyed by letter, a row for every option but `z` (the check refuses a ⚠ card without them; on any other card a missing row is a runner lint), each `{happens, undo, who, cost}` — the Effect, Undo (plainly: it decides the read-back) and Reach cells, and Cost, optional; each cell a table cell's length (about 5–25 words) | each option's **More** detail, as its Effect, Reach, Undo and Cost lines, open from the start on a ⚠ card, where the row comes before the option's text; an Effect, Reach or Cost cell that is none is not shown; Undo always shows (*none* says the option is one-way); on a ⚠ card the check refuses a blank `happens`, `undo` or `who`; an option with no entry shows its `impact` as the Effect and nothing else |
+| `blocks` | object | expected on every card; required when `warn` | the block's Impact table row per option: keyed by letter, a row for every option but `z` (the check refuses a ⚠ card without them; on any other card a missing row is a runner lint), each `{happens, who, undo, cost, oneway}` — the Effect and Reach cells; Undo, only on an option one-way or costly to undo (plainly: it decides the read-back), left out on one reversible at little cost; Cost, optional; each cell a table cell's length (about 5–25 words); `oneway: true` on each option one-way or costly to undo, the options the decisions skill marks `⚠ undo:`. The check refuses a flagged row without its undo; a ⚠ card with no flagged row is a runner lint (`oneway:`), never refused, so an older ⚠ page still shows | each option's **More** detail, as its Effect, Reach, Undo and Cost lines, open from the start on a ⚠ card, where the row comes before the option's text; an Effect, Reach or Cost cell that is none is not shown; an Undo given always shows (*none* says the option is one-way), as *⚠ Undo* on a flagged row; a row with no undo shows none; on a ⚠ card the check refuses a blank `happens` or `who`; an option with no entry shows its `impact` as the Effect and nothing else |
 | `act` | object | when an option asks the operator to act; optional otherwise | the **To act on (x):** part (the `decisions` skill's floor, what it takes to act; its specifics in that skill's `references/rendering.md` § Card): keyed by option letter other than `z`, each a non-empty array of steps as text, in order; backtick code renders as code. A step names where a secret goes, never its value. A paste text that legitimately holds an angle-bracketed word (`<br>`, a tag in an HTML snippet) goes in a file named by its `/…` path in the step: the check refuses it inline, as it refuses a fill-in placeholder. A step renders on one line (only an excerpt, § An excerpt, renders multi-line text): a paste text of more than one line goes in a file named by its `/…` path in the step, never inline; the check refuses a step with a line break | flat, as a numbered list under its option in the open card, never folded; not counted in the flat part's size (below) |
 | `dep` | string | no | what it depends on, usually slugs with the answer that matters (`[[41]] (b)`) | summary line, Dependencies fold; its medium and high in `detail`. Leave it out when the card depends on nothing: a card with no `dep`, or a none one, has neither the summary's *depends on* nor the fold |
 | `rec` | string or null | yes | the recommended option's letter; `null` with no recommendation | the one bold option, the rec line |
@@ -248,7 +254,8 @@ only on a part that carries levels, long (1.5 times) on any.
 **What the page adds.** Every view shows the impact across the options: the map and a closed
 card the effect, beside the rec pill (the map also beside the recommended option's title),
 which mark the recommendation; an open card the Impact, one facet a line; and each option's
-**More** its own effect, reach, undo and cost (its `blocks` row). It opens every card on its
+**More** its own effect, reach, undo (where it is one-way or costly) and cost (its `blocks`
+row). A card with a `label` opens its title on it, with its short name, in every view. It opens every card on its
 TLDR, then its Context, then its Impact: a page is read away from the conversation, so its
 reader is treated as cold. Any part with `detail` toggles its level on a click, on its button
 or on its text (never on a link or a control, nor while text is selected, so it can be
@@ -270,8 +277,10 @@ Impact `cost`, at every level, a `blocks` Effect, Reach or Cost cell, an `eviden
 fold, `ifleft`, `roundcosts`, `ifunanswered`, an option's one line or `impact`. A writer may
 simply leave such a field out; the optional ones were always optional. Shown whatever they
 say, because their none is a statement: the required Impact facets (`effect`, `wait`,
-`reach`, `undo`: *undo: none* says it is one-way), each option's Undo cell, the `basis` word, and the rec line's
-*unknown: none*. The check still requires the four facets.
+`reach`) and an `undo` when given (*undo: none* says an option is one-way), each option's Undo
+cell when given, the `basis` word, and the rec line's *unknown: none*. The check still
+requires the three facets. A missing undo is not a none: it says every option, or that
+option, is reversible at little cost.
 
 **Republishing older data.** A `cards.json` written before `impact` existed is refused by the
 current template. On a republish, add `impact` to each kept card (a `stakes` field may stay,
@@ -296,6 +305,13 @@ card revised anyway, each with a new `rev`. A card the operator has answered kee
 as it stands, unless it is revised for another reason. A card that gets `detail` gets a new
 `rev`, so the republish hands it over as shown again (SKILL.md § Hand over what was shown),
 with the publish time.
+
+A `cards.json` written before undo went optional (answer 260, 2026-10-20) carries `undo` on
+the Impact and on every row, and no `oneway` flag. It passes and renders as written, with the
+plain Undo label; a ⚠ card of it lints `oneway:`, left knowingly on a card the operator has
+answered. On a republish of a card with no counting answer, or one revised anyway, drop the
+undo of each option reversible at little cost, flag each one-way row `oneway: true`, keep
+the Impact's undo only for that option, and give the card a new `rev`.
 
 A `cards.json` written before the level shapes renders TLDR first, the Impact one facet a
 line, and its text levels as paragraphs; nothing is refused. The runner lints its shapes, its

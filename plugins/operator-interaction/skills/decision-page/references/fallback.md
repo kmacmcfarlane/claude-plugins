@@ -13,11 +13,12 @@ first); this file sets only the layout.
 
 - One heading per group, in list order; under it, one section per decision, headed with its
   number, short name and effect at tag size: `41 · Docs build home → sets where the docs build
-  runs, and who can publish`.
+  runs, and who can publish`; a card with a `label` puts the label and its short name before
+  its own, `43 · D3 (site colour off the logo) · Theme colour → …`.
 - In each section, the card's essentials as text: the TLDR bullets first, then **Context:**
   (the terms the card uses, then where the operator left it), then ⚠ one-way when it is and
   **Impact:**, across all the options, one facet a line (`→ effect`, `later: …`, `reach: …`,
-  `undo: …`, each on its own line), **Why now:**, **Why ask:** (class first), and the rec line
+  `⚠ undo: …` only when an option is one-way or costly, each on its own line), **Why now:**, **Why ask:** (class first), and the rec line
   `Rec (b) · basis strong — reason · unknown: …`. A card with
   `blocks` (every card, now) also gets the Impact table: a row per option, then the Wait row;
   Effect, Reach, Undo, Cost.
