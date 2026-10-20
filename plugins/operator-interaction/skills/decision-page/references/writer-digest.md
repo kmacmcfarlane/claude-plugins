@@ -150,7 +150,7 @@ recommend; an `impact` missing a facet; a `basis` outside the four; a `follow` o
 six; a non-number `refs` key; a ⚠ card without `blocks`, or a `blocks` key not a letter but
 `z`, or a row without its text; an `act` not keyed by letters but `z`, a list empty or
 holding anything but text, a step with a fill-in placeholder (an angle-bracketed word with no
-spaces) or a line break; an excerpt not `{text, lang, src}`, with blank `text`, a `lang`
+spaces) or a line break; an excerpt (once a field carries one) not `{text, lang, src}`, with blank `text`, a `lang`
 off its label shape or a `src` of more than one line; `evidence` neither text nor a
 non-empty list of text; a malformed
 `detail` (a bullet neither text nor `{t, sub}`, a section not `{h, b}`, both `t` and `h`,

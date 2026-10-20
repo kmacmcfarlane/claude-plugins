@@ -407,9 +407,9 @@ const fmtD=s=>linkify(fmt(s));
    short label (no highlighting); src is one line saying where it came from, plain text too. The fields
    that carry one (the finding, an attachment) check it with excerptProblem and draw it with codeBlock */
 const XC_LANG=/^[A-Za-z0-9][A-Za-z0-9+#._-]{0,23}$/;
-const XC_CTRL=/[\u0000-\u0008\u000B-\u001F\u007F-\u009F\u00AD\u061C\u180E\u200B-\u200F\u2028-\u202E\u2060-\u2069\uFEFF]/g;
+const XC_CTRL=/[\u0000-\u0008\u000B-\u001F\u007F-\u009F\u00AD\u061C\u180E\u200B-\u200F\u2028-\u202E\u2060-\u2069\uFEFF\u{E0000}-\u{E007F}\u{E0100}-\u{E01EF}\uFFF9-\uFFFB\u034F\u115F\u1160\u3164\uFFA0\u17B4\u17B5\u180B-\u180F]/gu;
 const xcLines=t=>{const s=String(t).replace(/\r\n?/g,"\n");return (s.endsWith("\n")?s.slice(0,-1):s).split("\n")};
-const xcText=t=>esc(xcLines(t).join("\n")).replace(XC_CTRL,ch=>{const u="U+"+ch.charCodeAt(0).toString(16).toUpperCase().padStart(4,"0");return '<span class="xcc" title="'+u+'">'+u+'</span>'});
+const xcText=t=>esc(xcLines(t).join("\n")).replace(XC_CTRL,ch=>{const u="U+"+ch.codePointAt(0).toString(16).toUpperCase().padStart(4,"0");return '<span class="xcc" title="'+u+'">'+u+'</span>'});
 /* why an excerpt is refused, or "" when it is sound */
 const excerptProblem=x=>{
   if(!isObj(x))return "an excerpt must be {text, lang, src}";

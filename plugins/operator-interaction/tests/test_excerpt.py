@@ -65,7 +65,7 @@ def body(h):
 
 def read_back(h):
     """The text a reader sees: the markup-free body, its U+ tags back to their characters."""
-    b = re.sub(r'<span class="xcc" title="U\+([0-9A-F]{4})">U\+\1</span>',
+    b = re.sub(r'<span class="xcc" title="U\+([0-9A-F]{4,6})">U\+\1</span>',
                lambda m: chr(int(m.group(1), 16)), body(h))
     return None if "<" in b else html.unescape(b)
 
@@ -78,7 +78,10 @@ HOSTILE = [
     "```js\nalert(1)\n```\n~~~\n````",
     "\nfirst line blank\n\tindented\r\nwindows\rold mac\n",
     "abc\u202eevil\u2066x\u200b\u0000\u0007y",
+    "tag\U000e0001\U000e007f\U000e0100\U000e01ef\ufff9\ufffb\u034f\u115f\u1160\u3164\uffa0\u17b4\u17b5\u180b\u180fend",
 ]
+# the invisible and bidirectional characters above: each must show as a U+ tag, never raw
+INVISIBLE = set(HOSTILE[-2] + HOSTILE[-1]) - set("abcevilxytagend")
 
 
 @unittest.skipUnless(NODE, "node is not installed")
@@ -98,6 +101,9 @@ class DecisionPageExcerpt(unittest.TestCase):
             for bad in ("<script", "<img", "<a ", "<a>", "<code>", "slug", "<button"):
                 if bad in b:
                     out.append("%r renders %s" % (t, bad))
+            raw = sorted("U+%04X" % ord(c) for c in INVISIBLE if c in b)
+            if raw:
+                out.append("%r leaves %s raw" % (t, ", ".join(raw)))
             norm = t.replace("\r\n", "\n").replace("\r", "\n")
             norm = norm[:-1] if norm.endswith("\n") else norm
             if read_back(h) != norm:
@@ -116,6 +122,11 @@ class DecisionPageExcerpt(unittest.TestCase):
         # the text unescaped: tags come alive
         raw = script.replace(TEXT_LINE, "const xcText=t=>String(xcLines(t).join(\"\\n\"))")
         self.assertTrue(self.problems(raw))
+        # the control class without its astral ranges: tag characters slip through raw
+        ctrl = script.count("\\u{E0000}-\\u{E007F}")
+        self.assertEqual(ctrl, 1)
+        narrow = script.replace("\\u{E0000}-\\u{E007F}", "")
+        self.assertTrue(self.problems(narrow))
 
     def test_script_close_and_onerror_escaped(self):
         h = run([{"text": HOSTILE[0]}, {"text": HOSTILE[1]}])
