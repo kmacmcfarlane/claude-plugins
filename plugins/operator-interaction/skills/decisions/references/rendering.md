@@ -476,14 +476,7 @@ A **source label** is a label a source document gives its own parts: a review's 
 Tracker ids — work items, tickets, commits, a ticket-style key — are not source labels: they
 keep the `plain-names` skill's rule, the plain name first and the id a trailing tag.
 
-- **Label first, then its short name** in parentheses, in a decision's text — its title,
-  What, Context, options, list line and echo (the `plain-names` skill holds the rule for
-  every other text the operator reads):
-  *F7 (oversize upload)*. The short name is plain words, two to six of them, taken from the
-  source where it has one (a finding's title, a question's heading) and written where it
-  does not. A label keeps one short name for as long as the operator sees it.
-- **The first mention** in a message or card carries the short name; later mentions in the
-  same message may use the label alone.
+- Label first with its short name, per the `plain-names` skill's § Source labels.
 - **In the title.** A decision raised from one labelled item opens its title on the label:
   **41 — F7 (oversize upload) · Cap the upload size?** The number stays the decision's
   handle, and the store's.
