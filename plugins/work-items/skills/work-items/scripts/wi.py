@@ -3067,9 +3067,12 @@ def _init_own(root, host, defaulted):
               f"{root / '.git'}"
               + (" (its history kept)" if adopt else " (branch main)"))
         write_tracking(root, "tracked", repo=REPO_OWN)
+        # 8805 F3: outside any git repo there is no host to ignore it
+        around = ("no repo is around the store; it keeps its own local "
+                  "history" if host is None else "the repo around the store "
+                  "ignores it, and it keeps its own local history")
         print(f"tracking: tracked, repo: {REPO_OWN} (recorded in "
-              f"{root / STORE_FILE}): the repo around the store ignores it, "
-              "and it keeps its own local history")
+              f"{root / STORE_FILE}): {around}")
         n = len(item_paths(root, archived=True))
         message = (f"wi init: adopted {n} item{'' if n == 1 else 's'}"
                    if n or adopt else "wi init: store created")
@@ -3081,7 +3084,11 @@ def _init_own(root, host, defaulted):
                   else "nothing to commit")
         except CommitFailed as e:
             print(NOT_COMMITTED.format(e), file=sys.stderr)
-    if defaulted:
+    if defaulted and host is None:
+        print(f"wi: WARNING no terminal and no --track/--no-track: created "
+              f"{root} with its own local repo (no git repo is around it)",
+              file=sys.stderr)
+    elif defaulted:
         print(f"wi: WARNING no terminal and no --track/--no-track: created "
               f"{root} as a git-ignored store with its own local repo. To "
               "have the repo around it track it instead, the store's .git "
@@ -3233,6 +3240,13 @@ def _init(args):
     elif choice == "tracked":
         write_tracking(root, choice)
         print(f"tracking: {choice} (recorded in {root / STORE_FILE})")
+        if _host_repo(root) is None:
+            # 8805 F3: tracked names a repo, and there is none around it
+            fix = (f"move it to {DEFAULT_STORE}/ for one ({MOVING_A_STORE})"
+                   if old_location(root) else
+                   "`wi init --no-track` gives it its own repo")
+            print(f"wi: note: {root} is in no git repo, so nothing tracks "
+                  f"it and it keeps no history; {fix}", file=sys.stderr)
         warning = custody_warning(root)
         if warning:
             print(warning, file=sys.stderr)

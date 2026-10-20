@@ -2005,6 +2005,87 @@ class TestInit(InitCase):
             self.assertEqual(os.environ["GIT_DIR"], "/nowhere")
 
 
+class TestInitOutsideGit(InitCase):
+    """8805 F3: init's wording for a store outside any git repo. Every
+    line names no repo around the store, since there is none; inside a
+    host repo each line keeps its wording."""
+
+    AROUND = "the repo around the store ignores it"
+    NONE_AROUND = "no repo is around the store"
+    NOTE = "is in no git repo, so nothing tracks it and it keeps no history"
+
+    def loose(self):
+        store = self.tmp / "loose" / ".work-items"
+        self.assertIsNone(wi._host_repo(store))
+        return store
+
+    def test_no_track_outside_git_names_no_repo_around(self):
+        store = self.loose()
+        r = self.init(store, "--no-track")
+        self.assertIn(f"repo: own (recorded in {store / 'store.yaml'}): "
+                      f"{self.NONE_AROUND}; it keeps its own local history",
+                      r.stdout)
+        self.assertNotIn(self.AROUND, r.stdout + r.stderr)
+        self.assert_own_store(store, "wi init: store created", self.NEW_FILES)
+
+    def test_no_flag_no_terminal_outside_git(self):
+        store = self.loose()
+        r = self.init(store)                     # subprocess: no terminal
+        self.assertIn("WARNING no terminal and no --track/--no-track: "
+                      f"created {store} with its own local repo (no git "
+                      "repo is around it)", r.stderr)
+        self.assertNotIn("git-ignored", r.stderr)
+        self.assertNotIn("the repo around it", r.stderr)
+        self.assertNotIn(self.AROUND, r.stdout)
+        self.assert_own_store(store, "wi init: store created", self.NEW_FILES)
+
+    def test_track_outside_git_notes_no_history(self):
+        store = self.loose()
+        r = self.init(store, "--track")
+        self.assertIn(f"wi: note: {store} {self.NOTE}; `wi init --no-track` "
+                      "gives it its own repo", r.stderr)
+        self.assertEqual(wi.read_tracking(store), "tracked")
+        self.assertFalse(wi.read_repo_own(store))
+        self.assertFalse(os.path.lexists(store / ".git"))
+
+    def test_track_at_an_old_location_outside_git_says_move_it(self):
+        store = self.tmp / "loose" / ".work"
+        self.assertIsNone(wi._host_repo(store))
+        r = self.init(store, "--track", "--allow-old-location")
+        self.assertIn(f"wi: note: {store} {self.NOTE}; move it to "
+                      f"{wi.DEFAULT_STORE}/ for one ({wi.MOVING_A_STORE})",
+                      r.stderr)
+        self.assertNotIn("`wi init --no-track` gives it its own repo",
+                         r.stderr)
+        self.assertEqual(wi.read_tracking(store), "tracked")
+
+    def test_track_with_host_unknown_prints_no_note(self):
+        store = self.loose()
+        with mock.patch.object(wi, "_host_repo",
+                               return_value=wi.HOST_UNKNOWN):
+            code, out, err = self.run_init(store, "--track")
+        self.assertEqual(code, 0, out + err)
+        self.assertIn("tracking: tracked (recorded in", out)
+        self.assertNotIn("is in no git repo", out + err)
+
+    def test_inside_a_host_each_line_keeps_its_wording(self):
+        store = self.make_host(ignore=False) / ".work-items"
+        r = self.init(store, "--no-track")
+        self.assertIn(self.AROUND + ", and it keeps its own local history",
+                      r.stdout)
+        self.assertNotIn(self.NONE_AROUND, r.stdout)
+        store = self.make_host("host2", ignore=False) / ".work-items"
+        r = self.init(store)                     # subprocess: no terminal
+        self.assertIn(f"created {store} as a git-ignored store with its own "
+                      "local repo. To have the repo around it track it "
+                      "instead", r.stderr)
+        self.assertNotIn("no git repo is around it", r.stderr)
+        store = self.make_host("host3", ignore=False) / ".work-items"
+        r = self.init(store, "--track")
+        self.assertIn("tracking: tracked (recorded in", r.stdout)
+        self.assertNotIn(self.NOTE, r.stderr)
+
+
 class TestInitReview(InitCase):
     """d1e9 F3 review round 1: what may pass for the host's ignore line,
     where a store's git dir may sit, what a directory may hold before
