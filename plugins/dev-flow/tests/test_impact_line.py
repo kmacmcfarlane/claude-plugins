@@ -5,6 +5,14 @@ decision's impact across all its options, favouring none, as its answer page doe
 each option's own effect, reach, undo and cost under it. The librarian stores what those
 views read, so its definition follows, and lines stored before stay readable as written.
 
+Answer 260 (a) (2026-10-20): undo is shown only on an option that is one-way or costly to
+undo, marked `⚠ undo:`, and the Impact line carries it only when some option is. The store
+keeps the marker (feature C1 of the decision-card feedback plan): the `impact:` and option
+templates mark their undo and carry it only as an optional facet, no rule still asks for an
+undo on every option of a ⚠ decision, the read-back keys on the marker, and older stored
+plain undos read as written. (The `work-items` format's card-lines paragraph, which
+describes the same `impact:` line, is checked in that plugin's own suite.)
+
 Standard library only. Run from plugins/dev-flow:
 
     python3 -m unittest discover -s tests -q
@@ -19,6 +27,16 @@ DECISIONS = LIB / "references" / "decisions.md"
 IDLE = LIB / "references" / "idle-turn.md"
 REPORT = LIB / "references" / "report.md"
 CYCLE = PLUGIN / "skills" / "dev-cycle" / "SKILL.md"
+# an undo written without its marker
+BARE_UNDO = re.compile(r"(?<!⚠ )\bundo: ")
+
+
+def flat(path):
+    return " ".join(path.read_text().split())
+
+
+def template(text, start):
+    return next(x for x in text.splitlines() if x.strip().startswith(start))
 
 
 class ImpactLine(unittest.TestCase):
@@ -48,6 +66,40 @@ class ImpactLine(unittest.TestCase):
         flat = " ".join(IDLE.read_text().split())
         self.assertIn("read from the last card stored for N", flat)
         self.assertIn("the recommended option's own effect from its option line", flat)
+
+
+class UndoMarker(unittest.TestCase):
+
+    def test_the_impact_template_marks_its_optional_undo(self):
+        tmpl = template(DECISIONS.read_text(), "impact: → ")
+        self.assertIn("[· ⚠ undo: ", tmpl)
+        self.assertIsNone(BARE_UNDO.search(tmpl), tmpl)
+
+    def test_the_option_template_marks_its_optional_undo(self):
+        tmpl = template(DECISIONS.read_text(), "(a) <option> — ")
+        self.assertIn("[— ⚠ undo: ", tmpl)
+        self.assertIsNone(BARE_UNDO.search(tmpl), tmpl)
+
+    def test_undo_is_stored_only_where_it_bites(self):
+        text = flat(DECISIONS)
+        self.assertIn("An option line with no undo is reversible at little cost", text)
+        # the rules answer 260 reversed are gone
+        self.assertNotIn("every option line carries its `reach:` and `undo:`", text)
+        self.assertNotIn("on a ⚠ decision every option line carries its undo", text)
+        self.assertNotIn("a block's missing `undo:`", text)
+        # the backfill trigger honours an older card's plain undo read as the marker
+        self.assertIn("a ⚠ one-way decision with no option marked `⚠ undo:` (on a card stored "
+                      "before the marker, a plain `undo:` that reads as the marker counts)", text)
+
+    def test_the_read_back_keys_on_the_marker(self):
+        text = flat(DECISIONS)
+        self.assertIn("**A one-way choice on a ⚠ decision** (the chosen option's line carries "
+                      "`⚠ undo:`", text)
+
+    def test_older_plain_undos_read_as_written(self):
+        text = flat(DECISIONS)
+        self.assertIn("may carry a plain `undo:` on every option and on its `impact:` line", text)
+        self.assertIn("is read as the marker", text)
 
 
 if __name__ == "__main__":

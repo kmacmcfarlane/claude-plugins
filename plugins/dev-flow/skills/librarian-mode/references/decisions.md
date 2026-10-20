@@ -34,7 +34,7 @@ the verbatim rule on every answer line (§ What the store records, **Answered**)
 
 | The skill asks for | The librarian's binding |
 |---|---|
-| the caller's numbering | the store counter, the one counter for every question put to the operator (`report.md` § The counter): `decision N:` continues from the highest N (`rehydrate.md` § Step 3); a number is never reused. A source's own label (a series' OQ3, a gate's G5) rides in the card's `what:` line, never as a number |
+| the caller's numbering | the store counter, the one counter for every question put to the operator (`report.md` § The counter): `decision N:` continues from the highest N (`rehydrate.md` § Step 3); a number is never reused. A source label (a review's F7, a series' OQ3, a gate's G5) is never a number: a decision raised from one labelled item carries it, with its short name, first in the headline's question (§ What the store records) |
 | the default wake ("the next time I finish a piece of work and report") | **the next Report**; a `later` with no time or event wakes there |
 | the operator's expected return | what the operator said ("back tomorrow morning"), in the item or the transcript; when they said nothing, the return is unknown and every stated deadline goes first |
 | who is reading, and how warm | after Rehydrate the operator is **cold** on every decision raised before the reset; the first Report after it re-shows them per the skill, with what changed since each was raised. Between resets: a decision shown in a Report written after the operator's last turn has **not been seen** — background returns can write several Reports while the operator is away — so the next Report shows it at its level again, not *(shown before)*. Your own transcript tells you: has the operator taken a turn since that Report? The store records the same thing (§ What the store records, **Shown** and **Seen**): a reader without the transcript — after a reset, or another session — reads the last showing as unseen when no `seen N:` line follows the last `shown N:` line, and as not recorded (cold) when there is no `shown N:` line |
@@ -52,16 +52,16 @@ renders what the operator read instead of composing it again.
 - **Raised:** a headline line, then the card as indented lines under it:
 
   ```
-  decision N: <question, one line> — options: (a) … [recommended] | (b) … | (z) decide later
+  decision N: [<label> (<short name>) · ]<question, one line> — options: (a) … [recommended] | (b) … | (z) decide later
     raised: <UTC time, e.g. 2026-09-24T14:05Z>
     what: <what is decided>
     why now: <why it is up now>
     why ask: <reason> — <what would go wrong if the librarian took its recommendation alone>
     context: <the card's Context: terms, then the cue> — then: <a block's further facts, or none>
-    impact: → <effect across the options: (a) …; (b) …> · later: <wait> · reach: <reach> · undo: <undo>
+    impact: → <effect across the options: (a) …; (b) …> · later: <wait> · reach: <reach> [· ⚠ undo: <the one-way or costly option's undo>]
     if left: <a round ask only: each leftover finding — what it would break>
     round costs: <a round ask only: time, quota, the operator's attention>
-    (a) <option> — <its effect> [— reach: <who or what>] [— undo: <how, or cannot>] [— cost: <time, money, quota, attention>]
+    (a) <option> — <its effect> [— reach: <who or what>] [— ⚠ undo: <how, at what cost, or why it cannot be>] [— cost: <time, money, quota, attention>]
     (b) <option> — <its effect>
     (z) decide later — <what waiting costs; the deadline, if any>
     to act (a): <an option that asks the operator to act only: 1. <step> 2. <step> …>
@@ -75,26 +75,50 @@ renders what the operator read instead of composing it again.
   unchanged; the indented lines, `impact:` included, match neither `^decision` nor
   `^answer`. The question is a
   question, as the card's title shows it, and the question alone: a round ask's
-  justification goes in `if left:` and `round costs:`, never in the headline. `raised:`
+  justification goes in `if left:` and `round costs:`, never in the headline. The one
+  thing before it is a source label (the `decisions` skill's rendering reference, § Source
+  labels). `raised:`
   carries the time, not a date alone (an existing date-only `raised:` is kept as
   written); every line names items by plain name with the tag trailing, and glosses any
   other id (no bare item id, sha, series or finding number).
-  When the source numbered the question its own way (a series' OQ3, a gate's G5), the
-  label rides at the end of `what:`, after the words it stands for (the skill's floor),
-  with the source by plain name — *… (was OQ3 of the
-  decision-lifecycle investigation, 5140)* — and is never a bare number.
+  When the decision is raised from one labelled item of a source (a review's finding F7, a
+  series' OQ3, a gate's G5), its headline's question opens on that label and its short
+  name, then ` · `, as the card's title shows it:
+
+  ```
+  decision 41: F7 (oversize upload) · Cap the upload size? — options: (a) cap at 25 MB [recommended] | (b) no cap | (z) decide later
+  ```
+
+  The short name is plain words, taken from the source or written where it has none, and
+  kept for as long as the operator sees the label; `what:` names the source by plain name
+  (*… from the upload review*). The number stays the handle: the headline still opens
+  `decision N:`, so the counter grep and `wi` read it unchanged, and a reply by the label is
+  stored as `answer N:`. Any other label a card names (a decision covering several labelled
+  items) is written label first with its short name where it stands, never a bare label
+  and never a number. Tracker ids (items, tickets, commits) are not source labels: they keep
+  the tag trailing, above. A headline stored before this rule, its label at the end of
+  `what:` (*… (was OQ3 of the decision-lifecycle investigation, 5140)*), is read as
+  written, and takes the label first only when the card is revised for another reason.
   The options are every option the source offered (a series, a dispatch's `decision:`
   line), one choice per letter: a compound choice gets its own letters, never `(a)+…`.
   When the decision is ⚠ one-way — or any decision shown as a block — write `⚠ one-way`
-  after the question (⚠ only), and every option line carries its `reach:` and `undo:` (a
-  card stored before this rule may carry `who:` in place of `reach:`, read as it), and
-  the `basis:` drill-down line is required: they fill the block's Impact table, with
-  `cost:` where the option has one. On every card, each option line holds that option's own
-  impact — its effect, then `reach:`, `undo:` and `cost:` where they apply, a facet that
-  does not apply left off; an undo that says the option cannot be undone, or only at real
-  cost, is never left off, and on a ⚠ decision every option line carries its undo, as the
-  block's table does — and the card shows it on the italic line under the option, as
-  stored (the `decisions` skill's rendering reference, § Impact). `why ask:` follows
+  after the question (⚠ only), and every option line carries its `reach:` (a card stored
+  before this rule may carry `who:` in place of `reach:`, read as it), and the `basis:`
+  drill-down line is required: they fill the block's Impact table, with `cost:` where the
+  option has one. On every card, each option line holds that option's own impact — its
+  effect, then `reach:`, `⚠ undo:` and `cost:` where they apply, a facet that does not
+  apply left off — and the card shows it on the italic line under the option, as stored
+  (the `decisions` skill's rendering reference, § Impact). **Undo is stored only where it
+  bites** (answer 260 (a)): an option that is one-way or costly to undo carries `⚠ undo:`,
+  how it is reversed and at what cost, or that it cannot be and why, and is never stored
+  without it, since the marker decides the read-back (below). An option line with no undo
+  is reversible at little cost, and is read that way; in a block its Undo cell shows `—`,
+  and with no marked option the column is dropped. The marker marks the option, never the
+  decision: only the headline's `⚠ one-way` makes a decision ⚠, and a ⚠ one-way decision
+  has at least one marked option. A card stored before this rule may carry a plain `undo:`
+  on every option and on its `impact:` line: it renders as stored, an undo there that says
+  the option cannot be undone, or only at real cost, is read as the marker, and its undos
+  are rewritten to this rule only when the card is revised for another reason. `why ask:` follows
   `why now:` on every card, one physical line, its reason from `decide-alone.md` § Class names. `context:` follows
   `why ask:` on every card, one physical line, written when the decision is raised. Before
   its first ` — then: ` is the card's Context: the terms the card uses, then the cue last —
@@ -119,16 +143,17 @@ renders what the operator read instead of composing it again.
   whenever the text itself holds ` / `, since nothing on the line is escaped. Indented, it
   matches neither `^decision` nor `^answer`, and `wi` ignores it.
   `impact:` follows `context:` on every card, one physical line, written when the decision
-  is raised: the skill's Impact line, its five facets in their order —
+  is raised: the skill's Impact line, its facets in their order —
   Effect (what the decision changes and settles, across all its options, favouring none:
   each option's in a few words, `(a) …; (b) …`, where their outcomes differ; written from
   the option lines, never from the recommendation alone), Wait (what waiting costs, what it
-  blocks), Reach, Undo — in the form above; Cost stays on the option lines. An `impact:`
+  blocks), Reach, and `⚠ undo:` only when some option is one-way or costly to undo — in
+  the form above; Cost stays on the option lines. An `impact:`
   line stored before Effect covered the options (2026-10-14) may give the recommended
   option's effect alone: it is read as written, never rewritten at render time, and is
-  rewritten across the options only when the card is revised for another reason. Its Undo
-  names the one-way option's undo whenever any option is one-way, not only the recommended
-  option's. What the decision blocks is its `later:`, so `why now:` drops `blocks:` when the `impact:` line's `later:`
+  rewritten across the options only when the card is revised for another reason. Its
+  `⚠ undo:` names the one-way or costly option and its undo, not only the recommended
+  option's; with every option reversible at little cost, the line carries no undo. What the decision blocks is its `later:`, so `why now:` drops `blocks:` when the `impact:` line's `later:`
   carries it. It replaces the `stakes:` line, which a card stored
   before it keeps as written. Every view reads it: the Report's `decisions needed:` takes
   its effect at tag size, the list line its wait, the card the whole line, so the report
@@ -140,7 +165,7 @@ renders what the operator read instead of composing it again.
   card `revised: <time> — backfilled impact` before it renders anywhere, the Groom row
   included; a facet no record holds is `not recorded`.
   **A card or block renders only from stored fields**: a field it needs that the store
-  lacks — a headline-only entry, a block's missing `undo:`, a card stored before `why ask:`
+  lacks — a headline-only entry, a ⚠ one-way decision with no option marked `⚠ undo:` (on a card stored before the marker, a plain `undo:` that reads as the marker counts), a card stored before `why ask:`
   existed (in the one form `decide-alone.md` § Raised gives it), one stored before the cue
   existed (no `context:` line; a line with no ` — then: ` is the card's Context as it
   stands, and carries no block facts), a block whose facts read `none` or are absent (a decision raised as
@@ -236,8 +261,9 @@ renders what the operator read instead of composing it again.
     Indented, it matches neither `^decision` nor `^answer`. Interim `verbatim N` lines
     written before this rule, in other shapes, are left as written; this shape applies
     from now on.
-- **A one-way choice on a ⚠ decision** (the chosen option's `undo:` says it cannot be
-  undone): repeat the choice back first. Record `answer N:` only when the operator confirms
+- **A one-way choice on a ⚠ decision** (the chosen option's line carries `⚠ undo:`, or, on
+  a card stored before the marker, a plain `undo:` saying it cannot be undone, or only at
+  real cost): repeat the choice back first. Record `answer N:` only when the operator confirms
   (`answer N: <the choice's words> — confirmed "<reply>" (read as: …)`).
   Nothing acts before that. A reversible choice on a ⚠ decision is echoed and recorded
   at once.

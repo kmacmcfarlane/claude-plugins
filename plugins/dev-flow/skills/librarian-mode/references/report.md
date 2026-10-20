@@ -24,7 +24,9 @@ two commands: `plugins/dev-flow pass, plugins/kit-dev pass`.
 
 It is **one counter**: every question put to the operator takes its number from it — an
 Intake ask, a dev-cycle decision, a Groom row, a series' or a gate's own questions, whose
-labels (OQ3, R1, G5) survive as a tag on the decision, never a second numbering. The two
+labels (OQ3, R1, G5) survive on the decision — a decision raised from one labelled item
+carries its label first in the headline's question, with its short name (`decisions.md`
+§ What the store records) — never a second numbering. The two
 exceptions are the opt-in dialog (`opt-in.md`) and the session-name gate
 (`session-name.md`). Another repo's decision is written `<repo>#N`, never a bare N. The
 counter lives in the store: raising a decision appends one line to its item's body — one
@@ -36,8 +38,9 @@ numbered:
 decision N: <question> — options: (a) … [recommended] | (b) … | (z) decide later
 ```
 
-The reply is `answer N: <reply>`; on re-entry continue from the highest N (`rehydrate.md`
-§ Step 3), else 1.
+The question may open on a source label and its short name, `F7 (oversize upload) · `;
+the line still opens `decision N:`. The reply is `answer N: <reply>`; on re-entry continue
+from the highest N (`rehydrate.md` § Step 3), else 1.
 
 ## With the decisions skill
 
