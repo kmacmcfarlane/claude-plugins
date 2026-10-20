@@ -160,7 +160,7 @@ plugins/
   sandbox/             # Isolated execution: claude-sandbox + the checkout/worktree convention (hook-owning)
     hooks/             # Checkout guard + hooks.json + unit tests
     skills/
-      sandbox/
+      sandbox/         # references/checkout-guard-rules.md (the checkout guard's path rules)
   statusline/          # Always-on status line footer, a statusline-hub display hook (hook-owning; hard-depends on statusline-hub)
     settings.json      # plugin settings default: subagentStatusLine (agent-panel rows)
     hooks/             # statusline (renderer), subagent_statusline (agent-panel renderer), sensor, session_start (registers the hub hook, prune) + hooks.json + unit tests
