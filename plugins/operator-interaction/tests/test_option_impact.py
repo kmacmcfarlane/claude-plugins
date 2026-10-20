@@ -288,5 +288,102 @@ class Gallery(unittest.TestCase):
         self.assertIsNone(BARE_UNDO.search(imp))
 
 
+# Impact names the system (answer 259), the mechanism (268), and label echoes (269)
+REPLIES = REFS / "replies.md"
+PROCESS = re.compile(r"(?i)\b(review|comment|round|your attention)\b")
+ECHO = re.compile(r"Read as: (.*?)→")
+SOURCE_LABEL = re.compile(r"\b[A-Z]{1,3}[0-9]+[a-z]?\b")
+NAMED_ECHO = re.compile(r"^\d+ — [A-Z]{1,3}[0-9]+[a-z]? \([a-z][^)]*\) $")
+
+
+def check_system_rules(test, where, rendering, worksheet):
+    """The rules are stated: Impact names the system, and says the mechanism, in the
+    rendering reference and the worksheet."""
+    flat_r, flat_w = " ".join(rendering.split()), " ".join(worksheet.split())
+    test.assertIn("**Impact names the system, not the process.**", flat_r, where)
+    test.assertIn("**Say the mechanism, not the label.**", flat_r, where)
+    test.assertIn("goes here and nowhere else", flat_w, where)
+    test.assertIn("said by its mechanism", flat_w, where)
+    test.assertIn("Can you say how it happens", flat_w, where)
+
+
+def system_slots(body):
+    """A card's or block's Effect and Reach text: the Impact line's effect and reach, each
+    option's effect and reach, a block row's Effect and Reach cells."""
+    out = []
+    for line in body:
+        if line.startswith("**Impact:**"):
+            out.append(impact_effect(line) or "")
+            m = re.search(r" · reach: (.*?)( · ⚠ undo: |$)", line)
+            out.append(m.group(1) if m else "")
+        fs = facets(line)
+        if fs:
+            out += [text for lab, text in fs if lab in ("effect", "reach")]
+        if line.startswith("| ") and not line.startswith(("| Impact", "|---", "| (z)")):
+            cells = line.split("|")
+            out += [cells[2], cells[3]]
+    return out
+
+
+def check_no_process(test, where, body):
+    """Outside a round ask, no Effect or Reach names the process."""
+    if any(x.startswith("**If left:**") for x in body):
+        return
+    for text in system_slots(body):
+        m = PROCESS.search(text)
+        test.assertIsNone(m, f"{where}: {m and m.group(0)!r} in Effect or Reach: {text[:50]}")
+
+
+def check_label_echoes(test, where, text):
+    """Every echo that names a source label carries the number, the label and its short
+    name: *Read as: 52 — F7 (retry storm) → …*. Returns the number checked."""
+    seen = 0
+    for m in ECHO.finditer(" ".join(text.split())):
+        head = m.group(1)
+        if SOURCE_LABEL.search(head):
+            seen += 1
+            test.assertRegex(head, NAMED_ECHO, f"{where}: echo {head!r}")
+    return seen
+
+
+class SystemMechanismLabels(unittest.TestCase):
+
+    def test_the_rules_are_stated(self):
+        check_system_rules(self, "skill", RENDERING.read_text(), WORKSHEET.read_text())
+
+    def test_no_effect_or_reach_names_the_process(self):
+        seen = 0
+        for n, kind, body in views(GALLERY):
+            seen += 1
+            check_no_process(self, f"gallery.md:{n}", body)
+        self.assertGreaterEqual(seen, 20)
+
+    def test_every_label_echo_carries_number_label_and_name(self):
+        seen = sum(check_label_echoes(self, f.name, f.read_text())
+                   for f in (GALLERY, REPLIES, RENDERING))
+        self.assertGreaterEqual(seen, 3)
+
+    def test_the_checks_catch_what_they_are_for(self):
+        r, w = RENDERING.read_text(), WORKSHEET.read_text()
+        for cut in ("**Impact names the system, not the process.**",
+                    "**Say the mechanism, not the label.**"):
+            with self.assertRaises(AssertionError):
+                check_system_rules(self, "mutant", r.replace(cut, ""), w)
+        for cut in ("goes here and nowhere else", "said by its mechanism"):
+            with self.assertRaises(AssertionError):
+                check_system_rules(self, "mutant", r, " ".join(w.split()).replace(cut, ""))
+        card = ["**41 — X?**", "**Impact:** → (a) the comment to the developer waits; (b) y · later: w · reach: r"]
+        with self.assertRaises(AssertionError):
+            check_no_process(self, "mutant", card)
+        with self.assertRaises(AssertionError):
+            check_no_process(self, "mutant", ["**41 — X?**", "- (a) X", "  *→ it ships · reach: the design review*"])
+        check_no_process(self, "round ask", card + ["**If left:** *one finding*"])
+        for bad in ("*Read as: F7 → (b).*", "*Read as: 52 — F7 → (b).*",
+                    "*Read as: F7 (retry storm) → (b).*"):
+            with self.assertRaises(AssertionError):
+                check_label_echoes(self, "mutant", bad)
+        self.assertEqual(check_label_echoes(self, "good", "*Read as: 52 — F7 (retry storm) → (b).*"), 1)
+
+
 if __name__ == "__main__":
     unittest.main()

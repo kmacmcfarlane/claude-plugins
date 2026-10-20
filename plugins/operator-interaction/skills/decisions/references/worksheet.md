@@ -169,7 +169,7 @@ how each view shows them are in `references/rendering.md` § Impact.
 
 **Whose system.** In a product repo the system is its code, its users, its deploys and the
 consumers downstream. Where the change is to agent behaviour, as in a kit of skills, sessions
-and the operator are that system's users, so they may stand in Effect and Reach.
+and the operator are that system's users, so they may stand in Reach.
 
 **Each option's impact** is written with the option, from the same groups: its effect, said
 by its mechanism (how it happens, who meets it and when, before and after), the reach of that

@@ -160,7 +160,7 @@ alternative not taken, in case practice argues for it.
   on every Impact line, and answer 206 (2026-10-14), which put each option's undo on its
   line and every option's on a ⚠ decision. Not taken: every option of a ⚠ one-way decision
   keeping its undo (260 (b)); undo kept everywhere (260 (c)); a bold `undo:` with no icon
-  (OQ2 (ii)).
+  (OQ2 (ii)); no page row flag, the cold read the only check (OQ2 (q)).
 - **Why you, why now: one line** (2026-10-20, answer 261 (a), from the operator's words:
   "Background (why ask and why now?) are more metacognitive than necessary"; the length of
   about 25 words, its place above the Rec line, and the block keeping two lines, designs
@@ -207,6 +207,6 @@ alternative not taken, in case practice argues for it.
   where seven findings put on an answer page could not be decided and the same seven, in
   chat with each finding first, were answered in one turn) — a set raised from the findings
   of a review, an audit, a test run or a scan goes to chat by default, until the answer page
-  can show each finding; then the page is offered for such sets again. Other sets are as
+  can show each finding (finding first, part of (a), lands with 265's confirmation); then the page is offered for such sets again. Other sets are as
   before. Not taken: every set to chat until then (270 (b)); the page offered as before
   (270 (c)).

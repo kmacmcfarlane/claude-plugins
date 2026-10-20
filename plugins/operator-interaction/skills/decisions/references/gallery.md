@@ -442,7 +442,7 @@ Rec **(a)** · basis **partial** — *observed: the load test report; inferred: 
   *→ no growth in the repo; when the CDN is down, pages fall back to a system font · reach: the docs site's readers, whenever the CDN is down*
 - (z) Decide later — *it waits; the build stays on hold*
 
-**Why you, why now:** 400 KB in the repo against a font that fails when the CDN does, with no fact to settle it; the docs build waits.
+**Why you, why now:** 400 KB in the repo against a font that fails when the CDN does, with no fact to settle it for you.
 Rec **(b)** · basis **strong** — *checked the CDN's status history and loaded the font from it* · unknown: none
 
 **61 — Turn on strict type checking across the repo?**
@@ -659,7 +659,7 @@ card, in its **To act on (a):** part.*
 
 4. Tell me the last line it prints: `3 of 3 pages signed in`, or which pages failed.
 
-**Why you, why now:** only you can run it, from your own browser, and it takes your time; the fix waits on this check.
+**Why you, why now:** only you can run it, from your own browser, and it takes about 5 minutes of your time.
 Rec **(a)** · basis **strong** — *the automated tests' account skips the real sign-in path* · unknown: none
 
 *Not this: "(a) run it — from the check folder, paste the prompt, tell me; I'll give you the
@@ -684,7 +684,7 @@ the operator opens the plan.*
   *→ those 12 pages point readers at the current guide instead of steps that no longer work · reach: three teams' pages · cost: about a day*
 - (z) Decide later — *it waits; the docs build keeps failing on the broken links*
 
-**Why you, why now:** (b) rewrites pages three other teams own, which is yours to weigh; the link checker fails the docs build until the links go.
+**Why you, why now:** (b) rewrites pages three other teams own; whether that goes in this week is yours to weigh.
 Rec **(a)** · basis **strong** — *ran the link checker: every failure is a broken link or a missing image* · unknown: none
 
 *Not this: What: "L2, the cleanup scope", with options "(a) level 1 only" and "(b) level 1
@@ -717,7 +717,7 @@ since the operator answers by the review's labels; the number stays the handle.*
   *→ the change merges reading first and checking after; an oversize upload still stalls the server until the follow-up lands*
 - (z) Decide later — *it waits; the merge waits on this finding*
 
-**Why you, why now:** (a) changes the error a client sees for an oversize file, from a late failure to an early refusal; the merge waits.
+**Why you, why now:** (a) changes the error a client sees for an oversize file, from a late failure to an early refusal, which clients may notice.
 Rec **(a)** · basis **strong** — *reproduced: one 2 GB upload took the test server's memory to its limit* · unknown: none
 
 **52 — F7 (retry storm) · Add a backoff to failed disk writes?**
@@ -730,7 +730,7 @@ Rec **(a)** · basis **strong** — *reproduced: one 2 GB upload took the test s
   *→ the storm stops after five tries in a few milliseconds, and the upload fails · reach: clients whose upload meets a briefly busy disk*
 - (z) Decide later — *it waits; the merge waits on this finding*
 
-**Why you, why now:** (b) fails uploads that a backoff would save; which failure clients should meet is yours to weigh, and the merge waits.
+**Why you, why now:** (b) fails uploads that a backoff would save; which failure clients should meet is yours to weigh.
 Rec **(a)** · basis **partial** — *observed: last night's log, five retries in 3 ms; inferred: 30 seconds covers a busy disk* · unknown: how long a busy disk stays busy
 
 **53 — F9 (stale temp files) · Remove an aborted upload's temp file?**
@@ -743,7 +743,7 @@ Rec **(a)** · basis **partial** — *observed: last night's log, five retries i
   *→ the directory still grows through each day, by at most a day's aborted uploads · cost: about an hour*
 - (z) Decide later — *it waits; the temp directory keeps growing until the disk fills*
 
-**Why you, why now:** both stop the growth; whether a day's leftovers on disk is acceptable is yours, and the merge waits.
+**Why you, why now:** both stop the growth; whether a day's leftovers on disk is acceptable is yours to say.
 Rec **(a)** · basis **strong** — *read the handler: nothing deletes the file on abort* · unknown: none
 
 - **51 F3 (oversize upload) · Check an upload's size before reading it?** — rec **(a) check the declared size first** → *an oversize upload is refused before any of it is read* · *later: the merge waits* · basis **strong** · *10 min old*

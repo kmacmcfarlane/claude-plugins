@@ -104,7 +104,7 @@ never recomposed at render time — and the option lines under it show what each
 When such a card is revised for any other reason, its Effect is rewritten across the options
 and stored with the revision. An option stored on one line, its impact after a dash (a
 caller's store form included), renders in the new one: its facets on the line under the
-option. A card stored before 2026-10-20 may carry a plain `undo:` on every option and on its
+option. A card stored in the older form may carry a plain `undo:` on every option and on its
 Impact line; it renders as stored, and an undo there that says the option cannot be undone,
 or only at real cost, is read as the marker. When such a card is revised for any other
 reason, its undos are rewritten to the rule above.
@@ -283,8 +283,8 @@ Rec **(b)** · basis **word** — *one-clause reason* · unknown: what isn't kno
   comes to the operator (what would go wrong if you took the recommendation alone), then why
   it is up now. It opens with the class in italics when the caller names classes; with no
   recommendation it says why the call is not yours. What the decision blocks is the Impact
-  line's *later:*, so it is not said again; when nothing forces it, the line says only why
-  it is the operator's. On an ask for another round it may point at the lines above it:
+  line's *later:*, so it is not said again; when nothing forces it, the line says so in a
+  clause, *nothing forces it* (SKILL.md § The floor, item 3). On an ask for another round it may point at the lines above it:
   *cap — the finding under If left*. The caller's store keeps *why now* and *why ask* as
   its own fields; only the card merges them.
 - **Context, kept.** Write it when the decision is raised, not at the re-show, so it is
@@ -476,7 +476,9 @@ A **source label** is a label a source document gives its own parts: a review's 
 Tracker ids — work items, tickets, commits, a ticket-style key — are not source labels: they
 keep the `plain-names` skill's rule, the plain name first and the id a trailing tag.
 
-- **Label first, then its short name** in parentheses, in any text the operator reads:
+- **Label first, then its short name** in parentheses, in a decision's text — its title,
+  What, Context, options, list line and echo (the `plain-names` skill holds the rule for
+  every other text the operator reads):
   *F7 (oversize upload)*. The short name is plain words, two to six of them, taken from the
   source where it has one (a finding's title, a question's heading) and written where it
   does not. A label keeps one short name for as long as the operator sees it.
