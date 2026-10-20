@@ -90,6 +90,21 @@ An option: `title` at most six words, verb first; `oneLine` reads after the page
 (`because:` on the rec, `not recommended because:` on the others, `if left:` on `z`,
 `if chosen:` with no rec); `full` and `impact` are the option and its consequence.
 
+## An excerpt
+
+Verbatim multi-line text (code, a log, a diff, test output), drawn as a code block. No card
+field carries one yet; the finding and the excerpt attachment will.
+
+| Key | Required | Shape |
+|---|---|---|
+| `text` | yes | the lines verbatim, non-blank, with no fence around them (the page draws the block); about 80 lines or 4 KB, a longer one cut with the cut said in the text |
+| `lang` | no | a short label (`python`, `diff`, `log`): letters, digits and `+ # . _ -`, 24 at most |
+| `src` | no | where it came from, one line: a path and line range at a commit, or the command and when it ran |
+
+Nothing in an excerpt renders as a mark: backticks, `[[N]]`, links, HTML tags and fences show
+as typed. Never a secret's value (`[redacted: key <name> in <path>]`), personal data, or
+another party's private material.
+
 ## Levels and their shapes
 
 `detail` holds `[medium, high]` per part: `context`, `impact`, `tldr`, `rec`, `why`,
@@ -135,7 +150,9 @@ recommend; an `impact` missing a facet; a `basis` outside the four; a `follow` o
 six; a non-number `refs` key; a ⚠ card without `blocks`, or a `blocks` key not a letter but
 `z`, or a row without its text; an `act` not keyed by letters but `z`, a list empty or
 holding anything but text, a step with a fill-in placeholder (an angle-bracketed word with no
-spaces) or a line break; `evidence` neither text nor a non-empty list of text; a malformed
+spaces) or a line break; an excerpt (once a field carries one) not `{text, lang, src}`, with blank `text`, a `lang`
+off its label shape or a `src` of more than one line; `evidence` neither text nor a
+non-empty list of text; a malformed
 `detail` (a bullet neither text nor `{t, sub}`, a section not `{h, b}`, both `t` and `h`,
 bullets and sections mixed), or a `detail.o` key not a letter but `z`.
 

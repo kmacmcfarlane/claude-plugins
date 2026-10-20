@@ -3,8 +3,8 @@
 `skills/decision-page/references/writer-digest.md` is what a page's writer reads in place of
 `references/cards-schema.md` and the example. It must carry:
 
-- every key of the schema's Top level and A card tables (but `what`, older data only), each
-  with the schema's own Required cell;
+- every key of the schema's Top level, A card and An excerpt tables (but `what`, older data
+  only), each with the schema's own Required cell;
 - every lint key the pre-publish runner, `scripts/check_cards.js`, emits, and none it does
   not, each with the start its printed line has (`shape:`, `impact:`, `depth:`, `page:` or
   none);
@@ -166,6 +166,17 @@ class WriterDigest(unittest.TestCase):
         self.assertTrue(required_problems(self.schema, req, "A card"))
         top = self.digest.replace("| `refs` | no |", "| `refs` | yes |")
         self.assertTrue(required_problems(self.schema, top, "Top level"))
+
+    def test_excerpt_fields(self):
+        self.assertEqual(required_problems(self.schema, self.digest, "An excerpt"), [])
+        self.assertEqual(set(keyed(section(self.schema, "An excerpt"), 2)), {"text", "lang", "src"})
+
+    def test_excerpt_field_mutations(self):
+        gone = self.digest.replace("| `src` | no |", "| src | no |")
+        self.assertIn("An excerpt: `src` missing",
+                      required_problems(self.schema, gone, "An excerpt"))
+        req = self.digest.replace("| `text` | yes |", "| `text` | no |")
+        self.assertTrue(required_problems(self.schema, req, "An excerpt"))
 
     def test_lints(self):
         emitted = runner_lints(self.js)
