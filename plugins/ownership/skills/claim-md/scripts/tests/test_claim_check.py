@@ -551,6 +551,163 @@ class Mismatch(Base):
         self.assertEqual(self.flags_of("a"), [])
 
 
+# -- the Systems: pass -----------------------------------------------------------------------
+
+
+def syslib(systems=None, not_owned=(), fence=False):
+    """A CLAUDE.md whose ## Librarian has a Systems: list (None: no line; []: `none`) and a
+    Not owned: list."""
+    body = "## Librarian\nScope: whole repo\n"
+    if systems is not None:
+        body += ("Systems:\n" + "".join(f"- {x} — acts there\n" for x in systems)
+                 if systems else "Systems: none\n")
+    if not_owned:
+        body += "Not owned:\n" + "".join(f"- {x}\n" for x in not_owned)
+    body += "Checks:\n- make test\n"
+    if fence:
+        body = "```\n" + body + "```\n"
+    return "# Project\n\n" + body + "\n## Other\n\ntext\n"
+
+
+class Systems(Base):
+    def line_of(self, repo, text):
+        lines = (self.e.dir / repo / "CLAUDE.md").read_text("utf-8").splitlines()
+        return lines.index(text) + 1
+
+    def sys_flags(self, doc):
+        return sorted((f["flag"], f["kind"], f["repo"], f["file"], f["line"], f["section"],
+                       f["other"]) for f in doc["flags"]
+                      if f["kind"] in ("systems", "systems-not-ours", "not-owned"))
+
+    def test_no_systems_lines_anywhere_gives_no_flag(self):
+        self.e.repo("b", {"CLAUDE.md": "# B\n\nNo librarian.\n"})
+        self.e.repo("a", {"CLAIM.md": claim("a"), "CLAUDE.md": syslib(None, ["x — b"])})
+        self.assertEqual(self.estate(), [("MISMATCH", "claim-only", "a"),
+                                         ("MISMATCH", "librarian-only", "a")])
+
+    def test_two_repos_share_a_system(self):
+        self.e.repo("b", {"CLAUDE.md": syslib(["`Brainboy`"])})
+        self.e.repo("a", {"CLAUDE.md": syslib(["brainboy", "other"])})
+        code, doc, _ = run_json("--estate", "--dir", str(self.e.dir))
+        self.assertEqual(self.sys_flags(doc), [(
+            "CONFLICT", "systems", "a", "CLAUDE.md", self.line_of("a", "- brainboy — acts there"),
+            "Librarian Systems", f"b:CLAUDE.md:{self.line_of('b', '- `Brainboy` — acts there')}")])
+
+    def test_systems_none_and_distinct_systems_are_clean(self):
+        self.e.repo("b", {"CLAUDE.md": syslib([])})
+        self.e.repo("c", {"CLAUDE.md": syslib(["the cluster"])})
+        self.e.repo("a", {"CLAUDE.md": syslib(["brainboy"])})
+        self.assertEqual(self.estate(), [])
+
+    def test_systems_in_a_fence_are_skipped(self):
+        self.e.repo("b", {"CLAUDE.md": syslib(["brainboy"], fence=True)})
+        self.e.repo("a", {"CLAUDE.md": syslib(["brainboy"])})
+        self.assertEqual(self.estate(), [])
+
+    def test_system_given_away_by_a_sibling(self):
+        self.e.repo("z")
+        self.e.repo("b", {"CLAIM.md": claim("b", not_ours="## Not ours\n\n- Brainboy — z\n"),
+                          "CLAUDE.md": syslib(None, ["the cluster — operator"])})
+        self.e.repo("c", {"CLAUDE.md": syslib(None, ["the cluster — a"])})
+        self.e.repo("a", {"CLAUDE.md": syslib(["brainboy", "the cluster"])})
+        code, doc, _ = run_json("--estate", "--dir", str(self.e.dir))
+        got = [(f["kind"], f["repo"], f["other"]) for f in doc["flags"]
+               if f["kind"] == "systems-not-ours"]
+        b_claim = (self.e.dir / "b" / "CLAIM.md").read_text("utf-8").splitlines()
+        self.assertEqual(sorted(got), sorted([
+            ("systems-not-ours", "a",
+             f"b:CLAIM.md:{b_claim.index('- Brainboy — z') + 1}"),
+            ("systems-not-ours", "a",
+             f"b:CLAUDE.md:{self.line_of('b', '- the cluster — operator')}"),
+        ]))  # c gives the cluster to a: consistent, no flag
+
+    def test_system_given_away_by_its_own_lists(self):
+        self.e.repo("m")
+        self.e.repo("a", {"CLAIM.md": claim("a", not_ours="## Not ours\n\n- brainboy — m\n"),
+                          "CLAUDE.md": syslib(["brainboy"], ["brainboy — m"])})
+        code, doc, _ = self.check("a")
+        got = sorted((f["kind"], f["other"].split(":")[1]) for f in doc["flags"]
+                     if f["kind"] == "systems-not-ours")
+        self.assertEqual(got, [("systems-not-ours", "CLAIM.md"),
+                               ("systems-not-ours", "CLAUDE.md")])
+
+    def test_not_owned_one_sided(self):
+        self.e.repo("b", {"CLAUDE.md": syslib(["the cluster"])})
+        self.e.repo("a", {"CLAUDE.md": syslib(None, ["brainboy — b"])})
+        code, doc, _ = run_json("--estate", "--dir", str(self.e.dir))
+        self.assertEqual(self.sys_flags(doc), [(
+            "ONE-SIDED", "not-owned", "a", "CLAUDE.md", self.line_of("a", "- brainboy — b"),
+            "Librarian Not owned", f"b:CLAUDE.md:{self.line_of('b', 'Systems:')}")])
+
+    def test_not_owned_one_sided_against_systems_none(self):
+        self.e.repo("b", {"CLAUDE.md": syslib([])})
+        self.e.repo("a", {"CLAUDE.md": syslib(None, ["brainboy — b"])})
+        code, doc, _ = run_json("--estate", "--dir", str(self.e.dir))
+        self.assertEqual([f["other"] for f in doc["flags"]],
+                         [f"b:CLAUDE.md:{self.line_of('b', 'Systems: none')}"])
+
+    def test_not_owned_settled_or_unanswered_is_clean(self):
+        # the owner lists it; the owner claims it as an area; the owner has no Systems: line;
+        # the owner is the operator.
+        self.e.repo("b", {"CLAUDE.md": syslib(["`Brainboy`"])})
+        self.e.repo("c", {"CLAIM.md": claim("c"), "CLAUDE.md": syslib([])})  # Order records
+        self.e.repo("d", {"CLAUDE.md": syslib(None)})
+        self.e.repo("a", {"CLAUDE.md": syslib(None, [
+            "brainboy — b", "order records — c", "dashboards — d", "pricing — operator"])})
+        self.assertNotIn("not-owned", [k for _, k, _ in self.estate()])
+
+    def test_single_repo_reads_a_sibling_its_claim_does_not_name(self):
+        self.e.repo("b", {"CLAUDE.md": syslib(["brainboy"])})
+        self.e.repo("a", {"CLAIM.md": claim("a"), "CLAUDE.md": syslib(["brainboy"])})
+        self.assertEqual(self.flags_of("a"), [("CONFLICT", "systems", "a")])
+
+    def test_single_repo_without_a_claim(self):
+        self.e.repo("b", {"CLAUDE.md": syslib(["brainboy"], ["the cluster — a"])})
+        self.e.repo("a", {"CLAUDE.md": syslib(["brainboy"])})
+        self.assertEqual(self.flags_of("a"), [("CONFLICT", "systems", "a"),
+                                              ("ONE-SIDED", "not-owned", "b"),
+                                              ("UNCLAIMED", None, "a")])
+
+    def test_pairs_without_this_repo_need_estate(self):
+        self.e.repo("b", {"CLAUDE.md": syslib(["brainboy"])})
+        self.e.repo("c", {"CLAUDE.md": syslib(["brainboy"], ["x — b"])})
+        self.e.repo("a", {"CLAIM.md": claim("a"), "CLAUDE.md": syslib([])})
+        self.assertEqual(self.flags_of("a"), [])
+        self.assertEqual(self.estate(), [("CONFLICT", "systems", "b"),
+                                         ("ONE-SIDED", "not-owned", "c")])
+
+    def test_unreadable_sibling_claude_md_single_repo(self):
+        self.e.repo("bad", {"CLAUDE.md": b"# B\n\xff\xfe\n"})
+        self.e.repo("a", {"CLAIM.md": claim("a"), "CLAUDE.md": syslib(["brainboy"])})
+        code, doc, _ = self.check("a")
+        self.assertEqual(code, 1)
+        self.assertEqual([(f["flag"], f["kind"], f["repo"], f["file"], f["line"], f["section"])
+                          for f in doc["flags"]],
+                         [("PROBLEM", "not-utf8", "bad", "CLAUDE.md", 0, "file")])
+        self.assertEqual(kinds(run_json("--estate", "--dir", str(self.e.dir))[1]),
+                         [("PROBLEM", "not-utf8", "bad")])
+
+    def test_unreadable_own_claude_md_is_flagged_once(self):
+        self.e.repo("a", {"CLAIM.md": claim("a"), "CLAUDE.md": b"\xff\n"})
+        self.assertEqual(self.flags_of("a"), [("PROBLEM", "not-utf8", "a")])
+
+    def test_no_line_content_in_output(self):
+        self.e.repo("b", {"CLAIM.md": claim("b", not_ours=f"## Not ours\n\n- {S} two — z\n"),
+                          "CLAUDE.md": syslib([f"{S} one"], [f"{S} three — a"])})
+        self.e.repo("z")
+        self.e.repo("a", {"CLAUDE.md": syslib([f"{S} one", f"{S} two"])})
+        for mode in ([], ["--json"]):
+            for extra in (["--repo", str(self.e.dir / "a")],
+                          ["--estate", "--dir", str(self.e.dir)]):
+                code, out, err = run(*extra, *mode)
+                with self.subTest(mode=mode, extra=extra[0]):
+                    self.assertEqual(code, 1)
+                    self.assertNotIn(S, out + err)
+                    for flag, k in (("CONFLICT", "systems"), ("CONFLICT", "systems-not-ours"),
+                                    ("ONE-SIDED", "not-owned")):
+                        self.assertIn(f'"{k}"' if mode else f"{flag} {k} ", out)
+
+
 # -- coverage --------------------------------------------------------------------------------
 
 

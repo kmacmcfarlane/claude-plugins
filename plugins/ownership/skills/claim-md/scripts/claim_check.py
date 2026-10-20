@@ -3,7 +3,9 @@
 
 Checks one repo's CLAIM.md (and the claims of the siblings it names), or with --estate
 every sibling checkout beside it, against the format in this skill's
-references/format.md, and prints flags. The flags, the command line and the output
+references/format.md, and prints flags. A separate pass compares the `## Librarian`
+`Systems:` and `Not owned:` lines of every repo's CLAUDE.md, claim or none: for one repo,
+the pairs that include it; with --estate, every pair. The flags, the command line and the output
 contract are in its references/checks.md.
 
 It never writes, never opens the network, and never follows a symlink out of a repo or
@@ -489,6 +491,37 @@ def librarian_not_owned(text):
     return out if found else None
 
 
+def librarian_systems(text):
+    """(line, [(N(name), line)]) from CLAUDE.md's ## Librarian Systems: list, or None when
+    the section or the line is absent. `Systems: none` is the line with an empty list; an
+    item's name is the text before its first ` — `, or the whole item without one."""
+    in_lib, found, out = False, None, []
+    listing = False
+    for n, line in lines_outside_fences(text):
+        h = heading(line)
+        if h and h[0] <= 2:
+            if in_lib:
+                break
+            in_lib = h[0] == 2 and N(h[1]) == "librarian"
+            continue
+        if not in_lib:
+            continue
+        if listing:
+            if line.startswith("- "):
+                name = line[2:].partition(EM)[0]
+                if N(name):
+                    out.append((N(name), n))
+                continue
+            listing = False
+        if found is None:
+            s = line.strip()
+            if s == "Systems:":
+                found, listing = n, True
+            elif s.startswith("Systems:") and N(s[8:]).rstrip(".") == "none":
+                found = n
+    return (found, out) if found is not None else None
+
+
 class Repo:
     def __init__(self, name, path, is_self=False, claim_override=None):
         self.name = printable(name)       # directory listing spelling, escaped once
@@ -539,6 +572,7 @@ class Check:
         self.skipped = skipped
         self.flags = []
         self.siblings_known = sibling_dir is not None
+        self._claude = {}                 # N(name) -> CLAUDE.md text or None, read once
 
     # -- output ------------------------------------------------------------------------
 
@@ -582,6 +616,7 @@ class Check:
             self.transit(r, c)
             self.mismatch(r, c)
         self.pairs()
+        self.systems()
         self.flags.sort(key=lambda f: (f["repo"], f["file"], f["line"], f["flag"],
                                        f["kind"] or "", f["other"] or ""))
         return self.flags
@@ -689,11 +724,18 @@ class Check:
             elif not within(p, t.base):
                 self.flag("MOVED?", "outside", r, r.claim_file, line, "In transit")
 
+    def claude_text(self, r):
+        """The repo's CLAUDE.md text, or None; read once, its PROBLEM flagged once."""
+        key = N(r.name)
+        if key not in self._claude:
+            text, prob = read_text(str(r.path / CLAUDE), r.base)
+            if prob:
+                self.flag("PROBLEM", prob, r, CLAUDE, 0, "file")
+            self._claude[key] = text
+        return self._claude[key]
+
     def mismatch(self, r, c):
-        text, prob = read_text(str(r.path / CLAUDE), r.base)
-        if prob:
-            self.flag("PROBLEM", prob, r, CLAUDE, 0, "file")
-            return
+        text = self.claude_text(r)
         if text is None:
             return
         lib = librarian_not_owned(text)
@@ -790,6 +832,84 @@ class Check:
             if area in theirs and theirs[area][0] != N(a.name):
                 self.flag("CONFLICT", "claimed-and-not-ours", a, a.claim_file, line, "Claim",
                           other=self.loc(b, b.claim_file, theirs[area][1]))
+
+    # -- the Systems: pass ---------------------------------------------------------------
+
+    def systems(self):
+        """The ## Librarian Systems: pass, separate from the claim pass: every repo's
+        CLAUDE.md is read, with or without a CLAIM.md. ## Not ours and ## Claim areas enter
+        only from a repo whose claim parsed. Without --estate only this repo's own lines and
+        the pairs that include it are flagged; with --estate, every repo and every pair."""
+        keys = sorted(self.repos)
+        lib = {}
+        for k in keys:
+            text = self.claude_text(self.repos[k])
+            lib[k] = ((librarian_systems(text), librarian_not_owned(text) or [])
+                      if text is not None else (None, []))
+        me = N(self.me.name) if self.me is not None else None
+        for k in keys:
+            if self.estate or k == me:
+                self.systems_not_ours(self.repos[k], self.repos[k], lib)
+        for i, a in enumerate(keys):
+            for b in keys[i + 1:]:
+                if not self.estate and me not in (a, b):
+                    continue
+                x, y = (self.repos[b], self.repos[a]) if b == me else \
+                    (self.repos[a], self.repos[b])
+                self.systems_twice(x, y, lib)
+                self.systems_not_ours(x, y, lib)
+                self.systems_not_ours(y, x, lib)
+                self.not_owned_one_sided(x, y, lib)
+                self.not_owned_one_sided(y, x, lib)
+
+    @staticmethod
+    def _items(lib, r):
+        s = lib[N(r.name)][0]
+        out = {}
+        for name, line in (s[1] if s else []):
+            out.setdefault(name, line)
+        return out
+
+    def systems_twice(self, a, b, lib):
+        """One system under Systems: in two repos."""
+        theirs = self._items(lib, b)
+        for name, line in self._items(lib, a).items():
+            if name in theirs:
+                self.flag("CONFLICT", "systems", a, CLAUDE, line, "Librarian Systems",
+                          other=self.loc(b, CLAUDE, theirs[name]))
+
+    def systems_not_ours(self, a, b, lib):
+        """A system a lists that b's Not owned: or ## Not ours (b may be a itself) gives
+        to an owner other than a."""
+        mine = self._items(lib, a)
+        if not mine:
+            return
+        given = [(name, owner, CLAUDE, line) for name, owner, _, line in lib[N(b.name)][1]]
+        c = b.claim()
+        if c is not None:
+            given += [(name, owner, b.claim_file, line)
+                      for name, owner, _, line in c.not_ours]
+        for name, owner, file, line in given:
+            if name in mine and owner != N(a.name):
+                self.flag("CONFLICT", "systems-not-ours", a, CLAUDE, mine[name],
+                          "Librarian Systems", other=self.loc(b, file, line))
+
+    def not_owned_one_sided(self, a, b, lib):
+        """a's Not owned: gives a thing to b, b has a Systems: line, and neither b's
+        Systems: nor b's ## Claim areas name the thing."""
+        owned = [(name, line) for name, owner, form, line in lib[N(a.name)][1]
+                 if form == "repo" and owner == N(b.name)]
+        s = lib[N(b.name)][0]
+        if not owned or s is None:
+            return
+        names = set(self._items(lib, b))
+        c = b.claim()
+        if c is not None:
+            names |= {area for area, _ in c.areas}
+        for name, line in owned:
+            if name not in names:
+                self.flag("ONE-SIDED", "not-owned", a, CLAUDE, line, "Librarian Not owned",
+                          other=self.loc(b, CLAUDE, s[0]))
 
 
 # -- discovery ---------------------------------------------------------------------------
