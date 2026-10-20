@@ -6,8 +6,11 @@ requirement. Examples are **illustrative**.
 
 ## Reading a reply
 
-1. Find the decision it answers: the number, or the one decision in play. A reply that names
-   no number while several are open: ask which, in one line. One verb over several numbers
+1. Find the decision it answers: the number, the source label in its title, or the one
+   decision in play. A reply by label (`F7: a`, "F7, the backoff") is read as the decision
+   whose title carries that label (`references/rendering.md` § Source labels); when two open
+   decisions carry the same label, from two sources, ask which. A reply that names no number
+   or label while several are open: ask which, in one line. One verb over several numbers
    (`later 41, 44`, `drop 80-82`) applies to each number under its own rules — a `later`
    still warns about that decision's deadline. `later`, `drop`, `expand` and `tell me` apply
    to every number; a verb that acts (a choice, `you decide`) skips each ⚠ decision among
@@ -19,7 +22,9 @@ requirement. Examples are **illustrative**.
 3. **Echo** every reply that is not an exact `N: letter`, in one italic line:
    *Read as: 43 → dig into (other callers in the access logs).* It names any item it
    mentions per the `plain-names` skill: short, but never a bare id. *Read as: 44 → (b) the
-   export migration (b7d4) waits for the release.* The operator sees it with the turn's
+   export migration (b7d4) waits for the release.* A reply by label is never an exact
+   `N: letter`, so it is always echoed, with the number, the label and its short name:
+   *Read as: 52 — F7 (retry storm) → (a) add a backoff, doubling to 30 seconds.* The operator sees it with the turn's
    actions, so a misreading is caught in one turn instead of after the damage: before later
    work is built on it, while a two-way action is still cheap to undo. That does not hold
    where a push others pull, or another session, has already acted on the reading. The echo
@@ -60,10 +65,14 @@ Example 25 in `references/gallery.md` shows one.
 ## Reply types
 
 **Choose — `N: letter`, or a choice in words.** Act on it. On a **⚠ one-way decision**, when
-the **chosen option** is one-way — its Undo (its cell in the block's Impact table, or on its impact line on a card) says it
-cannot be undone, or only at real cost — first repeat the choice back and act only once the
-operator confirms. A one-way decision with a narrow reach (no ⚠, its Undo saying it cannot be
-undone) is answered like any card: its narrow reach is why it is not ⚠.
+the **chosen option** is one-way — it carries `⚠ undo:` (on its impact line on a card, or in
+its Undo cell in the block's Impact table) saying it cannot be undone, or only at real cost
+— first repeat the choice back and act only once the operator confirms. An option with no
+undo shown is reversible at little cost: it is echoed and acted on at once. A one-way
+decision with a narrow reach (no ⚠ label, its one-way option carrying `⚠ undo:`) is answered
+like any card: its narrow reach is why it is not ⚠. A card stored before undo was shown only
+where it bites may carry a plain `undo:`; one that says the option cannot be undone counts as
+the marker.
 
 *Read as: 43 → (a) remove `/v1/export` on Thursday. That can't be undone for the partners who
 break — confirm and I'll go ahead, or change it.*

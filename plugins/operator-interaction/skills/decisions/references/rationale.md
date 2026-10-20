@@ -129,6 +129,38 @@ took five facets in one vocabulary, shown more fully as space grows.
   time reads less clearly; written once with the card, it is read the same way everywhere,
   as the context cue is (§ Who is reading).
 
+## Cards a review could not answer (2026-10-20)
+
+The operator could not answer seven code-review decisions from an answer page; the same seven,
+in chat with each finding first and its card under it, were answered in one turn. Their
+feedback, relayed from that session and confirmed as answers 259–270, shaped these rules:
+
+- **Impact names the system.** The cards said "the comment to the developer waits". The
+  operator: "why [is] the impact of this decision scoped to the impact to my code review, not
+  the system we are building? that's silly". What the operator weighs is what happens to the
+  code, its users and its consumers; the process is only what waiting costs, so it lives in
+  Wait.
+- **Undo where it bites.** "We shouldn't mention that the impact is reversible, only mention
+  when it ISN'T, since things are mostly reversible without consequence ... it should be
+  attention-getting when it needs to be." An undo on every option is noise that hides the
+  one that matters; the ⚠ on the one that matters makes it seen, and the read-back still
+  turns on it.
+- **One why line.** "Background (why ask and why now?) are more metacognitive than
+  necessary." Both stay on every card, since every ask must justify itself, but in one short
+  line below the options, so the card reads what, context, impact and the choices first.
+- **Bundles as groups.** On a card that bundled four findings: "I'd expect impact for each of
+  these findings in the impact section ... Without more info on what I'm actually deciding
+  on, I can't decide." A card per item gives each its own impact and its own pick without
+  breaking the one-recommendation-a-card and plain-integer rulings.
+- **The mechanism.** On "exposes an archived library in its public API": "How do importers
+  break? what are the consequences?" A label can pass the floor and still tell the reader
+  nothing; how it breaks, for whom, and what is different after the fix is what they weigh.
+- **Labels first.** The operator answered by the review's labels, not the decision numbers.
+  Putting the label first in the title, with a short name so it reads to someone who never
+  opened the review, makes either handle work.
+- **Chat for findings.** The page has nowhere to put a finding's code and failure, which the
+  operator needed to decide; chat does, so findings-style sets go there until the page can.
+
 ## Who is reading: events, not the clock
 
 - Clinical handover (I-PASS; PMC7382547, citing the NEJM 2014 multicentre study,

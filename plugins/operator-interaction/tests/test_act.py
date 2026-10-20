@@ -40,6 +40,8 @@ def setUpModule():
 PLACEHOLDER = re.compile(r"<[A-Za-z][\w-]*>")
 # a source document's label: one to three capitals and a number (a step, a gate, a finding)
 LABEL = re.compile(r"\b[A-Z]{1,3}[0-9]+[a-z]?\b")
+# a source label with its short name: F7 (retry storm), two to six plain words
+NAMED_LABEL = re.compile(r"\b([A-Z]{1,3}[0-9]+[a-z]?) \(([a-z][a-z' -]*)\)")
 FENCE = re.compile(r"^\s*(`{3,}|~{3,})")
 ACT_HEAD = re.compile(r"^\*\*To act on \([a-y]\):\*\*")
 CODE_SPAN = re.compile(r"`([^`]+)`")
@@ -192,6 +194,22 @@ def gallery_blocks():
     return out
 
 
+def labelled(rows):
+    """gallery_blocks() rows, each with the set of labels its example (a `## ` section) names
+    with a short name: the label, then a parenthesised name of plain words."""
+    rows = list(rows)
+    named, section = {}, 0
+    keyed = []
+    for row in rows:
+        if row[1].startswith("## "):
+            section += 1
+        keyed.append(section)
+        if not row[2]:
+            for m in NAMED_LABEL.finditer(row[1]):
+                named.setdefault(section, set()).add(m.group(1))
+    return [(*row, named.get(s, set())) for row, s in zip(rows, keyed)]
+
+
 class GalleryActsAndTerms(unittest.TestCase):
     """The worked examples are what a card is checked against: none of them carries either
     failure the floor's item 10 and its widened item 1 exist to prevent."""
@@ -208,11 +226,14 @@ class GalleryActsAndTerms(unittest.TestCase):
             self.assertIsNone(m, f"gallery.md:{n}: fill-in placeholder {m and m.group(0)}")
 
     def test_no_source_label_outside_not_this_and_fences(self):
-        for n, line, in_fence, _, in_not_this in gallery_blocks():
+        # a source label carries its short name (answer 269, 2026-10-20): it passes where the
+        # same example names it, label first, *F7 (retry storm)*; a bare one stays a failure
+        for n, line, in_fence, _, in_not_this, named in labelled(gallery_blocks()):
             if in_fence or in_not_this:
                 continue
-            m = LABEL.search(line)
-            self.assertIsNone(m, f"gallery.md:{n}: label-shaped token {m and m.group(0)}")
+            for m in LABEL.finditer(line):
+                self.assertIn(m.group(0), named,
+                              f"gallery.md:{n}: label-shaped token {m.group(0)} with no short name")
 
     def test_every_path_in_a_to_act_on_part_is_absolute(self):
         seen = 0
@@ -238,6 +259,14 @@ class GalleryActsAndTerms(unittest.TestCase):
         self.assertTrue(LABEL.search("step B4 of the rollout"))
         self.assertFalse(LABEL.search("level 1 in the cleanup plan"))
         self.assertFalse(LABEL.search("3 of 3 pages signed in"))
+        # a label passes only where its example names it
+        rows = [(1, "## 1. x", False, False, False), (2, "F7: b, as asked", False, False, False),
+                (3, "52 — F7 (retry storm) · Add a backoff?", False, False, False),
+                (4, "## 2. y", False, False, False), (5, "F7 again", False, False, False)]
+        named = {n: s for n, *_, s in labelled(rows)}
+        self.assertIn("F7", named[2])
+        self.assertNotIn("F7", named[5])
+        self.assertIsNone(NAMED_LABEL.search("F7 (Retry storm)"))
         # the path lint's word cleanup keeps a relative path relative
         self.assertEqual("./run.sh,".lstrip("'\"(").rstrip("'\".,;:)"), "./run.sh")
 

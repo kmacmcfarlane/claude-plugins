@@ -39,7 +39,8 @@ alternative not taken, in case practice argues for it.
 - **Shown after** (2026-09-30) — what a caller's rules let you decide alone is recorded and
   shown as a `Done:` line in a *Done alone* group, never left unseen. Not taken: a record seen
   only on request.
-- **Impact in every view** (2026-10-06) — five facets in one order, the smallest view
+- **Impact in every view** (2026-10-06; Undo only where an option is one-way or costly since
+  2026-10-20, below) — five facets in one order, the smallest view
   showing the effect, each larger view adding facets; the Impact line stored at raise and
   read by every view; Undo replaces the stakes words, Wait the *blocks* slot. Not taken:
   lines with the effect only, no wait; no stored line, each view deriving impact from the
@@ -56,7 +57,8 @@ alternative not taken, in case practice argues for it.
   on the card. Not taken: inputs sent after the answer; plainer names (**Steps for (x):**);
   the inputs written into each option's own text.
 - **Terms defined where shown** (2026-10-07, the operator's ask; words over labels is a
-  design made in review, not the operator's) — every term the operator may not know,
+  design made in review, not the operator's; a source label goes first with its short name
+  since 2026-10-20, below) — every term the operator may not know,
   defined where it first appears. Not taken: a pointer to the source.
 - **Context first on an answer page** (order since 2026-10-09: TLDR first) (2026-10-08, the
   operator's direction; the checks' shape, a design made in planning, not the operator's) —
@@ -98,7 +100,8 @@ alternative not taken, in case practice argues for it.
   card-level Impact covers the decision across all its options, each facet on its own line;
   each option's effect lives in its own detail. Not taken: Effect as the recommended option's
   on a page.
-- **Effect across the options in chat, and each option's own impact** (2026-10-14, answer
+- **Effect across the options in chat, and each option's own impact** (2026-10-14; each
+  option's undo only where it is one-way or costly since 2026-10-20, below; answer
   206 (a), widened by the operator: "is there a provision for displaying the
   effect/reach/undo/cost in TUI cards/blocks per-option too? That parity seems valuable.
   Make it so"; the italic line under each option, facets that do not apply left out, and
@@ -131,3 +134,79 @@ alternative not taken, in case practice argues for it.
   operator's) — each option's **More** carries what the fold did (its text at every level,
   its impact and its row); a part, facet or field that is empty or none is left off the page.
   Not taken: the fold kept beside **More** (198, as built); *none* written out.
+- **Impact names the system** (2026-10-20, answer 259 (a), from the operator's review
+  feedback: "why [is] the impact of this decision scoped to the impact to my code review,
+  not the system we are building? that's silly", and "the decision skill has described the
+  change or process instead of the impact on the codebase and downstream consumers"; the
+  reading that sessions and the operator are the users where the change is to agent
+  behaviour, a design made in planning, and that the operator's time to carry out an option
+  stays in Cost, a design made in build; neither the operator's) — Effect and Reach describe the thing the work builds:
+  its code, data, users, deploys and downstream consumers. An effect on the process — a held
+  review comment, a round, a blocked session — goes only in Wait. Cost keeps build time and
+  spend, and the operator's attention only on a round ask. Not taken: a process clause in
+  Effect when the process is all the decision changes (259 (b)).
+- **Undo only where an option is one-way or costly** (2026-10-20, answer 260 (a): "we
+  shouldn't mention that the impact is reversible, only mention when it ISN'T, since things
+  are mostly reversible without consequence ... it should be attention-getting when it needs
+  to be"; the `⚠ undo:` marker and the answer page's `oneway` row flag were asked on the
+  2026-10-16 card as separate recommended parts, OQ2 (i) and (p), and are the plan's
+  sub-parts adopted with (a); the block's `—` cell and its dropped column, and older stored
+  undos read as written, designs made in planning, not the operator's) — undo is shown only
+  on an option that is one-way or costly to undo, marked `⚠ undo:`; an option with none
+  shown is reversible at little cost, and the read-back reads it that way. The Impact line
+  carries undo only when some option is one-way or costly, naming it. The marker marks the
+  option, never the decision: batches, `you decide` and the ⚠ block go by the decision's
+  own `⚠ one-way` label. This reverses *Impact in every view* (2026-10-06), which put undo
+  on every Impact line, and answer 206 (2026-10-14), which put each option's undo on its
+  line and every option's on a ⚠ decision. Not taken: every option of a ⚠ one-way decision
+  keeping its undo (260 (b)); undo kept everywhere (260 (c)); a bold `undo:` with no icon
+  (OQ2 (ii)); no page row flag, the cold read the only check (OQ2 (q)).
+- **Why you, why now: one line** (2026-10-20, answer 261 (a), from the operator's words:
+  "Background (why ask and why now?) are more metacognitive than necessary"; the length of
+  about 25 words, its place above the Rec line, and the block keeping two lines, designs
+  made in planning, not the operator's) — on a chat card, why now and why ask share one
+  **Why you, why now:** line, the class first, below the options and just above the Rec
+  line; what the decision blocks is left to Wait. The answer page keeps them folded in
+  Background, and a store keeps them as two fields. *Every ask justifies itself*
+  (2026-09-30) stands: every card still says why it is asked. Not taken: one short line
+  each, where they were (261 (b)); dropping them unless the reason is not obvious (261 (c)),
+  which would have reversed it.
+- **Bundles as groups of whole item cards** (2026-10-20, answer 263 (a), from the operator's
+  words on a card that bundled four findings: "I'd expect impact for each of these findings
+  in the impact section ... Without more info on what I'm actually deciding on, I can't
+  decide"; the heading's form and its **Shared context:** line, designs made in planning,
+  not the operator's) — when a bundle's items need different answers, each is its own whole
+  card, with its own number, Impact, options and recommendation, under one group heading
+  that adds the shared context; `ok N-M` still takes every recommendation. When one answer
+  fits every item, it stays one card naming each. It applies *A recommendation on every
+  decision* (2026-09-29) and *Plain integers* (2026-10-08). Not taken: one card with a pick
+  per item (263 (b)), which would have reversed both; always one answer for all (263 (c)).
+- **Explain the mechanism** (2026-10-20, answer 268 (a), from the operator's words on a
+  finding labelled "exposes an archived library in its public API": "How do importers break?
+  what are the consequences?") — every effect, finding and risk says how it happens, who
+  meets it and when, and the before and after of the fix; the cold read checks it. Not
+  taken: the rule on findings and risk cards only (268 (b)).
+- **Source labels first, with a short name** (2026-10-20, answer 269 (a), widened: "Be sure
+  to expand Fn style labels (in all forms, not just starting with "F") to include a
+  human-readable short-name/slug/etc or generate one where missing"; plain words rather than
+  a slug, two to six of them, and later mentions in a message by label alone, designs made
+  in planning, not the operator's) — every source label (a review's findings, a plan's
+  questions or features) carries a plain short name beside it, written where the source has
+  none, label first: *F7 (oversize upload)*. Ticket keys and other tracker ids are not
+  source labels and are excluded: they keep the `plain-names` skill's rule. A decision
+  raised from one labelled item opens its title on it, **41 — F7 (oversize upload) · …**;
+  the number stays the handle; a reply by label is read as that decision and echoed with the
+  number, the label and the name. It reverses the build design that a label trails as a tag
+  (*Terms defined where shown*). The operator chose label-first on the answer page too,
+  which narrows *No ids on an answer page* (2026-10-09) for a label with its short name;
+  until the page carries a label, its rule stands as written. Not taken: label-first in
+  chat only (269 (b)); numbering decisions by the label (269 (c)), which would have reversed
+  *Plain integers* (2026-10-08); the label trailing, as before (269 (d)); the slug form of
+  the short name.
+- **Findings-style sets to chat** (2026-10-20, answer 270 (a), from the operator's review,
+  where seven findings put on an answer page could not be decided and the same seven, in
+  chat with each finding first, were answered in one turn) — a set raised from the findings
+  of a review, an audit, a test run or a scan goes to chat by default, until the answer page
+  can show each finding (finding first, part of (a), lands with 265's confirmation); then the page is offered for such sets again. Other sets are as
+  before. Not taken: every set to chat until then (270 (b)); the page offered as before
+  (270 (c)).

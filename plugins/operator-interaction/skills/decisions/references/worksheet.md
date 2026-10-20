@@ -42,10 +42,13 @@ observable measures it today; leave it alone rather than guess.
 Judge **reversibility and blast radius together**; never add them up as two scores. A
 decision is wide when any of its options is. A decision
 that is one-way *and* wide (or relied on) is **⚠ one-way**; how it is shown and answered is
-SKILL.md § Critical. One-way but narrow is a card with no ⚠, its Undo saying it cannot be
-undone. Two-way and narrow is the fast tier: a card, or a line when the line-only rule holds.
-The operator never sees these words as a label: reversibility is shown as the **Undo** facet
-(how, or why not) and blast radius as **Reach** (who or what), § The Impact line.
+SKILL.md § Critical. One-way but narrow is a card with no ⚠ label, its one-way option
+carrying `⚠ undo:`. Two-way and narrow is the fast tier: a card, or a line when the line-only
+rule holds. The operator never sees these words as a label: reversibility is shown as
+`⚠ undo:` on each option that is one-way or costly to undo (how, at what cost, or why not),
+and as nothing on an option reversible at little cost; blast radius is shown as **Reach**
+(who or what), § The Impact line. Judge each option's reversibility on its own: the marker
+goes on that option, never on the decision.
 
 ## C — How well is it understood? → what evidence is shown, and "investigate first"
 
@@ -105,7 +108,9 @@ ask, and it waits. When in doubt, ask.
 
 **Why ask, and the class.** Every kind above but the FYI, the alert and the open question
 carries *why ask* (SKILL.md § The floor): what would go wrong if you took your recommendation
-alone. Fill it before you write the card. When the caller names classes of decision, pick
+alone. Fill it before you write the card. On a card it shares one **Why you, why now:** line
+with *why now*, about 25 words at most for the two: the class, the reason, then what forces
+it now, leaving out what it blocks (the Wait facet says that); a block keeps two lines. When the caller names classes of decision, pick
 the one this ask belongs to at birth and open *why ask* with it; one that fits no class says
 so in the caller's word for that. An ask whose *why ask* comes out empty — nothing goes wrong
 if you take the recommendation — is decided alone when the FYI rule above allows, and shown
@@ -121,6 +126,8 @@ after; otherwise it is asked.
 | Field | Values | Who can supply it |
 |---|---|---|
 | Source | the document or session the decision comes from (a plan, a review, a run's record), and whether the operator has read it | you |
+| Source label | the label the source gives the item a decision is raised from (a finding's F7), and its short name: the source's own title for it, or two to six plain words you write (`references/rendering.md` § Source labels) | you, from the source |
+| Items | when the decision acts on several things: each one, and whether they need different answers (then a group, one card each) or one answer fits all (then one card) | you |
 | Terms | each label, number, acronym or term of art the card would use that the operator has not used themselves, and the words each stands for | you, from the source |
 | Operator actions | per option: what the operator must do to carry it out, or *answer only* | you |
 | Inputs | per such option, what SKILL.md § The floor, what it takes to act, requires (its specifics: `references/rendering.md` § Card, To act on) | you; the caller, where it keeps the files |
@@ -154,16 +161,20 @@ how each view shows them are in `references/rendering.md` § Impact.
 
 | Facet | From | Who can supply it |
 |---|---|---|
-| Effect | what the decision changes and settles across all its options, favouring none: each option's effect in a few words, `(a) …; (b) …`, where their outcomes differ; written from the options' own impacts (below) | you |
-| Wait | group D: what waiting costs, what it blocks, what happens at a deadline | you; a collector for other sessions |
-| Reach | group B's blast radius, named: the operator, sessions, which repos, the public | you, from what the change touches |
-| Undo | group B's reversibility, as how: *one edit*, *a hotfix release*, or *none — why* | you — say how you know |
-| Cost | time, money, quota, the operator's attention, per option | you; the caller's budget, when it keeps one |
+| Effect | what the decision changes and settles in the thing the work builds (code, data, users, deploys, downstream consumers) across all its options, favouring none: each option's effect in a few words, `(a) …; (b) …`, where their outcomes differ; written from the options' own impacts (below) | you |
+| Wait | group D: what waiting costs, what it blocks, what happens at a deadline; every effect on the process (a held review comment, a round, a blocked session) goes here and nowhere else | you; a collector for other sessions |
+| Reach | group B's blast radius, named in the system: users, consumers, deploys, which repos, the public | you, from what the change touches |
+| Undo | group B's reversibility, only where an option is one-way or costly: *⚠ undo: (a) none — why*, *⚠ undo: (b) a hotfix release, after the outage*; left off when every option is reversible at little cost | you — say how you know |
+| Cost | build time, money, quota, per option; the operator's time where the option asks them to act; their attention only on a round ask | you; the caller's budget, when it keeps one |
 
-**Each option's impact** is written with the option, from the same groups: its effect, the
-reach and undo of that option alone, and its cost; a facet that does not apply is left out.
-An Undo that says the option cannot be undone, or only at real cost, is never left out; on a
-⚠ decision every option's line carries its undo, as the block's table does. A card shows it
+**Whose system.** In a product repo the system is its code, its users, its deploys and the
+consumers downstream. Where the change is to agent behaviour, as in a kit of skills, sessions
+and the operator are that system's users, so they may stand in Reach.
+
+**Each option's impact** is written with the option, from the same groups: its effect, said
+by its mechanism (how it happens, who meets it and when, before and after), the reach of that
+option alone, its undo when it is one-way or costly, and its cost; a facet that does not
+apply is left out, and so is the undo of an option reversible at little cost. A card shows it
 on an italic line under the option, a block in its table (`references/rendering.md`
 § Impact). Write these first: the Impact line's Effect is read off them.
 
@@ -176,9 +187,15 @@ The self-check, run on each card or block after it is written and before it goes
 only the card, as someone who has seen nothing else, and for each option ask:
 
 1. Can you say what it means and what happens if it is chosen, without opening anything?
-2. If the option is the operator's to carry out, does the card meet SKILL.md § The floor,
+2. Can you say how it happens — how a failure occurs, who meets it and when, and what is
+   different after the fix — not only that it does?
+3. Does its effect name what happens to the thing being built, not to the review or the
+   process?
+4. If it is one-way or costly to undo, does it carry `⚠ undo:`; if it carries one, is it?
+5. If the option is the operator's to carry out, does the card meet SKILL.md § The floor,
    what it takes to act, from the card alone?
 
 Then check every label, number or acronym on it against SKILL.md § The floor, item 1: defined
-where it first appears — in its **Context:** — or replaced by its words. A card that fails is fixed before it is
+where it first appears — in its **Context:** — or replaced by its words; a source label
+carries its short name on first mention. A card that fails is fixed before it is
 raised, not after the operator asks.
