@@ -63,7 +63,6 @@
         "effect": "sets where the docs build runs, and who can publish",
         "wait": "the laptop build stays; [[42]] and [[43]] wait",
         "reach": "every docs contributor, and the maintainer who publishes today",
-        "undo": "(a) nothing to undo; (b) switch the CI pipeline off, one config change",
         "cost": "(b) about 4 minutes of CI per merge"
       },
       "tldr": [
@@ -102,13 +101,11 @@
       "blocks": {
         "a": {
           "happens": "Nothing changes; the maintainer publishes by hand.",
-          "undo": "Nothing to undo.",
           "who": "The maintainer who publishes.",
           "cost": "About two failed publishes a month."
         },
         "b": {
           "happens": "Every merge to main builds and publishes the site from CI.",
-          "undo": "Switch the pipeline off; one config change.",
           "who": "Every docs contributor.",
           "cost": "About 4 minutes of CI per merge."
         }
@@ -194,13 +191,6 @@
                 "(b) also readers, who see a merged change within minutes"
               ]
             },
-            "undo": {
-              "t": "cheap either way",
-              "sub": [
-                "(a) nothing to undo",
-                "(b) switch the CI pipeline off; one config change"
-              ]
-            },
             "cost": "(b) only: about 4 minutes of CI per merge, and one deploy secret"
           },
           {
@@ -230,15 +220,6 @@
               "Every docs contributor: under (b), any merge goes live.",
               "The maintainer who publishes by hand today.",
               "(b) Readers, who see a merged change within minutes."
-            ],
-            "undo": [
-              "(a) Nothing to undo.",
-              {
-                "t": "(b) Switch the CI pipeline off; one config change.",
-                "sub": [
-                  "Nothing is migrated, so the laptop build works as before."
-                ]
-              }
             ],
             "cost": [
               "(a) About two failed publishes a month, each fixed by clearing the cache and publishing again.",
@@ -483,7 +464,7 @@
         "effect": "sets what happens to links into the twelve moved pages",
         "wait": "the first CI publish waits for this answer",
         "reach": "external readers, and every site linking to the old pages",
-        "undo": "(a) remove the redirect lines; (b) none — lost search ranking does not come back"
+        "undo": "(b) none — lost search ranking does not come back"
       },
       "tldr": [
         "The CI build moves twelve pages to new URLs",
@@ -521,7 +502,6 @@
       "blocks": {
         "a": {
           "happens": "Twelve redirects are added to the site config before the first CI publish.",
-          "undo": "Remove the redirect lines; nothing else changes.",
           "who": "Readers following old links, who land on the new pages.",
           "cost": "Twelve lines of redirect config to keep."
         },
@@ -529,7 +509,8 @@
           "happens": "The twelve old URLs return not found from the first CI publish.",
           "undo": "Cannot be fully undone: once search engines drop the old URLs, redirects added later do not win the ranking back.",
           "who": "External readers and every site linking to the old pages.",
-          "cost": "Nothing now."
+          "cost": "Nothing now.",
+          "oneway": true
         }
       },
       "dep": "[[41]] (b)",
@@ -597,9 +578,8 @@
             },
             "reach": "external readers, other sites and bookmarks linking to the old pages",
             "undo": {
-              "t": "one-way under (b)",
+              "t": "(b) one-way",
               "sub": [
-                "(a) remove the redirect lines",
                 "(b) none: once search engines drop the old URLs, ranking is lost"
               ]
             },
@@ -636,7 +616,6 @@
               "About a fifth of the visits to those pages arrive from other sites."
             ],
             "undo": [
-              "(a) Remove the redirect lines; nothing else changes.",
               "(b) None: search engines drop the old URLs within weeks, and redirects added later do not win the ranking back."
             ],
             "cost": [
@@ -843,18 +822,21 @@
       "n": 43,
       "L": "details",
       "t": "Theme colour",
+      "label": {
+        "id": "D3",
+        "name": "site colour off the logo"
+      },
       "rev": "2026-01-12T09:30:00Z",
       "impact": {
         "effect": "(a) no visual change; (b) the site matches the logo",
         "wait": "the site keeps the blue meanwhile",
-        "reach": "readers of the docs site",
-        "undo": "one theme setting"
+        "reach": "readers of the docs site"
       },
       "tldr": [
         "The move to CI can change the accent colour for free",
         "Keep the blue, or switch to the logo's green"
       ],
-      "context": "Building in CI ([[41]], option b) applies the site's theme afresh, so the accent colour (the colour of links and headings) can change at no extra cost. The site is blue today and the logo is green; either is one theme setting, a single line in the theme file.",
+      "context": "Building in CI ([[41]], option b) applies the site's theme afresh, so the accent colour (the colour of links and headings) can change at no extra cost. The site is blue and the logo green, which the brand check listed as D3 (site colour off the logo); either colour is one line in the theme file.",
       "why": "Nothing forces it. It is raised because the move to CI rebuilds the theme from its source files, so a change made now costs nothing extra; made later, it is a separate theme build and a check of every page's contrast.",
       "whyask": "A taste call: no fact settles it. The blue has been the site's colour since launch, and readers know it; the green matches the logo and the product's other sites. Both read well in the light and dark themes (checked), so the choice is only how the site should look.",
       "rec": null,
@@ -889,13 +871,11 @@
       "blocks": {
         "a": {
           "happens": "No visual change; the site stays blue.",
-          "undo": "Nothing to undo.",
           "who": "Readers of the docs site.",
           "cost": "Nothing."
         },
         "b": {
           "happens": "Links and headings turn the logo's green from the first CI publish.",
-          "undo": "One theme setting: change it back in one line.",
           "who": "Readers of the docs site, and the guide screenshots.",
           "cost": "The guide screenshots look dated until they are retaken, about an hour."
         }

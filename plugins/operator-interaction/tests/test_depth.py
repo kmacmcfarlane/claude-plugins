@@ -285,12 +285,20 @@ class DecisionPageDepth(unittest.TestCase):
         self.assertNotIn("answered: clear it", ctx[1])
         # the Impact: medium one bullet per facet, high a section per facet, in the one vocabulary
         med = c["parts"]["imp"][1]
-        pos = [med.index(t) for t in ("<li><b>→</b>", "<li><i>later:</i>", "<li><i>reach:</i>", "<li><i>undo:</i>", "<li><i>cost:</i>")]
+        # card 41's options are both reversible at little cost, so it has no undo at any level
+        pos = [med.index(t) for t in ("<li><b>→</b>", "<li><i>later:</i>", "<li><i>reach:</i>", "<li><i>cost:</i>")]
         self.assertEqual(pos, sorted(pos))
+        self.assertNotIn("undo:", med)
         self.assertIn('<ul class="lvl sub">', med)
         high = c["parts"]["imp"][2]
-        pos = [high.index('<h4 class="lvh">%s</h4>' % t) for t in ("Effect", "Wait", "Reach", "Undo", "Cost")]
+        pos = [high.index('<h4 class="lvh">%s</h4>' % t) for t in ("Effect", "Wait", "Reach", "Cost")]
         self.assertEqual(pos, sorted(pos))
+        self.assertNotIn(">Undo<", high)
+        # card 42's undo is its one-way option's, marked at every level
+        imp = card(res, 42)["parts"]["imp"]
+        self.assertIn('<p><i class="owu">⚠ undo:</i> (b) none', imp[0])
+        self.assertIn('<li><i class="owu">⚠ undo:</i> (b) one-way', imp[1])
+        self.assertIn('<h4 class="lvh">⚠ Undo</h4>', imp[2])
         # the rec line keeps its head, then its bullets
         rec = c["parts"]["rec"][1]
         self.assertTrue(rec.startswith('<div class="recline">Rec <strong>(b)</strong> · basis '
@@ -391,8 +399,10 @@ class DecisionPageDepth(unittest.TestCase):
         # its impact line, then its blocks row
         self.assertLess(more["b"].index('<p class="impact">Publishing no longer depends on one machine'),
                         more["b"].index('<span class="lbl">Effect</span>'))
-        pos = [more["b"].index('<span class="lbl">' + f + "</span>") for f in ("Effect", "Reach", "Undo", "Cost")]
+        pos = [more["b"].index('<span class="lbl">' + f + "</span>") for f in ("Effect", "Reach", "Cost")]
         self.assertEqual(pos, sorted(pos))
+        # a row with no undo is reversible at little cost: no Undo line
+        self.assertNotIn(">Undo<", more["b"])
         self.assertNotIn(">Cost<", more["a"])
         # (z): its text and its impact, labelled Wait
         self.assertTrue(more["z"].startswith('<p><span class="mono ol">(z)</span> Decide later.</p>'), more["z"])
@@ -582,7 +592,7 @@ class DepthRunner(unittest.TestCase):
         d["cards"][0]["whyask"] = "Who can publish changes."
         d["cards"][2].pop("blocks")
         d["cards"][2]["o"][0][1] = "Keep the blue."
-        out = self.lint(d, "lint: card 43: depth: (a) has no blocks row: give it happens, who and undo, and cost where it has one",
+        out = self.lint(d, "lint: card 43: depth: (a) has no blocks row: give it happens and who, its undo where it is one-way or costly, and cost where it has one",
                         "lint: card 43: depth: (b) has no blocks row")
         # a short part with no levels is a small call's, never thin
         self.assertNotIn("Background is", out)

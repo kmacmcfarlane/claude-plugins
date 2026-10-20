@@ -19,7 +19,7 @@ import json
 import sys
 import unittest
 
-from test_impact import NODE, example
+from test_impact import NODE, PAGE, example
 from test_context import runner
 from test_depth import card, run_page, run_pages
 
@@ -128,17 +128,19 @@ class DecisionPageShapes(unittest.TestCase):
         res = run_page(example())
         imp = card(res, 41)["parts"]["imp"]
         # summary: a paragraph per facet, in the one order
-        self.assertEqual(imp[0].count("<p>"), 5)
+        # card 41's options are reversible at little cost: no undo, so four facets
+        self.assertEqual(imp[0].count("<p>"), 4)
         pos = [imp[0].index(t) for t in ("<p><b>→</b>", "<p><i>later:</i>", "<p><i>reach:</i>",
-                                         "<p><i>undo:</i>", "<p><i>cost:</i>")]
+                                         "<p><i>cost:</i>")]
         self.assertEqual(pos, sorted(pos))
+        self.assertNotIn("undo:", imp[0])
         # medium: one bullet per facet, the options in its sub-bullets
         top = imp[1][imp[1].index('<ul class="lvl">') + len('<ul class="lvl">'):]
-        self.assertEqual(len([x for x in top.split("<li>") if x.startswith(("<b>", "<i>"))]), 5)
+        self.assertEqual(len([x for x in top.split("<li>") if x.startswith(("<b>", "<i>"))]), 4)
         self.assertIn("<li><b>→</b> sets where the docs build runs, and who can publish"
                       '<ul class="lvl sub"><li>(a) nothing changes', imp[1])
         # high: a section per facet
-        self.assertEqual(imp[2].count('<div class="lvs">'), 5)
+        self.assertEqual(imp[2].count('<div class="lvs">'), 4)
 
     def test_older_text_levels_still_render_as_paragraphs(self):
         d = example()
@@ -251,13 +253,13 @@ class ShapeRunner(unittest.TestCase):
         c41(d)["detail"]["impact"][0]["reach"]["t"] = words(15)
         self.lint(d, "lint: card 41: shape: the Impact's more detail, reach is 15 words")
         d = example()
-        c41(d)["detail"]["impact"][0]["undo"]["sub"].append("(c) a third")
-        self.lint(d, "lint: card 41: shape: the Impact's more detail, undo, has 3 sub-bullets: "
+        c41(d)["detail"]["impact"][0]["effect"]["sub"].append("(c) a third")
+        self.lint(d, "lint: card 41: shape: the Impact's more detail, effect, has 3 sub-bullets: "
                      "give a facet one or two; where it differs across more than two options, "
                      "group them")
         # two sub-bullets on a two-option card: clean
         d = example()
-        self.assertEqual(len(c41(d)["detail"]["impact"][0]["undo"]["sub"]), 2)
+        self.assertEqual(len(c41(d)["detail"]["impact"][0]["effect"]["sub"]), 2)
         self.clean(d)
 
     def test_card_41s_impact_medium_is_at_least_twice_its_summary(self):
@@ -357,6 +359,72 @@ class IdRunner(unittest.TestCase):
         d["refs"]["38"]["q"] = "Clear the cache (4151)?"
         self.assertIn("lint: page: (4151) looks like an id (refs 38 q)", runner(d)[1])
 
+
+
+@unittest.skipUnless(NODE, "node is not installed")
+class SourceLabel(unittest.TestCase):
+    """A decision raised from one labelled item of a source opens its title on the label and its
+    short name (answer 269 (a), widened); the id lint passes a declared label only with its name
+    beside it."""
+
+    def test_the_title_opens_on_the_label_and_its_short_name(self):
+        res = run_page(example())
+        h = card(res, 43)["html"]
+        self.assertIn('<h3><span class="slab">D3</span> (site colour off the logo) · Theme colour</h3>', h)
+        # a card with no label keeps its title alone
+        self.assertIn("<h3>Docs build home</h3>", card(res, 41)["html"])
+        # the map and the popup use the same title
+        html = PAGE.read_text()
+        for a, b in (("function renderHud", "function renderCards"), ("function fillPop", "function place(")):
+            self.assertIn("titleHtml(c)", html[html.index(a):html.index(b)])
+
+    def test_the_label_is_escaped(self):
+        d = example()
+        c43(d)["label"] = {"id": "<b>", "name": "<img src=x>"}
+        h = card(run_page(d), 43)["html"]
+        self.assertNotIn("<img", h)
+        self.assertIn('<span class="slab">&lt;b&gt;</span> (&lt;img src=x&gt;)', h)
+
+    def test_a_malformed_label_is_refused(self):
+        for bad in ("D3", {"id": "D3"}, {"id": "D 3", "name": "x y"}, {"id": "D3", "name": " "},
+                    {"id": "D3", "name": "a\nb"}, {"id": 3, "name": "x y"}):
+            with self.subTest(label=bad):
+                d = example()
+                c43(d)["label"] = bad
+                self.assertTrue(any(b.startswith("card 43: label must be {id, name}")
+                                    for b in run_page(d)["bad"]), bad)
+
+    def test_a_declared_label_passes_the_id_lint_only_with_its_name(self):
+        # the example's context names D3 with its short name: clean
+        self.assertEqual(runner(example())[:2], (0, ""))
+        d = example()
+        c43(d)["why"] = "D3 (site colour off the logo) was raised on the brand check."
+        self.assertEqual(runner(d)[:2], (0, ""))
+        # another card may name it too, with its name
+        d["cards"][0]["unknown"] += ", and whether D3 (Site colour off the logo) is fixed first"
+        self.assertEqual(runner(d)[:2], (0, ""))
+        # bare, it is an id; an undeclared label is one whatever stands beside it
+        for s in ("D3 was raised on the brand check.", "D4 (site colour off the logo) was raised."):
+            with self.subTest(text=s):
+                d = example()
+                c43(d)["why"] = s
+                code, out, _ = runner(d)
+                self.assertEqual(code, 2, out)
+                self.assertIn("looks like an id (why)", out)
+        # without the label field, the context's own D3 is an id again
+        d = example()
+        del c43(d)["label"]
+        self.assertIn("lint: card 43: D3 looks like an id (context)", runner(d)[1])
+
+    def test_a_long_short_name_is_linted(self):
+        d = example()
+        c43(d)["label"]["name"] = "the site colour does not match the logo"
+        c43(d)["context"] = c43(d)["context"].replace("site colour off the logo",
+                                                      "the site colour does not match the logo")
+        out = runner(d)[1]
+        self.assertIn("lint: card 43: shape: the label D3's short name is 8 words: "
+                      "keep it to about 2–6 plain words", out)
+        self.assertNotIn("looks like an id", out)
 
 if __name__ == "__main__":
     unittest.main()

@@ -82,12 +82,19 @@ class DecisionPageImpact(unittest.TestCase):
     def test_example_passes_the_page_check(self):
         self.assertEqual(run_page(example())["bad"], [])
 
-    def test_every_example_card_has_four_facets_and_a_short_effect(self):
+    def test_every_example_card_has_three_facets_undo_where_one_way_and_a_short_effect(self):
         for c in example()["cards"]:
             imp = c["impact"]
-            for k in ("effect", "wait", "reach", "undo"):
+            for k in ("effect", "wait", "reach"):
                 self.assertTrue(isinstance(imp.get(k), str) and imp[k].strip(),
                                 f"card {c['n']}: impact.{k}")
+            # undo only where an option is one-way or costly (answer 260 (a)): the flagged rows
+            flagged = [k for k, r in c.get("blocks", {}).items() if r.get("oneway")]
+            self.assertEqual("undo" in imp, bool(flagged), f"card {c['n']}")
+            for k in flagged:
+                self.assertIn("(%s)" % k, imp["undo"], f"card {c['n']}")
+            for k, r in c.get("blocks", {}).items():
+                self.assertEqual("undo" in r, bool(r.get("oneway")), (c["n"], k))
             # tag size: under about 10 words
             self.assertLessEqual(len(imp["effect"].split()), 12, f"card {c['n']}")
             self.assertNotIn("stakes", c, f"card {c['n']}: stakes is replaced by impact")
@@ -104,8 +111,18 @@ class DecisionPageImpact(unittest.TestCase):
         del d["cards"][0]["impact"]
         self.assert_refused(d, "card 41: impact needs")
 
+    def test_undo_is_optional_but_text(self):
+        d = example()
+        del d["cards"][1]["impact"]["undo"]
+        self.assertEqual(run_page(d)["bad"], [])
+        d = example()
+        d["cards"][0]["impact"]["undo"] = "(b) switch the pipeline off"
+        self.assertEqual(run_page(d)["bad"], [])
+        d["cards"][0]["impact"]["undo"] = ["(b) switch the pipeline off"]
+        self.assert_refused(d, "card 41: impact needs effect, wait and reach as text (undo and cost optional, as text)")
+
     def test_each_facet_is_required_and_non_empty(self):
-        for k in ("effect", "wait", "reach", "undo"):
+        for k in ("effect", "wait", "reach"):
             d = example()
             del d["cards"][1]["impact"][k]
             self.assert_refused(d, "card 42: impact needs")
@@ -152,7 +169,7 @@ class DecisionPageImpact(unittest.TestCase):
         res = run_page(example())
         for v, c in zip(res["views"], example()["cards"]):
             line = v["line"]
-            pos = [line.index(t) for t in ("→", "later:", "reach:", "undo:")]
+            pos = [line.index(t) for t in ("→", "later:", "reach:", "undo:") if t != "undo:" or "undo" in c["impact"]]
             self.assertEqual(pos, sorted(pos), line)
             # one facet a line: a paragraph per facet given, no separator between them
             given = sum(1 for k in ("effect", "wait", "reach", "undo", "cost") if c["impact"].get(k))
@@ -174,8 +191,11 @@ class DecisionPageImpact(unittest.TestCase):
                 more = v["more"][k]
                 # an Effect, Reach or Cost cell that is none is left out; Undo always shows
                 cells = [(f, x) for f, x in (("Effect", "happens"), ("Reach", "who"), ("Undo", "undo"),
-                                             ("Cost", "cost")) if x == "undo" or row[x].strip().lower() not in NONE]
-                pos = [more.index('<span class="lbl">%s</span>' % f) for f, _ in cells]
+                                             ("Cost", "cost")) if x in row and (x == "undo" or row[x].strip().lower() not in NONE)]
+                # a row flagged one-way marks its Undo
+                lbl = lambda f: ('<span class="lbl owu">⚠ Undo</span>' if f == "Undo" and row.get("oneway")
+                                 else '<span class="lbl">%s</span>' % f)
+                pos = [more.index(lbl(f)) for f, _ in cells]
                 if c.get("warn"):  # the one-way card's row comes before the option's text
                     self.assertLess(pos[-1], more.index('class="sec"'), (c["n"], k))
                 self.assertEqual(pos, sorted(pos), (c["n"], k))

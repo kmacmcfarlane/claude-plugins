@@ -158,6 +158,14 @@ class WriterDigest(unittest.TestCase):
         self.assertEqual(required_problems(self.schema, self.digest, "A card"), [])
         self.assertGreaterEqual(len(keyed(section(self.schema, "A card"), 2)), 26)
 
+    def test_the_new_optional_fields_are_listed(self):
+        # the source label (answer 269) and the row flag (answer 260) ride in the card table, optional
+        self.assertEqual(keyed(section(self.digest, "A card"), 1).get("label"), "no")
+        self.assertIn("oneway", keyed(section(self.digest, "A card"), 2)["blocks"])
+        self.assertIn("oneway", keyed(section(self.schema, "A card"), 3)["blocks"])
+        gone = self.digest.replace("| `label` | no |", "| label | no |")
+        self.assertIn("A card: `label` missing", required_problems(self.schema, gone, "A card"))
+
     def test_card_field_mutations(self):
         gone = self.digest.replace("| `basis` | yes |", "| basis | yes |")
         self.assertIn("A card: `basis` missing",
@@ -193,6 +201,12 @@ class WriterDigest(unittest.TestCase):
         self.assertTrue(lint_problems(self.js, start))
         stale = self.digest.replace("| `key` |", "| `keys` |")
         self.assertIn("lint `keys` not emitted", lint_problems(self.js, stale))
+        # the one-way lint key (answer 260 (a), the page's row flag): its row, and its start
+        self.assertEqual(runner_lints(self.js)["oneway"], {"oneway:"})
+        gone = self.digest.replace("| `oneway` | `oneway:` |", "| oneway | `oneway:` |")
+        self.assertIn("lint `oneway` missing", lint_problems(self.js, gone))
+        moved = self.digest.replace("| `oneway` | `oneway:` |", "| `oneway` | `depth:` |")
+        self.assertTrue(lint_problems(self.js, moved))
 
     def test_thresholds(self):
         self.assertEqual(threshold_problems(self.js, self.digest), [])

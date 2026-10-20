@@ -107,11 +107,14 @@ The rules below are what the digest condenses:
   no id after it, in every field, the page and layer titles included. A fact only an id
   carries goes in backticks in `act` or `evidence`, as something to type or open. The caller
   passes an id → plain-name map where it has one (its items' short names); otherwise look each
-  one up once per page.
+  one up once per page. A decision raised from one labelled item of a source (a review's
+  finding, a plan's question) carries `label`, `{id, name}`: the page opens its title on it,
+  *F7 (oversize upload) · …*, and that label passes anywhere on the page with its short name
+  beside it (the `decisions` skill's `references/rendering.md` § Source labels).
 - The TLDR comes first on the card: one or two terse fragment bullets. It names no
   recommendation: the options mark it. Say what is decided, and what rides on it.
 - Every card carries `impact`, the decision's Impact across all its options (effect, wait,
-  reach, undo; the `decisions` skill's `references/rendering.md` § Impact), so every view on
+  reach, cost where it has one, and undo only where an option is one-way or costly; the `decisions` skill's `references/rendering.md` § Impact), so every view on
   the page shows it: the effect in the map and on a closed card, the facets one a line on an
   open one, each option's own row in its **More**. Its `effect` says what the decision changes and
   settles, favouring no option, written from the card's own option effects (`blocks`, each
@@ -120,9 +123,11 @@ The rules below are what the digest condenses:
   effects (the pre-publish check's rec-only lint backs this). Its `wait`, `reach` and `undo`
   are copied from the caller's stored line where it keeps one and they hold across the
   options. Each option's own effect lives in its `blocks` row.
-- Every card carries `blocks`, its Impact row per option but (z) (effect, reach, undo,
-  and cost where it has one), shown in that option's **More**; a ⚠ one-way card is refused
-  without them. A round ask carries `ifleft` and
+- Every card carries `blocks`, its Impact row per option but (z) (effect, reach, cost where
+  it has one, and undo only where the option is one-way or costly), shown in that option's
+  **More**; a ⚠ one-way card is refused without them. A row whose option cannot be taken back
+  carries `oneway: true` and its undo: the page refuses a flagged row without one, and the
+  runner lints a ⚠ card with no flagged row (an older page still shows). A round ask carries `ifleft` and
   `roundcosts`; a status-quo default, `ifunanswered`.
 - Every card carries the depth the decisions skill's block holds, scaled to the decision, up to
   the soft sizes (`references/writer-digest.md` § Levels and their shapes): Why now and Why ask
