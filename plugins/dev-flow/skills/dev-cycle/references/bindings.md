@@ -714,7 +714,8 @@ skill that drives `wi` (`investigate`, `implement`, `librarian-mode`, `foundatio
 snippet and names it rather than restating it. The research family keeps its own copy
 (the `research` skill's `references/intensity-and-routing.md` § Resolving the store), by the
 operator's 2026-10-02 ruling that the research skills stay separate from dev-cycle; a change
-to `wi`'s install path touches both:
+to `wi`'s install path touches both, and the work-items launcher beside `wi.py`, which
+carries the same install-record pick:
 
 ```bash
 MAIN=$(git rev-parse --path-format=absolute --git-common-dir 2>/dev/null) && MAIN=${MAIN%/.git} || MAIN=$PWD

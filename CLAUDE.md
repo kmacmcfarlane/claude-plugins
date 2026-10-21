@@ -143,7 +143,7 @@ plugins/
   kit-dev/             # Maintaining this kit itself
     skills/
       {create-skill,update-kit,new-project-from-template,factor-analysis}/
-    tests/             # test_standalone.py: each plugin's suites pass from a copy of that plugin alone; test_declared_edges.py: every cross-plugin skill, CLI or data-path reference is declared in plugin.json and the catalog
+    tests/             # test_standalone.py: each plugin's suites pass from a copy of that plugin alone; test_declared_edges.py: every cross-plugin skill, CLI or data-path reference is declared in plugin.json and the catalog; test_fenced_wi.py: no fenced command in plugins/**/*.md runs a bare wi
   operator-interaction/ # The agent-operator interface, starting with how decisions are raised and shown
     skills/
       decisions/       # references/{worksheet,rendering,replies,evidence-basis,rationale,rulings,gallery}.md
@@ -175,7 +175,7 @@ plugins/
   work-items/          # Repo-durable work items + the work-source provider interface
     skills/
       work-items/      # wi CLI (incl. `wi estate`, the cross-repo sweep), references/{format,provider-interface}.md, tests/
-      work-items/scripts/  # wi.py, the wi CLI
+      work-items/scripts/  # wi.py, the wi CLI; wi, its shell launcher (copied to ~/.local/bin by wi install-launcher, on request)
       work-review/     # the on-demand cross-repo review, written from `wi estate`
 ```
 
@@ -222,6 +222,11 @@ optional `references/`, `scripts/`, `assets/`.
   with the line `*User-facing documentation, not agent instructions.*` (the dev-cycle
   review checklist lints this).
 - **Skill reference paths**: bare relative paths (no `./`, no `${CLAUDE_SKILL_DIR}`).
+- **`wi` in skill text**: a fenced command runs the resolved `$WI` (the lookup's printed
+  absolute command), never a bare `wi`; `wi <verb>` in prose names the verb. A bare `wi`
+  runs the first `wi` on `PATH`: in most sessions there is none, and where a person put one
+  there it may be another tool or another install. `plugins/kit-dev/tests/test_fenced_wi.py`
+  scans for it (comment lines exempt).
 - **Cross-skill references**: a skill may point into a sibling skill of the *same* plugin by
   its backticked name right before a bare path — "the `investigate` skill's
   `references/investigation-format.md`".

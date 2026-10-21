@@ -418,8 +418,12 @@ cleanly.
 
 | Skill | Description |
 |---|---|
-| `work-items` | `wi` — ready-ranked queue, atomic claims, handoff blocks, TODO.md importer, backlog-yaml bridge, and `wi estate`, the read-only sweep of every repo's store beside this one |
+| `work-items` | `wi` — ready-ranked queue, atomic claims, handoff blocks, TODO.md importer, backlog-yaml bridge, `wi estate`, the read-only sweep of every repo's store beside this one, and `wi install-launcher`, an opt-in `wi` command for your own shell |
 | `work-review` | On-demand, read-only review of the work items across your repos: security items first, each repo's state in plain words, the decisions waiting on you, and what to do next with the reason — never scheduled, and it never answers another repo's decisions |
+
+`wi install-launcher`, run on request, copies a small launcher to `~/.local/bin/wi` that
+follows plugin updates. It refuses to overwrite a file it did not make, never edits shell
+startup files, and prints how to remove it. Agents keep running `wi` by its absolute path.
 
 It also carries the **work-source provider interface**
 (`plugins/work-items/skills/work-items/references/provider-interface.md`): the eight-verb
@@ -850,6 +854,19 @@ To keep this marketplace itself up to date automatically, see "Keep it updated" 
 Or browse: `/plugin` → Discover tab. Install the plugins whose aims match your problems — the
 catalog above is the index; nothing here requires anything else here, except a declared
 (hard) dependency, which installs with it.
+
+### wi in your own shell
+
+`wi` is not on your shell's `PATH` by default. To get a `wi` command there, once:
+
+- in a Claude Code session with `work-items` installed, ask for "the wi launcher in my
+  shell";
+- or, from a checkout of this repo,
+  `python3 plugins/work-items/skills/work-items/scripts/wi.py install-launcher`.
+
+It writes `~/.local/bin/wi`, which must be on your `PATH` (it says so when it is not, and
+never edits a shell startup file). Remove it with `rm ~/.local/bin/wi`. It keeps working
+after plugin updates; after an uninstall it exits 127 with its install hint until removed.
 
 ## Migrating from `claude-kit`
 

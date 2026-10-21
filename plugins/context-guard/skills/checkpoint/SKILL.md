@@ -224,7 +224,8 @@ non-fork subagent knows nothing, and even a fork's recall is not a substitute fo
 
 ## Reaching `wi`
 
-`wi` is not on `PATH`: it is a script in the `work-items` plugin (soft), found from the
+`wi` may not be on `PATH`, and a `wi` that is may be another tool or another install: it is
+a script in the `work-items` plugin (soft), found from the
 repo's own tree when it carries that plugin, else from the installed copy. This is
 context-guard's one copy of the lookup. Run it once per repo whose store it writes, from
 that repo, before the first `wi` call (Step 3's `wi add`, Step 4a½, a re-run's
@@ -323,10 +324,12 @@ tags plus `REJECTED <alternative> — <why it lost>`:
 ```
 
 Append with `wi note`, never Edit, which the checkout guards deny on a tracked store. Before
-the first item, probe the verb once, with the same `wi` that ran `wi show`:
+the first item, probe the verb once, with the same `wi` that ran `wi show`. `$WI` is the
+command § Reaching `wi` printed, written out with its absolute path or re-bound in the same
+call:
 
 ```bash
-wi note --help >/dev/null 2>&1
+$WI note --help >/dev/null 2>&1
 ```
 
 Exit 0: go on. Exit 2: this `wi` predates `note`. Write no item file, carry the lines in
@@ -334,10 +337,11 @@ Exit 0: go on. Exit 2: this `wi` predates `note`. Write no item file, carry the 
 updating `work-items`, then writing them. Any other exit (127, say): `wi` did not run; route
 the lines the same way, with `Next` naming how it failed to run instead. Then one call per
 item, its texts in order (a `decision N:` line takes its own `--raw` call, routed the same
-way):
+way). `$WI` is the command § Reaching `wi` printed, written out with its absolute path or
+re-bound in the same call:
 
 ```bash
-wi note <id> -- '<text>' ['<text>' …]
+$WI note <id> -- '<text>' ['<text>' …]
 ```
 
 A text is the line without its `- <YYYY-MM-DD> ` prefix, which `wi` adds; single-quote each,

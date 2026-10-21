@@ -123,7 +123,7 @@ claude-plugins/
     └── work-items/            (repo-durable work items + work-source provider interface)
         └── skills/
             ├── work-items/    (wi CLI incl. `wi estate`, references/, tests/)
-            ├── work-items/scripts/ (wi.py, the wi CLI)
+            ├── work-items/scripts/ (wi.py, the wi CLI; wi, its shell launcher, copied to ~/.local/bin by wi install-launcher, on request)
             └── work-review/   (the on-demand cross-repo review, written from `wi estate`)
 ```
 
