@@ -25,7 +25,8 @@ mechanical provider selection, which is **sketched and unimplemented — nothing
 not write it**. The bridge to `wi` is `wi export --format backlog-yaml` before a run and
 `wi import --format backlog-yaml --update` after it.
 
-**Reaching `wi`.** `wi` is not on `PATH`: it is a script in the `work-items` plugin, found
+**Reaching `wi`.** `wi` may not be on `PATH`, and a `wi` that is may be another tool or
+another install: it is a script in the `work-items` plugin, found
 from the repo's own tree when it carries that plugin, else from the installed copy. This is
 ralph's one copy of the lookup; run it before either bridge command:
 
