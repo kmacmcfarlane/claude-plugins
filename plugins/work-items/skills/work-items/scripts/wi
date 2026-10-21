@@ -1,0 +1,25 @@
+#!/bin/sh
+# wi launcher (work-items plugin). Runs the wi.py of the work-items install that applies here.
+# Written by `wi install-launcher`; it finds the install at every run, so plugin updates keep it working.
+# It reads only the install record: it runs nothing beside itself and nothing from the cwd's repo.
+MAIN=$(git rev-parse --path-format=absolute --git-common-dir 2>/dev/null) && MAIN=${MAIN%/.git} || MAIN=$PWD
+P=${CLAUDE_CODE_PLUGIN_CACHE_DIR:-${CLAUDE_CONFIG_DIR:-$HOME/.claude}/plugins}
+py=$(python3 -I - "$P/installed_plugins.json" work-items@kmacmcfarlane "$MAIN" 2>/dev/null <<'PY'
+import json, os, sys
+es = json.load(open(sys.argv[1]))["plugins"][sys.argv[2]]
+here = os.path.realpath(sys.argv[3])
+def rank(e):  # the install that applies here: deepest local/project path, then user
+    pp = e.get("projectPath")
+    if e.get("scope") in ("local", "project") and pp:
+        pp = os.path.realpath(pp)
+        if here == pp or here.startswith(pp.rstrip("/") + "/"):
+            return (2, len(pp), e["scope"] == "local")
+    return (1, 0, False) if e.get("scope") == "user" else (0, 0, False)
+best = max(es, key=rank)
+ip = best["installPath"] if rank(best)[0] else ""
+# an absolute installPath only: a relative one would resolve against the cwd
+print(os.path.join(ip, "skills/work-items/scripts/wi.py") if os.path.isabs(ip) else "")
+PY
+)
+[ -n "$py" ] && [ -f "$py" ] || { echo "wi: no work-items install found under $P (install it: /plugin install work-items@kmacmcfarlane)" >&2; exit 127; }
+exec python3 "$py" "$@"

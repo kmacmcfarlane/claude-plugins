@@ -4346,7 +4346,12 @@ class TestHostGitignoreUntouched(WiTestCase):
             ["note", iid, "--", "x"],
             ["done", dep], ["archive", "--older-than", "0d"],
             ["commit", "-m", "store"],
+            ["install-launcher"],
         ]
+        # 8805 F1: install-launcher writes $HOME/.local/bin/wi, so it runs
+        # with a temp HOME outside the repo, never the real one
+        home = self.tmp / "home"
+        home.mkdir(exist_ok=True)
         # d1e9 F2: `wi commit` commits in the repo that tracks the store,
         # with that repo's git, so it gets this class's isolated identity
         commit_env = dict(GIT_CONFIG_GLOBAL=os.devnull, GIT_CONFIG_NOSYSTEM="1",
@@ -4361,8 +4366,10 @@ class TestHostGitignoreUntouched(WiTestCase):
                 # the operator's ruling (d1e9 F3): init on an old-location
                 # store that holds items needs the override flag
                 step = ["init", "--allow-old-location"]
-            self.wi_in(repo, step,
-                       env=commit_env if step[0] == "commit" else None)
+            env = (commit_env if step[0] == "commit"
+                   else {"HOME": str(home)} if step[0] == "install-launcher"
+                   else None)
+            self.wi_in(repo, step, env=env)
             self.assertEqual(gi_path.read_bytes(), before,
                              f"`wi {' '.join(step)}` changed host .gitignore")
 

@@ -17,6 +17,7 @@ Constraints this file lives under:
 import argparse
 import base64
 import contextlib
+import errno
 import fcntl
 import fnmatch
 import getpass
@@ -5832,6 +5833,155 @@ def cmd_archive(args):
 
 # ── CLI ─────────────────────────────────────────────────────────────────────
 
+# `wi install-launcher` (8805 F1): the launcher beside wi.py, copied on a
+# person's request to $HOME/.local/bin/wi. Its line 2 starts with this marker,
+# which is how the install knows a file at the target is one it made.
+LAUNCHER_MARKER = b"# wi launcher (work-items plugin)."
+
+
+def _launcher_marked(data):
+    lines = data.split(b"\n", 2)
+    return len(lines) > 1 and lines[1].startswith(LAUNCHER_MARKER)
+
+
+def _launcher_dir(home):
+    """Walk HOME/.local and HOME/.local/bin: create an absent one as a real
+    directory, use a real one, and accept a symlinked one only when it
+    resolves to a directory this uid owns that no group or other can write.
+    Returns (the directory to write in, whether a symlink was followed).
+    Anything else that is not a directory raises NotADirectoryError."""
+    cur, linked = home, False
+    for name in (".local", "bin"):
+        comp = os.path.join(cur, name)
+        try:
+            st = os.lstat(comp)
+        except FileNotFoundError:
+            os.mkdir(comp)
+            cur = comp
+            continue
+        if stat.S_ISLNK(st.st_mode):
+            real = os.path.realpath(comp)
+            try:
+                rst = os.stat(real)
+            except FileNotFoundError:
+                rst = None
+            if (rst is None or not stat.S_ISDIR(rst.st_mode)
+                    or rst.st_uid != os.getuid() or rst.st_mode & 0o022):
+                raise WiError(1, f"refused: {comp} is a symlink to {real}, "
+                                 "which is not a directory you own that only "
+                                 "you can write")
+            cur, linked = real, True
+        elif stat.S_ISDIR(st.st_mode):
+            cur = comp
+        else:
+            raise NotADirectoryError(errno.ENOTDIR, os.strerror(errno.ENOTDIR),
+                                     comp)
+    return cur, linked
+
+
+def cmd_install_launcher(args):
+    src = Path(__file__).resolve().with_name("wi")
+    try:
+        launcher = src.read_bytes()
+    except OSError:
+        launcher = None
+    if launcher is None or not _launcher_marked(launcher):
+        raise WiError(3, f"launcher not found beside wi.py: {src}")
+    # HOME from the environment only: Path.home() and expanduser() fall back
+    # to the passwd home when HOME is unset, which is not what was asked
+    home = os.environ.get("HOME")
+    if (not home or not os.path.isabs(home)
+            or os.path.normpath(home).lstrip("/") == ""
+            or not os.path.isdir(home)):
+        raise WiError(1, "refused: HOME must be an absolute directory")
+    home = os.path.normpath(home)
+    shown = os.path.join(home, ".local", "bin", "wi")
+    refusal = (f"refused: {shown} exists and was not made by "
+               "install-launcher; it is left as it is")
+    tmp = None
+    try:
+        d, linked = _launcher_dir(home)
+        target = os.path.join(d, "wi")
+        where = f" (in {d})" if linked else ""
+        try:
+            st = os.lstat(target)
+        except FileNotFoundError:
+            st = None
+        if st is None:
+            # a new target: the whole launcher in a temp file, then an
+            # exclusive link, so a file that appears meanwhile is refused and
+            # the target never holds a partial launcher
+            fd, tmp = tempfile.mkstemp(dir=d, prefix=".wi-")
+            with os.fdopen(fd, "wb") as f:
+                f.write(launcher)
+                os.fchmod(f.fileno(), 0o755)
+            try:
+                os.link(tmp, target)
+            except FileExistsError:
+                raise WiError(1, refusal)
+            print(f"installed: {shown}{where}")
+        elif not stat.S_ISREG(st.st_mode):
+            raise WiError(1, refusal)
+        else:
+            fd = os.open(target, os.O_RDONLY | os.O_NOFOLLOW)
+            with os.fdopen(fd, "rb") as f:
+                fst = os.fstat(f.fileno())
+                data = f.read()
+                if data == launcher:
+                    note = ""
+                    if stat.S_IMODE(fst.st_mode) & 0o111 != 0o111:
+                        os.fchmod(f.fileno(), 0o755)
+                        note = "; made executable"
+                    print(f"already installed: {shown}{where} (unchanged"
+                          f"{note})")
+            if data != launcher:
+                if not _launcher_marked(data):
+                    raise WiError(1, refusal)
+                # an earlier launcher: replace it, unless the target changed
+                # between the marker read and the rename
+                seen = (fst.st_ino, fst.st_mtime_ns)
+                fd, tmp = tempfile.mkstemp(dir=d, prefix=".wi-")
+                with os.fdopen(fd, "wb") as f:
+                    f.write(launcher)
+                    os.fchmod(f.fileno(), 0o755)
+                try:
+                    now = os.lstat(target)
+                except FileNotFoundError:
+                    raise WiError(1, refusal)
+                if (stat.S_ISLNK(now.st_mode)
+                        or (now.st_ino, now.st_mtime_ns) != seen):
+                    raise WiError(1, refusal)
+                os.replace(tmp, target)
+                tmp = None
+                print(f"updated: {shown}{where}")
+    except OSError as e:
+        raise WiError(3, f"cannot write {shown}: {e}")
+    finally:
+        if tmp is not None:
+            with contextlib.suppress(OSError):
+                os.unlink(tmp)
+    print(f"remove it with: rm {shlex.quote(shown)}")
+    real_d = os.path.realpath(d)
+    entries = [e for e in os.environ.get("PATH", "").split(os.pathsep)
+               if os.path.isabs(e)]
+    if not any(os.path.realpath(e) == real_d for e in entries):
+        print(f"note: {os.path.dirname(shown)} is not on your PATH; add it in "
+              "your shell's startup file yourself (install-launcher never "
+              "edits one)")
+    others = []
+    for e in entries:
+        p = os.path.join(e, "wi")
+        if (os.path.realpath(e) != real_d and os.path.isfile(p)
+                and os.access(p, os.X_OK)
+                and os.path.realpath(p) != os.path.realpath(target)
+                and p not in others):
+            others.append(p)
+    for p in others:
+        print(f"note: another wi is on your PATH at {p}; whichever PATH "
+              "directory comes first runs")
+    return 0
+
+
 def build_parser():
     p = argparse.ArgumentParser(
         prog="wi", description=__doc__.split("\n")[0],
@@ -5920,6 +6070,8 @@ def build_parser():
             ("-m", "--message", {})],
         ("archive", cmd_archive, "move closed items to archive/"): [
             ("--older-than", dict(default="90d"))],
+        ("install-launcher", cmd_install_launcher, "copy the wi launcher to "
+         "~/.local/bin, on request; refuses a file it did not make"): [],
     }
     for (name, func, help_text), flags in spec.items():
         sp = sub.add_parser(name, help=help_text)

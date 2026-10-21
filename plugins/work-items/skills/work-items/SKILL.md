@@ -1,6 +1,6 @@
 ---
 name: work-items
-description: Repo-durable work items via the `wi` CLI — one markdown file per item in `.work-items/` at the repo root (git-ignored by default; tracked on request), with ready-ranking, claims, handoff blocks, TODO.md import, and a backlog-yaml bridge. Auto-activates when a repo has a work-item store, or when the user says "what's next", "work item", "next task", "claim it", "hand it off", "mark it done", or asks to migrate a TODO.md. Not for unattended ralph runs (backlog-yaml owns those).
+description: Repo-durable work items via the `wi` CLI — one markdown file per item in `.work-items/` at the repo root (git-ignored by default; tracked on request), with ready-ranking, claims, handoff blocks, TODO.md import, and a backlog-yaml bridge. Auto-activates when a repo has a work-item store, or when the user says "what's next", "work item", "next task", "claim it", "hand it off", "mark it done", or asks to migrate a TODO.md, or asks for `wi` as a command in their own shell. Not for unattended ralph runs (backlog-yaml owns those).
 disable-model-invocation: false
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion
 argument-hint: "[next | show <id> | add | done <id> | import-todo <path>]"
@@ -19,6 +19,27 @@ restate it.
 ```bash
 WI="python3 ${CLAUDE_PLUGIN_ROOT}/skills/work-items/scripts/wi.py"
 ```
+
+## Reaching `wi`
+
+- Agents run `$WI`, always. A bare `wi` exists only where a person installed the launcher,
+  and the first `wi` on `PATH` may be another tool or another install.
+- **A `wi` command for a person's own shell.** Only when the person asks, run
+  `$WI install-launcher` once, and pass on what it printed: where it wrote, the `rm` line,
+  and any note. Never run it unasked, from a hook, or to shorten later Bash calls. Never
+  edit a shell startup file; if the person wants `~/.local/bin` on `PATH`, tell them the
+  line to add.
+- A refusal means a file the install did not make is at `~/.local/bin/wi`, or `HOME` or
+  `~/.local/bin` is not safe to write. Report it, and touch nothing.
+- **Container**: when `/.dockerenv` exists, add one line: the copy is in the container's
+  filesystem and may not outlive it. The person's own terminal is the place to run it, from
+  a checkout: `python3 plugins/work-items/skills/work-items/scripts/wi.py install-launcher`.
+- The copy (`scripts/wi`) finds the current install in the install record at every run, so
+  plugin updates keep it working. A `PATH` entry or symlink into
+  `…/cache/kmacmcfarlane/work-items/<version>/` does not: that directory changes with every
+  version and is removed 14 days after it is orphaned
+  (https://code.claude.com/docs/en/plugins/loading § Find plugins on disk, § Cleanup of
+  previous versions).
 
 ## Session-start rule
 
@@ -54,6 +75,7 @@ the TODO.md failure mode with extra steps.
 | `$WI lint` | format + secret-shape + store-custody check; run after hand edits, then `$WI commit` |
 | `$WI commit [-m "<message>"]` | the one way to commit the store, never `git` by hand: under the store's lock it commits the store's own files into the repo that holds them (the store's own repo, or the host or sidecar repo that tracks it, whose hooks run), and prints `nothing to commit` for a store that repo ignores. Refuses (exit 1, nothing committed) a message `lint` would flag as a secret, and an own repo `wi` did not set up (unrecorded) or cannot trust (broken); exit 3 when git fails, or is missing for a store with its own repo (`references/format.md` § Committing the store) |
 | `$WI archive` | moves closed items to `archive/` — its own commit, nothing else in it: `wi` makes it in a store that is its own repo; in a store the repo around it tracks, `$WI commit` right after it |
+| `$WI install-launcher` | on request only (§ Reaching `wi`): copies the `wi` launcher to `~/.local/bin/wi`; installs over an absent, identical or earlier-launcher file, refuses any other, a symlink, a `HOME` that is not an absolute directory other than `/`, and a symlinked `~/.local` or `~/.local/bin` unless it resolves to a directory you own that only you can write (exit 1, nothing written); exit 3 when it cannot write; never edits a shell startup file; prints the `rm` line that removes it |
 
 Exit codes: 0 ok · 1 usage/validation · 2 not found/empty (e.g. `next` with nothing ready —
 report "nothing ready", don't retry) · 3 file/parser error · 4 lock/claim conflict (someone
