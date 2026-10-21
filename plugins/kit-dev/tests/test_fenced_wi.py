@@ -45,12 +45,6 @@ ALLOWED = {
      "written from `wi estate`)"): _PROSE,
     ("work-items/skills/work-items/references/format.md",
      "closed items moved by `wi archive`"): _PROSE,
-    ("work-items/skills/work-items/references/format.md",
-     "- `wi prime` — what's next"): _PROSE,
-    ("work-items/skills/work-items/references/format.md",
-     "- `wi next` / `wi show <id> --brief`"): _PROSE,
-    ("work-items/skills/work-items/references/format.md",
-     "- `wi add \"title\"` / `wi claim`"): _PROSE,
 }
 
 _SEP = (r"(?:^\s*"                      # start of the line

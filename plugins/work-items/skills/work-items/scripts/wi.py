@@ -5870,6 +5870,9 @@ def _launcher_dir(home):
                 raise WiError(1, f"refused: {comp} is a symlink to {real}, "
                                  "which is not a directory you own that only "
                                  "you can write")
+            # Known limit: only the resolved directory's own owner and mode
+            # are checked, not its parents'; a parent another user can write
+            # could still swap the directory out. Not checked here.
             cur, linked = real, True
         elif stat.S_ISDIR(st.st_mode):
             cur = comp

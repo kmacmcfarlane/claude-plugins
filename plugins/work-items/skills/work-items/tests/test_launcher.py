@@ -264,6 +264,19 @@ class TestInstallLauncher(InstallCase):
         self.assertEqual(snapshot(self.home), before)
         self.assertEqual(temp_files(self.home), [])
 
+    def test_refuses_symlink_target_to_identical_bytes(self):
+        # an identical file behind a link must not be chmodded through it
+        self.bin.mkdir(parents=True)
+        real = self.tmp / "same"
+        real.write_bytes(self.src)
+        os.chmod(real, 0o644)
+        self.T.symlink_to(real)
+        r = self.install()
+        self.assertEqual(r.returncode, 1, r.stdout + r.stderr)
+        self.assertTrue(self.T.is_symlink())
+        self.assertEqual(stat.S_IMODE(os.stat(real).st_mode), 0o644)
+        self.assertEqual(real.read_bytes(), self.src)
+
     def test_refuses_symlink_target_even_to_a_marked_file(self):
         self.bin.mkdir(parents=True)
         real = self.tmp / "marked"

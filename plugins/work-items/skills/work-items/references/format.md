@@ -1261,12 +1261,13 @@ After `wi import-todo TODO.md`, replace the file's contents with:
 # TODO — moved
 
 Work items now live in `.work-items/` at the repo root, one file per item,
-managed by `wi` (the `work-items` plugin's `skills/work-items/scripts/wi.py`).
+managed by the work-items `wi` (`$WI`: `python3` and the absolute path of the
+`work-items` plugin's `skills/work-items/scripts/wi.py`).
 When the store is git-ignored, it is local to this checkout.
 
-- `wi prime` — what's next, in ≤300 tokens; start every session here
-- `wi next` / `wi show <id> --brief` — pick and inspect an item
-- `wi add "title"` / `wi claim` / `wi handoff` / `wi done` — the write verbs
+- `$WI prime` — what's next, in ≤300 tokens; start every session here
+- `$WI next` / `$WI show <id> --brief` — pick and inspect an item
+- `$WI add "title"` / `$WI claim` / `$WI handoff` / `$WI done` — the write verbs
 
 Format and rules: the `work-items` plugin's
 `skills/work-items/references/format.md`.
