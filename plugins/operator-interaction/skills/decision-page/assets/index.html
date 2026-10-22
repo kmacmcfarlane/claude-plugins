@@ -267,11 +267,12 @@ if(typeof ResizeObserver==="function"){const barEl=$(".bar");
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]));
 const nameOf=k=>{const c=byN.get(k);if(c)return c.t;const r=REFS[k];return r?r.short:""};
 /* a decision reference, N · short name (answer 335's feedback): a card on the page is a link that opens its card
-   (data-goto); a decision in refs shows its tooltip only. Hovering or focusing either shows its tooltip (tipHtml).
+   (data-goto); a decision in refs shows its tooltip only, a tap or click pinning it (so a touch screen shows it
+   too). Hovering or focusing either shows its tooltip (tipHtml); aria-describedby is set only while it shows.
    The check refuses any other [[N]]; an older page's shows as plain text */
 const slug=k=>{const t=esc(k)+(nameOf(k)?' · '+esc(nameOf(k)):'');
-  if(byN.has(k))return '<button type="button" class="slug in" data-ref="'+esc(k)+'" data-goto="'+esc(k)+'" aria-describedby="tip">'+t+'</button>';
-  if(Object.prototype.hasOwnProperty.call(REFS,k))return '<button type="button" class="slug" data-ref="'+esc(k)+'" aria-describedby="tip">'+t+'</button>';
+  if(byN.has(k))return '<button type="button" class="slug in" data-ref="'+esc(k)+'" data-goto="'+esc(k)+'">'+t+'</button>';
+  if(Object.prototype.hasOwnProperty.call(REFS,k))return '<button type="button" class="slug" data-ref="'+esc(k)+'">'+t+'</button>';
   return '<span class="slug-t">'+t+'</span>'};
 const code=s=>s.replace(/`([^`]+)`/g,"<code>$1</code>");
 const fmt=s=>code(esc(s==null?"":s)).replace(/\[\[([0-9]+)\]\]/g,(m,k)=>slug(k));
@@ -312,9 +313,8 @@ const PLACEHOLDER=/<[A-Za-z][\w-]*>/;
 
 /* the card's Context: under the TLDR on the open card.
    An older card's what, when present, is shown at its end, after the cue, so nothing is lost */
-const contextBlock=c=>{const f=fmt;
-  return '<div class="ctx"><span class="lbl">Context</span><p>'+f(c.context)+'</p>'
-    +(isTxt(c.what)&&shown(c.what)?'<p>'+f(c.what)+'</p>':'')+'</div>'};
+const contextBlock=c=>'<div class="ctx"><span class="lbl">Context</span><p>'+fmt(c.context)+'</p>'
+    +(isTxt(c.what)&&shown(c.what)?'<p>'+fmt(c.what)+'</p>':'')+'</div>';
 /* a TLDR bullet that carries the recommendation (the options list marks it): only forms that cannot be anything else.
    No lookbehind: one would stop the whole script in an older browser */
 const REC_OPEN=/^[^A-Za-z]*(rec|recs|recommend|recommended|recommendation)\b(?!\s*(\([a-y]\)\s*)?by\b)\s*(\.|:|—|–|-\s|\(|$)/i;
@@ -581,8 +581,8 @@ function optionDetail(c,k,P){
   if(!b)return text+f(k==="z"?"Wait":"Effect",o[2]);
   const same=x=>String(x).trim().toLowerCase()===String(b.happens).trim().toLowerCase();
   const imp=shown(o[2])&&!same(o[2])?'<p class="impact">'+fmt(o[2])+'</p>':'';
-  const rowHtml=f("Effect",b.happens)+f("Reach",b.who)+(isTxt(b.undo)?'<p>'+(b.oneway===true?'<span class="lbl owu">⚠ Undo</span>':'<span class="lbl">Undo</span>')+fmtD(b.undo)+'</p>':'')+f("Cost",b.cost);
-  return c.warn?rowHtml+text+imp:text+imp+rowHtml;
+  const facets=f("Effect",b.happens)+f("Reach",b.who)+(isTxt(b.undo)?'<p>'+(b.oneway===true?'<span class="lbl owu">⚠ Undo</span>':'<span class="lbl">Undo</span>')+fmtD(b.undo)+'</p>':'')+f("Cost",b.cost);
+  return c.warn?facets+text+imp:text+imp+facets;
 }
 /* the effect a card's row shows after the rec pill: the Effect across the options, at tag size (the page's
    *Impact across the options*, while decision 335 is open). One helper, so its source can change alone */
@@ -759,22 +759,26 @@ async function write(n){
 }
 function choose(n,choice){if(readonly)return;answers[n]=Object.assign({},answers[n]||{},{choice});syncCard(n);syncAll();write(n)}
 
-/* the tooltip: shown while a reference is hovered or focused, filled by tipHtml; hidden on Escape and when the
-   pointer leaves */
-const tip=$("#tip");let tipFor=null;
+/* the tooltip: shown while a reference is hovered or focused, or pinned by a tap or click on a reference not on
+   the page; filled by tipHtml. Hidden on Escape, a second tap, a tap elsewhere, and when the pointer leaves an
+   unpinned one. The reference is described by it (aria-describedby) only while it is shown and filled */
+const tip=$("#tip");let tipFor=null,tipPinned=false;
 function place(el){
   const b=el.getBoundingClientRect(),w=tip.offsetWidth,hgt=tip.offsetHeight;
   let left=Math.min(Math.max(16,b.left),document.documentElement.clientWidth-w-16);
   let top=b.bottom+6;if(top+hgt>innerHeight-8&&b.top-hgt-6>8)top=b.top-hgt-6;
   tip.style.left=(left+scrollX)+"px";tip.style.top=(top+scrollY)+"px";
 }
-function showTip(el){tipFor=el;tip.innerHTML=tipHtml(el.dataset.ref);tip.hidden=false;place(el)}
-function hideTip(){tip.hidden=true;tipFor=null}
+function showTip(el){
+  if(tipFor&&tipFor!==el){tipFor.removeAttribute("aria-describedby");tipPinned=false}
+  tipFor=el;tip.innerHTML=tipHtml(el.dataset.ref);tip.hidden=false;place(el);el.setAttribute("aria-describedby","tip");
+}
+function hideTip(){if(tipFor)tipFor.removeAttribute("aria-describedby");tip.hidden=true;tipFor=null;tipPinned=false}
 const hoverable=matchMedia("(hover:hover)").matches;
 document.addEventListener("mouseover",e=>{
   if(!hoverable)return;
   const s=e.target.closest("[data-ref]");
-  if(s){if(s!==tipFor)showTip(s)}else if(tipFor&&tipFor!==document.activeElement)hideTip();
+  if(s){if(s!==tipFor)showTip(s)}else if(tipFor&&!tipPinned&&tipFor!==document.activeElement)hideTip();
 });
 document.addEventListener("focusin",e=>{const s=e.target.closest("[data-ref]");if(s)showTip(s);else if(tipFor)hideTip()});
 document.addEventListener("keydown",e=>{if(e.key==="Escape"&&tipFor)hideTip()});
@@ -798,7 +802,10 @@ document.addEventListener("input",e=>{
 });
 document.addEventListener("click",e=>{
   const s=e.target.closest(".slug");
-  if(s){e.preventDefault();e.stopPropagation();if(s.dataset.goto){hideTip();goCard(s.dataset.goto)}return}
+  /* a reference not on the page has no card to open: a tap or click pins its tooltip, a second one closes it */
+  if(s){e.preventDefault();e.stopPropagation();if(s.dataset.goto){hideTip();goCard(s.dataset.goto)}
+    else if(tipFor===s&&tipPinned)hideTip();else{showTip(s);tipPinned=true}return}
+  if(tipPinned)hideTip();
   const q=e.target.closest("[data-quick]");
   if(q){const n=q.dataset.n,c=byN.get(n);if(!c||(q.dataset.quick==="rec"&&!c.rec))return;choose(n,q.dataset.quick==="rec"?c.rec:"later");return}
   const go=e.target.closest("[data-go]");

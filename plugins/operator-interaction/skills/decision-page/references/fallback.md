@@ -11,8 +11,8 @@ connector, or another document tool the session lists), put the decisions in one
 Follow that tool's own instructions for creating and filling it (load its skill or guide
 first); this file sets only the layout.
 
-- One heading per group, in list order, its decisions listed under it by number and short name,
-  as the page's group map lists its groups; a bundle's (a layer with `shared`) reads
+- One heading per group, in list order, with a short table of contents, as the page's map
+  gives one: its decisions by number and short name; a bundle's (a layer with `shared`) reads
   `<title> — N decisions, <note>`, then a **Shared context:** line with its shared context; under it, one section per decision, headed with its
   number, short name and effect at tag size: `41 · Docs build home → sets where the docs build
   runs, and who can publish`; a card with a `label` puts the label and its short name after

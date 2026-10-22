@@ -339,7 +339,9 @@ A `cards.json` written before bundle groups (2026-10-22) has layers of three ele
 a plain group and renders as before, under the group band. On a republish, a bundle whose
 items need different answers becomes a layer with its `shared` context; its cards keep their
 numbers. A card moved into a bundle layer whose own text is unchanged keeps its `rev`; one
-whose Context is shortened to lean on the shared context gets a new `rev`.
+whose Context is shortened to lean on the shared context gets a new `rev`. An older layer's
+`note` now follows the band's *What they share:* label; on a republish, reword it to say what
+the group's cards share.
 
 A `cards.json` written before the reference rule (2026-10-22) may hold a `refs` entry for a
 decision still open, or a `[[N]]` that is neither a card nor a ref (it rendered bare): the page

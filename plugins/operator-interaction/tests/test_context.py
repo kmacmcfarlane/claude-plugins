@@ -283,12 +283,61 @@ def tip_problems(tip, card, answer="none yet"):
     return out
 
 
+def TIP_FNS():
+    """The page's showTip and hideTip, as written."""
+    html = PAGE.read_text()
+    return html[html.index("function showTip("):html.index("const hoverable=")]
+
+
+DESCRIBE_HARNESS = r"""
+const mk = ref => ({dataset: {ref}, attrs: {}, setAttribute(k, v) { this.attrs[k] = [v, tip.innerHTML]; },
+  removeAttribute(k) { delete this.attrs[k]; }});
+const tip = {hidden: true, innerHTML: "", style: {}};
+const place = () => {}, tipHtml = k => "tip " + k;
+let tipFor = null, tipPinned = false;
+const a = mk("41"), b = mk("38"), log = [];
+showTip(a); log.push({a: a.attrs["aria-describedby"] || null});
+showTip(b); log.push({a: a.attrs["aria-describedby"] || null, b: b.attrs["aria-describedby"] || null});
+hideTip(); log.push({b: b.attrs["aria-describedby"] || null, hidden: tip.hidden});
+process.stdout.write(JSON.stringify(log));
+"""
+
+
+def describe_problems(fns):
+    out = subprocess.run([NODE, "-e", fns + DESCRIBE_HARNESS], capture_output=True, text=True, timeout=60)
+    if out.returncode != 0:
+        return ["node failed: " + out.stderr[:200]]
+    a1, a2, a3 = json.loads(out.stdout)
+    probs = []
+    # each set while the tooltip already holds its reference's text
+    if a1["a"] != ["tip", "tip 41"] or a2["b"] != ["tip", "tip 38"]:
+        probs.append("aria-describedby is not set once the tooltip is shown and filled")
+    if a2["a"] is not None or a3["b"] is not None or not a3["hidden"]:
+        probs.append("aria-describedby stays on a reference whose tooltip is gone")
+    return probs
+
+
+def pin_problems(html):
+    click = html[html.index('document.addEventListener("click"'):html.index('addEventListener("resize"')]
+    out = []
+    if "else if(tipFor===s&&tipPinned)hideTip();else{showTip(s);tipPinned=true}" not in click:
+        out.append("a tap on a reference not on the page shows nothing")
+    if "if(tipPinned)hideTip();" not in click:
+        out.append("a pinned tooltip is not closed by a tap elsewhere")
+    keys = html[html.index('document.addEventListener("keydown"'):]
+    if 'e.key==="Escape"&&tipFor)hideTip()' not in keys:
+        out.append("Escape does not close the tooltip")
+    return out
+
+
 def slug_problems(on, ref):
     out = []
-    if not (on.startswith("<button") and 'data-goto="41"' in on and 'aria-describedby="tip"' in on):
+    if not (on.startswith("<button") and 'data-goto="41"' in on):
         out.append("an on-page reference is not a link to its card")
-    if "data-goto" in ref or 'aria-describedby="tip"' not in ref:
+    if not ref.startswith("<button") or "data-goto" in ref:
         out.append("a refs reference is not a tooltip-only reference")
+    if "aria-describedby" in on + ref:
+        out.append("a reference is described by a tooltip that is not shown")
     if "aria-haspopup" in on + ref:
         out.append("a reference opens a popup")
     return out
@@ -309,6 +358,25 @@ class ReferenceTooltip(unittest.TestCase):
                       slug_problems(s["on"].replace(' data-goto="41"', ""), s["ref"]))
         self.assertIn("a refs reference is not a tooltip-only reference",
                       slug_problems(s["on"], s["ref"].replace("<button", '<button data-goto="38"')))
+        self.assertIn("a reference is described by a tooltip that is not shown",
+                      slug_problems(s["on"].replace("<button", '<button aria-describedby="tip"'), s["ref"]))
+
+    def test_the_tooltip_describes_its_reference_only_while_shown(self):
+        # showTip and hideTip, run under node on stand-ins for the tooltip and two references
+        self.assertEqual(describe_problems(TIP_FNS()), [])
+        # mutants: the attribute left on after hiding; set before the tooltip is filled
+        fns = TIP_FNS()
+        self.assertTrue(describe_problems(fns.replace('if(tipFor)tipFor.removeAttribute("aria-describedby");', "")))
+        moved = fns.replace(';el.setAttribute("aria-describedby","tip");', ";").replace(
+            "tipFor=el;tip.innerHTML", 'el.setAttribute("aria-describedby","tip");tipFor=el;tip.innerHTML')
+        self.assertNotEqual(moved, fns)
+        self.assertTrue(describe_problems(moved))
+
+    def test_a_tap_on_a_reference_not_on_the_page_pins_its_tooltip(self):
+        # a touch screen has no hover and does not focus a tapped button: the click shows it
+        self.assertEqual(pin_problems(PAGE.read_text()), [])
+        mutant = PAGE.read_text().replace("else{showTip(s);tipPinned=true}", "")
+        self.assertIn("a tap on a reference not on the page shows nothing", pin_problems(mutant))
 
     def test_a_cards_tooltip(self):
         d = example()
