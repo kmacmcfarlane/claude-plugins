@@ -1996,6 +1996,26 @@ class TestNote(WiTestCase):
                     "path and key, never the value); nothing written\n")
                 self.assertEqual(path.read_bytes(), before)
 
+    def test_paths_and_defines_are_accepted(self):
+        # 0f7e: a cmake define naming a compiler, an XAUTHORITY path
+        path = self.item()
+        for text in TestLint.PATH_LINES:
+            with self.subTest(text=text):
+                self.wi_ok(["note", self.IID, "--", text])
+                self.assertIn(text, path.read_text())
+
+    def test_secrets_beside_paths_are_refused(self):
+        path = self.item()
+        before = path.read_bytes()
+        for text in TestLint.PATH_SECRETS:
+            with self.subTest(text=text):
+                r = run(["note", self.IID, "--", text], self.root)
+                self.assertEqual(r.returncode, 1, r.stdout + r.stderr)
+                self.assertEqual(
+                    r.stderr, "wi: text 1: likely secret value (record the "
+                    "path and key, never the value); nothing written\n")
+                self.assertEqual(path.read_bytes(), before)
+
     def test_a_text_that_is_exactly_the_separator_is_refused(self):
         path = self.item()
         before = path.read_bytes()
@@ -3743,6 +3763,50 @@ class TestLint(WiTestCase):
         start = time.perf_counter()
         self.assertTrue(wi.secret_findings("token = " + "f(" * 1000000))
         self.assertLess(time.perf_counter() - start, 5.0)
+
+    # 0f7e: filesystem paths and -D<NAME>=value defines are no secrets
+    PATH_LINES = (
+        "cmake -DCMAKE_CUDA_HOST_COMPILER=/usr/bin/g++-12 ..",
+        "-DCMAKE_CUDA_HOST_COMPILER=/usr/bin/g++-12",
+        "cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_CXX_COMPILER=/usr/bin/clang++-17 ..",
+        "XAUTHORITY=/tmp/.docker.xauth",
+        "export XAUTHORITY=$HOME/.Xauthority",
+        'export XAUTHORITY="$HOME/.Xauthority"',
+        "XAUTHORITY='/tmp/.docker.xauth'",
+        "XAUTHORITY=~/.Xauthority",
+        "XAUTHORITY=${HOME}/.Xauthority",
+        "XAUTHORITY=../run/docker_xauth",
+        "- 2026-10-22 docker run -e XAUTHORITY=/tmp/.docker.xauth img",
+        "CXX=/usr/bin/g++-12 make",
+        "DB_PASSWORD_FILE=/run/secrets/db_password",
+    )
+    # obviously fake values that must still flag
+    PATH_SECRETS = (
+        "API_TOKEN=ghp_" + "FAKEfake0000" * 3,
+        "PASSWORD=hunter2xyz",
+        "-DDB_PASSWORD=s3cr3tvalue",
+        "cmake -DAPI_TOKEN=fake0fake1fake2fakeXYZ ..",
+        "-DFAKE_ID=fake0fake1fake2fake3",
+        "API_TOKEN=/FAKEfake0000FAKEfake0000FAKEfake0000",
+        "XAUTHORITY=~/fake0Fake1fake2FAKE3fake",
+        "DB_PASS=/etc/" + "FAKEfake0000" * 3,
+    )
+
+    def test_paths_and_defines_stay_clean(self):
+        for line in self.PATH_LINES:
+            with self.subTest(line=line):
+                self.assertEqual(wi.secret_findings(line), [], line)
+        r = self.lint_notes(*self.PATH_LINES)
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+        self.assertNotIn("likely secret value", r.stdout)
+
+    def test_secrets_beside_paths_still_flag(self):
+        for line in self.PATH_SECRETS:
+            with self.subTest(line=line):
+                self.assertTrue(wi.secret_findings(line), line)
+                r = self.lint_notes(line)
+                self.assertEqual(r.returncode, 3, r.stdout)
+                self.assertIn("likely secret value", r.stdout)
 
     def test_conflict_markers_flagged(self):
         (self.root / "items" / "conflicted-0000.md").write_text(

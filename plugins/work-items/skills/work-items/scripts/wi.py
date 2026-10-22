@@ -5127,8 +5127,13 @@ def cmd_import(args):
 # no longer hides it. The value rule is the bare form's, unchanged: 8+
 # non-space characters, not a $VAR, <placeholder> or {template}. A KEY glued
 # to a word, or after a URL's ? or & (a query string), stays unmatched.
+# Each match is then judged by _assign_secret (0f7e): a value that is
+# plainly a filesystem path (XAUTHORITY=/tmp/.docker.xauth) is no secret,
+# and a -D<NAME>=value define (cmake, a compiler) counts only as other
+# keys do (see _assign_secret).
 SECRET_ASSIGN_RE = re.compile(
-    r"(?:^|[^A-Za-z0-9_?&])[A-Z][A-Z0-9_]{2,}=(?![$<{])\S{8,}")
+    r"(?:^|(?P<lead>[^A-Za-z0-9_?&]))(?P<key>[A-Z][A-Z0-9_]{2,})="
+    r"(?![$<{])(?P<value>\S{8,})")
 SECRET_KV_RE = re.compile(
     r"(?i)\b(api[_-]?key|secret|token|password|passwd|credential|webhook[_-]?url)\b"
     r"['\"]?\s*[:=]\s*['\"]?"
@@ -5439,6 +5444,9 @@ def _shape_value_flagged(key, raw, quote="", rest=None):
     value = raw.rstrip("\"'`,;)]}")
     if not value or _placeholder(value, rest):
         return False
+    # a plain path is no secret under such a key (0f7e: CXX=/usr/bin/g++-12)
+    if _plain_path(value):
+        return False
     tok = _VALUE_TOKEN_RE.match(raw)
     if not tok or raw[tok.end():tok.end() + 1] == "(":
         return False
@@ -5608,10 +5616,56 @@ def _auth_secret(line):
     return False
 
 
+# a path's start: /, ~/, ./, ../, or a $NAME/ or ${NAME}/ variable
+_PATH_START_RE = re.compile(
+    r"(?:~|\.\.?|\$[A-Za-z_][A-Za-z0-9_]*|\$\{[A-Za-z_][A-Za-z0-9_]*\})?/")
+
+
+def _plain_path(value):
+    """A value that is plainly a filesystem path (0f7e), quotes around it
+    dropped: it starts as _PATH_START_RE says, and every segment after
+    that start (split on - _ . / ~) is harmless (_harmless_segment), a
+    trailing run of + allowed (g++, c++). A path after / ./ or ../ needs
+    two segments, one after ~/ or a variable one: /tmp/.docker.xauth,
+    ~/.Xauthority, $HOME/.Xauthority, /usr/bin/g++-12. A token behind a slash
+    (/FAKEfake0000FAKEfake) is no path: its segment is live."""
+    value = value.strip("\"'`").rstrip(",;")
+    m = _PATH_START_RE.match(value)
+    if not m:
+        return False
+    segs = [seg.rstrip("+") for seg in _SEG_SPLIT_RE.split(value[m.end():])
+            if seg]
+    need = 1 if value.startswith(("$", "~")) else 2
+    return (len(segs) >= need
+            and all(seg and _harmless_segment(seg) for seg in segs))
+
+
+def _assign_secret(line):
+    """A KEY=value match (SECRET_ASSIGN_RE) that counts (0f7e): the value is
+    no plain path (_plain_path), and a -D<NAME>=value define (the D glued
+    to a single -, as cmake and compilers take it: -DCMAKE_BUILD_TYPE=...)
+    counts only when NAME holds a secret word (_secret_key: -DDB_PASSWORD)
+    or the value looks live (_looks_live), so -DCMAKE_CUDA_HOST_COMPILER=
+    /usr/bin/g++-12 and -DCMAKE_BUILD_TYPE=RelWithDebInfo stay clean. A
+    secret-word KEY with a token value (API_TOKEN=ghp_...) still flags."""
+    for m in SECRET_ASSIGN_RE.finditer(line):
+        key, value = m.group("key"), m.group("value")
+        if _plain_path(value):
+            continue
+        lead = m.start("key") - 1
+        if (m.group("lead") == "-" and key.startswith("D")
+                and (lead == 0 or line[lead - 1] != "-")
+                and not _secret_key(key[1:])
+                and not _looks_live(value.strip("\"'`"))):
+            continue
+        return True
+    return False
+
+
 def _secret_hit(line):
     if "PRIVATE KEY-----" in line:
         return "PEM private key material"
-    if (SECRET_ASSIGN_RE.search(line) or SECRET_KV_RE.search(line)
+    if (_assign_secret(line) or SECRET_KV_RE.search(line)
             or _shape_secret(line) or _auth_secret(line)
             or _table_secret(line) or _url_secret(line)):
         return "likely secret value (record the path and key, never the value)"
