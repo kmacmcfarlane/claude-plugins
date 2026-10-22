@@ -533,11 +533,13 @@ class DecisionPageDepth(unittest.TestCase):
         self.assertIn("getSelection()", click)
         self.assertIn("[data-lv]", click)
         self.assertIn("[data-omore]", click)
-        self.assertIn('if(e.target.id==="toggleall"){const all=[...document.querySelectorAll("details.card")]', click)
-        pop = html[html.index("function fillPop"):html.index("function place(")]
-        self.assertNotIn("data-lv", pop)
-        self.assertNotIn("omore", pop)
-        self.assertNotIn("fmtD", pop)
+        # Expand all and Collapse all open or close every card (the group map, V1)
+        self.assertIn('setAll(document.querySelectorAll("details.card"),all.dataset.all)', click)
+        # a reference's tooltip is a peek: no detail levels, no More, no links
+        tip = html[html.index("function tipHtml("):html.index("/* ---- end of the page-free part")]
+        self.assertNotIn("data-lv", tip)
+        self.assertNotIn("omore", tip)
+        self.assertNotIn("fmtD", tip)
         style = html[html.index("<style>"):html.index("</style>")]
         self.assertIn("[hidden]{display:none !important}", style)
         self.assertRegex(style, r"\n\.lv\{[^}]*overflow-wrap:anywhere")

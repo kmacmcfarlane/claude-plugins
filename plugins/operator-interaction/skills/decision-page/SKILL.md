@@ -5,8 +5,8 @@ description: "Put a set of decisions to the operator as an answer page: a publis
 
 # Decision page
 
-A set of decisions on one page the operator works through at their own pace: each card flat
-on its essentials (its TLDR, then its Context, then its Impact) with folds for the rest; a
+A set of decisions on one page the operator works through at their own pace: a map of its
+groups, each card a one-line row that opens flat on its essentials (its TLDR, then its Context, then its Impact) with folds for the rest; a
 click on a part with a more-detail button shows it as terse bullets, then in headed sections,
 and **More** beside an option shows that option in full; one choice per card enforced by the
 radio buttons, answers saved as they click. You publish it, they answer, you read the answers
@@ -78,7 +78,9 @@ text, so by default:
 The rules below are what the digest condenses:
 
 - One card per decision, in the `decisions` skill's order; groups (`layers`) as its
-  groups. Short names (`t`) the operator would say; plain names for items (the
+  groups. A bundle whose items need different answers is a layer carrying its `shared`
+  context, each item a whole card (the runner reads a card's Context with it); one answer
+  for every item stays one card naming each. Short names (`t`) the operator would say; plain names for items (the
   `plain-names` skill).
 - Every card carries `rev`, a revision label (the UTC time you wrote it, by convention). Any
   change to a card gets a new `rev`, Context included: an **Added:** line after `tell me`,
@@ -108,16 +110,17 @@ The rules below are what the digest condenses:
   carries goes in backticks in `act` or `evidence`, as something to type or open. The caller
   passes an id → plain-name map where it has one (its items' short names); otherwise look each
   one up once per page. A decision raised from one labelled item of a source (a review's
-  finding, a plan's question) carries `label`, `{id, name}`: the page opens its title on it,
-  *F7 (oversize upload) · …*, and that label passes anywhere on the page with its short name
+  finding, a plan's question) carries `label`, `{id, name}`: the page shows it after the title,
+  *… · F7 (oversize upload)*, and that label passes anywhere on the page with its short name
   beside it (the `decisions` skill's `references/rendering.md` § Source labels).
 - The TLDR comes first on the card: one or two terse fragment bullets. It names no
   recommendation: the options mark it. Say what is decided, and what rides on it.
 - Every card carries `impact`, the decision's Impact across all its options (effect, wait,
   reach, cost where it has one, and undo only where an option is one-way or costly; the
   `decisions` skill's `references/rendering.md` § Impact), so every view on the page shows it:
-  the effect in the map and on a closed card, the facets one a line on an open one, each
-  option's own row in its **More**. Its `effect` says what the decision changes and settles,
+  the effect on a card's row, the facets one a line on an open one, each
+  option's own row in its **More**. Effect and Reach describe the system the work builds,
+  never the review or the process, which is the Wait (the runner's `process` lint). Its `effect` says what the decision changes and settles,
   favouring no option, written from the card's own option effects (`blocks`, each
   option's `impact`); copy a stored Effect only when it names each option's outcome or the
   card was stored or revised on or after 2026-10-14; otherwise write it from the option
@@ -126,7 +129,8 @@ The rules below are what the digest condenses:
   options. Each option's own effect lives in its `blocks` row.
 - Every card carries `blocks`, its Impact row per option but (z) (effect, reach, cost where
   it has one, and undo only where the option is one-way or costly), shown in that option's
-  **More**; a ⚠ one-way card is refused without them. A row whose option is one-way or costly
+  **More**, each effect by its mechanism (how it happens, who meets it and when, the before
+  and after), never a bare label (the runner's `mech` lint); a ⚠ one-way card is refused without them. A row whose option is one-way or costly
   to undo carries `oneway: true` and its undo: the page refuses a flagged row without one, and
   the runner lints a ⚠ card with no flagged row (an older page still shows). A round ask
   carries `ifleft` and `roundcosts`; a status-quo default, `ifunanswered`.
@@ -157,8 +161,10 @@ The rules below are what the digest condenses:
   first.
 - A card whose option asks the operator to act carries `act`: its steps, as the **To act
   on** part in the `decisions` skill's `references/rendering.md` § Card gives them.
-- Every mention of another decision is a slug, `[[N]]`; a decision not on the page that a
-  slug names gets a `refs` entry.
+- Every mention of another decision is a slug, `[[N]]`. Every open decision a card names, or
+  depends on, goes on the page as a card, so the operator can answer it in place; an answered
+  decision not on the page gets a `refs` entry with its answer. The page refuses a `refs`
+  entry for an open decision or for a card, and a slug that is neither.
 - `follow` is copied from `references/writer-digest.md` § Top level as it stands.
 - **The title** names the session the page belongs to: `page.title` is
   `(<owner>) <session name>`, for example `(kmacmcfarlane) claude-plugins context-guard
@@ -256,20 +262,10 @@ written before Context existed, whose own `what` and resume cue move into `conte
 terms are glossed from its own folds alone. A gloss drawn from anywhere outside the card is
 new information: a new `rev`.
 
-A `cards.json` written before `detail` existed renders as it did, with **More** buttons and no
-toggles. On a republish, write the depth and the `detail` levels its decision calls for
-(step 2) into each card with no counting answer, and into each card revised anyway, each with
-a new `rev`; leave a card the operator has answered as it is, unless it is revised for another
-reason. A card that gets `detail` gets a new `rev`, so the republish hands it over as shown
-again (§ Hand over what was shown), with the publish time.
-
-A `cards.json` written before the level shapes renders TLDR first, the Impact one facet a
-line, and its text levels as paragraphs; nothing is refused, and the runner lints its shapes,
-its ids and an effect that reads as the recommendation's. On a republish, give each card with
-no counting answer, and each card revised anyway, its `impact` across the options, its levels
-in their shapes and names in place of its ids, each with a new `rev`, handed over as shown
-again. Leave a card the operator has answered as it is, its lints left knowingly, unless it is
-revised for another reason.
+A `cards.json` written before `detail`, the level shapes or a later field existed: what it
+renders and what a republish writes into it is `references/cards-schema.md` § Republishing
+older data. A card the operator has answered stays as it is, its lints left knowingly, unless
+it is revised for another reason.
 
 **Hand over what was shown.** After a publish or republish, for every card whose number and
 `rev` were not on the page before (on a first publish, every card), hand the caller the
@@ -343,6 +339,18 @@ answer to a card whose `rev` has not moved is a new answer and hands over one mo
 - *An answer the operator gave does not come back as new*: it was given to an earlier `rev`
   of its card (the page shows it open), or its `at` equals the one last handed over
   (unchanged, already handed over).
+
+## Rulings
+
+The page's rulings are the `decisions` skill's `references/rulings.md`: those titled *on an
+answer page*, and the card rules the page renders.
+
+- **Both surfaces** (2026-10-21, the operator's correction, as the librarian recorded it) — a
+  change to how a decision is shown, written or checked lands on the chat card (the
+  `decisions` skill), the answer page (this skill) and the stored card where it applies,
+  planned together; a surface left out names its obvious reason, and one that is unclear goes
+  to the operator. Not taken: a rule scoped to the surface whose feedback raised it, the other
+  surface following only by a decision of its own.
 
 ## References
 

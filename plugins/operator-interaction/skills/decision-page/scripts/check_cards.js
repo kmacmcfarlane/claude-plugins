@@ -10,13 +10,18 @@
         the page title, the lede, the layer titles and notes, refs), whatever Context says; the
         page is the reader's only context. Backtick spans, https links and slugs are not ids;
       - terms: a count or a named thing in the flat part, or in the medium and high levels of the
-        Impact, the TLDR and the rec line, that Context's summary does not introduce;
+        Impact, the TLDR and the rec line, that Context's summary (with its bundle's shared context)
+        does not introduce;
+      - groups: a bundle (a layer with shared context) holding fewer than two cards;
       - the TLDR: a bullet that may carry the recommendation, at every level, headings, bullets
         and sub-bullets in reading order; a leftover what;
       - shapes: summaries a sentence or two (the TLDR one or two bullets, an Impact facet a line),
         medium terse bullets with a sub-bullet or two, high headed sections; the Impact's medium
         one bullet per facet;
       - a card Impact effect that reads as the recommended option's alone;
+      - the mechanism: an option's effect of a bare label, MECH_MIN words or fewer (rule 268);
+      - the system: a process phrase (a review comment, another round, your time, a blocked
+        session) in an Effect or Reach, which describe the thing the work builds (rule 259);
       - depth (decision 198, the sizes in references/cards-schema.md § Size, read at each part's
         top level; levels are optional on every part, decision 201): a level not longer than the
         one below it; Background, an option's detail or the evidence thin where it carries
@@ -212,6 +217,35 @@ function recOnly(c, say) {
   }
 }
 
+/* ---- the system lint (rule 259): Effect and Reach describe the thing the work builds, never the process, which
+   is the Wait. Phrases, not bare words: "the code review checklist", "a comment in the hook" and "a round-trip"
+   are system effects. Read: the card's effect and reach, at every level; each blocks row's happens and who; each
+   option's impact but (z)'s. Never the wait; never a round ask (ifleft or roundcosts), whose system is the round ---- */
+const PROCESS = /\breview comments?\b|\b(another|next|a|review) round\b(?!-)|\byour (attention|time)\b|\b(held|waits?|waiting) (for|on|until) (you|review|the operator)\b|\bblocked session\b|\bsession (is )?blocked\b/i;
+function systemOnly(c, say) {
+  if (c.ifleft != null || c.roundcosts != null) return;
+  const at = [["the effect", c.impact.effect], ["the reach", c.impact.reach]];
+  levelsOf(c, "impact").forEach((l, i) => { if (l && typeof l === "object") for (const k of ["effect", "reach"])
+    at.push(["the " + k + " (" + DETAIL_NAME[i] + ")", textsOf(l[k]).join(" ")]); });
+  if (c.blocks && typeof c.blocks === "object") for (const k in c.blocks) { const r = c.blocks[k] || {};
+    at.push(["(" + k + ")'s effect", r.happens], ["(" + k + ")'s reach", r.who]); }
+  for (const o of c.o) if (o[0] !== "z") at.push(["(" + o[0] + ")'s impact", o[2]]);
+  for (const [where, s] of at) { const m = typeof s === "string" ? s.match(PROCESS) : null;
+    if (m) say("process " + where, "impact: " + where + " names the process (\"" + m[0] + "\"): Effect and Reach describe the system the work builds, its code, data, users and deploys; move the process effect to wait, or leave it knowingly when the system the work builds is itself a review or a process"); }
+}
+
+/* ---- the mechanism lint (rule 268): each option's effect says how it happens, who meets it and when, and the
+   before and after. A proxy: it catches only the bare label, an effect of MECH_MIN words or fewer, read from the
+   option's blocks row (happens), else its impact; never (z)'s, and never a no-change statement ---- */
+const MECH_MIN = 4;
+const NO_CHANGE = /^[^A-Za-z]*(no|nothing|none|unchanged)\b/i;
+function mech(c, say) {
+  for (const o of c.o) { if (o[0] === "z") continue;
+    const r = row(c, o[0]), e = r && typeof r.happens === "string" ? r.happens : o[2], n = words(e);
+    if (typeof e === "string" && e.trim() && n <= MECH_MIN && !NO_CHANGE.test(e))
+      say("mech " + o[0], "impact: (" + o[0] + ")'s effect is " + n + " words (\"" + e.trim() + "\"): say its mechanism, how it happens, who meets it and when, and the before and after; or leave it knowingly"); }
+}
+
 /* ---- the depth lints (decision 198): sizes read at each part's top level, words split on whitespace ---- */
 const topOf = (sum, ls) => ls.length ? ls[ls.length - 1] : sum;
 const row = (c, k) => c.blocks && typeof c.blocks === "object" ? c.blocks[k] || null : null;
@@ -273,7 +307,7 @@ function labelName(c, say) {
 
 /* ---- the id lint: no machine-readable id anywhere the page shows text; the page is the reader's only context ---- */
 const idLine = ([t, n], at) => t + " looks like an id (" + at + "): "
-  + (n ? "name the decision by its slug [[" + n + "]]" : "name the thing by its short name or title, a decision by its slug [[N]]")
+  + (n ? "name the decision by its slug [[" + n + "]], with its card or a refs entry" : "name the thing by its short name or title, a decision by its slug [[N]]")
   + "; the page is the reader's only context; leave it if it is a term the reader knows (S3, UTF-8)";
 /* the texts a card shows, by part: everything but rev, n, L and the option letters */
 function cardTexts(c) {
@@ -295,7 +329,12 @@ function pageIds(d, out) {
   const look = (at, s) => { if (typeof s === "string") for (const x of ids(s)) if (!seen.has(at + x[0])) { seen.add(at + x[0]); say(idLine(x, at)); } };
   const pg = d.page && typeof d.page === "object" ? d.page : {};
   look("the page title", pg.title); look("the lede", pg.lede);
-  for (const l of d.layers) { look("the title of layer " + l[0], l[1]); look("the note of layer " + l[0], l[2]); }
+  for (const l of d.layers) { look("the title of layer " + l[0], l[1]); look("the note of layer " + l[0], l[2]);
+    look("the shared context of layer " + l[0], l[3]);
+    /* a bundle groups two or more item cards (rule 263) */
+    const n = d.cards.filter(c => c.L === l[0]).length;
+    if (typeof l[3] === "string" && l[3].trim() && n < 2)
+      say("group " + l[0] + " holds " + n + " card" + (n === 1 ? "" : "s") + ": a bundle (a layer with shared context) groups two or more item cards; give a lone item its own Context and a plain layer, or leave it knowingly"); }
   for (const k in (d.refs || {})) { const r = d.refs[k] || {};
     look("refs " + k + " short", r.short); look("refs " + k + " q", r.q);
     if (typeof r.a === "string") for (const x of ids(r.a))
@@ -309,7 +348,9 @@ function lint(d) {
   for (const c of d.cards) {
     const w = "lint: card " + c.n + ": ";
     const hasWhat = typeof c.what === "string" && c.what.trim();
-    const ctx = c.context + (hasWhat ? " " + c.what : "");
+    /* an item card in a bundle may lean on its group's shared context (rule 263) */
+    const sh = (d.layers.find(l => l[0] === c.L) || [])[3];
+    const ctx = c.context + (hasWhat ? " " + c.what : "") + (typeof sh === "string" ? " " + sh : "");
     const ctxNums = new Set(counts(ctx).map(x => x.n)), ctxLow = ctx.toLowerCase();
     const seen = new Set(), say = (key, line) => { if (!seen.has(key)) { seen.add(key); out.push(w + line); } };
     for (const [at, s] of cardTexts(c)) for (const x of ids(s)) say("id " + x[0], idLine(x, at));
@@ -331,6 +372,8 @@ function lint(d) {
     if (hasWhat) say("what", "what present: move it into context (after the terms, before the cue) and delete it");
     shapes(c, say);
     recOnly(c, say);
+    systemOnly(c, say);
+    mech(c, say);
     depth(c, say);
     oneway(c, say);
     labelName(c, say);

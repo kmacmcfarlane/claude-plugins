@@ -81,7 +81,8 @@ items, tickets, commits and ticket-style keys follow § The rule above, name fir
   carries the short name; later mentions in the same message take the label alone. (A
   tracker id's later mentions take the name alone, § Repeats and tables.)
 - **A label in a title takes the name too:** *41 — F7 (oversize upload) · Cap the upload
-  size?*
+  size?* On an answer page the label follows the title (the `decision-page` skill): *Cap the
+  upload size? · F7 (oversize upload)*.
 
 ## Examples
 

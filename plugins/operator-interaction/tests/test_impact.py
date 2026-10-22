@@ -46,7 +46,7 @@ let views = [];
 if (!bad.length) {
   CARDS = d.cards; REFS = d.refs || {}; FOLLOW = d.follow;
   byN = new Map(CARDS.map(c => [String(c.n), c])); FOLLOW_KEYS = new Set(FOLLOW.map(f => f[0]));
-  views = CARDS.map(c => ({n: c.n, tag: tagEffect(c), line: impactLine(c),
+  views = CARDS.map(c => ({n: c.n, tag: tagEffect(c), line: impactLine(c), row: rowHtml(c),
                            more: Object.fromEntries(c.o.map(o => [o[0], optionDetail(c, o[0])])),
                            card: cardHtml(c)}));
 }
@@ -63,8 +63,8 @@ def page_free_script():
     return html[start:end]
 
 
-def run_page(data):
-    out = subprocess.run([NODE, "-e", page_free_script() + HARNESS],
+def run_page(data, script=None):
+    out = subprocess.run([NODE, "-e", (script or page_free_script()) + HARNESS],
                          input=json.dumps(data), capture_output=True, text=True,
                          timeout=60)
     if out.returncode != 0:
@@ -221,12 +221,20 @@ class DecisionPageImpact(unittest.TestCase):
         self.assertIn("&lt;img", v["tag"])
         self.assertIn("&lt;b&gt;bold", v["more"]["b"])
 
+    def test_the_row_shows_the_rec_pill_and_the_effect_across_the_options(self):
+        # the closed card's row (its summary) keeps the Effect across the options at tag size,
+        # beside the rec pill (*Impact across the options on an answer page*; decision 335 open)
+        for v in run_page(example())["views"]:
+            self.assertEqual(row_problems(v), [], v["n"])
+        # mutant: the row's effect read from the recommended option's blocks row
+        mutant = page_free_script().replace(ROW_EFFECT, ROW_EFFECT_REC)
+        self.assertNotEqual(mutant, page_free_script())
+        v41 = run_page(example(), mutant)["views"][0]
+        self.assertIn("the row does not show the Effect across the options", row_problems(v41))
+
     def test_the_page_renders_impact_in_every_view(self):
-        html = PAGE.read_text()
-        hud = html[html.index("function renderHud"):html.index("function renderCards")]
-        self.assertIn("tagEffect(c)", hud)
-        # the open card, rendered: its Impact line, the effect on its summary line, and each
-        # option's own effect in its More
+        # the open card, rendered: its Impact line, the effect on its row (its summary), and
+        # each option's own effect in its More
         for v in run_page(example())["views"]:
             card = v["card"]
             self.assertIn('class="impline"', card, v["n"])
@@ -237,8 +245,21 @@ class DecisionPageImpact(unittest.TestCase):
                 self.assertIn(more, card, (v["n"], k))
                 if k != "z":
                     self.assertIn('<span class="lbl">Effect</span>', more, (v["n"], k))
-        pop = html[html.index("function fillPop"):html.index("function place(")]
-        self.assertIn("tagEffect(c)", pop)
+
+
+ROW_EFFECT = "const rowEffect=c=>tagEffect(c);"
+ROW_EFFECT_REC = ("const rowEffect=c=>'<span class=\"eff\"><b>→</b>'"
+                  "+esc(((c.blocks||{})[c.rec]||{}).happens||\"\")+'</span>';")
+
+
+def row_problems(v):
+    """A row without the rec pill (or its no-recommendation label) and the Effect at tag size."""
+    out = []
+    if v["tag"] not in v["row"]:
+        out.append("the row does not show the Effect across the options")
+    if 'class="pill rec"' not in v["row"] and 'class="pill none"' not in v["row"]:
+        out.append("the row has no rec pill")
+    return out
 
 
 LIST_LINE = re.compile(r"^- \*\*\d+ .+\?\*\* — ")

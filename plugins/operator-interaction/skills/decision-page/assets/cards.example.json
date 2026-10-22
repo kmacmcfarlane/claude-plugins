@@ -7,12 +7,12 @@
     [
       "direction",
       "Direction",
-      "One card sets where the docs build lives; the cards below are answerable whatever you pick here."
+      "where the docs site is built and who publishes it; the cards below are answerable whatever you pick here."
     ],
     [
       "details",
       "Details",
-      "How the move is carried out. Each card says which answer above it depends on."
+      "how the move to CI is carried out; each card says which answer above it depends on."
     ]
   ],
   "follow": [

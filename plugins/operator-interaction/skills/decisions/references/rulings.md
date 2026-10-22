@@ -81,8 +81,9 @@ alternative not taken, in case practice argues for it.
   optional on every part of a page card: a small call may carry none; a wide or one-way
   decision carries the most. The pre-publish runner lints thin depth only where a part has
   levels. Not taken: visible levels expected on every card; small calls exempt by a mark.
-- **TLDR first on an answer page** (2026-10-09, the operator's direction) — the open card and
-  the popup show the TLDR, then Context, then the Impact. Context still introduces the terms
+- **TLDR first on an answer page** (2026-10-09, the operator's direction) — the open card
+  shows the TLDR, then Context, then the Impact; a reference's tooltip shows a card's Context
+  and its options (since 2026-10-22, below). Context still introduces the terms
   the card uses, and no longer restates what the TLDR decides. Not taken: Context first
   (2026-10-08).
 - **Level shapes on an answer page** (2026-10-09, the operator's direction; the data shape,
@@ -143,7 +144,9 @@ alternative not taken, in case practice argues for it.
   stays in Cost, a design made in build; neither the operator's) — Effect and Reach describe the thing the work builds:
   its code, data, users, deploys and downstream consumers. An effect on the process — a held
   review comment, a round, a blocked session — goes only in Wait. Cost keeps build time and
-  spend, and the operator's attention only on a round ask. Not taken: a process clause in
+  spend, and the operator's attention only on a round ask. On the answer page (2026-10-22,
+  *Both surfaces*; a design made in planning, not the operator's): the lede says it, and the
+  pre-publish runner's `process` lint catches a process phrase in an Effect or Reach. Not taken: a process clause in
   Effect when the process is all the decision changes (259 (b)).
 - **Undo only where an option is one-way or costly** (2026-10-20, answer 260 (a): "we
   shouldn't mention that the impact is reversible, only mention when it ISN'T, since things
@@ -179,12 +182,18 @@ alternative not taken, in case practice argues for it.
   card, with its own number, Impact, options and recommendation, under one group heading
   that adds the shared context; `ok N-M` still takes every recommendation. When one answer
   fits every item, it stays one card naming each. It applies *A recommendation on every
-  decision* (2026-09-29) and *Plain integers* (2026-10-08). Not taken: one card with a pick
+  decision* (2026-09-29) and *Plain integers* (2026-10-08). On the answer page (2026-10-22,
+  *Both surfaces*; a design made in planning, not the operator's): a bundle is a layer
+  carrying its shared context, under a group band with a closed Shared context fold; the page
+  has no batch answer (decision 304, answered (b)). Not taken: one card with a pick
   per item (263 (b)), which would have reversed both; always one answer for all (263 (c)).
 - **Explain the mechanism** (2026-10-20, answer 268 (a), from the operator's words on a
   finding labelled "exposes an archived library in its public API": "How do importers break?
   what are the consequences?") — every effect, finding and risk says how it happens, who
-  meets it and when, and the before and after of the fix; the cold read checks it. Not
+  meets it and when, and the before and after of the fix; the cold read checks it. On the
+  answer page (2026-10-22, *Both surfaces*; a design made in planning, not the operator's):
+  the writer digest's floor and cold read state it, and the pre-publish runner's `mech` lint
+  catches an option's effect of four words or fewer. Not
   taken: the rule on findings and risk cards only (268 (b)).
 - **Source labels first, with a short name** (2026-10-20, answer 269 (a), widened: "Be sure
   to expand Fn style labels (in all forms, not just starting with "F") to include a
@@ -197,7 +206,8 @@ alternative not taken, in case practice argues for it.
   raised from one labelled item opens its title on it, **41 — F7 (oversize upload) · …**;
   the number stays the handle; a reply by label is read as that decision and echoed with the
   number, the label and the name. It reverses the build design that a label trails as a tag
-  (*Terms defined where shown*). The operator chose label-first on the answer page too,
+  (*Terms defined where shown*). The operator chose label-first on the answer page too (until
+  2026-10-22: since answer 313 the page puts the title first and the label after it, below),
   which narrows *No ids on an answer page* (2026-10-09) for a label with its short name;
   until the page carries a label, its rule stands as written. Not taken: label-first in
   chat only (269 (b)); numbering decisions by the label (269 (c)), which would have reversed
@@ -210,3 +220,43 @@ alternative not taken, in case practice argues for it.
   can show each finding (finding first, part of (a), lands with 265's confirmation); then the page is offered for such sets again. Other sets are as
   before. Not taken: every set to chat until then (270 (b)); the page offered as before
   (270 (c)).
+- **Both surfaces** (2026-10-21, the operator's correction after the 2026-10-20 builds, as the
+  librarian recorded it: "a decision-format change goes to both chat and the page unless there
+  is an obvious reason; ask when unclear"; that the librarian's stored card follows where it
+  applies is in the same record) — a change to how a decision is shown, written or checked
+  lands on the chat card (this skill), the answer page (the `decision-page` skill) and the
+  stored card where it applies, planned together; a surface left out names its obvious
+  reason, and one that is unclear goes to the operator. Not taken: a rule scoped to the
+  surface whose feedback raised it, the other surface following only by a decision of its own
+  (the practice the operator corrected, which kept 259's render and check, 261, 263 and 268
+  chat-only).
+- **The label after the title on an answer page** (2026-10-22, answer 313: "labels in TUI
+  chat on the title line, label after title in decision pages (we don't need to refer to it
+  by label as often on decision pages)"; the label muted, and the doc fallback following the
+  page, designs made in planning, not the operator's) — on an answer page and in its tick-box
+  doc a card's title comes first and its source label after it, muted, with its short name:
+  *Escape formula cells in exports? · F4 (formula cells in exports)*. Chat and the
+  librarian's stored headline keep the label first. It reverses the page half of *Source
+  labels first, with a short name* (269 (a)). Not taken: the label first on the page too, as
+  269's page half was built (2026-10-20); the short name only, the label in Context
+  (313 (b)); the label alone (313 (c)).
+- **Cards as rows under a group map** (2026-10-22, the operator's prototype feedback: "where
+  did the table of contents at the top that link down go? I liked that (and it can show the
+  groups/bundles too now). Even better would be to have all the cards collapsed by default to
+  create a similar view"; answer 334 (a), the rows keep *Use recommendation* and *Later*; and
+  answer 335's feedback: an open decision the page's cards depend on "should be included", a
+  reference should "jump to that decision", and its hover should show "the context section
+  and recommendation one-liners for each option with the recommended highlighted") — an
+  answer page opens on a map of its groups and every card closed to a one-line row, with
+  Expand all and Collapse all; each row keeps *Use recommendation* and *Later* beside it.
+  Every reference reads *N · short name*: a click opens its card when it is on the page, and
+  hovering or focusing it shows a tooltip; an open decision a card names goes on the page as
+  a card, and the page refuses a ref that is open or a card. The row's content, its effect
+  (the Effect across the options, *Impact across the options on an answer page* holding while
+  decision 335 is open) and Expand and Collapse all are designs made in the prototype; the
+  Context and each option's one-liner with the recommendation highlighted are the operator's
+  words (2026-10-22); the tooltip's layout (number and title, *your answer*, and the
+  off-page form: asked, answer, when) and the open-ref rule are designs made in planning, not
+  the operator's. Not taken: the "At a glance" map beside open cards (as built); every card
+  open by default; the click popup, as built; the prototype's name-only tooltip for a
+  decision not on the page; on-page references with no tooltip.

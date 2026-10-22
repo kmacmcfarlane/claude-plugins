@@ -11,13 +11,16 @@ connector, or another document tool the session lists), put the decisions in one
 Follow that tool's own instructions for creating and filling it (load its skill or guide
 first); this file sets only the layout.
 
-- One heading per group, in list order; under it, one section per decision, headed with its
+- One heading per group, in list order, with a short table of contents, as the page's map
+  gives one: its decisions by number and short name; a bundle's (a layer with `shared`) reads
+  `<title> — N decisions, <note>`, then a **Shared context:** line with its shared context; under it, one section per decision, headed with its
   number, short name and effect at tag size: `41 · Docs build home → sets where the docs build
-  runs, and who can publish`; a card with a `label` puts the label and its short name before
-  its own, `43 · D3 (site colour off the logo) · Theme colour → …`.
+  runs, and who can publish`; a card with a `label` puts the label and its short name after
+  its own, `43 · Theme colour · D3 (site colour off the logo) → …`.
 - In each section, the card's essentials as text: the TLDR bullets first, then **Context:**
   (the terms the card uses, then where the operator left it), then ⚠ one-way when it is and
-  **Impact:**, across all the options, one facet a line (`→ effect`, `later: …`, `reach: …`,
+  **Impact:**, across all the options, describing the system the work builds, never the review or
+  the process (what waiting holds up is its `later:` line), one facet a line (`→ effect`, `later: …`, `reach: …`,
   `⚠ undo: …` only when an option is one-way or costly, each on its own line), **Why now:**, **Why ask:** (class first), and the rec line
   `Rec (b) · basis strong — reason · unknown: …`. A card with
   `blocks` (every card, now) also gets the Impact table: a row per option, then the Wait row;

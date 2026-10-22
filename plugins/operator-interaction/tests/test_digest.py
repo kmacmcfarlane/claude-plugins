@@ -42,6 +42,7 @@ THRESHOLDS = {
     "bullets in the TLDR": r"\bc\.tldr\.length > (\d+)",
     "words in a summary Impact facet": r"words\(c\.impact\[k\]\) > (\d+)",
     "words in the card in all": r"\ball > (\d+)",
+    "words in an option's effect, at or under which mech fires": r"\bMECH_MIN = (\d+)",
 }
 
 
@@ -195,6 +196,12 @@ class WriterDigest(unittest.TestCase):
         self.assertTrue({"shape", "id", "grow", "rec-only", "page", "refs"} <= set(emitted))
         self.assertEqual(emitted["shape"], {"shape:"})
         self.assertEqual(emitted["rec-only"], {"impact:"})
+        # rule 259 on the page (7434 S1): the system lint prints under the Impact's start
+        self.assertEqual(emitted["process"], {"impact:"})
+        # rule 268 on the page (7434 S2): the mechanism lint too
+        self.assertEqual(emitted["mech"], {"impact:"})
+        # rule 263 on the page (7434 S4): the bundle lint is page-wide
+        self.assertEqual(emitted["group"], {"page:"})
         self.assertEqual(emitted["id"], {""})
         self.assertEqual(lint_problems(self.js, self.digest), [])
 
@@ -218,7 +225,8 @@ class WriterDigest(unittest.TestCase):
     def test_threshold_mutations(self):
         for old, new in [("TERSE = 14", "TERSE = 15"), ("MEDIUM_CAP = 6", "MEDIUM_CAP = 7"),
                          ("cw > 60", "cw > 61"), ("all > 1350", "all > 1400"),
-                         ("cs > 2", "cs > 3"), ("c.tldr.length > 2", "c.tldr.length > 3")]:
+                         ("cs > 2", "cs > 3"), ("c.tldr.length > 2", "c.tldr.length > 3"),
+                         ("MECH_MIN = 4", "MECH_MIN = 5")]:
             with self.subTest(old=old):
                 self.assertIn(old, self.js)
                 self.assertTrue(threshold_problems(self.js.replace(old, new), self.digest))

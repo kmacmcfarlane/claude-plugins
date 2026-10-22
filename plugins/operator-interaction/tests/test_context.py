@@ -6,7 +6,8 @@ Three parts:
   TLDR bullet that carries the recommendation, `contextBlock` (which renders Context, and an
   older card's `what` after it) and the render order (TLDR, then Context, then Impact), loaded
   from `assets/index.html` and run under node against `assets/cards.example.json` and broken
-  copies of it;
+  copies of it; a decision reference and its tooltip, and the reference rule (an open decision
+  a card names goes on the page as a card; every `[[N]]` is a card or a ref);
 - the pre-publish runner, `scripts/check_cards.js`: its exits and one-line errors, its lint
   for ids anywhere the page shows text, and its lints for counts and named things a card's
   context does not introduce;
@@ -15,6 +16,7 @@ Three parts:
 Run from the plugin dir: python3 -m unittest discover -s tests -q
 """
 
+import html as html_lib
 import json
 import pathlib
 import re
@@ -59,17 +61,20 @@ const out = ds.map(d => {
   if (!bad.length) {
     CARDS = d.cards; REFS = d.refs || {}; FOLLOW = d.follow;
     byN = new Map(CARDS.map(c => [String(c.n), c])); FOLLOW_KEYS = new Set(FOLLOW.map(f => f[0]));
-    blocks = CARDS.map(c => ({n: c.n, open: contextBlock(c), pop: contextBlock(c, true),
+    answers = d._answers || {};
+    blocks = CARDS.map(c => ({n: c.n, open: contextBlock(c), tip: tipHtml(String(c.n)),
                               why: fmtD(c.why), what: fmt(c.what || ""), card: cardHtml(c)}));
+    blocks.refTips = Object.fromEntries(Object.keys(REFS).map(k => [k, tipHtml(k)]));
+    blocks.slugs = {on: slug("41"), ref: slug("38")};
   }
-  return {bad, blocks};
+  return {bad, blocks, refTips: blocks.refTips || {}, slugs: blocks.slugs || {}};
 });
 process.stdout.write(JSON.stringify(out));
 """
 
 
-def run_pages(datasets):
-    out = subprocess.run([NODE, "-e", page_free_script() + HARNESS],
+def run_pages(datasets, script=None):
+    out = subprocess.run([NODE, "-e", (script or page_free_script()) + HARNESS],
                          input=json.dumps(datasets), capture_output=True, text=True,
                          timeout=60)
     if out.returncode != 0:
@@ -77,8 +82,8 @@ def run_pages(datasets):
     return json.loads(out.stdout)
 
 
-def run_page(data):
-    return run_pages([data])[0]
+def run_page(data, script=None):
+    return run_pages([data], script)[0]
 
 
 def with_tldr(bullet):
@@ -209,18 +214,18 @@ class DecisionPageContext(unittest.TestCase):
         d["cards"][0]["context"] = '<img src=x onerror="alert(1)" > the `main` branch ([[38]])'
         d["cards"][0]["what"] = "<script >x</script >"
         blk = run_page(d)["blocks"][0]
-        for h in (blk["open"], blk["pop"]):
-            self.assertNotIn("<img", h)
-            self.assertNotIn("<script", h)
-            self.assertIn("&lt;img", h)
-            self.assertIn("<code>main</code>", h)
-        self.assertIn('class="slug"', blk["open"])
-        self.assertIn('data-ref="38"', blk["open"])
-        # the popup renders slugs as text, never a nested button
-        self.assertIn('<span class="slug-t">38', blk["pop"])
-        self.assertNotIn("<button", blk["pop"])
+        h = blk["open"]
+        self.assertNotIn("<img", h)
+        self.assertNotIn("<script", h)
+        self.assertIn("&lt;img", h)
+        self.assertIn("<code>main</code>", h)
+        self.assertIn('class="slug"', h)
+        self.assertIn('data-ref="38"', h)
+        # a reference is never a popup trigger; one not on the page shows its tooltip only
+        self.assertNotIn("aria-haspopup", h)
+        self.assertNotIn('data-goto="38"', h)
 
-    def test_the_open_card_and_the_popup_open_on_the_tldr_then_context_then_impact(self):
+    def test_the_open_card_opens_on_the_tldr_then_context_then_impact(self):
         d = example()
         d["cards"][1]["what"] = "Where the old links lead after the move."
         for blk in run_page(d)["blocks"]:
@@ -235,15 +240,362 @@ class DecisionPageContext(unittest.TestCase):
             if blk["n"] == 42:
                 self.assertNotIn(blk["what"], bg)
                 self.assertIn(blk["what"], blk["open"])
+        # the on-page popup is gone (answer 335's feedback): a reference's tooltip shows no
+        # Context block and no Impact, only its peek (ReferenceTooltip)
         html = PAGE.read_text()
-        pop = html[html.index("function fillPop"):html.index("function place(")]
-        self.assertLess(pop.index('class="tldr"'), pop.index("contextBlock(c,true)"))
-        self.assertLess(pop.index("contextBlock(c,true)"), pop.index("tagEffect(c)"))
-        self.assertEqual(pop.count("tagEffect(c)"), 1)
+        self.assertNotIn("function fillPop", html)
+        tip = html[html.index("function tipHtml("):html.index("/* ---- end of the page-free part")]
+        self.assertNotIn("contextBlock(", tip)
+        self.assertNotIn("tagEffect(", tip)
 
     def test_the_page_free_part_holds_no_lookbehind(self):
         # a lookbehind is a syntax error in an older browser, and stops the whole script
         self.assertNotIn("(?<", page_free_script())
+
+
+TIP_ONE_LINE = "+(shown(o[4])?'<span class=\"tip-l\"> — '+fmtPlain(o[4])+'</span>':'')"
+
+
+def tip_text(h):
+    return html_lib.unescape(re.sub(r"<[^>]+>", "", h))
+
+
+def tip_problems(tip, card, answer="none yet"):
+    """What a card's tooltip lacks: its Context, each option as (x) title — one line in letter
+    order, the recommended one bold and marked, and the answer."""
+    out = []
+    text = tip_text(tip)
+    if "Context" not in text or tip_text(card["context"].split("[[")[0])[:40] not in text:
+        out.append("no Context")
+    at = -1
+    for o in card["o"]:
+        want = "(%s) %s — %s" % (o[0], o[3], o[4].split("[[")[0])
+        i = text.find(want)
+        if i < 0 or i < at:
+            out.append("option (%s) is not shown as (x) title — one line, in order" % o[0])
+        at = max(at, i)
+    if card["rec"] and not re.search(r'<li class="isrec"><span class="ol">\(%s\)</span>[^<]*'
+                                     r'(<span class="tip-l">.*?</span>)?<span class="pill rec">recommended'
+                                     % card["rec"], tip):
+        out.append("the recommended option is not marked")
+    if "your answer: " + answer not in text:
+        out.append("the answer is not shown")
+    return out
+
+
+def TIP_FNS():
+    """The page's showTip and hideTip, as written."""
+    html = PAGE.read_text()
+    return html[html.index("function showTip("):html.index("const hoverable=")]
+
+
+DESCRIBE_HARNESS = r"""
+const mk = ref => ({dataset: {ref}, attrs: {}, setAttribute(k, v) { this.attrs[k] = [v, tip.innerHTML]; },
+  removeAttribute(k) { delete this.attrs[k]; }});
+const tip = {hidden: true, innerHTML: "", style: {}, classList: {add() {}, remove() {}}};
+const place = () => {}, tipHtml = k => "tip " + k;
+let tipFor = null, tipPinned = false;
+const a = mk("41"), b = mk("38"), log = [];
+showTip(a); log.push({a: a.attrs["aria-describedby"] || null});
+showTip(b); log.push({a: a.attrs["aria-describedby"] || null, b: b.attrs["aria-describedby"] || null});
+hideTip(); log.push({b: b.attrs["aria-describedby"] || null, hidden: tip.hidden});
+process.stdout.write(JSON.stringify(log));
+"""
+
+
+def describe_problems(fns):
+    out = subprocess.run([NODE, "-e", fns + DESCRIBE_HARNESS], capture_output=True, text=True, timeout=60)
+    if out.returncode != 0:
+        return ["node failed: " + out.stderr[:200]]
+    a1, a2, a3 = json.loads(out.stdout)
+    probs = []
+    # each set while the tooltip already holds its reference's text
+    if a1["a"] != ["tip", "tip 41"] or a2["b"] != ["tip", "tip 38"]:
+        probs.append("aria-describedby is not set once the tooltip is shown and filled")
+    if a2["a"] is not None or a3["b"] is not None or not a3["hidden"]:
+        probs.append("aria-describedby stays on a reference whose tooltip is gone")
+    return probs
+
+
+# the page-bound tooltip and click code, run under node on stand-ins for the page: the slice from the tooltip
+# to the end of the click listener, with every listener it adds caught
+SHELL_HARNESS = r"""
+const handlers = {};
+const document = {addEventListener: (t, f) => { handlers[t] = f; }, activeElement: null,
+  documentElement: {clientWidth: 800, style: {}}, querySelectorAll: () => [], getElementById: () => null};
+const classes = new Set();
+const tipEl = {hidden: true, innerHTML: "", style: {}, offsetWidth: 100, offsetHeight: 50,
+  classList: {add: c => classes.add(c), remove: (...cs) => cs.forEach(c => classes.delete(c)), contains: c => classes.has(c)}};
+const $ = s => s === "#tip" ? tipEl : null;
+const matchMedia = () => ({matches: true}), innerHeight = 800, scrollX = 0, scrollY = 0;
+const getSelection = () => "";
+const calls = [];
+const choose = (...a) => calls.push("choose"), write = (...a) => calls.push("write");
+const stepSection = () => {}, toggleOption = () => {}, setAll = () => {}, tipHtml = k => "tip " + k;
+let byN = new Map([["41", {rec: "b"}]]), readonly = false, answers = {}, timers = {};
+const el = (sels, dataset) => ({dataset: dataset || {}, attrs: {},
+  closest(s) { return sels.includes(s) ? this : null; }, setAttribute(k, v) { this.attrs[k] = v; },
+  removeAttribute(k) { delete this.attrs[k]; }, getBoundingClientRect: () => ({left: 0, top: 0, bottom: 10})});
+/* each event a second after the last, unless dt says otherwise (a double tap) */
+let now = 0;
+const ev = (target, dt) => { now += dt == null ? 1000 : dt;
+  const e = {target, pd: false, sp: false, timeStamp: now}; e.preventDefault = () => { e.pd = true; };
+  e.stopPropagation = () => { e.sp = true; }; return e; };
+""" + "%s" + r"""
+const ref = el([".slug", "[data-ref]", "button"], {ref: "38"}), ref2 = el([".slug", "[data-ref]", "button"], {ref: "39"});
+const plain = el([]), tipBody = el(["#tip"]), quick = el(["[data-quick]", "button"], {quick: "rec", n: "41"});
+const log = {};
+handlers.click(ev(ref)); log.pinned = tipPinned; log.pinnedClass = classes.has("pinned");
+handlers.mouseover(ev(plain)); log.afterLeave = {shown: !tipEl.hidden, pinned: tipPinned};
+showTip(ref2); log.afterMove = {pinned: tipPinned, pinnedClass: classes.has("pinned")};
+handlers.click(ev(ref)); hideTip();
+log.afterHide = {pinned: tipPinned, shown: !tipEl.hidden, classes: [...classes]};
+/* a tap where the tooltip covers a control: the tooltip takes it when the page's CSS gives the tooltip, with
+   the classes it has now, pointer-events auto; a radio under the tap gets its change event */
+const radio = el(["input"]); radio.radio = {type: "radio", name: "d41", value: "b"};
+const takes = () => !tipEl.hidden && (TIP_BASE || TIP_CLASSES.some(c => classes.has(c)));
+const tapOver = (under, dt) => { const t = takes() ? tipBody : under, e = ev(t, dt), n = calls.length;
+  handlers.click(e); if (t === under && under.radio && !e.pd) handlers.change({target: under.radio});
+  return {calls: calls.slice(n), pd: e.pd, sp: e.sp, shown: !tipEl.hidden}; };
+handlers.click(ev(ref));
+log.tap = tapOver(quick);
+/* a tooltip shown by focus, unpinned: over a quick answer, then over a radio */
+document.activeElement = ref; handlers.focusin(ev(ref)); log.focusQuick = tapOver(quick);
+handlers.focusin(ev(ref)); log.focusRadio = tapOver(radio);
+/* pin, close with a second tap (focus stays), the pointer off and back, then a tap on the tooltip */
+handlers.click(ev(ref)); handlers.click(ev(ref)); handlers.mouseover(ev(plain)); handlers.mouseover(ev(ref));
+log.hoverBack = tapOver(quick);
+/* the pointer moving from a reference into its tooltip keeps it open */
+document.activeElement = null; handlers.mouseover(ev(ref2)); handlers.mouseover(ev(tipBody));
+log.insideTip = {shown: !tipEl.hidden};
+/* a double tap on a tooltip shown by focus: the first closes it, the second lands where it was */
+document.activeElement = ref; handlers.focusin(ev(ref));
+log.dblRadio = [tapOver(radio), tapOver(radio, 100)];
+handlers.focusin(ev(ref));
+log.dblQuick = [tapOver(quick), tapOver(quick, 100)];
+/* focus moving to a control that is not a reference hides a shown tooltip */
+document.activeElement = null; handlers.mouseover(ev(ref2)); handlers.focusin(ev(plain));
+log.focusOther = {shown: !tipEl.hidden};
+/* the pointer leaving keeps a tooltip shown by focus open while its reference has focus */
+document.activeElement = ref; handlers.focusin(ev(ref)); handlers.mouseover(ev(plain));
+log.focusLeave = {shown: !tipEl.hidden};
+process.stdout.write(JSON.stringify(log));
+"""
+
+
+def shell_log(html):
+    from test_sticky import rules, decls
+    r = rules(html)
+    auto = lambda sel: decls(r.get(sel, "")).get("pointer-events") == "auto"
+    classes = [sel[len(".tip."):] for sel in r if re.fullmatch(r"\.tip\.[a-z-]+", sel) and auto(sel)]
+    code = html[html.index('const tip=$("#tip")'):html.index('addEventListener("resize"')]
+    script = (SHELL_HARNESS % code).replace("TIP_BASE", "true" if auto(".tip") else "false").replace(
+        "TIP_CLASSES", json.dumps(classes))
+    out = subprocess.run([NODE, "-e", script], capture_output=True, text=True, timeout=60)
+    if out.returncode != 0:
+        raise AssertionError("node failed: " + out.stderr)
+    return json.loads(out.stdout)
+
+
+def pinned_problems(log):
+    out = []
+    if not (log["pinned"] and log["pinnedClass"]):
+        out.append("a tap does not pin the tooltip")
+    if not (log["afterLeave"]["shown"] and log["afterLeave"]["pinned"]):
+        out.append("the pointer leaving hides a pinned tooltip")
+    if log["afterMove"]["pinned"] or log["afterMove"]["pinnedClass"]:
+        out.append("showing another reference keeps the tooltip pinned")
+    if log["afterHide"]["pinned"] or log["afterHide"]["shown"] or log["afterHide"]["classes"]:
+        out.append("hiding leaves the tooltip pinned")
+    for k in ("tap", "focusQuick", "focusRadio", "hoverBack"):
+        tap = log[k]
+        if tap["calls"]:
+            out.append("a tap on the shown tooltip answered a decision (%s): %s" % (k, tap["calls"]))
+        elif not (tap["pd"] and tap["sp"]) or tap["shown"]:
+            out.append("a tap on the shown tooltip does not close it and stop there (%s)" % k)
+    if not log["insideTip"]["shown"]:
+        out.append("the pointer inside the tooltip hides it")
+    for k in ("dblRadio", "dblQuick"):
+        if log[k][0]["calls"] or log[k][1]["calls"]:
+            out.append("a double tap on the tooltip answered a decision (%s): %s"
+                       % (k, log[k][0]["calls"] + log[k][1]["calls"]))
+    if log["focusOther"]["shown"]:
+        out.append("focus moving to another control keeps the tooltip shown")
+    if not log["focusLeave"]["shown"]:
+        out.append("the pointer leaving hides a tooltip whose reference has focus")
+    return out
+
+
+def pin_problems(html):
+    click = html[html.index('document.addEventListener("click"'):html.index('addEventListener("resize"')]
+    out = []
+    if "else if(tipFor===s&&tipPinned)hideTip();else{showTip(s);pinTip()}" not in click:
+        out.append("a tap on a reference not on the page shows nothing")
+    if "if(tipPinned)hideTip();" not in click:
+        out.append("a pinned tooltip is not closed by a tap elsewhere")
+    keys = html[html.index('document.addEventListener("keydown"'):]
+    if 'e.key==="Escape"&&tipFor)hideTip()' not in keys:
+        out.append("Escape does not close the tooltip")
+    return out
+
+
+def slug_problems(on, ref):
+    out = []
+    if not (on.startswith("<button") and 'data-goto="41"' in on):
+        out.append("an on-page reference is not a link to its card")
+    if not ref.startswith("<button") or "data-goto" in ref:
+        out.append("a refs reference is not a tooltip-only reference")
+    if "aria-describedby" in on + ref:
+        out.append("a reference is described by a tooltip that is not shown")
+    if "aria-haspopup" in on + ref:
+        out.append("a reference opens a popup")
+    return out
+
+
+@unittest.skipUnless(NODE, "node is not installed")
+class ReferenceTooltip(unittest.TestCase):
+    """Every reference reads N · short name: on the page it opens its card; hovering or focusing it
+    shows a tooltip (answer 335's feedback, 7434 M8)."""
+
+    def test_the_references(self):
+        s = run_page(example())["slugs"]
+        self.assertEqual(slug_problems(s["on"], s["ref"]), [])
+        self.assertIn(">41 · Docs build home</button>", s["on"])
+        self.assertIn(">38 · build cache reset</button>", s["ref"])
+        # mutants: an on-page reference without its link; a refs one as a link
+        self.assertIn("an on-page reference is not a link to its card",
+                      slug_problems(s["on"].replace(' data-goto="41"', ""), s["ref"]))
+        self.assertIn("a refs reference is not a tooltip-only reference",
+                      slug_problems(s["on"], s["ref"].replace("<button", '<button data-goto="38"')))
+        self.assertIn("a reference is described by a tooltip that is not shown",
+                      slug_problems(s["on"].replace("<button", '<button aria-describedby="tip"'), s["ref"]))
+
+    def test_the_tooltip_describes_its_reference_only_while_shown(self):
+        # showTip and hideTip, run under node on stand-ins for the tooltip and two references
+        self.assertEqual(describe_problems(TIP_FNS()), [])
+        # mutants: the attribute left on after hiding; set before the tooltip is filled
+        fns = TIP_FNS()
+        self.assertTrue(describe_problems(fns.replace('if(tipFor)tipFor.removeAttribute("aria-describedby");', "")))
+        moved = fns.replace(';el.setAttribute("aria-describedby","tip");', ";").replace(
+            "tipFor=el;tip.innerHTML", 'el.setAttribute("aria-describedby","tip");tipFor=el;tip.innerHTML')
+        self.assertNotEqual(moved, fns)
+        self.assertTrue(describe_problems(moved))
+
+    def test_a_shown_tooltip_takes_the_tap_and_answers_nothing(self):
+        html = PAGE.read_text()
+        self.assertEqual(pinned_problems(shell_log(html)), [])
+        mutants = {
+            "pointer-events back to none": (".tip.shown{pointer-events:auto;", ".tip.shown{pointer-events:none;",
+                                             "a tap on the shown tooltip answered a decision"),
+            "the old pinned-only pointer rule": (".tip.shown{pointer-events:auto;cursor:pointer}",
+                                                  ".tip.pinned{pointer-events:auto}",
+                                                  "a tap on the shown tooltip answered a decision (focusQuick)"),
+            "the tooltip guard dropped": ('if(e.target.closest("#tip")){e.preventDefault();e.stopPropagation();hideTip();tipClosedAt=e.timeStamp;return}', "",
+                                          "a tap on the shown tooltip does not close it and stop there"),
+            "the double-tap swallow dropped": ('if(e.timeStamp-tipClosedAt<500){e.preventDefault();e.stopPropagation();return}', "",
+                                               "a double tap on the tooltip answered a decision"),
+            "focus elsewhere keeps the tooltip": ('if(s)showTip(s);else if(tipFor)hideTip()', "if(s)showTip(s)",
+                                                  "focus moving to another control keeps the tooltip shown"),
+            "leaving hides a focused reference's tooltip": ("&&tipFor!==document.activeElement)hideTip()", ")hideTip()",
+                                                            "the pointer leaving hides a tooltip whose reference has focus"),
+            "mouseover hides inside the tooltip": ('!e.target.closest("#tip")&&tipFor', "tipFor",
+                                                   "the pointer inside the tooltip hides it"),
+            "hideTip keeps the pin": ("tipFor=null;tipPinned=false;", "tipFor=null;", "hiding leaves the tooltip pinned"),
+            "leaving hides a pinned one": ("tipFor&&!tipPinned&&tipFor!==", "tipFor&&tipFor!==",
+                                           "the pointer leaving hides a pinned tooltip"),
+            "moving keeps the pin": ('tipFor.removeAttribute("aria-describedby");tipPinned=false;tip.classList.remove("pinned")}',
+                                     'tipFor.removeAttribute("aria-describedby")}',
+                                     "showing another reference keeps the tooltip pinned"),
+        }
+        for name, (old, new, want) in mutants.items():
+            with self.subTest(mutant=name):
+                self.assertEqual(html.count(old), 1, name)
+                probs = pinned_problems(shell_log(html.replace(old, new)))
+                self.assertTrue(any(p.startswith(want) for p in probs), (name, probs))
+
+    def test_a_tap_on_a_reference_not_on_the_page_pins_its_tooltip(self):
+        # a touch screen has no hover and does not focus a tapped button: the click shows it
+        self.assertEqual(pin_problems(PAGE.read_text()), [])
+        mutant = PAGE.read_text().replace("else{showTip(s);pinTip()}", "")
+        self.assertIn("a tap on a reference not on the page shows nothing", pin_problems(mutant))
+
+    def test_a_cards_tooltip(self):
+        d = example()
+        res = run_page(d)
+        for blk, c in zip(res["blocks"], d["cards"]):
+            self.assertEqual(tip_problems(blk["tip"], c), [], c["n"])
+        # an answer given shows in it, with the operator's words
+        d["_answers"] = {"41": {"choice": "b", "words": "ship it"}}
+        tip = run_page(d)["blocks"][0]["tip"]
+        self.assertEqual(tip_problems(tip, d["cards"][0], "(b) · rec — “ship it”"), [])
+
+    def test_mutant_title_alone(self):
+        script = page_free_script()
+        self.assertIn(TIP_ONE_LINE, script)
+        d = example()
+        tip = run_page(d, script.replace(TIP_ONE_LINE, ""))["blocks"][0]["tip"]
+        self.assertTrue(any("is not shown as (x) title — one line" in p for p in tip_problems(tip, d["cards"][0])))
+
+    def test_a_refs_tooltip(self):
+        tip = tip_text(run_page(example())["refTips"]["38"])
+        self.assertIn("Asked", tip)
+        self.assertIn("Clear the docs build cache?", tip)
+        self.assertIn("Answera — clear it", tip)
+        self.assertIn("Answered earlier this month · not on this page", tip)
+
+    def test_the_tooltip_is_escaped(self):
+        d = example()
+        d["cards"][0]["context"] = '<script>x</script> the cache ([[38]])'
+        d["cards"][0]["o"][0][3] = '<img src=x onerror="alert(1)">'
+        d["refs"]["38"]["q"] = "<script>y</script>"
+        res = run_page(d)
+        for h in (res["blocks"][0]["tip"], res["refTips"]["38"]):
+            self.assertNotIn("<script", h)
+            self.assertNotIn("<img", h)
+        self.assertIn("&lt;img src=x onerror=&quot;alert(1)&quot;&gt;", res["blocks"][0]["tip"])
+        # slugs in it are text, never a nested control
+        self.assertNotIn("<button", res["blocks"][0]["tip"])
+
+
+@unittest.skipUnless(NODE, "node is not installed")
+class ReferenceRule(unittest.TestCase):
+    """An open decision a card names goes on the page as a card; a ref is never a card; every [[N]]
+    is a card or a ref; an excerpt is not scanned (answer 335's feedback, 7434 M8.1)."""
+
+    def bad(self, d):
+        return run_page(d)["bad"]
+
+    def test_the_example_passes(self):
+        self.assertEqual(self.bad(example()), [])
+
+    def test_each_refusal(self):
+        open_ = "refs 38: decision 38 is still open; put its card on the page instead of a ref"
+        d = example(); d["refs"]["38"]["when"] = "open"
+        self.assertIn(open_, self.bad(d))
+        d = example(); d["refs"]["38"]["a"] = "not yet answered"
+        self.assertIn(open_, self.bad(d))
+        d = example(); d["refs"]["41"] = dict(d["refs"]["38"])
+        self.assertIn("refs 41: decision 41 is a card on the page; drop it from refs", self.bad(d))
+        stray = lambda bad, at: any(b.startswith(at + ": [[999]] is neither a card on the page nor a ref")
+                                    for b in bad)
+        d = example(); d["cards"][0]["context"] += " See [[999]]."
+        self.assertTrue(stray(self.bad(d), "card 41: context"))
+        d = example(); d["cards"][0]["detail"]["why"][1][0]["b"].append("As [[999]] said.")
+        self.assertTrue(stray(self.bad(d), "card 41: detail"))
+        d = example(); d["page"]["lede"] = "Read [[999]] first."
+        self.assertTrue(stray(self.bad(d), "page.lede"))
+        d = example(); d["layers"][1][2] = "After [[999]]."
+        self.assertTrue(stray(self.bad(d), "layer details note"))
+        d = example(); d["layers"][1].append("Shared since [[999]].")
+        self.assertTrue(stray(self.bad(d), "layer details shared"))
+
+    def test_an_excerpt_holding_a_slug_passes(self):
+        d = example()
+        d["cards"][0]["x_excerpt"] = {"text": "see [[999]]", "lang": "text"}
+        self.assertEqual([b for b in self.bad(d) if "999" in b], [])
+        # mutant: the same text outside an excerpt is refused
+        d["cards"][0]["x_excerpt"] = {"text": "see [[999]]", "lang": "text", "other": 1}
+        self.assertTrue([b for b in self.bad(d) if "999" in b])
 
 
 def runner(data=None, *, path=None, cwd=None, script=RUNNER):

@@ -61,7 +61,7 @@ renders what the operator read instead of composing it again.
     impact: → <effect across the options: (a) …; (b) …> · later: <wait> · reach: <reach> [· ⚠ undo: <the one-way or costly option's undo>]
     if left: <a round ask only: each leftover finding — what it would break>
     round costs: <a round ask only: time, quota, the operator's attention>
-    (a) <option> — <its effect> [— reach: <who or what>] [— ⚠ undo: <how, at what cost, or why it cannot be>] [— cost: <time, money, quota, attention>]
+    (a) <option> — <its effect, by its mechanism> [— reach: <who or what>] [— ⚠ undo: <how, at what cost, or why it cannot be>] [— cost: <time, money, quota, attention>]
     (b) <option> — <its effect>
     (z) decide later — <what waiting costs; the deadline, if any>
     to act (a): <an option that asks the operator to act only: 1. <step> 2. <step> …>
@@ -148,7 +148,10 @@ renders what the operator read instead of composing it again.
   each option's in a few words, `(a) …; (b) …`, where their outcomes differ; written from
   the option lines, never from the recommendation alone), Wait (what waiting costs, what it
   blocks), Reach, and `⚠ undo:` only when some option is one-way or costly to undo — in
-  the form above; Cost stays on the option lines. An `impact:`
+  the form above; Cost stays on the option lines. Effect and Reach are about the thing the
+  work builds, never the process, which is Wait (rule 259); each option line gives its effect
+  by its mechanism, how it happens, who meets it and when, and the before and after (rule
+  268). An `impact:`
   line stored before Effect covered the options (2026-10-14) may give the recommended
   option's effect alone: it is read as written, never rewritten at render time, and is
   rewritten across the options only when the card is revised for another reason. Its
