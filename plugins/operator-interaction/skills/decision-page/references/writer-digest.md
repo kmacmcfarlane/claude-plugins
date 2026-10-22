@@ -24,10 +24,11 @@ beside it: *F7 (oversize upload)*.
 ## Text
 
 Every text field is plain text: the page escapes it, and only two marks render: `` `code` ``
-in backticks, and `[[N]]`, a decision slug (a decision on the page, or a `refs` key). Links
+in backticks, and `[[N]]`, a decision slug (a decision on the page, or a `refs` key; the page
+refuses any other N). Links
 (`https://` only) are clickable in the medium and high levels, in the fold parts at every
 level and in an option's **More** detail; nowhere else (not a heading, a visible part's
-summary, an option's `impact`, `act`, the popup or a slug). `page.doc.url`
+summary, an option's `impact`, `act`, a tooltip or a slug). `page.doc.url`
 must start `https://`, or it is not shown.
 
 ## Top level
@@ -38,7 +39,7 @@ must start `https://`, or it is not shown.
 | `layers` | yes | `[[key, title, note, shared], …]`, the groups in display order; `shared` optional: a bundle's shared context, the terms and source every card in it uses, in plain words, which a card's Context may lean on; `note` then says what the cards share. A bundle holds two or more whole item cards |
 | `follow` | yes | copied from below as it stands |
 | `cards` | yes | one per decision, in the `decisions` skill's order |
-| `refs` | no | `{"N": {short, q, a, when}}` for a slugged decision not on the page |
+| `refs` | no | `{"N": {short, q, a, when}}` for a slugged decision not on the page, answered only: one still open goes on the page as a card; never a number that is a card |
 
 `follow`, exactly:
 
@@ -155,7 +156,9 @@ a bad or duplicate `n`; option letters not single `a`–`z`, out of order, or no
 a `rec` not among them, or null without `norec`; a missing required field; empty `rev`; blank
 `context`; a TLDR bullet, at any level, opening on Rec or Recommend… or saying I or we
 recommend; an `impact` missing effect, wait or reach, or with an undo or cost not text; a
-`label` not `{id, name}`; a layer's `shared` not text; a `basis` outside the four; a `follow` other than the
+`label` not `{id, name}`; a layer's `shared` not text; a `refs` entry still open (`when`
+`open`, or `a` not yet answered) or for a card on the page; a `[[N]]` neither a card nor a
+`refs` entry (an excerpt is not read); a `basis` outside the four; a `follow` other than the
 six; a non-number `refs` key; a ⚠ card without `blocks`, or a `blocks` key not a letter but
 `z`, or a row without its text, or a `oneway` not true or false; a row flagged `oneway: true`
 without its `undo`; an `act` not keyed by letters but `z`, a list empty or

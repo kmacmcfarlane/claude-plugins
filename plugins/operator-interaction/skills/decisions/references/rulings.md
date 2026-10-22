@@ -81,8 +81,9 @@ alternative not taken, in case practice argues for it.
   optional on every part of a page card: a small call may carry none; a wide or one-way
   decision carries the most. The pre-publish runner lints thin depth only where a part has
   levels. Not taken: visible levels expected on every card; small calls exempt by a mark.
-- **TLDR first on an answer page** (2026-10-09, the operator's direction) — the open card and
-  the popup show the TLDR, then Context, then the Impact. Context still introduces the terms
+- **TLDR first on an answer page** (2026-10-09, the operator's direction) — the open card
+  shows the TLDR, then Context, then the Impact; a reference's tooltip shows a card's Context
+  and its options (since 2026-10-22, below). Context still introduces the terms
   the card uses, and no longer restates what the TLDR decides. Not taken: Context first
   (2026-10-08).
 - **Level shapes on an answer page** (2026-10-09, the operator's direction; the data shape,
@@ -239,3 +240,23 @@ alternative not taken, in case practice argues for it.
   labels first, with a short name* (269 (a)). Not taken: the label first on the page too, as
   269's page half was built (2026-10-20); the short name only, the label in Context
   (313 (b)); the label alone (313 (c)).
+- **Cards as rows under a group map** (2026-10-22, the operator's prototype feedback: "where
+  did the table of contents at the top that link down go? I liked that (and it can show the
+  groups/bundles too now). Even better would be to have all the cards collapsed by default to
+  create a similar view"; answer 334 (a), the rows keep *Use recommendation* and *Later*; and
+  answer 335's feedback: an open decision the page's cards depend on "should be included", a
+  reference should "jump to that decision", and its hover should show "the context section
+  and recommendation one-liners for each option with the recommended highlighted") — an
+  answer page opens on a map of its groups and every card closed to a one-line row, with
+  Expand all and Collapse all; each row keeps *Use recommendation* and *Later* beside it.
+  Every reference reads *N · short name*: a click opens its card when it is on the page, and
+  hovering or focusing it shows a tooltip; an open decision a card names goes on the page as
+  a card, and the page refuses a ref that is open or a card. The row's content, its effect
+  (the Effect across the options, *Impact across the options on an answer page* holding while
+  decision 335 is open) and Expand and Collapse all are designs made in the prototype; the
+  Context and each option's one-liner with the recommendation highlighted are the operator's
+  words (2026-10-22); the tooltip's layout (number and title, *your answer*, and the
+  off-page form: asked, answer, when) and the open-ref rule are designs made in planning, not
+  the operator's. Not taken: the "At a glance" map beside open cards (as built); every card
+  open by default; the click popup, as built; the prototype's name-only tooltip for a
+  decision not on the page; on-page references with no tooltip.

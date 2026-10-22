@@ -305,7 +305,7 @@ LINTED = ["History scrub (4151)", "Operator activity records (0999, 3e8e)", "Che
           "see work item 4151", "per commit 8ea8a3c", "as decision 151 said", "per answer 201 (c)",
           "the format (2ff6)", "decision-page-tldr-first-levels-shaped-s-1e00", "item #4151"]
 CLEAN = ["each item added", "the item faded", "commit 100 lines", "item 2026",
-         "end-to-end-cafe", "since then (2026)", "since (1999)", "as [[151]] said",
+         "end-to-end-cafe", "since then (2026)", "since (1999)", "as [[38]] said",
          "see https://x.example.com/a1b2c3d4", "the `.cache/1e00` path", "keeps #2d56c8",
          "from 2026-10-09", "answer 2 questions", "card 3 of 5", "a wait (1500 ms)"]
 
@@ -338,7 +338,8 @@ class IdRunner(unittest.TestCase):
     def test_a_decision_by_number_is_told_its_slug(self):
         d = example()
         c43(d)["why"] = "as decision 151 said"
-        self.assertIn("decision 151 looks like an id (why): name the decision by its slug [[151]]",
+        self.assertIn("decision 151 looks like an id (why): name the decision by its slug [[151]], "
+                      "with its card or a refs entry",
                       runner(d)[1])
 
     def test_forms_that_are_not_ids_stay_clean(self):
@@ -375,9 +376,9 @@ class SourceLabel(unittest.TestCase):
                       '<span class="slabn">(site colour off the logo)</span></span>', h)
         # a card with no label keeps its title alone
         self.assertIn("<h3>Docs build home</h3>", card(res, 41)["html"])
-        # the map and the popup use the same title
+        # the row and the tooltip use the same title
         html = PAGE.read_text()
-        for a, b in (("function renderHud", "function renderCards"), ("function fillPop", "function place(")):
+        for a, b in (("const rowHtml=", "const quickHtml="), ("function tipHtml(", "/* ---- end of the page-free part")):
             self.assertIn("titleHtml(c)", html[html.index(a):html.index(b)])
 
     def test_the_label_is_escaped(self):

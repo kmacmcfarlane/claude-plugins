@@ -307,7 +307,7 @@ function labelName(c, say) {
 
 /* ---- the id lint: no machine-readable id anywhere the page shows text; the page is the reader's only context ---- */
 const idLine = ([t, n], at) => t + " looks like an id (" + at + "): "
-  + (n ? "name the decision by its slug [[" + n + "]]" : "name the thing by its short name or title, a decision by its slug [[N]]")
+  + (n ? "name the decision by its slug [[" + n + "]], with its card or a refs entry" : "name the thing by its short name or title, a decision by its slug [[N]]")
   + "; the page is the reader's only context; leave it if it is a term the reader knows (S3, UTF-8)";
 /* the texts a card shows, by part: everything but rev, n, L and the option letters */
 function cardTexts(c) {

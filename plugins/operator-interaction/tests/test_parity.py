@@ -506,5 +506,157 @@ class LabelText(unittest.TestCase):
         self.assertTrue(label_text_problems(r, p, ru.replace("since answer 313 the page puts", "the page puts")))
 
 
+# ---- V1 (the page shell): the group map, the rows and their quick answers
+
+CARD_HARNESS = r"""
+const d = JSON.parse(require("fs").readFileSync(0, "utf8"));
+const bad = check(d);
+let out = {bad};
+if (!bad.length) {
+  CARDS = d.cards; REFS = d.refs || {}; FOLLOW = d.follow; LAYERS = d.layers;
+  byN = new Map(CARDS.map(c => [String(c.n), c])); FOLLOW_KEYS = new Set(FOLLOW.map(f => f[0]));
+  out.cards = CARDS.map(c => ({n: c.n, html: cardHtml(c), row: rowHtml(c)}));
+  out.map = mapHtml();
+  out.set = (d._hows || []).map(how => { const ds = [{open: false}, {open: true}]; setAll(ds, how); return ds.map(x => x.open); });
+}
+process.stdout.write(JSON.stringify(out));
+"""
+
+
+def quick_problems(h, rec):
+    """Quick answers inside the row's open-and-close control, or the wrong ones beside it."""
+    out = []
+    inside = h[h.index("<details"):h.rindex("</details>")]
+    if "data-quick" in inside:
+        out.append("a quick answer sits inside the row's toggle")
+    tail = h[h.rindex("</details>"):]
+    if ('data-quick="rec"' in tail) != rec:
+        out.append("Use recommendation is wrong for the card")
+    if 'data-quick="later"' not in tail:
+        out.append("no Later")
+    return out
+
+
+def row_extra_problems(row, cls):
+    out = []
+    if cls in row:
+        out.append("the row shows the class")
+    if "depends on" in row:
+        out.append("the row shows what the card depends on")
+    return out
+
+
+def row_order_problems(row):
+    marks = ['class="tw"', 'class="n"', "<h3>", 'class="pill warn"', 'class="rrec"', 'class="ans"']
+    pos = [row.find(m) for m in marks]
+    return [] if -1 not in pos and pos == sorted(pos) else ["the row's parts are out of order or missing"]
+
+
+def map_problems(m, want):
+    got = re.findall(r'<button class="btn" type="button" data-go="layer-([^"]+)">([^<]*)</button>', m)
+    out = [] if got == want else ["the map's groups are %r, not %r" % (got, want)]
+    for label in ("Expand all", "Collapse all"):
+        if ">%s</button>" % label not in m:
+            out.append("no " + label)
+    return out
+
+
+@unittest.skipUnless(NODE, "node is not installed")
+class PageShell(unittest.TestCase):
+
+    def test_quick_answers_sit_beside_the_row(self):
+        res = node_page(example(), CARD_HARNESS)
+        for c, d in zip(res["cards"], example()["cards"]):
+            self.assertEqual(quick_problems(c["html"], bool(d["rec"])), [], c["n"])
+        # card 43 has no recommendation: Later only
+        self.assertNotIn('data-quick="rec"', res["cards"][2]["html"])
+        # mutant: the buttons inside the row's toggle
+        h = res["cards"][0]["html"]
+        quick = h[h.rindex('<span class="quick">'):h.rindex("</span>") + len("</span>")]
+        moved = h.replace(quick, "").replace("</summary>", quick + "</summary>", 1)
+        self.assertIn("a quick answer sits inside the row's toggle", quick_problems(moved, True))
+
+    def test_a_click_writes_the_answer_and_the_pressed_state_follows(self):
+        html = PAGE.read_text()
+        click = html[html.index('document.addEventListener("click"'):html.index('addEventListener("resize"')]
+        self.assertIn('choose(n,q.dataset.quick==="rec"?c.rec:"later")', click)
+        sync = html[html.index("function syncCard("):html.index("function syncAll(")]
+        self.assertIn('b.setAttribute("aria-pressed"', sync)
+
+    def test_the_row(self):
+        d = example()
+        d["cards"][0]["dep"] = "[[42]] (a)"
+        res = node_page(d, CARD_HARNESS)
+        r41, r42 = res["cards"][0]["row"], res["cards"][1]["row"]
+        # the class pill and the depends on clause are not on the row
+        self.assertEqual(row_extra_problems(r41, "trust"), [])
+        self.assertEqual(row_order_problems(r42), [])
+        # the row holds no control and no link: it is the card's toggle
+        for c in res["cards"]:
+            self.assertNotIn("<button", c["row"])
+            self.assertNotIn("<a ", c["row"])
+        # mutants: a class pill, or the depends on clause, restored in the row
+        self.assertTrue(row_extra_problems(r41 + '<span class="pill cls">trust</span>', "trust"))
+        self.assertTrue(row_extra_problems(r41 + '<span>depends on: 42</span>', "trust"))
+
+    def test_the_map(self):
+        res = node_page(example(), CARD_HARNESS)
+        want = [("direction", "Direction · 1"), ("details", "Details · 2")]
+        self.assertEqual(map_problems(res["map"], want), [])
+        # mutant: a group dropped from the map
+        dropped = res["map"].replace('<button class="btn" type="button" data-go="layer-direction">Direction · 1</button>', "")
+        self.assertTrue(map_problems(dropped, want))
+
+    def test_expand_all_and_collapse_all(self):
+        m = node_page(example(), CARD_HARNESS)["map"]
+        how = dict((label, v) for v, label in re.findall(r'data-all="([a-z]+)">([^<]+)</button>', m))
+        d = example()
+        d["_hows"] = [how["Expand all"], how["Collapse all"]]
+        self.assertEqual(node_page(d, CARD_HARNESS)["set"], [[True, True], [False, False]])
+        # mutant: Collapse all left opening
+        d["_hows"] = [how["Expand all"], how["Expand all"]]
+        self.assertNotEqual(node_page(d, CARD_HARNESS)["set"][1], [False, False])
+
+
+def popup_problems(schema, html):
+    out = []
+    if re.search(r"popup", schema, re.I):
+        out.append("the schema names a popup")
+    if re.search(r"tag size[^.|]*\bin\s+the\s+map|\bthe map and a closed card", flat(schema)):
+        out.append("the schema puts the effect in the map")
+    lede = static_lede(html)
+    if "hover over it to see it; click it to open its card" not in lede or "hover or click it to see that decision" in lede:
+        out.append("the lede's reference sentence is not the tooltip's")
+    if "At a glance" in html or 'id="pop"' in html:
+        out.append("the page keeps the heads-up map or the popup")
+    return out
+
+
+class ShellText(unittest.TestCase):
+    def setUp(self):
+        self.schema = SCHEMA.read_text()
+        self.html = PAGE.read_text()
+        self.rulings = RULINGS.read_text()
+
+    def test_no_popup_and_the_lede(self):
+        self.assertEqual(popup_problems(self.schema, self.html), [])
+
+    def test_mutations(self):
+        restored = self.schema.replace("first on the open card; its medium", "first on the open card and in the popup; its medium")
+        self.assertNotEqual(restored, self.schema)
+        self.assertIn("the schema names a popup", popup_problems(restored, self.html))
+        old = self.html.replace("hover over it to see it; click it to open its card", "hover or click it to see that decision")
+        self.assertIn("the lede's reference sentence is not the tooltip's", popup_problems(self.schema, old))
+
+    def test_the_ruling(self):
+        b = bullet(self.rulings, "Cards as rows under a group map")
+        self.assertIn("(2026-10-22, the operator's prototype feedback", b)
+        self.assertIn("Not taken: the \"At a glance\" map beside open cards (as built)", b)
+        self.assertIn("are the operator's words (2026-10-22); the tooltip's layout", b)
+        self.assertIn("a reference's tooltip shows a card's Context", bullet(self.rulings, "TLDR first on an answer page"))
+        cut = self.rulings.replace("**Cards as rows under a group map**", "**Rows**")
+        self.assertEqual(bullet(cut, "Cards as rows under a group map"), "")
+
+
 if __name__ == "__main__":
     unittest.main()

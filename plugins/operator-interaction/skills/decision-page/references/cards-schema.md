@@ -22,7 +22,10 @@ or one that says `rec (b)`, I or we recommend, my or our recommendation, `(recom
 `(b) is recommended`); an
 `impact` without its effect, wait and reach as text, or with an undo or cost that is not text;
 a `label` that is not `{id, name}`, the id one word and the name one line; a `basis` word outside
-the four; a layer whose fourth element (`shared`) is not text; a `follow` list other than the fixed six; a `refs` key that is not a number; a ⚠
+the four; a layer whose fourth element (`shared`) is not text; a `refs` entry for a decision
+still open (its `when` is `open`, or its `a` says not yet answered), or for a number that is a
+card on the page; a `[[N]]` that is neither a card nor a `refs` entry, in any card field, the
+lede or a layer's note or shared context (an excerpt is not read); a `follow` list other than the fixed six; a `refs` key that is not a number; a ⚠
 card without its `blocks`; a `blocks` entry that is not an option letter other than `z`, or
 lacks its text, or carries a `oneway` that is not true or false; a row flagged `oneway: true`
 without its undo; an `act` that is not keyed by option letters other than `z`, a key whose list
@@ -39,10 +42,12 @@ wherever it reaches the page, attributes and ids included.
 Text fields are plain text: the page escapes them. Two marks are rendered:
 
 - `` `code` `` in backticks shows as code;
-- `[[N]]` is a **decision slug**: it renders as `[N · short name]` and opens decision N in a
-  popup on hover or click. N is a decision on the page (its card's `t` is the short name) or a
-  key of `refs`; any other N renders bare. Use a slug wherever a card mentions another
-  decision by number.
+- `[[N]]` is a **decision slug**: it renders as *N · short name*; a click opens its card when
+  it is on the page; hovering or focusing it shows its tooltip (its Context and each option,
+  the recommended one marked, and your answer; for a decision not on the page, the question,
+  the answer and when). N must be a card or a `refs` entry (its card's `t`, or the entry's
+  `short`, is the short name): the page refuses any other N. Use a slug wherever a card
+  mentions another decision by number.
 
 **No ids on the page.** The page is the reader's only context: they are not in the
 conversation. Refer to another decision by its slug, and to an item, a series, a branch or a
@@ -61,7 +66,7 @@ open. The runner lints an id anywhere the page shows text (SKILL.md step 2).
 | `layers` | array | yes | the groups, in display order: `[key, title, note, shared]` each, `shared` optional. `note` is one sentence under the group heading, after *What they share:*. `shared`, text, marks a **bundle** (the `decisions` skill's `references/rendering.md` § A bundle as a group): the shared context, the terms and the source every card in it uses, in plain words, shown in a closed **Shared context** fold under the heading; each item is a whole card, whose Context may lean on it (the runner reads a card's Context with its bundle's shared context). A bundle holds two or more cards; one answer for every item stays one card naming each |
 | `follow` | array | yes | the six follow-ups, exactly as in the example, in that order: `[key, label, placeholder, words prompt]`. Keys `later`, `tell me`, `expand`, `dig into`, `you decide`, `drop`; placeholders `[when]` on `later`, `[what]` on `tell me` and `dig into`, empty on the rest |
 | `cards` | array | yes | one card per decision, in list order (the `decisions` skill's order) |
-| `refs` | object | no | decisions mentioned by slug that are not on the page, keyed by number as a string: `{short, q, a, when}` — short name, the question as asked, the answer as given, when |
+| `refs` | object | no | decisions mentioned by slug that are not on the page, keyed by number as a string: `{short, q, a, when}` — short name, the question as asked, the answer as given, when. Answered decisions only; one still open goes on the page as a card; a number that is a card is not a ref |
 
 ## A card
 
@@ -75,20 +80,20 @@ Each field maps to a part of the `decisions` skill's card (its `references/rende
 | `t` | string | yes | the short name, 2–6 words, a noun phrase (it is what a slug shows) | title |
 | `label` | object | no | the source label, when the decision is raised from one labelled item of a source (a review's finding, a plan's question or feature; never a tracker id such as a work item, ticket or commit): `{id, name}`, `id` the label as the source writes it, one word (`F7`), `name` its short name in plain words, about 2–6 (`oversize upload`), taken from the source where it has one (the `plain-names` skill's § Source labels). The decisions skill's rule (answer 269) | after the title, muted, in every view: `t` · **F7** (oversize upload); a slug still shows `t` alone |
 | `rev` | string | yes | the card's revision: a label that changes whenever the card does. Any change to a card gets a new `rev`, Context included: an **Added:** line after `tell me`, more detail after `expand`, a `dig into` finding, a corrected fact, a re-ask. Only the one-time format migration keeps it: a card written before Context existed, whose own `what` and resume cue move into `context`, and whose terms are glossed from its own folds alone. A gloss drawn from anywhere outside the card is new information: a new `rev`. An ISO-8601 UTC time when you write it (`2026-01-12T09:30:00Z`) is the convention, but it is only ever compared for equality, never as a time | not shown; the page copies it into each answer, and it decides which answers count (below) |
-| `context` | string | yes | **Context:** one or two sentences: the terms, items and concepts the rest of the card uses, each introduced in plain words, by name and never by id; then where the operator left it (the `decisions` cue), when there is one. The TLDR says what is decided, so Context does not repeat it. Context introduces every specific thing the card names. Two shapes need it most: a count ("four changes", "the three"), for which Context says what the things are, or lists them; and a named mode, setting, review, plan or document ("content mode", "the review"), which Context gives a one-line gloss: what it is, and where it comes from. Written from the caller's stored What, its cue and the card's terms, with the cold read (below) run on it | flat on the open card, under the TLDR and above the Impact, and the same in the popup; not counted in the flat part's size (below); its medium and high in `detail` |
-| `impact` | object | yes | the **Impact** (the `decisions` skill's `references/rendering.md` § Impact), across all the decision's options, favouring none, `effect` and `reach` about the thing the work builds, never the process (that is `wait`): `effect` (what the decision changes and settles, whichever option is taken: *sets where the docs build runs, and who can publish*; where two or three outcomes fit, *(a) …; (b) …*), `wait` (what waiting costs, what it blocks), `reach` (who or what any option reaches), each non-empty text; `undo` optional, only when some option is one-way or costly to undo, naming that option (*(b) none — lost search ranking does not come back*): with none, every option is reversible at little cost; `cost` optional (the range across the options, when it is what the operator weighs; leave it out rather than write none: a none cost is not shown, § None is not shown). Its `effect` is written from the card's own option effects (`blocks`, each option's `impact`), and a stored Effect is copied only when it names each option's outcome or the card was stored or revised on or after 2026-10-14; otherwise it is written from the option effects (the pre-publish check's rec-only lint backs this); its `wait`, `reach` and `undo` are copied from the caller's stored line where it keeps one and they hold across the options. Each option's own effect lives in its `blocks` row and its **More** detail | `effect` at tag size (after an arrow) in the map, on the closed card and in the popup; on the open card one facet a line, under Context (`wait` as its later: line; (z)'s own `impact` is the Wait in its **More**; `undo` marked *⚠ undo:* when a `blocks` row is flagged `oneway`, the plain *undo:* otherwise, as older data carries it); its medium and high in `detail` |
-| `tldr` | array of strings | yes | one or two terse fragment bullets: the choice and what rides on it, no recommendation: the options mark it; the check refuses a bullet that opens with Rec or Recommend…, or says I or we recommend | first on the open card and in the popup; its medium and high in `detail` |
+| `context` | string | yes | **Context:** one or two sentences: the terms, items and concepts the rest of the card uses, each introduced in plain words, by name and never by id; then where the operator left it (the `decisions` cue), when there is one. The TLDR says what is decided, so Context does not repeat it. Context introduces every specific thing the card names. Two shapes need it most: a count ("four changes", "the three"), for which Context says what the things are, or lists them; and a named mode, setting, review, plan or document ("content mode", "the review"), which Context gives a one-line gloss: what it is, and where it comes from. Written from the caller's stored What, its cue and the card's terms, with the cold read (below) run on it | flat on the open card, under the TLDR and above the Impact; not counted in the flat part's size (below); its medium and high in `detail` |
+| `impact` | object | yes | the **Impact** (the `decisions` skill's `references/rendering.md` § Impact), across all the decision's options, favouring none, `effect` and `reach` about the thing the work builds, never the process (that is `wait`): `effect` (what the decision changes and settles, whichever option is taken: *sets where the docs build runs, and who can publish*; where two or three outcomes fit, *(a) …; (b) …*), `wait` (what waiting costs, what it blocks), `reach` (who or what any option reaches), each non-empty text; `undo` optional, only when some option is one-way or costly to undo, naming that option (*(b) none — lost search ranking does not come back*): with none, every option is reversible at little cost; `cost` optional (the range across the options, when it is what the operator weighs; leave it out rather than write none: a none cost is not shown, § None is not shown). Its `effect` is written from the card's own option effects (`blocks`, each option's `impact`), and a stored Effect is copied only when it names each option's outcome or the card was stored or revised on or after 2026-10-14; otherwise it is written from the option effects (the pre-publish check's rec-only lint backs this); its `wait`, `reach` and `undo` are copied from the caller's stored line where it keeps one and they hold across the options. Each option's own effect lives in its `blocks` row and its **More** detail | `effect` at tag size (after an arrow) on the closed card's row; on the open card one facet a line, under Context (`wait` as its later: line; (z)'s own `impact` is the Wait in its **More**; `undo` marked *⚠ undo:* when a `blocks` row is flagged `oneway`, the plain *undo:* otherwise, as older data carries it); its medium and high in `detail` |
+| `tldr` | array of strings | yes | one or two terse fragment bullets: the choice and what rides on it, no recommendation: the options mark it; the check refuses a bullet that opens with Rec or Recommend…, or says I or we recommend | first on the open card; its medium and high in `detail` |
 | `ifleft` | string | no | **If left:** an ask for another round: each leftover finding and what it would break | flat |
 | `roundcosts` | string | no | **A round costs:** an ask for another round: time, quota, the operator's attention | flat |
 | `ifunanswered` | string | no | **If unanswered:** a status-quo default (`I leave X as it is …`) | flat |
 | `what` | string | no | Older data only. Shown at the end of the Context block, after the resume cue: the reverse of the new order (terms, then what is decided, then the cue). That is accepted for older data, since nothing is lost. On a republish, move it into `context` and delete it; a new card does not set it | at the end of the Context block |
 | `why` | string | yes | **Why now:** and what it blocks | Background fold; its medium and high in `detail` |
 | `whyask` | string | yes | **Why ask:** what would go wrong if the recommendation were taken alone | Background fold; its medium and high in `detail` |
-| `class` | string | no | the class that opens Why ask, when the caller names classes | a pill, and the Background fold |
+| `class` | string | no | the class that opens Why ask, when the caller names classes | the Background fold, first in Why ask |
 | `warn` | boolean | no | `true` for ⚠ one-way (one-way and high impact) | a ⚠ pill |
 | `blocks` | object | expected on every card; required when `warn` | the block's Impact table row per option: keyed by letter, a row for every option but `z` (the check refuses a ⚠ card without them; on any other card a missing row is a runner lint), each `{happens, who, undo, cost, oneway}` — the Effect and Reach cells, `happens` the effect by its mechanism (how it happens, who meets it and when, the before and after), never a bare label (the runner's `mech` lint); Undo, only on an option one-way or costly to undo (plainly: it decides the read-back), left out on one reversible at little cost; Cost, optional; each cell a table cell's length (about 5–25 words); `oneway: true` on each option one-way or costly to undo, the options the decisions skill marks `⚠ undo:`. The check refuses a flagged row without its undo; a ⚠ card with no flagged row is a runner lint (`oneway:`), never refused, so an older ⚠ page still shows | each option's **More** detail, as its Effect, Reach, Undo and Cost lines, open from the start on a ⚠ card, where the row comes before the option's text; an Effect, Reach or Cost cell that is none is not shown; an Undo given always shows (*none* says the option is one-way), as *⚠ Undo* on a flagged row; a row with no undo shows none; on a ⚠ card the check refuses a blank `happens` or `who`; an option with no entry shows its `impact` as the Effect and nothing else |
 | `act` | object | when an option asks the operator to act; optional otherwise | the **To act on (x):** part (the `decisions` skill's floor, what it takes to act; its specifics in that skill's `references/rendering.md` § Card): keyed by option letter other than `z`, each a non-empty array of steps as text, in order; backtick code renders as code. A step names where a secret goes, never its value. A paste text that legitimately holds an angle-bracketed word (`<br>`, a tag in an HTML snippet) goes in a file named by its `/…` path in the step: the check refuses it inline, as it refuses a fill-in placeholder. A step renders on one line (only an excerpt, § An excerpt, renders multi-line text): a paste text of more than one line goes in a file named by its `/…` path in the step, never inline; the check refuses a step with a line break | flat, as a numbered list under its option in the open card, never folded; not counted in the flat part's size (below) |
-| `dep` | string | no | what it depends on, usually slugs with the answer that matters (`[[41]] (b)`) | summary line, Dependencies fold; its medium and high in `detail`. Leave it out when the card depends on nothing: a card with no `dep`, or a none one, has neither the summary's *depends on* nor the fold |
+| `dep` | string | no | what it depends on, usually slugs with the answer that matters (`[[41]] (b)`) | the Dependencies fold; its medium and high in `detail`. Leave it out when the card depends on nothing: a card with no `dep`, or a none one, has no fold |
 | `rec` | string or null | yes | the recommended option's letter; `null` with no recommendation | the one bold option, the rec line |
 | `norec` | string | when `rec` is null | the labelled exception: `your preference — no recommendation`, or `no recommendation — outside my authority` and why | in place of the rec |
 | `o` | array | yes | the options, in letter order, `(z)` decide later last: `[letter, full text, impact, title, one line]` each | see below |
@@ -156,7 +161,7 @@ renders; the runner lints a level whose shape is off (SKILL.md step 2).
   with their sub-bullets nested, or a heading over its bullets. Links (`https://` only) are
   clickable in the medium and high renditions, in the fold parts at every level and in the
   **More** detail; never in a heading, a visible part's summary, an option's
-  `impact` line, `act`, the popup or a slug.
+  `impact` line, `act`, a tooltip or a slug.
 - `context`: Context at more detail, under the same label. Its high holds the further facts
   the decisions block carries after the card's Context (the `decisions` skill's
   `references/rendering.md` § Context: what was tried, what was answered before, where a
@@ -214,8 +219,8 @@ line) stays near 150 words; the folds carry the rest. `context` and an `act` lis
 that budget: what the operator needs to read the card, and to act on it, is never folded away.
 Context's summary is one or two sentences, typically 30–60 words (the runner lints past ~60);
 a term that needs a paragraph has its detail in its levels or a fold, with its one-line gloss
-kept in Context. The `effect` stays under about 10 words: it is shown alone, at tag size, in
-the map.
+kept in Context. The `effect` stays under about 10 words: it is shown alone, at tag size, on
+the card's row.
 
 Every card carries the decisions block's depth (decision 198), scaled to the decision, with
 levels where the decision calls for them (decision 201). Each size is read at the
@@ -252,9 +257,13 @@ levels, about 674 of them for its visible parts, against its fold depth alone of
 about 2.9 times. The pre-publish runner lints only clear misses: thin (about 40% of a size)
 only on a part that carries levels, long (1.5 times) on any.
 
-**What the page adds.** Every view shows the impact across the options: the map and a closed
-card the effect, beside the rec pill (the map also beside the recommended option's title),
-which mark the recommendation; an open card the Impact, one facet a line; and each option's
+**What the page adds.** The page opens on a map of its groups under the progress bar, a
+button per group with its count, and **Expand all** and **Collapse all**; every card is closed
+to its one-line row, in its group: the number, the title, the ⚠ pill on a one-way card, the
+rec pill and the effect, and the answer, with **Use recommendation** (on a card with one) and
+**Later** beside the row, outside it. A click on the row opens the card. Every view shows the
+impact across the options: a card's row the effect, beside the rec pill, which marks the
+recommendation; an open card the Impact, one facet a line; and each option's
 **More** its own effect, reach, undo (where it is one-way or costly) and cost (its `blocks`
 row). Each group opens on a band: the *Group* label, its title, a count of its decisions and
 *What they share:* its note; a bundle adds a closed **Shared context** fold whose summary is
@@ -277,7 +286,7 @@ Undo and Reach carry it.
 **None is not shown** (the operator, 2026-10-14: *if any sub-section is empty or none, just
 don't display it*). A part, facet or field that is missing, blank, or says only `none`,
 `none.`, `n/a`, `n/a.` or a lone dash (trimmed, any case) is left off
-the page, by one test in the template: a `dep` (no Dependencies fold, no *depends on*), an
+the page, by one test in the template: a `dep` (no Dependencies fold), an
 Impact `cost`, at every level, a `blocks` Effect, Reach or Cost cell, an `evidence`, an Unknown line in the Evidence
 fold, `ifleft`, `roundcosts`, `ifunanswered`, an option's one line or `impact`. A writer may
 simply leave such a field out; the optional ones were always optional. Shown whatever they
@@ -331,6 +340,10 @@ a plain group and renders as before, under the group band. On a republish, a bun
 items need different answers becomes a layer with its `shared` context; its cards keep their
 numbers. A card moved into a bundle layer whose own text is unchanged keeps its `rev`; one
 whose Context is shortened to lean on the shared context gets a new `rev`.
+
+A `cards.json` written before the reference rule (2026-10-22) may hold a `refs` entry for a
+decision still open, or a `[[N]]` that is neither a card nor a ref (it rendered bare): the page
+refuses it on a republish. Add the open decision as a card, or a ref with its answer.
 
 ## An excerpt
 

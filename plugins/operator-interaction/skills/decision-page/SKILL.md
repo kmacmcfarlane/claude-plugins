@@ -5,8 +5,8 @@ description: "Put a set of decisions to the operator as an answer page: a publis
 
 # Decision page
 
-A set of decisions on one page the operator works through at their own pace: each card flat
-on its essentials (its TLDR, then its Context, then its Impact) with folds for the rest; a
+A set of decisions on one page the operator works through at their own pace: a map of its
+groups, each card a one-line row that opens flat on its essentials (its TLDR, then its Context, then its Impact) with folds for the rest; a
 click on a part with a more-detail button shows it as terse bullets, then in headed sections,
 and **More** beside an option shows that option in full; one choice per card enforced by the
 radio buttons, answers saved as they click. You publish it, they answer, you read the answers
@@ -118,7 +118,7 @@ The rules below are what the digest condenses:
 - Every card carries `impact`, the decision's Impact across all its options (effect, wait,
   reach, cost where it has one, and undo only where an option is one-way or costly; the
   `decisions` skill's `references/rendering.md` § Impact), so every view on the page shows it:
-  the effect in the map and on a closed card, the facets one a line on an open one, each
+  the effect on a card's row, the facets one a line on an open one, each
   option's own row in its **More**. Effect and Reach describe the system the work builds,
   never the review or the process, which is the Wait (the runner's `process` lint). Its `effect` says what the decision changes and settles,
   favouring no option, written from the card's own option effects (`blocks`, each
@@ -161,8 +161,10 @@ The rules below are what the digest condenses:
   first.
 - A card whose option asks the operator to act carries `act`: its steps, as the **To act
   on** part in the `decisions` skill's `references/rendering.md` § Card gives them.
-- Every mention of another decision is a slug, `[[N]]`; a decision not on the page that a
-  slug names gets a `refs` entry.
+- Every mention of another decision is a slug, `[[N]]`. Every open decision a card names, or
+  depends on, goes on the page as a card, so the operator can answer it in place; an answered
+  decision not on the page gets a `refs` entry with its answer. The page refuses a `refs`
+  entry for an open decision or for a card, and a slug that is neither.
 - `follow` is copied from `references/writer-digest.md` § Top level as it stands.
 - **The title** names the session the page belongs to: `page.title` is
   `(<owner>) <session name>`, for example `(kmacmcfarlane) claude-plugins context-guard

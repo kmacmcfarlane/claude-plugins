@@ -6,7 +6,8 @@ Three parts:
   TLDR bullet that carries the recommendation, `contextBlock` (which renders Context, and an
   older card's `what` after it) and the render order (TLDR, then Context, then Impact), loaded
   from `assets/index.html` and run under node against `assets/cards.example.json` and broken
-  copies of it;
+  copies of it; a decision reference and its tooltip, and the reference rule (an open decision
+  a card names goes on the page as a card; every `[[N]]` is a card or a ref);
 - the pre-publish runner, `scripts/check_cards.js`: its exits and one-line errors, its lint
   for ids anywhere the page shows text, and its lints for counts and named things a card's
   context does not introduce;
@@ -15,6 +16,7 @@ Three parts:
 Run from the plugin dir: python3 -m unittest discover -s tests -q
 """
 
+import html as html_lib
 import json
 import pathlib
 import re
@@ -59,17 +61,20 @@ const out = ds.map(d => {
   if (!bad.length) {
     CARDS = d.cards; REFS = d.refs || {}; FOLLOW = d.follow;
     byN = new Map(CARDS.map(c => [String(c.n), c])); FOLLOW_KEYS = new Set(FOLLOW.map(f => f[0]));
-    blocks = CARDS.map(c => ({n: c.n, open: contextBlock(c), pop: contextBlock(c, true),
+    answers = d._answers || {};
+    blocks = CARDS.map(c => ({n: c.n, open: contextBlock(c), tip: tipHtml(String(c.n)),
                               why: fmtD(c.why), what: fmt(c.what || ""), card: cardHtml(c)}));
+    blocks.refTips = Object.fromEntries(Object.keys(REFS).map(k => [k, tipHtml(k)]));
+    blocks.slugs = {on: slug("41"), ref: slug("38")};
   }
-  return {bad, blocks};
+  return {bad, blocks, refTips: blocks.refTips || {}, slugs: blocks.slugs || {}};
 });
 process.stdout.write(JSON.stringify(out));
 """
 
 
-def run_pages(datasets):
-    out = subprocess.run([NODE, "-e", page_free_script() + HARNESS],
+def run_pages(datasets, script=None):
+    out = subprocess.run([NODE, "-e", (script or page_free_script()) + HARNESS],
                          input=json.dumps(datasets), capture_output=True, text=True,
                          timeout=60)
     if out.returncode != 0:
@@ -77,8 +82,8 @@ def run_pages(datasets):
     return json.loads(out.stdout)
 
 
-def run_page(data):
-    return run_pages([data])[0]
+def run_page(data, script=None):
+    return run_pages([data], script)[0]
 
 
 def with_tldr(bullet):
@@ -209,18 +214,18 @@ class DecisionPageContext(unittest.TestCase):
         d["cards"][0]["context"] = '<img src=x onerror="alert(1)" > the `main` branch ([[38]])'
         d["cards"][0]["what"] = "<script >x</script >"
         blk = run_page(d)["blocks"][0]
-        for h in (blk["open"], blk["pop"]):
-            self.assertNotIn("<img", h)
-            self.assertNotIn("<script", h)
-            self.assertIn("&lt;img", h)
-            self.assertIn("<code>main</code>", h)
-        self.assertIn('class="slug"', blk["open"])
-        self.assertIn('data-ref="38"', blk["open"])
-        # the popup renders slugs as text, never a nested button
-        self.assertIn('<span class="slug-t">38', blk["pop"])
-        self.assertNotIn("<button", blk["pop"])
+        h = blk["open"]
+        self.assertNotIn("<img", h)
+        self.assertNotIn("<script", h)
+        self.assertIn("&lt;img", h)
+        self.assertIn("<code>main</code>", h)
+        self.assertIn('class="slug"', h)
+        self.assertIn('data-ref="38"', h)
+        # a reference is never a popup trigger; one not on the page shows its tooltip only
+        self.assertNotIn("aria-haspopup", h)
+        self.assertNotIn('data-goto="38"', h)
 
-    def test_the_open_card_and_the_popup_open_on_the_tldr_then_context_then_impact(self):
+    def test_the_open_card_opens_on_the_tldr_then_context_then_impact(self):
         d = example()
         d["cards"][1]["what"] = "Where the old links lead after the move."
         for blk in run_page(d)["blocks"]:
@@ -235,15 +240,153 @@ class DecisionPageContext(unittest.TestCase):
             if blk["n"] == 42:
                 self.assertNotIn(blk["what"], bg)
                 self.assertIn(blk["what"], blk["open"])
+        # the on-page popup is gone (answer 335's feedback): a reference's tooltip shows no
+        # Context block and no Impact, only its peek (ReferenceTooltip)
         html = PAGE.read_text()
-        pop = html[html.index("function fillPop"):html.index("function place(")]
-        self.assertLess(pop.index('class="tldr"'), pop.index("contextBlock(c,true)"))
-        self.assertLess(pop.index("contextBlock(c,true)"), pop.index("tagEffect(c)"))
-        self.assertEqual(pop.count("tagEffect(c)"), 1)
+        self.assertNotIn("function fillPop", html)
+        tip = html[html.index("function tipHtml("):html.index("/* ---- end of the page-free part")]
+        self.assertNotIn("contextBlock(", tip)
+        self.assertNotIn("tagEffect(", tip)
 
     def test_the_page_free_part_holds_no_lookbehind(self):
         # a lookbehind is a syntax error in an older browser, and stops the whole script
         self.assertNotIn("(?<", page_free_script())
+
+
+TIP_ONE_LINE = "+(shown(o[4])?'<span class=\"tip-l\"> — '+fmtPlain(o[4])+'</span>':'')"
+
+
+def tip_text(h):
+    return html_lib.unescape(re.sub(r"<[^>]+>", "", h))
+
+
+def tip_problems(tip, card, answer="none yet"):
+    """What a card's tooltip lacks: its Context, each option as (x) title — one line in letter
+    order, the recommended one bold and marked, and the answer."""
+    out = []
+    text = tip_text(tip)
+    if "Context" not in text or tip_text(card["context"].split("[[")[0])[:40] not in text:
+        out.append("no Context")
+    at = -1
+    for o in card["o"]:
+        want = "(%s) %s — %s" % (o[0], o[3], o[4].split("[[")[0])
+        i = text.find(want)
+        if i < 0 or i < at:
+            out.append("option (%s) is not shown as (x) title — one line, in order" % o[0])
+        at = max(at, i)
+    if card["rec"] and not re.search(r'<li class="isrec"><span class="ol">\(%s\)</span>[^<]*'
+                                     r'(<span class="tip-l">.*?</span>)?<span class="pill rec">recommended'
+                                     % card["rec"], tip):
+        out.append("the recommended option is not marked")
+    if "your answer: " + answer not in text:
+        out.append("the answer is not shown")
+    return out
+
+
+def slug_problems(on, ref):
+    out = []
+    if not (on.startswith("<button") and 'data-goto="41"' in on and 'aria-describedby="tip"' in on):
+        out.append("an on-page reference is not a link to its card")
+    if "data-goto" in ref or 'aria-describedby="tip"' not in ref:
+        out.append("a refs reference is not a tooltip-only reference")
+    if "aria-haspopup" in on + ref:
+        out.append("a reference opens a popup")
+    return out
+
+
+@unittest.skipUnless(NODE, "node is not installed")
+class ReferenceTooltip(unittest.TestCase):
+    """Every reference reads N · short name: on the page it opens its card; hovering or focusing it
+    shows a tooltip (answer 335's feedback, 7434 M8)."""
+
+    def test_the_references(self):
+        s = run_page(example())["slugs"]
+        self.assertEqual(slug_problems(s["on"], s["ref"]), [])
+        self.assertIn(">41 · Docs build home</button>", s["on"])
+        self.assertIn(">38 · build cache reset</button>", s["ref"])
+        # mutants: an on-page reference without its link; a refs one as a link
+        self.assertIn("an on-page reference is not a link to its card",
+                      slug_problems(s["on"].replace(' data-goto="41"', ""), s["ref"]))
+        self.assertIn("a refs reference is not a tooltip-only reference",
+                      slug_problems(s["on"], s["ref"].replace("<button", '<button data-goto="38"')))
+
+    def test_a_cards_tooltip(self):
+        d = example()
+        res = run_page(d)
+        for blk, c in zip(res["blocks"], d["cards"]):
+            self.assertEqual(tip_problems(blk["tip"], c), [], c["n"])
+        # an answer given shows in it, with the operator's words
+        d["_answers"] = {"41": {"choice": "b", "words": "ship it"}}
+        tip = run_page(d)["blocks"][0]["tip"]
+        self.assertEqual(tip_problems(tip, d["cards"][0], "(b) · rec — “ship it”"), [])
+
+    def test_mutant_title_alone(self):
+        script = page_free_script()
+        self.assertIn(TIP_ONE_LINE, script)
+        d = example()
+        tip = run_page(d, script.replace(TIP_ONE_LINE, ""))["blocks"][0]["tip"]
+        self.assertTrue(any("is not shown as (x) title — one line" in p for p in tip_problems(tip, d["cards"][0])))
+
+    def test_a_refs_tooltip(self):
+        tip = tip_text(run_page(example())["refTips"]["38"])
+        self.assertIn("Asked", tip)
+        self.assertIn("Clear the docs build cache?", tip)
+        self.assertIn("Answera — clear it", tip)
+        self.assertIn("Answered earlier this month · not on this page", tip)
+
+    def test_the_tooltip_is_escaped(self):
+        d = example()
+        d["cards"][0]["context"] = '<script>x</script> the cache ([[38]])'
+        d["cards"][0]["o"][0][3] = '<img src=x onerror="alert(1)">'
+        d["refs"]["38"]["q"] = "<script>y</script>"
+        res = run_page(d)
+        for h in (res["blocks"][0]["tip"], res["refTips"]["38"]):
+            self.assertNotIn("<script", h)
+            self.assertNotIn("<img", h)
+        self.assertIn("&lt;img src=x onerror=&quot;alert(1)&quot;&gt;", res["blocks"][0]["tip"])
+        # slugs in it are text, never a nested control
+        self.assertNotIn("<button", res["blocks"][0]["tip"])
+
+
+@unittest.skipUnless(NODE, "node is not installed")
+class ReferenceRule(unittest.TestCase):
+    """An open decision a card names goes on the page as a card; a ref is never a card; every [[N]]
+    is a card or a ref; an excerpt is not scanned (answer 335's feedback, 7434 M8.1)."""
+
+    def bad(self, d):
+        return run_page(d)["bad"]
+
+    def test_the_example_passes(self):
+        self.assertEqual(self.bad(example()), [])
+
+    def test_each_refusal(self):
+        open_ = "refs 38: decision 38 is still open; put its card on the page instead of a ref"
+        d = example(); d["refs"]["38"]["when"] = "open"
+        self.assertIn(open_, self.bad(d))
+        d = example(); d["refs"]["38"]["a"] = "not yet answered"
+        self.assertIn(open_, self.bad(d))
+        d = example(); d["refs"]["41"] = dict(d["refs"]["38"])
+        self.assertIn("refs 41: decision 41 is a card on the page; drop it from refs", self.bad(d))
+        stray = lambda bad, at: any(b.startswith(at + ": [[999]] is neither a card on the page nor a ref")
+                                    for b in bad)
+        d = example(); d["cards"][0]["context"] += " See [[999]]."
+        self.assertTrue(stray(self.bad(d), "card 41: context"))
+        d = example(); d["cards"][0]["detail"]["why"][1][0]["b"].append("As [[999]] said.")
+        self.assertTrue(stray(self.bad(d), "card 41: detail"))
+        d = example(); d["page"]["lede"] = "Read [[999]] first."
+        self.assertTrue(stray(self.bad(d), "page.lede"))
+        d = example(); d["layers"][1][2] = "After [[999]]."
+        self.assertTrue(stray(self.bad(d), "layer details note"))
+        d = example(); d["layers"][1].append("Shared since [[999]].")
+        self.assertTrue(stray(self.bad(d), "layer details shared"))
+
+    def test_an_excerpt_holding_a_slug_passes(self):
+        d = example()
+        d["cards"][0]["x_excerpt"] = {"text": "see [[999]]", "lang": "text"}
+        self.assertEqual([b for b in self.bad(d) if "999" in b], [])
+        # mutant: the same text outside an excerpt is refused
+        d["cards"][0]["x_excerpt"] = {"text": "see [[999]]", "lang": "text", "other": 1}
+        self.assertTrue([b for b in self.bad(d) if "999" in b])
 
 
 def runner(data=None, *, path=None, cwd=None, script=RUNNER):

@@ -1,11 +1,12 @@
 <title>Decision Answers</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@80..100,500..800&family=Public+Sans:ital,wght@0,400;0,600;1,400&family=JetBrains+Mono:wght@400;600&display=swap">
 <style>
-/* decision-page template (operator-interaction). One reading column: a compact heads-up map on
-   top, then collapsible answer cards by group. An open card opens on its TLDR, then its Context
-   (the terms it uses), then its Impact, one facet a line; the popup the same, with the Impact at
-   tag size. Every view shows the decision's impact across all its options: the map and a closed
-   card its effect, an open card its Impact lines, each option's More its own effect, reach, undo
+/* decision-page template (operator-interaction). One reading column: a map of the groups under
+   the progress bar, with Expand all and Collapse all, then each group's cards, each closed to a
+   one-line row (number, title, ⚠, the rec pill and the effect, the answer) with Use
+   recommendation and Later beside it. An open card opens on its TLDR, then its Context
+   (the terms it uses), then its Impact, one facet a line. Every view shows the decision's impact
+   across all its options: a card's row its effect, an open card its Impact lines, each option's More its own effect, reach, undo
    (only where it is one-way or costly; ⚠ on a row flagged one-way) and cost. A decision raised from
    one labelled item of a source shows its title, then the label and its short name, muted. Inside a card the essentials are flat (TLDR, Context, Impact, options, follow-ups,
    words, recommendation); background, dependencies and evidence sit in folds. A part with a
@@ -13,8 +14,8 @@
    and again to full detail (headed sections); each level replaces the part's text, and the next
    click goes back to the summary. The static lines do not step. More beside an option shows it
    in full (open on a one-way card). A part, facet or field that is empty or "none" is not shown
-   (isNone). Decision references ([[N]]) are
-   slugs that open the referenced decision in a popup. All content comes from cards.json beside
+   (isNone). A decision reference ([[N]]) reads N · short name: hovering or focusing it shows its
+   tooltip, and a click opens its card when it is on the page. All content comes from cards.json beside
    this page; answers go to the db collection "answers", one document per decision number. */
 :root{
   --bg:#f3f5f8; --surface:#ffffff; --sunk:#e9edf3; --ink:#1a2130; --muted:#5b6578; --line:#d5dbe5;
@@ -33,7 +34,7 @@
   --accent:#86a4ff; --accent-soft:#223056; --rec:#e3ad57; --rec-soft:#3a2f1b; --ok:#62c796; --ok-soft:#1c3a2d; --warn:#f08a7c;
   --shadow:0 10px 30px rgba(0,0,0,.5); color-scheme:dark}
 *{box-sizing:border-box}
-/* hidden always hides: a display rule (the popup's flex, a level's) never shows a hidden element */
+/* hidden always hides: a display rule (the tooltip's flex, a level's) never shows a hidden element */
 [hidden]{display:none !important}
 body{background:var(--bg);color:var(--ink);font:15px/1.55 var(--f-body);padding-inline:16px;padding-block:20px 64px}
 .wrap{max-width:900px;margin:0 auto;display:flex;flex-direction:column;gap:28px}
@@ -60,7 +61,6 @@ button{font:inherit;cursor:pointer;color:inherit}
 .btn{border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:5px;padding:4px 10px;font-size:.82rem;white-space:nowrap}
 .btn:hover{border-color:var(--accent)}
 .btn.on{background:var(--accent-soft);border-color:var(--accent)}
-.linkish{background:none;border:0;color:var(--accent);padding:0;font-size:.85rem;text-decoration:underline}
 :focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .pill{display:inline-block;border-radius:999px;padding:1px 8px;font-family:var(--f-mono);font-size:.75rem;white-space:nowrap}
 .pill.rec{background:var(--rec-soft);color:var(--rec)}
@@ -77,18 +77,11 @@ button{font:inherit;cursor:pointer;color:inherit}
 .slug:hover{border-color:var(--accent)}
 .slug-t{background:var(--sunk)}
 
-/* heads-up map */
-.hud{background:var(--surface);border:1px solid var(--line);border-radius:8px;overflow:hidden}
-.hud-layer{padding:8px 14px 4px;font-family:var(--f-mono);font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);background:var(--sunk)}
-.row{display:grid;grid-template-columns:3.2rem minmax(0,1fr) auto auto;gap:6px 12px;align-items:center;padding:7px 14px;border-top:1px solid var(--line)}
-.row .n,summary .n{font-family:var(--f-mono);font-weight:600;font-variant-numeric:tabular-nums}
-.row .t{min-width:0}
-.row .t button{background:none;border:0;padding:0;text-align:left;font-weight:600}
-.row .t button:hover{color:var(--accent)}
-.row .sub{display:block;font-size:.8rem;color:var(--muted)}
-.quick{display:flex;gap:6px}
-.ans{min-width:7.5rem;text-align:right}
-@media (max-width:640px){.row{grid-template-columns:2.6rem minmax(0,1fr)}.quick,.ans{grid-column:2}.ans{text-align:left}}
+/* the group map, under the progress bar: a button per group, then Expand all and Collapse all */
+.map{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;padding:10px 12px;border:1px solid var(--line);border-radius:8px;background:var(--surface);margin-top:-12px}
+.mlinks{display:flex;flex-wrap:wrap;gap:6px;flex:1 1 auto;min-width:0}
+.mall{display:flex;gap:6px;margin-left:auto}
+summary .n{font-family:var(--f-mono);font-weight:600;font-variant-numeric:tabular-nums}
 
 /* a group: a band with its label, title, count and what its cards share (a bundle adds a closed Shared
    context fold), then its cards inset under a rail */
@@ -111,17 +104,32 @@ details.gfold>div{padding:6px 0 2px 1.1em}
 @media (max-width:640px){.gcards{padding-left:8px}}
 
 /* cards */
-details.card{background:var(--surface);border:1px solid var(--line);border-radius:8px}
+/* a card: its summary is the one-line row, the card's one open-and-close control; Use recommendation and Later
+   sit at its right, outside it (over the row on a wide screen, under it at phone width) */
+.cardw{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:start;min-width:0}
+.cardw>details.card{grid-area:1/1/2/3;min-width:0}
+.cardw>.quick{grid-area:1/2/2/3;display:flex;gap:6px;padding:9px 12px 0 0;z-index:1}
+.quick .btn[aria-pressed="true"]{background:var(--accent-soft);border-color:var(--accent)}
+details.card{background:var(--surface);border:1px solid var(--line);border-radius:8px;transition:box-shadow .3s}
 details.card[open]{border-color:var(--accent)}
-details.card>summary{list-style:none;cursor:pointer;display:grid;grid-template-columns:3.2rem minmax(0,1fr) auto;gap:4px 12px;align-items:baseline;padding:12px 14px}
+details.card.flash{box-shadow:0 0 0 3px var(--accent-soft);border-color:var(--accent)}
+details.card>summary{list-style:none;cursor:pointer;display:flex;flex-wrap:wrap;gap:4px 10px;align-items:baseline;padding:12px 14px}
+.cardw.q2>details.card>summary{padding-right:15.5rem}
+.cardw.q1>details.card>summary{padding-right:6rem}
+details.card>summary .tw{font-family:var(--f-mono);color:var(--accent);width:1em}
+details.card>summary .tw::before{content:"▸"}
+details.card[open]>summary .tw::before{content:"▾"}
+details.card>summary .rrec{display:inline-flex;flex-wrap:wrap;gap:4px 8px;align-items:baseline;font-size:.82rem;color:var(--muted);min-width:0}
+@media (max-width:640px){
+  .cardw>.quick{grid-area:2/1/3/3;padding:6px 0 0;justify-content:flex-end}
+  .cardw.q2>details.card>summary,.cardw.q1>details.card>summary{padding-right:14px}
+}
 details summary::-webkit-details-marker{display:none}
-details.card>summary h3{font-size:1.08rem;font-weight:700}
-details.card>summary .meta{grid-column:2/-1;display:flex;flex-wrap:wrap;gap:6px 10px;font-size:.8rem;color:var(--muted)}
+details.card>summary h3{font-size:1.08rem;font-weight:700;flex:1 1 16rem;min-width:0}
 .body{padding:0 14px 16px;display:flex;flex-direction:column;gap:12px}
 .what{max-width:70ch}
 .ctx{max-width:70ch;display:flex;flex-direction:column;gap:4px}
 .ctx .lbl{margin-bottom:-2px}
-.pop .ctx{font-size:.86rem;gap:3px}
 fieldset{border:0;margin:0;padding:0;min-width:0;display:flex;flex-direction:column;gap:12px}
 legend,.sublabel,.lbl{display:block;font-family:var(--f-mono);font-size:.72rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);padding:0}
 legend{margin-bottom:4px}
@@ -134,10 +142,9 @@ legend{margin-bottom:4px}
 .optl{display:grid;grid-template-columns:auto minmax(0,1fr);gap:3px 10px;padding:9px 12px;cursor:pointer}
 .optl input{accent-color:var(--accent);margin:.25em 0 0}
 .ot{font-weight:400}
-.opt.isrec .ot,.pop li.isrec{font-weight:700}
+.opt.isrec .ot,.tip-o li.isrec{font-weight:700}
 .ot .pill{font-weight:400}
 .tldr{margin:4px 0 0;padding-left:1.1em;display:flex;flex-direction:column;gap:2px;max-width:70ch}
-.pop .tldr{margin:0;font-size:.86rem}
 .oi em{font-style:normal;font-family:var(--f-mono);font-size:.78rem;color:var(--muted)}
 .impact{color:var(--muted);font-size:.86rem;margin-top:-2px}
 .mono{font-family:var(--f-mono)}
@@ -214,23 +221,24 @@ details.pane>div{padding:6px 0 2px;font-size:.92rem;max-width:70ch;display:flex;
 .xpre code{background:none;padding:0;font-size:inherit;border-radius:0}
 .xcc{color:var(--warn);border:1px solid currentColor;border-radius:3px;padding:0 2px;font-size:.85em}
 
-/* popup */
-.pop{position:absolute;z-index:10;width:min(420px,calc(100vw - 32px));background:var(--surface);border:1px solid var(--accent);border-radius:8px;box-shadow:var(--shadow);padding:12px 14px;display:flex;flex-direction:column;gap:8px;font-size:.88rem}
-.pop-h{font-family:var(--f-display);font-stretch:88%;font-weight:700;font-size:1rem;display:flex;gap:8px;align-items:baseline}
-.pop-h .n{font-family:var(--f-mono);font-size:.9rem}
-.pop ol{margin:0;padding-left:0;list-style:none;display:flex;flex-direction:column;gap:3px}
-.pop ol .ol{margin-right:.3em}
-.pop .muted{color:var(--muted);font-size:.8rem}
-.pop-f{display:flex;gap:6px;flex-wrap:wrap}
+/* a decision reference's tooltip, on hover or focus; it never takes the pointer */
+.tip{position:absolute;z-index:10;width:min(420px,calc(100vw - 32px));background:var(--surface);border:1px solid var(--accent);border-radius:8px;box-shadow:var(--shadow);padding:10px 12px;display:flex;flex-direction:column;gap:6px;font-size:.86rem;pointer-events:none}
+.tip .lbl{margin-bottom:1px}
+.tip-h{font-family:var(--f-display);font-stretch:88%;font-weight:700;font-size:1rem;display:flex;gap:8px;align-items:baseline}
+.tip-h .n{font-family:var(--f-mono);font-size:.9rem}
+.tip-o{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:2px}
+.tip-o .tip-l{font-weight:400;color:var(--muted)}
+.tip-o .pill{margin-left:.4em;font-weight:400}
+.tip-a,.tip-m{color:var(--muted);font-size:.82rem}
 footer{color:var(--muted);font-size:.85rem;max-width:70ch}
-@media (prefers-reduced-motion:reduce){.meter>i,details.more>summary::before,details.pane>summary::before,details.gfold>summary::before{transition:none}}
+@media (prefers-reduced-motion:reduce){details.card,.meter>i,details.more>summary::before,details.pane>summary::before,details.gfold>summary::before{transition:none}}
 </style>
 
 <div class="wrap">
   <header>
     <h1 id="title">Decision answers</h1>
     <p class="lede" id="lede"></p>
-    <p class="lede">For each decision, pick one option or one follow-up (the radio buttons allow only one), and add your words if you like. Each click saves at once; there is no submit button. Tell Claude in chat when you're done. A <span class="slug-t">number · name</span> is a decision: hover or click it to see that decision. Each line shows, after an arrow (→), what the decision changes in the system the work builds, across its options; each card opens on a TLDR, then its Context (the terms it uses), then its impact, one facet a line, then one line per option; the folds under it go from compressed to full detail. A part with a <i>more detail</i> button, above or inside a fold, shows more detail as short bullets when you click it or its text, and full detail in headed sections on a second click; <b>More</b> beside an option shows it in full, with its own effect, reach, undo and cost. A part with nothing to say (none) is left out. An Impact describes the system the work builds, never the review or the process; its <i>later:</i> line says what waiting holds up.<span id="doclink"></span></p>
+    <p class="lede">For each decision, pick one option or one follow-up (the radio buttons allow only one), and add your words if you like. Each click saves at once; there is no submit button. Tell Claude in chat when you're done. The map under the progress bar lists the groups; each decision is one line in its group, and a click on the line opens its card (<b>Expand all</b> and <b>Collapse all</b> open or close every card). <b>Use recommendation</b> and <b>Later</b> beside a line answer without opening the card. A <span class="slug-t">number · name</span> is a decision: hover over it to see it; click it to open its card. Each line shows, after an arrow (→), what the decision changes in the system the work builds, across its options; each card opens on a TLDR, then its Context (the terms it uses), then its impact, one facet a line, then one line per option; the folds under it go from compressed to full detail. A part with a <i>more detail</i> button, above or inside a fold, shows more detail as short bullets when you click it or its text, and full detail in headed sections on a second click; <b>More</b> beside an option shows it in full, with its own effect, reach, undo and cost. A part with nothing to say (none) is left out. An Impact describes the system the work builds, never the review or the process; its <i>later:</i> line says what waiting holds up.<span id="doclink"></span></p>
     <div class="banner" id="nodb" hidden>This view can't save answers. Nothing you pick here is kept; answer in chat instead (<code id="nodbex">N: a</code>).</div>
     <div class="banner" id="viewonly" hidden>You are viewing these answers. Only the page's owner can answer here.</div>
     <div class="banner" id="nodata" hidden>The decisions didn't load. Reload the page; if it keeps failing, ask Claude for them in chat.</div>
@@ -239,19 +247,14 @@ footer{color:var(--muted);font-size:.85rem;max-width:70ch}
     <span class="count" id="count">loading decisions…</span>
     <span class="meter" aria-hidden="true"><i id="meterfill"></i></span>
     <span class="save" id="save">connecting…</span>
-    <button class="linkish" id="toggleall" type="button">Open all cards</button>
   </div>
-
-  <section aria-labelledby="maph">
-    <h2 id="maph" style="margin-bottom:10px">At a glance</h2>
-    <div class="hud" id="hud"><div class="row"><span></span><span class="t">Loading the decisions…</span></div></div>
-  </section>
+  <nav class="map" id="map" aria-label="Groups"><span class="lbl">Loading the decisions…</span></nav>
 
   <div id="cards" style="display:flex;flex-direction:column;gap:28px"></div>
 
   <footer>The cards load from <code>cards.json</code> beside this page, so a new set of decisions is a data file and a republish. Answers are stored as you wrote them; a follow-up's words become its <code>[when]</code> or <code>[what]</code>. Nothing you pick is acted on until Claude has read it back to you in chat.</footer>
 </div>
-<div class="pop" id="pop" role="dialog" aria-live="polite" hidden></div>
+<div class="tip" id="tip" role="tooltip" hidden></div>
 
 <script>
 let LAYERS=[],FOLLOW=[],CARDS=[],REFS={},byN=new Map(),FOLLOW_KEYS=new Set();
@@ -263,24 +266,26 @@ if(typeof ResizeObserver==="function"){const barEl=$(".bar");
   if(barEl)new ResizeObserver(()=>document.documentElement.style.scrollPaddingTop=(barEl.offsetHeight+12)+"px").observe(barEl)}
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]));
 const nameOf=k=>{const c=byN.get(k);if(c)return c.t;const r=REFS[k];return r?r.short:""};
-const slug=k=>'<button type="button" class="slug'+(byN.has(k)?' in':'')+'" data-ref="'+esc(k)+'" aria-haspopup="dialog">'+esc(k)+(nameOf(k)?' · '+esc(nameOf(k)):'')+'</button>';
+/* a decision reference, N · short name (answer 335's feedback): a card on the page is a link that opens its card
+   (data-goto); a decision in refs shows its tooltip only. Hovering or focusing either shows its tooltip (tipHtml).
+   The check refuses any other [[N]]; an older page's shows as plain text */
+const slug=k=>{const t=esc(k)+(nameOf(k)?' · '+esc(nameOf(k)):'');
+  if(byN.has(k))return '<button type="button" class="slug in" data-ref="'+esc(k)+'" data-goto="'+esc(k)+'" aria-describedby="tip">'+t+'</button>';
+  if(Object.prototype.hasOwnProperty.call(REFS,k))return '<button type="button" class="slug" data-ref="'+esc(k)+'" aria-describedby="tip">'+t+'</button>';
+  return '<span class="slug-t">'+t+'</span>'};
 const code=s=>s.replace(/`([^`]+)`/g,"<code>$1</code>");
 const fmt=s=>code(esc(s==null?"":s)).replace(/\[\[([0-9]+)\]\]/g,(m,k)=>slug(k));
 const fmtPlain=s=>code(esc(s==null?"":s)).replace(/\[\[([0-9]+)\]\]/g,(m,k)=>'<span class="slug-t">'+esc(k)+(nameOf(k)?' · '+esc(nameOf(k)):'')+'</span>');
-const recOpt=c=>c.o.find(o=>o[0]===c.rec)||["","","","",""];
-const recHead=c=>recOpt(c)[3];
 /* the rec slot: "rec (b)", or the no-recommendation label */
 const recPill=c=>c.rec?'<span class="pill rec">rec ('+esc(c.rec)+')</span>':'<span class="pill none">'+esc(c.norec||"no recommendation")+'</span>';
-const recSub=c=>c.rec?fmtPlain(recHead(c)):"";
 /* a decision raised from one labelled item of a source shows its title first, then the label and its short
    name, muted (answer 313; chat keeps the label first): Cap the upload size · F7 (oversize upload) */
 const srcLabel=c=>isLabel(c.label)?'<span class="slabm"> · <span class="slab">'+esc(c.label.id)+'</span> <span class="slabn">('+esc(c.label.name)+')</span></span>':'';
 const titleHtml=c=>esc(c.t)+srcLabel(c);
-const metaPills=c=>(c.warn?'<span class="pill warn">⚠ one-way</span>':'')+(c.class?'<span class="pill cls">'+esc(c.class)+'</span>':'');
 const fid=k=>esc(k.replace(/\s/g,"_"));
 
 /* impact, one vocabulary at every size (the decisions skill): Effect, Wait, Reach, Undo, Cost */
-/* tag size: the effect alone, after an arrow (the map, a closed card, the popup) */
+/* tag size: the effect alone, after an arrow (a card's row) */
 const tagEffect=c=>'<span class="eff"><b>→</b>'+fmtPlain(c.impact.effect)+'</span>';
 /* the facets in their one order: key, the label a line opens with, the heading at full detail */
 const IMP_FACETS=[["effect","→","Effect"],["wait","later:","Wait"],["reach","reach:","Reach"],["undo","undo:","Undo"],["cost","cost:","Cost"]];
@@ -305,9 +310,9 @@ const actList=(c,k)=>{const st=c&&c.act&&typeof c.act==="object"?c.act[k]:null;
 /* a fill-in placeholder: an angle-bracketed word with no spaces, such as <dir> or <path> */
 const PLACEHOLDER=/<[A-Za-z][\w-]*>/;
 
-/* the card's Context: under the TLDR on the open card and in the popup (plain=true renders slugs as text, the popup's way).
+/* the card's Context: under the TLDR on the open card.
    An older card's what, when present, is shown at its end, after the cue, so nothing is lost */
-const contextBlock=(c,plain)=>{const f=plain?fmtPlain:fmt;
+const contextBlock=c=>{const f=fmt;
   return '<div class="ctx"><span class="lbl">Context</span><p>'+f(c.context)+'</p>'
     +(isTxt(c.what)&&shown(c.what)?'<p>'+f(c.what)+'</p>':'')+'</div>'};
 /* a TLDR bullet that carries the recommendation (the options list marks it): only forms that cannot be anything else.
@@ -415,17 +420,36 @@ function check(d){
     }
   }
   for(const k in (d.refs||{}))if(!/^[0-9]+$/.test(k))bad.push("refs: key "+k+" is not a number");
+  /* the reference rule (answer 335's feedback): an open decision a card names goes on the page as a card, a ref is
+     never a card, and every [[N]] the page shows (a card's fields, the lede, a layer's note and shared context) is
+     a card or a ref. An excerpt is data, never parsed, so it is not scanned */
+  {const ns=new Set(d.cards.map(c=>String(c&&c.n))),R=isObj(d.refs)?d.refs:{};
+    const open=r=>isObj(r)&&(/^\s*open\s*$/i.test(r.when||"")||/not yet answered/i.test(r.a||""));
+    for(const k in R){if(ns.has(k))bad.push("refs "+k+": decision "+k+" is a card on the page; drop it from refs");
+      else if(open(R[k]))bad.push("refs "+k+": decision "+k+" is still open; put its card on the page instead of a ref")}
+    const isExcerpt=v=>isObj(v)&&typeof v.text==="string"&&Object.keys(v).every(k=>k==="text"||k==="lang"||k==="src");
+    const scan=(at,v)=>{if(typeof v==="string"){const re=/\[\[([0-9]+)\]\]/g;let m;while((m=re.exec(v)))if(!ns.has(m[1])&&!Object.prototype.hasOwnProperty.call(R,m[1]))bad.push(at+": [["+m[1]+"]] is neither a card on the page nor a ref: put its card on the page, or give it a refs entry with its answer")}
+      else if(Array.isArray(v))v.forEach(x=>scan(at,x));else if(isObj(v)&&!isExcerpt(v))for(const k in v)scan(at,v[k])};
+    for(const c of d.cards)if(isObj(c))for(const k in c)if(k!=="n"&&k!=="L"&&k!=="rev")scan("card "+c.n+": "+k,c[k]);
+    if(isObj(d.page))scan("page.lede",d.page.lede);
+    d.layers.forEach(l=>{if(Array.isArray(l)){scan("layer "+l[0]+" note",l[2]);scan("layer "+l[0]+" shared",l[3])}})}
   return bad;
 }
 
 /* ---- the card renderer: page-free, so the tests render it under node. It reads answers, FOLLOW
    and the slug globals when it is called, never when it is defined ---- */
-function ansLabel(c,a){
-  if(!a||(!a.choice&&!a.words))return '<span class="pill none">open</span>';
+/* an answer in words: its choice (a letter in brackets, or a follow-up), " · rec" when it is the recommendation, or
+   "words only"; "" when there is none */
+function ansText(c,a){
+  if(!a||(!a.choice&&!a.words))return "";
   let t=a.choice?(FOLLOW_KEYS.has(a.choice)?a.choice:"("+a.choice+")"):"words only";
   if(c.rec&&a.choice===c.rec)t+=" · rec";
-  if(a.words)t+=" …";
-  return '<span class="pill done">'+esc(t)+'</span>';
+  return t;
+}
+function ansLabel(c,a){
+  const t=ansText(c,a);
+  if(!t)return '<span class="pill none">open</span>';
+  return '<span class="pill done">'+esc(t+(a.words?" …":""))+'</span>';
 }
 function line(label,text){return isTxt(text)&&shown(text)?'<p class="extra"><strong>'+esc(label)+'</strong> '+fmt(text)+'</p>':''}
 
@@ -560,11 +584,26 @@ function optionDetail(c,k,P){
   const rowHtml=f("Effect",b.happens)+f("Reach",b.who)+(isTxt(b.undo)?'<p>'+(b.oneway===true?'<span class="lbl owu">⚠ Undo</span>':'<span class="lbl">Undo</span>')+fmtD(b.undo)+'</p>':'')+f("Cost",b.cost);
   return c.warn?rowHtml+text+imp:text+imp+rowHtml;
 }
-/* one open card, as renderCards places it in its group */
+/* the effect a card's row shows after the rec pill: the Effect across the options, at tag size (the page's
+   *Impact across the options*, while decision 335 is open). One helper, so its source can change alone */
+const rowEffect=c=>tagEffect(c);
+/* a card's one-line row (the operator's prototype feedback, 2026-10-22): the fold marker, the number, the title
+   with its label after it, the ⚠ pill on a one-way card, the rec pill and the row's effect, then the answer. It is
+   the card's summary, its one open-and-close control, so it holds no other control and no link */
+const rowHtml=c=>{const n=esc(c.n);
+  return '<span class="tw" aria-hidden="true"></span><span class="n">'+n+'</span><h3>'+titleHtml(c)+'</h3>'
+    +(c.warn?'<span class="pill warn">⚠ one-way</span>':'')
+    +'<span class="rrec">'+recPill(c)+rowEffect(c)+'</span>'
+    +'<span class="ans" id="sum-'+n+'">'+ansLabel(c,answers[c.n])+'</span>'};
+/* the row's quick answers (answer 334 (a)): Use recommendation on a card with one, and Later, beside the row and
+   outside it; each pressed while it is the current answer */
+const quickHtml=c=>{const n=esc(c.n);
+  return '<span class="quick">'+(c.rec?'<button class="btn" type="button" data-quick="rec" data-n="'+n+'" aria-pressed="false" title="Answer ('+esc(c.rec)+'), the recommendation">Use recommendation</button>':'')
+    +'<button class="btn" type="button" data-quick="later" data-n="'+n+'" aria-pressed="false" title="Answer later">Later</button></span>'};
+/* one card, as renderCards places it in its group: closed to its row, its quick answers beside it */
 function cardHtml(c){
   const n=esc(c.n),g="d"+n,P=parts(c);
-  let h='<details class="card" id="card-'+n+'"><summary><span class="n">'+n+'</span><h3>'+titleHtml(c)+'</h3>'
-    +'<span class="meta">'+metaPills(c)+recPill(c)+tagEffect(c)+(shown(c.dep)?'<span>depends on: '+fmtPlain(c.dep)+'</span>':'')+'<span id="sum-'+n+'">'+ansLabel(c,answers[c.n])+'</span></span></summary>'
+  let h='<div class="cardw '+(c.rec?'q2':'q1')+'"><details class="card" id="card-'+n+'"><summary>'+rowHtml(c)+'</summary>'
     +'<div class="body">'+secHtml(c,"tldr","TLDR",P.tldr)+secHtml(c,"ctx","Context",P.ctx)+secHtml(c,"imp","Impact",P.imp)
     +line("If left:",c.ifleft)+line("A round costs:",c.roundcosts)+line("If unanswered:",c.ifunanswered)
     +'<fieldset><legend>Your answer: one option or one follow-up</legend><div class="opts">';
@@ -594,7 +633,7 @@ function cardHtml(c){
     /* Basis always (its word is a statement, none included); the Unknown line here only when it is not none:
        the rec line states "unknown: none" */
     +'<details class="pane"><summary>Evidence and unknowns</summary><div><p><span class="lbl">Basis</span>'+esc(c.basis)+(shown(c.reason)?' — '+fmt(c.reason):'')+'</p>'+secHtml(c,"ev","Evidence",P.ev)+(shown(c.unknown)?'<p><span class="lbl">Unknown</span>'+fmt(c.unknown)+'</p>':'')+'</div></details>'
-    +'</div></div></details>';
+    +'</div></div></details>'+quickHtml(c)+'</div>';
 }
 
 /* a group's heading (rule 263 on the page): a band with the Group label, its title, a count pill and what its
@@ -610,6 +649,34 @@ function layerHtml(l,cs){
     +'</div><div class="gcards">'+cs.map(cardHtml).join("")+'</div></section>';
 }
 
+/* the group map (the operator's prototype feedback 1, 2026-10-22): a button per group, in order, its title and
+   its count, that goes to the group's heading; then Expand all and Collapse all */
+function mapHtml(){
+  return '<span class="lbl">Groups</span><span class="mlinks">'+LAYERS.map(l=>{const n=CARDS.filter(c=>c.L===l[0]).length;
+      return '<button class="btn" type="button" data-go="layer-'+fid(l[0])+'">'+esc(l[1])+' · '+n+'</button>'}).join("")+'</span>'
+    +'<span class="mall"><button class="btn" type="button" data-all="open">Expand all</button>'
+    +'<button class="btn" type="button" data-all="close">Collapse all</button></span>';
+}
+/* Expand all and Collapse all: how is a button's data-all */
+const setAll=(ds,how)=>{for(const d of ds)d.open=how==="open"};
+/* a reference's tooltip (answer 335's feedback): a card on the page shows its number and title, its Context and each
+   option as (x) title — one line, the recommended one bold and marked, then your answer; a decision in refs shows
+   its question, the answer and when. Slugs read as text and nothing links: it is a peek, with no levels */
+function tipHtml(k){
+  const c=byN.get(k),r=Object.prototype.hasOwnProperty.call(REFS,k)?REFS[k]:null;
+  if(c){const a=answers[c.n],at=ansText(c,a);
+    return '<p class="tip-h"><span class="n">'+esc(k)+'</span><span>'+titleHtml(c)+'</span></p>'
+      +'<p><span class="lbl">Context</span>'+fmtPlain(c.context)+'</p>'
+      +'<ol class="tip-o">'+c.o.map(o=>{const rec=!!c.rec&&o[0]===c.rec;
+        return '<li'+(rec?' class="isrec"':'')+'><span class="ol">('+esc(o[0])+')</span> '+esc(o[3])
+          +(shown(o[4])?'<span class="tip-l"> — '+fmtPlain(o[4])+'</span>':'')+(rec?'<span class="pill rec">recommended</span>':'')+'</li>'}).join("")+'</ol>'
+      +'<p class="tip-a">your answer: '+(at?esc(at):'none yet')+(a&&a.words?' — “'+esc(a.words)+'”':'')+'</p>'}
+  if(r)return '<p class="tip-h"><span class="n">'+esc(k)+'</span><span>'+esc(r.short)+'</span></p>'
+    +'<p><span class="lbl">Asked</span>'+code(esc(r.q))+'</p><p><span class="lbl">Answer</span>'+code(esc(r.a))+'</p>'
+    +'<p class="tip-m">Answered '+esc(r.when)+' · not on this page</p>';
+  return '<p>Decision '+esc(k)+' · not on this page</p>';
+}
+
 /* ---- end of the page-free part: everything above runs without a page, and the tests load it ---- */
 
 /* an answer counts for the card revision it was given to: no clocks are compared */
@@ -623,22 +690,7 @@ function applyRaw(){
   answers=next;syncAll();
 }
 
-function renderHud(){
-  let h="";
-  for(const [key,title] of LAYERS){
-    h+='<div class="hud-layer">'+esc(title)+'</div>';
-    for(const c of CARDS.filter(x=>x.L===key)){
-      const n=esc(c.n);
-      h+='<div class="row"><span class="n">'+n+'</span>'
-        +'<span class="t"><button type="button" data-open="'+n+'">'+titleHtml(c)+'</button>'
-        +'<span class="sub">'+metaPills(c)+' '+recPill(c)+' '+recSub(c)+' '+tagEffect(c)+'</span></span>'
-        +'<span class="quick">'+(c.rec?'<button class="btn" type="button" data-quick="rec" data-n="'+n+'">Use recommendation</button>':'')
-        +'<button class="btn" type="button" data-quick="later" data-n="'+n+'">Later</button></span>'
-        +'<span class="ans" id="ans-'+n+'">'+ansLabel(c,answers[c.n])+'</span></div>';
-    }
-  }
-  $("#hud").innerHTML=h;
-}
+function renderMap(){$("#map").innerHTML=mapHtml()}
 
 function renderCards(){
   let h="";
@@ -666,8 +718,8 @@ function syncCard(n){
   document.querySelectorAll('input[name="'+g+'"]').forEach(r=>{r.checked=(r.value===a.choice);r.disabled=readonly});
   const ta=$("#"+g+"-words");
   if(ta){if(document.activeElement!==ta)ta.value=a.words||"";ta.placeholder=placeholderFor(a.choice);ta.disabled=readonly}
-  for(const id of ["#sum-"+n,"#ans-"+n]){const el=$(id);if(el)el.innerHTML=ansLabel(c,answers[n])}
-  document.querySelectorAll('[data-n="'+n+'"][data-quick]').forEach(b=>{b.classList.toggle("on",b.dataset.quick==="rec"?(!!c.rec&&a.choice===c.rec):a.choice==="later");b.disabled=readonly});
+  const sum=$("#sum-"+n);if(sum)sum.innerHTML=ansLabel(c,answers[n]);
+  document.querySelectorAll('[data-n="'+n+'"][data-quick]').forEach(b=>{b.setAttribute("aria-pressed",String(b.dataset.quick==="rec"?(!!c.rec&&a.choice===c.rec):a.choice==="later"));b.disabled=readonly});
 }
 function syncAll(){
   if(!CARDS.length)return;
@@ -675,7 +727,7 @@ function syncAll(){
   const done=CARDS.filter(c=>{const a=answers[c.n];return a&&(a.choice||a.words)}).length;
   $("#count").textContent=done+" of "+CARDS.length+" answered";
   $("#meterfill").style.width=(100*done/CARDS.length)+"%";
-  if(popKey)fillPop(popKey);
+  if(tipFor)tip.innerHTML=tipHtml(tipFor.dataset.ref);
 }
 function setSave(t,err){const s=$("#save");s.textContent=t;s.classList.toggle("err",!!err)}
 
@@ -707,50 +759,32 @@ async function write(n){
 }
 function choose(n,choice){if(readonly)return;answers[n]=Object.assign({},answers[n]||{},{choice});syncCard(n);syncAll();write(n)}
 
-/* popup */
-const pop=$("#pop");let popKey=null,popPinned=false,popTimer=null,popAnchor=null;
-function fillPop(k){
-  const c=byN.get(k),r=REFS[k];let h="";
-  if(c){
-    h='<div class="pop-h"><span class="n">'+esc(k)+'</span><span>'+titleHtml(c)+'</span></div>'
-     +'<p>'+metaPills(c)+recPill(c)+' '+recSub(c)+'</p>'
-     +'<p><span class="lbl">Your answer</span>'+ansLabel(c,answers[c.n])+'</p>'
-     +'<ul class="tldr">'+c.tldr.map(b=>'<li>'+fmtPlain(b)+'</li>').join("")+'</ul>'
-     +contextBlock(c,true)
-     +'<p><span class="lbl">Impact</span>'+tagEffect(c)+'</p>'
-     +'<ol>'+c.o.map(o=>'<li'+(c.rec&&o[0]===c.rec?' class="isrec"':'')+'><span class="ol">('+esc(o[0])+')</span>'+esc(o[3])+'</li>').join("")+'</ol>'
-     +'<div class="pop-f"><button class="btn" type="button" data-open="'+esc(c.n)+'">Open card</button>'+(c.rec&&!readonly?'<button class="btn" type="button" data-quick="rec" data-n="'+esc(c.n)+'">Use recommendation</button>':'')+'</div>';
-  }else if(r){
-    h='<div class="pop-h"><span class="n">'+esc(k)+'</span><span>'+esc(r.short)+'</span></div>'
-     +'<p><span class="lbl">Asked</span>'+code(esc(r.q))+'</p>'
-     +'<p><span class="lbl">Your answer</span>'+code(esc(r.a))+'</p>'
-     +'<p class="muted">Answered '+esc(r.when)+' · not on this page</p>';
-  }else h='<p>Decision '+esc(k)+'</p>';
-  pop.innerHTML=h;
-}
+/* the tooltip: shown while a reference is hovered or focused, filled by tipHtml; hidden on Escape and when the
+   pointer leaves */
+const tip=$("#tip");let tipFor=null;
 function place(el){
-  const b=el.getBoundingClientRect(),w=pop.offsetWidth,hgt=pop.offsetHeight;
+  const b=el.getBoundingClientRect(),w=tip.offsetWidth,hgt=tip.offsetHeight;
   let left=Math.min(Math.max(16,b.left),document.documentElement.clientWidth-w-16);
   let top=b.bottom+6;if(top+hgt>innerHeight-8&&b.top-hgt-6>8)top=b.top-hgt-6;
-  pop.style.left=(left+scrollX)+"px";pop.style.top=(top+scrollY)+"px";
+  tip.style.left=(left+scrollX)+"px";tip.style.top=(top+scrollY)+"px";
 }
-function openPop(el,pinned){
-  clearTimeout(popTimer);popKey=el.dataset.ref;popAnchor=el;popPinned=pinned;
-  fillPop(popKey);pop.hidden=false;place(el);
-  document.querySelectorAll(".slug[aria-expanded]").forEach(s=>s.removeAttribute("aria-expanded"));
-  el.setAttribute("aria-expanded","true");
-}
-function closePop(){pop.hidden=true;popKey=null;popPinned=false;if(popAnchor){popAnchor.removeAttribute("aria-expanded");popAnchor=null}}
+function showTip(el){tipFor=el;tip.innerHTML=tipHtml(el.dataset.ref);tip.hidden=false;place(el)}
+function hideTip(){tip.hidden=true;tipFor=null}
 const hoverable=matchMedia("(hover:hover)").matches;
 document.addEventListener("mouseover",e=>{
   if(!hoverable)return;
-  const s=e.target.closest(".slug");
-  if(s){clearTimeout(popTimer);if(popKey!==s.dataset.ref||pop.hidden)popTimer=setTimeout(()=>openPop(s,false),180);return}
-  if(e.target.closest("#pop")){clearTimeout(popTimer);return}
-  if(!popPinned&&!pop.hidden){clearTimeout(popTimer);popTimer=setTimeout(closePop,260)}
+  const s=e.target.closest("[data-ref]");
+  if(s){if(s!==tipFor)showTip(s)}else if(tipFor&&tipFor!==document.activeElement)hideTip();
 });
-document.addEventListener("focusin",e=>{const s=e.target.closest(".slug");if(s)openPop(s,false)});
-document.addEventListener("keydown",e=>{if(e.key==="Escape"&&!pop.hidden){const a=popAnchor;closePop();if(a)a.focus()}});
+document.addEventListener("focusin",e=>{const s=e.target.closest("[data-ref]");if(s)showTip(s);else if(tipFor)hideTip()});
+document.addEventListener("keydown",e=>{if(e.key==="Escape"&&tipFor)hideTip()});
+/* a reference to a card on the page opens it, scrolls to it, moves focus to its row and marks it briefly */
+function goCard(k){
+  const d=$("#card-"+k);if(!d)return;
+  d.open=true;d.scrollIntoView({behavior:matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth",block:"start"});
+  d.classList.add("flash");setTimeout(()=>d.classList.remove("flash"),1400);
+  const s=d.querySelector("summary");if(s)s.focus({preventScroll:true});
+}
 
 document.addEventListener("change",e=>{
   const t=e.target;if(t.type!=="radio"||!t.name.startsWith("d"))return;
@@ -764,11 +798,14 @@ document.addEventListener("input",e=>{
 });
 document.addEventListener("click",e=>{
   const s=e.target.closest(".slug");
-  if(s){e.preventDefault();e.stopPropagation();if(popKey===s.dataset.ref&&popPinned)closePop();else openPop(s,true);return}
+  if(s){e.preventDefault();e.stopPropagation();if(s.dataset.goto){hideTip();goCard(s.dataset.goto)}return}
   const q=e.target.closest("[data-quick]");
   if(q){const n=q.dataset.n,c=byN.get(n);if(!c||(q.dataset.quick==="rec"&&!c.rec))return;choose(n,q.dataset.quick==="rec"?c.rec:"later");return}
-  const o=e.target.closest("[data-open]");
-  if(o){closePop();const d=$("#card-"+o.dataset.open);if(!d)return;d.open=true;d.scrollIntoView({behavior:matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth",block:"start"});return}
+  const go=e.target.closest("[data-go]");
+  if(go){const sec=document.getElementById(go.dataset.go);if(!sec)return;sec.scrollIntoView({behavior:matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth",block:"start"});
+    const h=sec.querySelector("h2");if(h)h.focus({preventScroll:true});return}
+  const all=e.target.closest("[data-all]");
+  if(all){setAll(document.querySelectorAll("details.card"),all.dataset.all);return}
   const cl=e.target.closest("[data-clear]");
   if(cl){if(readonly)return;const n=cl.dataset.clear;answers[n]={};const ta=$("#d"+n+"-words");if(ta)ta.value="";syncCard(n);syncAll();write(n);return}
   /* a part steps on its button, or on a click on its shown text: never on a link, a control, a fold's
@@ -777,14 +814,12 @@ document.addEventListener("click",e=>{
   if(lv)stepSection(lv.closest(".sec"));
   else if(om)toggleOption(om);
   else if(sb&&!e.target.closest("a,button,input,label,textarea,select,summary")&&!String(getSelection()).trim())stepSection(sb.closest(".sec"));
-  if(e.target.id==="toggleall"){const all=[...document.querySelectorAll("details.card")],open=!all.every(d=>d.open);all.forEach(d=>d.open=open);e.target.textContent=open?"Close all cards":"Open all cards";return}
-  if(!pop.hidden&&!e.target.closest("#pop"))closePop();
 });
-addEventListener("resize",()=>{if(!pop.hidden&&popAnchor)place(popAnchor)});
+addEventListener("resize",()=>{if(tipFor)place(tipFor)});
 
 fetch("cards.json").then(r=>{if(!r.ok)throw new Error("cards.json: HTTP "+r.status);return r.json()}).then(d=>{
   const bad=check(d);
-  if(bad.length){const b=$("#nodata");b.textContent="The decisions can't be shown: cards.json is not valid. "+bad.slice(0,6).join("; ")+(bad.length>6?"; and "+(bad.length-6)+" more":"")+".";b.hidden=false;$("#count").textContent="not loaded";$("#hud").textContent="";return}
+  if(bad.length){const b=$("#nodata");b.textContent="The decisions can't be shown: cards.json is not valid. "+bad.slice(0,6).join("; ")+(bad.length>6?"; and "+(bad.length-6)+" more":"")+".";b.hidden=false;$("#count").textContent="not loaded";$("#map").textContent="";return}
   LAYERS=d.layers;FOLLOW=d.follow;CARDS=d.cards;REFS=d.refs||{};
   byN=new Map(CARDS.map(c=>[String(c.n),c]));FOLLOW_KEYS=new Set(FOLLOW.map(f=>f[0]));
   const pg=d.page||{};
@@ -792,7 +827,7 @@ fetch("cards.json").then(r=>{if(!r.ok)throw new Error("cards.json: HTTP "+r.stat
   $("#lede").innerHTML=typeof pg.lede==="string"?fmt(pg.lede):"";
   if(pg.doc&&typeof pg.doc.url==="string"&&/^https:\/\//.test(pg.doc.url))$("#doclink").innerHTML=' The reading copy is <a href="'+esc(pg.doc.url)+'" target="_blank" rel="noopener">'+esc(pg.doc.name||"this doc")+'</a>.';
   $("#nodbex").textContent=CARDS[0].n+": "+(CARDS[0].rec||CARDS[0].o[0][0]);
-  renderHud();renderCards();applyRaw();
+  renderMap();renderCards();applyRaw();
 }).catch(e=>{$("#nodata").hidden=false;$("#count").textContent="not loaded"});
 
 const use=n=>window.claude&&window.claude.use?window.claude.use(n).catch(()=>null):Promise.resolve(null);
