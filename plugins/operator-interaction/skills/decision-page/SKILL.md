@@ -256,20 +256,10 @@ written before Context existed, whose own `what` and resume cue move into `conte
 terms are glossed from its own folds alone. A gloss drawn from anywhere outside the card is
 new information: a new `rev`.
 
-A `cards.json` written before `detail` existed renders as it did, with **More** buttons and no
-toggles. On a republish, write the depth and the `detail` levels its decision calls for
-(step 2) into each card with no counting answer, and into each card revised anyway, each with
-a new `rev`; leave a card the operator has answered as it is, unless it is revised for another
-reason. A card that gets `detail` gets a new `rev`, so the republish hands it over as shown
-again (§ Hand over what was shown), with the publish time.
-
-A `cards.json` written before the level shapes renders TLDR first, the Impact one facet a
-line, and its text levels as paragraphs; nothing is refused, and the runner lints its shapes,
-its ids and an effect that reads as the recommendation's. On a republish, give each card with
-no counting answer, and each card revised anyway, its `impact` across the options, its levels
-in their shapes and names in place of its ids, each with a new `rev`, handed over as shown
-again. Leave a card the operator has answered as it is, its lints left knowingly, unless it is
-revised for another reason.
+A `cards.json` written before `detail`, the level shapes or a later field existed: what it
+renders and what a republish writes into it is `references/cards-schema.md` § Republishing
+older data. A card the operator has answered stays as it is, its lints left knowingly, unless
+it is revised for another reason.
 
 **Hand over what was shown.** After a publish or republish, for every card whose number and
 `rev` were not on the page before (on a first publish, every card), hand the caller the
@@ -343,6 +333,18 @@ answer to a card whose `rev` has not moved is a new answer and hands over one mo
 - *An answer the operator gave does not come back as new*: it was given to an earlier `rev`
   of its card (the page shows it open), or its `at` equals the one last handed over
   (unchanged, already handed over).
+
+## Rulings
+
+The page's rulings are the `decisions` skill's `references/rulings.md`: those titled *on an
+answer page*, and the card rules the page renders.
+
+- **Both surfaces** (2026-10-21, the operator's correction, as the librarian recorded it) — a
+  change to how a decision is shown, written or checked lands on the chat card (the
+  `decisions` skill), the answer page (this skill) and the stored card where it applies,
+  planned together; a surface left out names its obvious reason, and one that is unclear goes
+  to the operator. Not taken: a rule scoped to the surface whose feedback raised it, the other
+  surface following only by a decision of its own.
 
 ## References
 

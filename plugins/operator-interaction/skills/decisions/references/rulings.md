@@ -210,3 +210,13 @@ alternative not taken, in case practice argues for it.
   can show each finding (finding first, part of (a), lands with 265's confirmation); then the page is offered for such sets again. Other sets are as
   before. Not taken: every set to chat until then (270 (b)); the page offered as before
   (270 (c)).
+- **Both surfaces** (2026-10-21, the operator's correction after the 2026-10-20 builds, as the
+  librarian recorded it: "a decision-format change goes to both chat and the page unless there
+  is an obvious reason; ask when unclear"; that the librarian's stored card follows where it
+  applies is in the same record) — a change to how a decision is shown, written or checked
+  lands on the chat card (this skill), the answer page (the `decision-page` skill) and the
+  stored card where it applies, planned together; a surface left out names its obvious
+  reason, and one that is unclear goes to the operator. Not taken: a rule scoped to the
+  surface whose feedback raised it, the other surface following only by a decision of its own
+  (the practice the operator corrected, which kept 259's render and check, 261, 263 and 268
+  chat-only).
