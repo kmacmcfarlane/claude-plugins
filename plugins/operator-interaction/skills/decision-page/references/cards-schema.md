@@ -43,10 +43,10 @@ Text fields are plain text: the page escapes them. Two marks are rendered:
 
 - `` `code` `` in backticks shows as code;
 - `[[N]]` is a **decision slug**: it renders as *N · short name*; a click opens its card when
-  it is on the page; hovering or focusing it shows its tooltip, and on a decision not on the
-  page a tap or click pins it (a second tap, a tap elsewhere or Escape closes it) (its Context and each option,
-  the recommended one marked, and your answer; for a decision not on the page, the question,
-  the answer and when). N must be a card or a `refs` entry (its card's `t`, or the entry's
+  it is on the page, and hovering or focusing it shows its tooltip (its Context and each
+  option, the recommended one marked, and your answer; for a decision not on the page, the
+  question, the answer and when), which a tap or click pins on a decision not on the page and
+  a second tap, a tap elsewhere or Escape closes. N must be a card or a `refs` entry (its card's `t`, or the entry's
   `short`, is the short name): the page refuses any other N. Use a slug wherever a card
   mentions another decision by number.
 

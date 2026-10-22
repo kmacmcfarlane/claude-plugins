@@ -222,9 +222,10 @@ details.pane>div{padding:6px 0 2px;font-size:.92rem;max-width:70ch;display:flex;
 .xpre code{background:none;padding:0;font-size:inherit;border-radius:0}
 .xcc{color:var(--warn);border:1px solid currentColor;border-radius:3px;padding:0 2px;font-size:.85em}
 
-/* a decision reference's tooltip, on hover or focus; it never takes the pointer */
-/* pinned, it takes the pointer: a tap on it closes it and reaches nothing underneath */
-.tip.pinned{pointer-events:auto}
+/* a decision reference's tooltip, on hover, focus or a tap; hidden, it takes no pointer */
+/* shown, pinned or not, it takes the pointer: a tap on it closes it and reaches nothing underneath; the pointer
+   cursor lets iOS deliver the tap */
+.tip.shown{pointer-events:auto;cursor:pointer}
 .tip{position:absolute;z-index:10;width:min(420px,calc(100vw - 32px));background:var(--surface);border:1px solid var(--accent);border-radius:8px;box-shadow:var(--shadow);padding:10px 12px;display:flex;flex-direction:column;gap:6px;font-size:.86rem;pointer-events:none}
 .tip .lbl{margin-bottom:1px}
 .tip-h{font-family:var(--f-display);font-stretch:88%;font-weight:700;font-size:1rem;display:flex;gap:8px;align-items:baseline}
@@ -775,14 +776,15 @@ function place(el){
 function pinTip(){tipPinned=true;tip.classList.add("pinned")}
 function showTip(el){
   if(tipFor&&tipFor!==el){tipFor.removeAttribute("aria-describedby");tipPinned=false;tip.classList.remove("pinned")}
-  tipFor=el;tip.innerHTML=tipHtml(el.dataset.ref);tip.hidden=false;place(el);el.setAttribute("aria-describedby","tip");
+  tipFor=el;tip.innerHTML=tipHtml(el.dataset.ref);tip.hidden=false;tip.classList.add("shown");place(el);el.setAttribute("aria-describedby","tip");
 }
-function hideTip(){if(tipFor)tipFor.removeAttribute("aria-describedby");tip.hidden=true;tipFor=null;tipPinned=false;tip.classList.remove("pinned")}
+function hideTip(){if(tipFor)tipFor.removeAttribute("aria-describedby");tip.hidden=true;tipFor=null;tipPinned=false;tip.classList.remove("pinned","shown")}
 const hoverable=matchMedia("(hover:hover)").matches;
 document.addEventListener("mouseover",e=>{
   if(!hoverable)return;
   const s=e.target.closest("[data-ref]");
-  if(s){if(s!==tipFor)showTip(s)}else if(tipFor&&!tipPinned&&tipFor!==document.activeElement)hideTip();
+  /* the pointer inside the tooltip keeps it open, so the click guard below can close it */
+  if(s){if(s!==tipFor)showTip(s)}else if(!e.target.closest("#tip")&&tipFor&&!tipPinned&&tipFor!==document.activeElement)hideTip();
 });
 document.addEventListener("focusin",e=>{const s=e.target.closest("[data-ref]");if(s)showTip(s);else if(tipFor)hideTip()});
 document.addEventListener("keydown",e=>{if(e.key==="Escape"&&tipFor)hideTip()});
@@ -805,7 +807,8 @@ document.addEventListener("input",e=>{
   clearTimeout(timers[n]);timers[n]=setTimeout(()=>{timers[n]=null;syncAll();write(n)},600);
 });
 document.addEventListener("click",e=>{
-  /* a tap on a pinned tooltip closes it and stops there: nothing under it (an option, a quick answer) runs */
+  /* a tap on a shown tooltip, pinned or not, closes it and stops there: nothing under it (an option, a
+     follow-up, a quick answer) runs */
   if(e.target.closest("#tip")){e.preventDefault();e.stopPropagation();hideTip();return}
   const s=e.target.closest(".slug");
   /* a reference not on the page has no card to open: a tap or click pins its tooltip, a second one closes it */

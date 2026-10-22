@@ -325,7 +325,7 @@ const document = {addEventListener: (t, f) => { handlers[t] = f; }, activeElemen
   documentElement: {clientWidth: 800, style: {}}, querySelectorAll: () => [], getElementById: () => null};
 const classes = new Set();
 const tipEl = {hidden: true, innerHTML: "", style: {}, offsetWidth: 100, offsetHeight: 50,
-  classList: {add: c => classes.add(c), remove: c => classes.delete(c), contains: c => classes.has(c)}};
+  classList: {add: c => classes.add(c), remove: (...cs) => cs.forEach(c => classes.delete(c)), contains: c => classes.has(c)}};
 const $ = s => s === "#tip" ? tipEl : null;
 const matchMedia = () => ({matches: true}), innerHeight = 800, scrollX = 0, scrollY = 0;
 const getSelection = () => "";
@@ -345,20 +345,38 @@ const log = {};
 handlers.click(ev(ref)); log.pinned = tipPinned; log.pinnedClass = classes.has("pinned");
 handlers.mouseover(ev(plain)); log.afterLeave = {shown: !tipEl.hidden, pinned: tipPinned};
 showTip(ref2); log.afterMove = {pinned: tipPinned, pinnedClass: classes.has("pinned")};
-handlers.click(ev(ref)); hideTip(); log.afterHide = {pinned: tipPinned, shown: !tipEl.hidden};
+handlers.click(ev(ref)); hideTip();
+log.afterHide = {pinned: tipPinned, shown: !tipEl.hidden, classes: [...classes]};
+/* a tap where the tooltip covers a control: the tooltip takes it when the page's CSS gives the tooltip, with
+   the classes it has now, pointer-events auto; a radio under the tap gets its change event */
+const radio = el(["input"]); radio.radio = {type: "radio", name: "d41", value: "b"};
+const takes = () => !tipEl.hidden && (TIP_BASE || TIP_CLASSES.some(c => classes.has(c)));
+const tapOver = under => { const t = takes() ? tipBody : under, e = ev(t), n = calls.length;
+  handlers.click(e); if (t === under && under.radio && !e.pd) handlers.change({target: under.radio});
+  return {calls: calls.slice(n), pd: e.pd, sp: e.sp, shown: !tipEl.hidden}; };
 handlers.click(ev(ref));
-/* a tap where the pinned tooltip covers a quick answer: the tooltip takes it only while pinned (CSS) */
-const e = ev(TIP_TAKES_POINTER && classes.has("pinned") ? tipBody : quick);
-handlers.click(e); log.tap = {calls, pd: e.pd, sp: e.sp, shown: !tipEl.hidden};
+log.tap = tapOver(quick);
+/* a tooltip shown by focus, unpinned: over a quick answer, then over a radio */
+document.activeElement = ref; handlers.focusin(ev(ref)); log.focusQuick = tapOver(quick);
+handlers.focusin(ev(ref)); log.focusRadio = tapOver(radio);
+/* pin, close with a second tap (focus stays), the pointer off and back, then a tap on the tooltip */
+handlers.click(ev(ref)); handlers.click(ev(ref)); handlers.mouseover(ev(plain)); handlers.mouseover(ev(ref));
+log.hoverBack = tapOver(quick);
+/* the pointer moving from a reference into its tooltip keeps it open */
+document.activeElement = null; handlers.mouseover(ev(ref2)); handlers.mouseover(ev(tipBody));
+log.insideTip = {shown: !tipEl.hidden};
 process.stdout.write(JSON.stringify(log));
 """
 
 
 def shell_log(html):
     from test_sticky import rules, decls
-    takes = decls(rules(html).get(".tip.pinned", "")).get("pointer-events") == "auto"
+    r = rules(html)
+    auto = lambda sel: decls(r.get(sel, "")).get("pointer-events") == "auto"
+    classes = [sel[len(".tip."):] for sel in r if re.fullmatch(r"\.tip\.[a-z-]+", sel) and auto(sel)]
     code = html[html.index('const tip=$("#tip")'):html.index('addEventListener("resize"')]
-    script = (SHELL_HARNESS % code).replace("TIP_TAKES_POINTER", "true" if takes else "false")
+    script = (SHELL_HARNESS % code).replace("TIP_BASE", "true" if auto(".tip") else "false").replace(
+        "TIP_CLASSES", json.dumps(classes))
     out = subprocess.run([NODE, "-e", script], capture_output=True, text=True, timeout=60)
     if out.returncode != 0:
         raise AssertionError("node failed: " + out.stderr)
@@ -373,13 +391,16 @@ def pinned_problems(log):
         out.append("the pointer leaving hides a pinned tooltip")
     if log["afterMove"]["pinned"] or log["afterMove"]["pinnedClass"]:
         out.append("showing another reference keeps the tooltip pinned")
-    if log["afterHide"]["pinned"] or log["afterHide"]["shown"]:
+    if log["afterHide"]["pinned"] or log["afterHide"]["shown"] or log["afterHide"]["classes"]:
         out.append("hiding leaves the tooltip pinned")
-    tap = log["tap"]
-    if tap["calls"]:
-        out.append("a tap on the pinned tooltip answered a decision: %s" % tap["calls"])
-    if not (tap["pd"] and tap["sp"]) or tap["shown"]:
-        out.append("a tap on the pinned tooltip does not close it and stop there")
+    for k in ("tap", "focusQuick", "focusRadio", "hoverBack"):
+        tap = log[k]
+        if tap["calls"]:
+            out.append("a tap on the shown tooltip answered a decision (%s): %s" % (k, tap["calls"]))
+        elif not (tap["pd"] and tap["sp"]) or tap["shown"]:
+            out.append("a tap on the shown tooltip does not close it and stop there (%s)" % k)
+    if not log["insideTip"]["shown"]:
+        out.append("the pointer inside the tooltip hides it")
     return out
 
 
@@ -438,16 +459,21 @@ class ReferenceTooltip(unittest.TestCase):
         self.assertNotEqual(moved, fns)
         self.assertTrue(describe_problems(moved))
 
-    def test_a_pinned_tooltip_takes_the_tap_and_answers_nothing(self):
+    def test_a_shown_tooltip_takes_the_tap_and_answers_nothing(self):
         html = PAGE.read_text()
         self.assertEqual(pinned_problems(shell_log(html)), [])
         mutants = {
-            "pointer-events back to none": (".tip.pinned{pointer-events:auto}", ".tip.pinned{pointer-events:none}",
-                                             "a tap on the pinned tooltip answered a decision"),
+            "pointer-events back to none": (".tip.shown{pointer-events:auto;", ".tip.shown{pointer-events:none;",
+                                             "a tap on the shown tooltip answered a decision"),
+            "the old pinned-only pointer rule": (".tip.shown{pointer-events:auto;cursor:pointer}",
+                                                  ".tip.pinned{pointer-events:auto}",
+                                                  "a tap on the shown tooltip answered a decision (focusQuick)"),
             "the tooltip guard dropped": ('if(e.target.closest("#tip")){e.preventDefault();e.stopPropagation();hideTip();return}', "",
-                                          "a tap on the pinned tooltip does not close it and stop there"),
+                                          "a tap on the shown tooltip does not close it and stop there"),
+            "mouseover hides inside the tooltip": ('!e.target.closest("#tip")&&tipFor', "tipFor",
+                                                   "the pointer inside the tooltip hides it"),
             "hideTip keeps the pin": ("tipFor=null;tipPinned=false;", "tipFor=null;", "hiding leaves the tooltip pinned"),
-            "leaving hides a pinned one": ("else if(tipFor&&!tipPinned&&tipFor", "else if(tipFor&&tipFor",
+            "leaving hides a pinned one": ("tipFor&&!tipPinned&&tipFor!==", "tipFor&&tipFor!==",
                                            "the pointer leaving hides a pinned tooltip"),
             "moving keeps the pin": ('tipFor.removeAttribute("aria-describedby");tipPinned=false;tip.classList.remove("pinned")}',
                                      'tipFor.removeAttribute("aria-describedby")}',
