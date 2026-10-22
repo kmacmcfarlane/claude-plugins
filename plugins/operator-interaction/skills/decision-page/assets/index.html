@@ -766,7 +766,7 @@ function choose(n,choice){if(readonly)return;answers[n]=Object.assign({},answers
 /* the tooltip: shown while a reference is hovered or focused, or pinned by a tap or click on a reference not on
    the page; filled by tipHtml. Hidden on Escape, a second tap, a tap elsewhere, and when the pointer leaves an
    unpinned one. The reference is described by it (aria-describedby) only while it is shown and filled */
-const tip=$("#tip");let tipFor=null,tipPinned=false;
+const tip=$("#tip");let tipFor=null,tipPinned=false,tipClosedAt=-Infinity;
 function place(el){
   const b=el.getBoundingClientRect(),w=tip.offsetWidth,hgt=tip.offsetHeight;
   let left=Math.min(Math.max(16,b.left),document.documentElement.clientWidth-w-16);
@@ -807,9 +807,12 @@ document.addEventListener("input",e=>{
   clearTimeout(timers[n]);timers[n]=setTimeout(()=>{timers[n]=null;syncAll();write(n)},600);
 });
 document.addEventListener("click",e=>{
+  /* a click within 500 ms of a tap that closed the tooltip is swallowed: the second click of a double-click or
+     double-tap would land on the control the tooltip covered */
+  if(e.timeStamp-tipClosedAt<500){e.preventDefault();e.stopPropagation();return}
   /* a tap on a shown tooltip, pinned or not, closes it and stops there: nothing under it (an option, a
      follow-up, a quick answer) runs */
-  if(e.target.closest("#tip")){e.preventDefault();e.stopPropagation();hideTip();return}
+  if(e.target.closest("#tip")){e.preventDefault();e.stopPropagation();hideTip();tipClosedAt=e.timeStamp;return}
   const s=e.target.closest(".slug");
   /* a reference not on the page has no card to open: a tap or click pins its tooltip, a second one closes it */
   if(s){e.preventDefault();e.stopPropagation();if(s.dataset.goto){hideTip();goCard(s.dataset.goto)}

@@ -336,7 +336,10 @@ let byN = new Map([["41", {rec: "b"}]]), readonly = false, answers = {}, timers 
 const el = (sels, dataset) => ({dataset: dataset || {}, attrs: {},
   closest(s) { return sels.includes(s) ? this : null; }, setAttribute(k, v) { this.attrs[k] = v; },
   removeAttribute(k) { delete this.attrs[k]; }, getBoundingClientRect: () => ({left: 0, top: 0, bottom: 10})});
-const ev = target => { const e = {target, pd: false, sp: false}; e.preventDefault = () => { e.pd = true; };
+/* each event a second after the last, unless dt says otherwise (a double tap) */
+let now = 0;
+const ev = (target, dt) => { now += dt == null ? 1000 : dt;
+  const e = {target, pd: false, sp: false, timeStamp: now}; e.preventDefault = () => { e.pd = true; };
   e.stopPropagation = () => { e.sp = true; }; return e; };
 """ + "%s" + r"""
 const ref = el([".slug", "[data-ref]", "button"], {ref: "38"}), ref2 = el([".slug", "[data-ref]", "button"], {ref: "39"});
@@ -351,7 +354,7 @@ log.afterHide = {pinned: tipPinned, shown: !tipEl.hidden, classes: [...classes]}
    the classes it has now, pointer-events auto; a radio under the tap gets its change event */
 const radio = el(["input"]); radio.radio = {type: "radio", name: "d41", value: "b"};
 const takes = () => !tipEl.hidden && (TIP_BASE || TIP_CLASSES.some(c => classes.has(c)));
-const tapOver = under => { const t = takes() ? tipBody : under, e = ev(t), n = calls.length;
+const tapOver = (under, dt) => { const t = takes() ? tipBody : under, e = ev(t, dt), n = calls.length;
   handlers.click(e); if (t === under && under.radio && !e.pd) handlers.change({target: under.radio});
   return {calls: calls.slice(n), pd: e.pd, sp: e.sp, shown: !tipEl.hidden}; };
 handlers.click(ev(ref));
@@ -365,6 +368,17 @@ log.hoverBack = tapOver(quick);
 /* the pointer moving from a reference into its tooltip keeps it open */
 document.activeElement = null; handlers.mouseover(ev(ref2)); handlers.mouseover(ev(tipBody));
 log.insideTip = {shown: !tipEl.hidden};
+/* a double tap on a tooltip shown by focus: the first closes it, the second lands where it was */
+document.activeElement = ref; handlers.focusin(ev(ref));
+log.dblRadio = [tapOver(radio), tapOver(radio, 100)];
+handlers.focusin(ev(ref));
+log.dblQuick = [tapOver(quick), tapOver(quick, 100)];
+/* focus moving to a control that is not a reference hides a shown tooltip */
+document.activeElement = null; handlers.mouseover(ev(ref2)); handlers.focusin(ev(plain));
+log.focusOther = {shown: !tipEl.hidden};
+/* the pointer leaving keeps a tooltip shown by focus open while its reference has focus */
+document.activeElement = ref; handlers.focusin(ev(ref)); handlers.mouseover(ev(plain));
+log.focusLeave = {shown: !tipEl.hidden};
 process.stdout.write(JSON.stringify(log));
 """
 
@@ -401,6 +415,14 @@ def pinned_problems(log):
             out.append("a tap on the shown tooltip does not close it and stop there (%s)" % k)
     if not log["insideTip"]["shown"]:
         out.append("the pointer inside the tooltip hides it")
+    for k in ("dblRadio", "dblQuick"):
+        if log[k][0]["calls"] or log[k][1]["calls"]:
+            out.append("a double tap on the tooltip answered a decision (%s): %s"
+                       % (k, log[k][0]["calls"] + log[k][1]["calls"]))
+    if log["focusOther"]["shown"]:
+        out.append("focus moving to another control keeps the tooltip shown")
+    if not log["focusLeave"]["shown"]:
+        out.append("the pointer leaving hides a tooltip whose reference has focus")
     return out
 
 
@@ -468,8 +490,14 @@ class ReferenceTooltip(unittest.TestCase):
             "the old pinned-only pointer rule": (".tip.shown{pointer-events:auto;cursor:pointer}",
                                                   ".tip.pinned{pointer-events:auto}",
                                                   "a tap on the shown tooltip answered a decision (focusQuick)"),
-            "the tooltip guard dropped": ('if(e.target.closest("#tip")){e.preventDefault();e.stopPropagation();hideTip();return}', "",
+            "the tooltip guard dropped": ('if(e.target.closest("#tip")){e.preventDefault();e.stopPropagation();hideTip();tipClosedAt=e.timeStamp;return}', "",
                                           "a tap on the shown tooltip does not close it and stop there"),
+            "the double-tap swallow dropped": ('if(e.timeStamp-tipClosedAt<500){e.preventDefault();e.stopPropagation();return}', "",
+                                               "a double tap on the tooltip answered a decision"),
+            "focus elsewhere keeps the tooltip": ('if(s)showTip(s);else if(tipFor)hideTip()', "if(s)showTip(s)",
+                                                  "focus moving to another control keeps the tooltip shown"),
+            "leaving hides a focused reference's tooltip": ("&&tipFor!==document.activeElement)hideTip()", ")hideTip()",
+                                                            "the pointer leaving hides a tooltip whose reference has focus"),
             "mouseover hides inside the tooltip": ('!e.target.closest("#tip")&&tipFor', "tipFor",
                                                    "the pointer inside the tooltip hides it"),
             "hideTip keeps the pin": ("tipFor=null;tipPinned=false;", "tipFor=null;", "hiding leaves the tooltip pinned"),
