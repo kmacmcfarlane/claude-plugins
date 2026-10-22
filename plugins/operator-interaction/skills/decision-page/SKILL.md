@@ -117,7 +117,8 @@ The rules below are what the digest condenses:
   reach, cost where it has one, and undo only where an option is one-way or costly; the
   `decisions` skill's `references/rendering.md` § Impact), so every view on the page shows it:
   the effect in the map and on a closed card, the facets one a line on an open one, each
-  option's own row in its **More**. Its `effect` says what the decision changes and settles,
+  option's own row in its **More**. Effect and Reach describe the system the work builds,
+  never the review or the process, which is the Wait (the runner's `process` lint). Its `effect` says what the decision changes and settles,
   favouring no option, written from the card's own option effects (`blocks`, each
   option's `impact`); copy a stored Effect only when it names each option's outcome or the
   card was stored or revised on or after 2026-10-14; otherwise write it from the option

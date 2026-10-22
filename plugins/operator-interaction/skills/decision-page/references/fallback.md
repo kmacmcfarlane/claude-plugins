@@ -17,7 +17,8 @@ first); this file sets only the layout.
   its own, `43 · D3 (site colour off the logo) · Theme colour → …`.
 - In each section, the card's essentials as text: the TLDR bullets first, then **Context:**
   (the terms the card uses, then where the operator left it), then ⚠ one-way when it is and
-  **Impact:**, across all the options, one facet a line (`→ effect`, `later: …`, `reach: …`,
+  **Impact:**, across all the options, describing the system the work builds, never the review or
+  the process (what waiting holds up is its `later:` line), one facet a line (`→ effect`, `later: …`, `reach: …`,
   `⚠ undo: …` only when an option is one-way or costly, each on its own line), **Why now:**, **Why ask:** (class first), and the rec line
   `Rec (b) · basis strong — reason · unknown: …`. A card with
   `blocks` (every card, now) also gets the Impact table: a row per option, then the Wait row;

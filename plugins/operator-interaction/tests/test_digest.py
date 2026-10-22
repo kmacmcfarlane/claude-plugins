@@ -195,6 +195,8 @@ class WriterDigest(unittest.TestCase):
         self.assertTrue({"shape", "id", "grow", "rec-only", "page", "refs"} <= set(emitted))
         self.assertEqual(emitted["shape"], {"shape:"})
         self.assertEqual(emitted["rec-only"], {"impact:"})
+        # rule 259 on the page (7434 S1): the system lint prints under the Impact's start
+        self.assertEqual(emitted["process"], {"impact:"})
         self.assertEqual(emitted["id"], {""})
         self.assertEqual(lint_problems(self.js, self.digest), [])
 

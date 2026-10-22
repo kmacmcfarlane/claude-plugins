@@ -143,7 +143,9 @@ alternative not taken, in case practice argues for it.
   stays in Cost, a design made in build; neither the operator's) — Effect and Reach describe the thing the work builds:
   its code, data, users, deploys and downstream consumers. An effect on the process — a held
   review comment, a round, a blocked session — goes only in Wait. Cost keeps build time and
-  spend, and the operator's attention only on a round ask. Not taken: a process clause in
+  spend, and the operator's attention only on a round ask. On the answer page (2026-10-22,
+  *Both surfaces*; a design made in planning, not the operator's): the lede says it, and the
+  pre-publish runner's `process` lint catches a process phrase in an Effect or Reach. Not taken: a process clause in
   Effect when the process is all the decision changes (259 (b)).
 - **Undo only where an option is one-way or costly** (2026-10-20, answer 260 (a): "we
   shouldn't mention that the impact is reversible, only mention when it ISN'T, since things

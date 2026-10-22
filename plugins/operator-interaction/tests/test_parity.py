@@ -14,13 +14,29 @@ Run from the plugin dir: python3 -m unittest discover -s tests -q
 """
 
 import re
+import sys
 import unittest
 from pathlib import Path
+
+from test_impact import NODE, PAGE, example
+from test_context import runner
 
 PLUGIN = Path(__file__).resolve().parent.parent
 PAGE_SKILL = PLUGIN / "skills" / "decision-page"
 RULINGS = PLUGIN / "skills" / "decisions" / "references" / "rulings.md"
 PAGE_SKILL_MD = PAGE_SKILL / "SKILL.md"
+SCHEMA = PAGE_SKILL / "references" / "cards-schema.md"
+DIGEST = PAGE_SKILL / "references" / "writer-digest.md"
+FALLBACK = PAGE_SKILL / "references" / "fallback.md"
+
+
+def setUpModule():
+    # the runner tests need node; without it they skip, and say so where the Check's output
+    # shows it rather than passing in silence
+    if not NODE:
+        print("WARNING: node is not installed: the decision page's parity tests (SystemLint and "
+              "the other runner and render checks) are skipped, so the page forms of the card "
+              "rules went untested", file=sys.stderr)
 
 
 def flat(text):
@@ -75,6 +91,101 @@ class BothSurfaces(unittest.TestCase):
             cut = text.replace("Not taken: a rule scoped", "Not taken: nothing scoped")
             self.assertIn("Both surfaces: the rule or its Not taken differs",
                           both_surfaces_problems(cut))
+
+
+# ---- S1 (system impact on the page), rule 259
+
+def static_lede(html):
+    m = re.search(r'<p class="lede">(For each decision.*?)</p>', html, re.S)
+    return m.group(1) if m else ""
+
+
+SYSTEM_LEDE = "An Impact describes the system the work builds, never the review or the process"
+
+
+def system_text_problems(html, fallback, schema, rulings):
+    out = []
+    lede = static_lede(html)
+    if SYSTEM_LEDE not in lede or "changes in the system the work builds" not in lede:
+        out.append("the lede does not say the Impact describes the system")
+    if "describing the system the work builds, never the review or the process" not in flat(fallback):
+        out.append("the doc fallback does not say it")
+    if "An Impact describes the system the work builds, never the review or the process" not in flat(schema):
+        out.append("the schema does not say it")
+    b = bullet(rulings, "Impact names the system")
+    if "On the answer page (2026-10-22, *Both surfaces*" not in b or "`process` lint" not in b:
+        out.append("rule 259 does not name its page form")
+    return out
+
+
+class SystemText(unittest.TestCase):
+    def setUp(self):
+        self.args = [PAGE.read_text(), FALLBACK.read_text(), SCHEMA.read_text(), RULINGS.read_text()]
+
+    def test_the_page_says_it(self):
+        self.assertEqual(system_text_problems(*self.args), [])
+
+    def test_mutations(self):
+        html, fb, sc, ru = self.args
+        self.assertEqual(system_text_problems(html.replace(SYSTEM_LEDE, "An Impact"), fb, sc, ru),
+                         ["the lede does not say the Impact describes the system"])
+        self.assertTrue(system_text_problems(html, fb.replace("describing the system", "on"), sc, ru))
+        self.assertTrue(system_text_problems(html, fb, sc.replace("An Impact describes the system", "It"), ru))
+        self.assertTrue(system_text_problems(html, fb, sc, ru.replace("`process` lint", "lint")))
+
+
+PROCESS_FIRES = [
+    # (where on card 41, a setter, the line's place)
+    ("effect", lambda c: c["impact"].__setitem__("effect", "review comments wait"), "the effect"),
+    ("reach", lambda c: c["impact"].__setitem__("reach", "another round of review"), "the reach"),
+    ("happens", lambda c: c["blocks"]["b"].__setitem__("happens", "the change waits on review"), "(b)'s effect"),
+    ("who", lambda c: c["blocks"]["a"].__setitem__("who", "a blocked session"), "(a)'s reach"),
+    ("option", lambda c: c["o"][1].__setitem__(2, "the session is blocked"), "(b)'s impact"),
+    ("medium", lambda c: c["detail"]["impact"][0]["effect"].__setitem__("t", "costs your time each run"),
+     "the effect (more detail)"),
+    ("high", lambda c: c["detail"]["impact"][1].__setitem__("reach", ["your attention each week"]),
+     "the reach (full detail)"),
+]
+PROCESS_CLEAN = ["the code review checklist gains a step", "a comment in the hook explains the guard",
+                 "a round-trip per request", "the reviewer agent reads the new rule"]
+
+
+@unittest.skipUnless(NODE, "node is not installed")
+class SystemLint(unittest.TestCase):
+    """The runner's `process` lint: process phrases in an Effect or Reach, never bare words."""
+
+    def process_lines(self, d):
+        return [x for x in runner(d)[1].splitlines() if "names the process" in x]
+
+    def test_the_example_is_clean(self):
+        self.assertEqual(runner(example())[:2], (0, ""))
+
+    def test_each_phrase_fires_where_effect_and_reach_are_read(self):
+        for name, put, where in PROCESS_FIRES:
+            with self.subTest(field=name):
+                d = example()
+                put(d["cards"][0])
+                code, out, _ = runner(d)
+                self.assertEqual(code, 2, out)
+                self.assertIn("lint: card 41: impact: " + where + " names the process", out)
+
+    def test_wait_z_and_a_round_ask_are_never_read(self):
+        d = example()
+        d["cards"][0]["impact"]["wait"] = "review comments wait for you"
+        d["cards"][0]["o"][-1][2] = "another round of review waits"
+        self.assertEqual(self.process_lines(d), [])
+        d = example()
+        d["cards"][0]["impact"]["effect"] = "review comments wait"
+        d["cards"][0]["ifleft"] = "the leftover findings stay open"
+        self.assertEqual(self.process_lines(d), [])
+
+    def test_system_effects_that_share_a_word_stay_clean(self):
+        for s in PROCESS_CLEAN:
+            with self.subTest(text=s):
+                d = example()
+                d["cards"][0]["impact"]["effect"] = s
+                d["cards"][0]["impact"]["reach"] = s
+                self.assertEqual(self.process_lines(d), [])
 
 
 if __name__ == "__main__":

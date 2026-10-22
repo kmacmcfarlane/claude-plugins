@@ -11,7 +11,8 @@ Required cell, every lint key with its line start, and the runner's thresholds.
 
 Each card meets the `decisions` skill's floor: what is decided in plain words, every term
 glossed; its Impact (effect, wait, reach, cost, and undo only where an option is one-way
-or costly to undo); Why now and what it blocks; Why ask;
+or costly to undo), its Effect and Reach about the system the work builds, never the
+process (that is its Wait); Why now and what it blocks; Why ask;
 the options, each with its consequence; decide later as `(z)`; the recommendation, or the
 labelled reason there is none. Keep the caller's numbers. No ids anywhere on the page: a
 decision by its slug `[[N]]`, an item, series, branch or commit by its short name; a fact
@@ -177,6 +178,7 @@ lint prints `lint: card N:`, then the start below (— is none); a page-wide one
 | `what` | — | a leftover `what`: move it into `context` |
 | `shape` | `shape:` | a level off its shape, Context past its size, a long Impact facet, a label's short name past 6 words |
 | `rec-only` | `impact:` | an Impact effect that reads as the recommended option's alone |
+| `process` | `impact:` | a process phrase (a review comment, another round, your time, a blocked session) in an Effect or Reach at any level, a `blocks` row or an option's `impact` but `z`'s; never the wait, never a round ask |
 | `grow` | `depth:` | a level not longer than the one below it |
 | `bg` | `depth:` | Background thin (where levelled) or long |
 | `row` | `depth:` | an option but `z` with no `blocks` row |
@@ -187,4 +189,5 @@ lint prints `lint: card N:`, then the start below (— is none); a page-wide one
 | `oneway` | `oneway:` | a ⚠ card with no `blocks` row flagged one-way; a flagged row while the Impact carries no undo |
 
 Then the cold read: list each noun phrase in the Impact, TLDR, option titles and one lines
-that names a specific thing, and point to its gloss in `context`.
+that names a specific thing, and point to its gloss in `context`. Of each effect, ask: does
+it name what happens to the thing being built?

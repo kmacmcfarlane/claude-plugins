@@ -17,6 +17,8 @@
         medium terse bullets with a sub-bullet or two, high headed sections; the Impact's medium
         one bullet per facet;
       - a card Impact effect that reads as the recommended option's alone;
+      - the system: a process phrase (a review comment, another round, your time, a blocked
+        session) in an Effect or Reach, which describe the thing the work builds (rule 259);
       - depth (decision 198, the sizes in references/cards-schema.md § Size, read at each part's
         top level; levels are optional on every part, decision 201): a level not longer than the
         one below it; Background, an option's detail or the evidence thin where it carries
@@ -212,6 +214,23 @@ function recOnly(c, say) {
   }
 }
 
+/* ---- the system lint (rule 259): Effect and Reach describe the thing the work builds, never the process, which
+   is the Wait. Phrases, not bare words: "the code review checklist", "a comment in the hook" and "a round-trip"
+   are system effects. Read: the card's effect and reach, at every level; each blocks row's happens and who; each
+   option's impact but (z)'s. Never the wait; never a round ask (ifleft or roundcosts), whose system is the round ---- */
+const PROCESS = /\breview comments?\b|\b(another|next|a|review) round\b(?!-)|\byour (attention|time)\b|\b(held|waits?|waiting) (for|on|until) (you|review|the operator)\b|\bblocked session\b|\bsession (is )?blocked\b/i;
+function systemOnly(c, say) {
+  if (c.ifleft != null || c.roundcosts != null) return;
+  const at = [["the effect", c.impact.effect], ["the reach", c.impact.reach]];
+  levelsOf(c, "impact").forEach((l, i) => { if (l && typeof l === "object") for (const k of ["effect", "reach"])
+    at.push(["the " + k + " (" + DETAIL_NAME[i] + ")", textsOf(l[k]).join(" ")]); });
+  if (c.blocks && typeof c.blocks === "object") for (const k in c.blocks) { const r = c.blocks[k] || {};
+    at.push(["(" + k + ")'s effect", r.happens], ["(" + k + ")'s reach", r.who]); }
+  for (const o of c.o) if (o[0] !== "z") at.push(["(" + o[0] + ")'s impact", o[2]]);
+  for (const [where, s] of at) { const m = typeof s === "string" ? s.match(PROCESS) : null;
+    if (m) say("process " + where, "impact: " + where + " names the process (\"" + m[0] + "\"): Effect and Reach describe the system the work builds, its code, data, users and deploys; move the process effect to wait, or leave it knowingly when the system the work builds is itself a review or a process"); }
+}
+
 /* ---- the depth lints (decision 198): sizes read at each part's top level, words split on whitespace ---- */
 const topOf = (sum, ls) => ls.length ? ls[ls.length - 1] : sum;
 const row = (c, k) => c.blocks && typeof c.blocks === "object" ? c.blocks[k] || null : null;
@@ -331,6 +350,7 @@ function lint(d) {
     if (hasWhat) say("what", "what present: move it into context (after the terms, before the cue) and delete it");
     shapes(c, say);
     recOnly(c, say);
+    systemOnly(c, say);
     depth(c, say);
     oneway(c, say);
     labelName(c, say);

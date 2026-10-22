@@ -255,7 +255,9 @@ only on a part that carries levels, long (1.5 times) on any.
 card the effect, beside the rec pill (the map also beside the recommended option's title),
 which mark the recommendation; an open card the Impact, one facet a line; and each option's
 **More** its own effect, reach, undo (where it is one-way or costly) and cost (its `blocks`
-row). A card with a `label` opens its title on it, with its short name, in every view. It opens every card on its
+row). An Impact describes the system the work builds, never the review or the process, which
+is its Wait: the lede says so, and the runner's `process` lint catches a process phrase in an
+Effect or Reach. A card with a `label` opens its title on it, with its short name, in every view. It opens every card on its
 TLDR, then its Context, then its Impact: a page is read away from the conversation, so its
 reader is treated as cold. Any part with `detail` toggles its level on a click, on its button
 or on its text (never on a link or a control, nor while text is selected, so it can be
