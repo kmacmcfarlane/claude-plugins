@@ -3776,6 +3776,7 @@ class TestLint(WiTestCase):
         "XAUTHORITY=~/.Xauthority",
         "XAUTHORITY=${HOME}/.Xauthority",
         "XAUTHORITY=../run/docker_xauth",
+        "XAUTHORITY=./.Xauthority",
         "- 2026-10-22 docker run -e XAUTHORITY=/tmp/.docker.xauth img",
         "CXX=/usr/bin/g++-12 make",
         "DB_PASSWORD_FILE=/run/secrets/db_password",
@@ -3790,6 +3791,10 @@ class TestLint(WiTestCase):
         "API_TOKEN=/FAKEfake0000FAKEfake0000FAKEfake0000",
         "XAUTHORITY=~/fake0Fake1fake2FAKE3fake",
         "DB_PASS=/etc/" + "FAKEfake0000" * 3,
+        # fix round 1: a secret-word key keeps flagging a path-shaped value
+        "PGPASSWORD=/hunter22/abc",
+        "HTPASSWD=./hunter22/abc",
+        "FOO_PW=/abc/def",
     )
 
     def test_paths_and_defines_stay_clean(self):

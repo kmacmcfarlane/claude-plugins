@@ -5128,7 +5128,8 @@ def cmd_import(args):
 # non-space characters, not a $VAR, <placeholder> or {template}. A KEY glued
 # to a word, or after a URL's ? or & (a query string), stays unmatched.
 # Each match is then judged by _assign_secret (0f7e): a value that is
-# plainly a filesystem path (XAUTHORITY=/tmp/.docker.xauth) is no secret,
+# plainly a filesystem path (XAUTHORITY=/tmp/.docker.xauth) is no secret
+# under a key without a secret word,
 # and a -D<NAME>=value define (cmake, a compiler) counts only as other
 # keys do (see _assign_secret).
 SECRET_ASSIGN_RE = re.compile(
@@ -5625,9 +5626,9 @@ def _plain_path(value):
     """A value that is plainly a filesystem path (0f7e), quotes around it
     dropped: it starts as _PATH_START_RE says, and every segment after
     that start (split on - _ . / ~) is harmless (_harmless_segment), a
-    trailing run of + allowed (g++, c++). A path after / ./ or ../ needs
-    two segments, one after ~/ or a variable one: /tmp/.docker.xauth,
-    ~/.Xauthority, $HOME/.Xauthority, /usr/bin/g++-12. A token behind a slash
+    trailing run of + allowed (g++, c++). A path after a bare / needs two
+    segments, one after ~/ ./ ../ or a variable one: /tmp/.docker.xauth,
+    ./.Xauthority, $HOME/.Xauthority, /usr/bin/g++-12. A token behind a slash
     (/FAKEfake0000FAKEfake) is no path: its segment is live."""
     value = value.strip("\"'`").rstrip(",;")
     m = _PATH_START_RE.match(value)
@@ -5635,14 +5636,15 @@ def _plain_path(value):
         return False
     segs = [seg.rstrip("+") for seg in _SEG_SPLIT_RE.split(value[m.end():])
             if seg]
-    need = 1 if value.startswith(("$", "~")) else 2
+    need = 2 if value.startswith("/") else 1
     return (len(segs) >= need
             and all(seg and _harmless_segment(seg) for seg in segs))
 
 
 def _assign_secret(line):
     """A KEY=value match (SECRET_ASSIGN_RE) that counts (0f7e): the value is
-    no plain path (_plain_path), and a -D<NAME>=value define (the D glued
+    no plain path (_plain_path) unless the KEY holds a secret word
+    (PGPASSWORD=/hunter22/abc still flags), and a -D<NAME>=value define (the D glued
     to a single -, as cmake and compilers take it: -DCMAKE_BUILD_TYPE=...)
     counts only when NAME holds a secret word (_secret_key: -DDB_PASSWORD)
     or the value looks live (_looks_live), so -DCMAKE_CUDA_HOST_COMPILER=
@@ -5650,7 +5652,7 @@ def _assign_secret(line):
     secret-word KEY with a token value (API_TOKEN=ghp_...) still flags."""
     for m in SECRET_ASSIGN_RE.finditer(line):
         key, value = m.group("key"), m.group("value")
-        if _plain_path(value):
+        if _plain_path(value) and not _secret_key(key):
             continue
         lead = m.start("key") - 1
         if (m.group("lead") == "-" and key.startswith("D")
