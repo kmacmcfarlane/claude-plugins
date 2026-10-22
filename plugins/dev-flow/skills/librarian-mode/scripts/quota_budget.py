@@ -29,8 +29,9 @@ change is a claude-plugins decision.
 Reads: this session's sensor record CFG/statusline/sensor/<sid>.json (the
 statusline-hub contract, its hook-contract.md § 12), this session's own registry file
 CFG/sessions/<CLAUDE_PID>.json (identity fields only, and only when its
-sessionId is ours), the store, and - when the claude-analytics sampler is
-installed and live - its sink CFG/claude-analytics/samples/.
+sessionId is ours), the store, and - when the agent-analytics sampler is
+installed and live - its sink CFG/agent-analytics/samples/ (and, during the
+rename, the old CFG/claude-analytics/samples/ copy).
 Never reads a settings file or the user-level Claude state file.
 
 Stdlib only; never raises out of main(): a real error (a store write that
@@ -83,7 +84,7 @@ WEEKLY_TAPER_FLOOR = 3.0
 # inputs, § Quota pressure). claude-plugins owns these values, as it does the
 # reserves; a change is a claude-plugins decision, made here, the one copy.
 # Measured inputs - SPEND_KINDS' p75s, USD_PER_POINT, BURST_PER_SQRT_DAY - are
-# defaults from one maintainer's usage, autumn 2026; retune. claude-analytics
+# defaults from one maintainer's usage, autumn 2026; retune. agent-analytics
 # supplies these through spend_inputs() once its reports exist.
 # Design values - the sanity ceilings, ASK_ALPHA, GO_ON_POINTS, PHASE_HOURS,
 # SHARE_FLOOR, FABLE_FACTOR - are the ask rule's own (operator-approved design,
@@ -320,7 +321,7 @@ def parse_sample(d):
 
 
 def parse_sink_sample(d):
-    """A sample from a claude-analytics sampler line, per the writer's contract:
+    """A sample from an agent-analytics sampler line, per the writer's contract:
     the line's top-level `ts`, `session_id` and `rate_limits` block. `v`, `key`,
     `sandbox` and `payload` (and the rate_limits inside it) are ignored, so a
     line without the top-level fields - the sampler's earliest - yields None, as
@@ -363,18 +364,25 @@ def read_jsonl(path, parse, tail=SAMPLES_TAIL):
 
 
 def sink_dirs(cfg, override=None):
-    """The sampler's sink: CFG/claude-analytics/samples/, the path its owner
-    (claude-analytics) fixes - not plugin data, which an uninstall deletes. []
-    when it is not a directory. An override replaces it."""
+    """The sampler's sink: CFG/agent-analytics/samples/ first, then the old
+    CFG/claude-analytics/samples/ (during its owner's rename the old dir is
+    read too), the paths its owner (agent-analytics)
+    fixes - not plugin data, which an uninstall deletes. Each is listed only
+    when it is a directory; [] when neither is. An override replaces both."""
     if override:
         return [override] if os.path.isdir(override) else []
-    d = os.path.join(cfg, "claude-analytics", "samples")
-    return [d] if os.path.isdir(d) else []
+    return [d for d in (os.path.join(cfg, "agent-analytics", "samples"),
+                        os.path.join(cfg, "claude-analytics", "samples"))
+            if os.path.isdir(d)]
 
 
 def read_sink(dirs, now):
-    """Samples from the sink's day files of the last SINK_DAYS days."""
+    """Samples from the sink's day files of the last SINK_DAYS days, merged
+    across the dirs. A sample present in more than one dir (the owner copied
+    day files over) counts once, keyed on the parsed sample: time, session and
+    windows."""
     out = []
+    seen = set()
     cutoff = datetime.fromtimestamp(now - SINK_DAYS * 86400, timezone.utc).strftime("%Y-%m-%d")
     for d in dirs:
         try:
@@ -384,7 +392,11 @@ def read_sink(dirs, now):
         for n in sorted(names):
             m = _DAYFILE.fullmatch(n)
             if m and m.group(1) >= cutoff:
-                out.extend(read_jsonl(os.path.join(d, n), parse_sink_sample))
+                for x in read_jsonl(os.path.join(d, n), parse_sink_sample):
+                    k = (x["at"], x["session"], json.dumps(x["windows"], sort_keys=True))
+                    if k not in seen:
+                        seen.add(k)
+                        out.append(x)
     return out
 
 
@@ -538,7 +550,7 @@ def spend_inputs():
     """The inputs dev-cycle's spend asks read: each spend kind's p75 and sanity
     ceiling, and the quota-pressure parameters. The one seam for their source:
     `source` is "constants" (the values at the top of this file); a later
-    reader of claude-analytics' reports plugs in here, and nothing downstream
+    reader of agent-analytics' reports plugs in here, and nothing downstream
     changes when it does."""
     kinds = {}
     for (phase, kind), (p75, ceiling) in sorted(SPEND_KINDS.items()):
@@ -1086,7 +1098,7 @@ def parser():
                    help="overwrite a fresh claim of another session (the idle turn's call)")
     p.add_argument("--stale-after", type=float, default=STALE_AFTER_S,
                    help="seconds after which a reading is no signal (default %(default)s)")
-    p.add_argument("--sink-dir", help="claude-analytics samples dir (default: discovered)")
+    p.add_argument("--sink-dir", help="agent-analytics samples dir (default: discovered)")
     p.add_argument("--quota-answer", metavar="go-on",
                    help="store the operator's go-on for the subscription (quota-answer.json) and"
                    " write nothing else; go-on is the only value (a wait is never stored)")

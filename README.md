@@ -360,8 +360,9 @@ it in the question to the operator; without it the reset time is unknown and the
 names none. `librarian-mode`'s quota sense reads its five-hour and weekly usage from the
 same record, and `dev-cycle`'s guard on a round past the fourth review reads the same weekly
 usage through the quota sense; without a reading those rounds are asked. External soft
-dependency on `claude-analytics`: when its sampler's sink
-(`${CLAUDE_CONFIG_DIR}/claude-analytics/samples/`) is live, the quota sense reads it as
+dependency on `agent-analytics`: when its sampler's sink
+(`${CLAUDE_CONFIG_DIR}/agent-analytics/samples/`, the old `claude-analytics/samples/` read
+as a fallback during the rename) is live, the quota sense reads it as
 usage history; without it the quota sense samples the sensor record itself into
 `${CLAUDE_CONFIG_DIR}/claude-kit/librarian/`, and with neither it reports no signal. Soft
 dependency on `context-guard`:

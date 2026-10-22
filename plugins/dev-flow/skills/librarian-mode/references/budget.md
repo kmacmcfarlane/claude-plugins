@@ -25,7 +25,7 @@ absent-signal pool, and the spend inputs — are claude-plugins' own: agents dec
 stay defaults until the operator ratifies them, a ruling recorded in claude-plugins, except
 where a ruling is noted below. A value change is a claude-plugins decision, made in the
 constants at the top of the script, which are the one copy. The measured spend inputs
-(dollars per point, the burst size, each kind's p75) come from claude-analytics once its
+(dollars per point, the burst size, each kind's p75) come from agent-analytics once its
 reports exist (§ The numbers, Spend inputs).
 
 ## Running it
@@ -41,7 +41,7 @@ python3 scripts/quota_budget.py            # from the skill dir; one JSON object
 | `--read-only` | write nothing: no sample appended, no claim written |
 | `--takeover` | overwrite a fresh claim held by another session (see § Claims) |
 | `--stale-after S` | a reading older than S seconds counts as no signal (default 1800) |
-| `--sink-dir DIR` | the claude-analytics samples dir (default: discovered, § Sources) |
+| `--sink-dir DIR` | the agent-analytics samples dir, replacing both default dirs (default: discovered, § Sources) |
 | `--quota-answer go-on` | store the operator's go-on in `quota-answer.json` and write nothing else (no sample, no claim). `go-on` is the only value: a wait is never stored |
 | `--for-reset WHEN` | with `--quota-answer`, required: the weekly reset the quota ask named (epoch seconds or ISO 8601) |
 | `--item ID` | with `--quota-answer`: the asking work item |
@@ -180,14 +180,16 @@ it. There is one file and the last writer wins.
   whose `v: 1` shape the `statusline-hub` plugin writes (the sensor contract). Only
   `rate_limits.five_hour` and `seven_day` are read (`used_percentage`, `resets_at`), along
   with `rate_limits.at`.
-- **The history** comes from the claude-analytics sampler's sink when it is live. That is
-  the directory `CFG/claude-analytics/samples/` (or `--sink-dir`), the path the sampler's
+- **The history** comes from the agent-analytics sampler's sink when it is live. That is
+  the directory `CFG/agent-analytics/samples/` (or `--sink-dir`), the path the sampler's
   owner fixes (not plugin data, which an uninstall deletes), holding a line dated within
   `--stale-after`. The sampler writes one line per render to UTC day files
   `YYYY-MM-DD.jsonl`, each carrying top-level `ts` (epoch seconds; ISO 8601 is also
   read), `session_id` and `rate_limits`, beside `v`, `key`, `sandbox` and `payload`, which
-  are ignored. A line without the top-level fields (the sampler's earliest lines) is
-  skipped. Only `YYYY-MM-DD.jsonl` files are
+  are ignored. While the sampler's owner renames its data dir, the old
+  `CFG/claude-analytics/samples/` is read too when it exists, and a line repeated (same
+  time, session and windows) counts once. A line without the top-level fields (the
+  sampler's earliest lines) is skipped. Only `YYYY-MM-DD.jsonl` files are
   read (never, say, `usage-cache-*.jsonl`). A line stamped more than 5 min in the future is
   dropped before anything else, so a skewed clock can neither keep the sink live nor win
   the reading. A live sink also supplies the
@@ -251,7 +253,7 @@ it. There is one file and the last writer wins.
   `go_on_points` (`GO_ON_POINTS`, the weekly points one go-on covers), `phase_hours`
   (`PHASE_HOURS`) and `share_floor` (`SHARE_FLOOR`). The values are the constants at the
   top of the script, never restated here. `source` names where they came from:
-  `"constants"` today. `spend_inputs()` is the one seam: a reader of claude-analytics'
+  `"constants"` today. `spend_inputs()` is the one seam: a reader of agent-analytics'
   reports plugs in there, and nothing that reads the result changes when it does. The
   p75s, the dollars per point and b are measured defaults, to retune; the ceilings,
   `alpha`, `go_on_points`, `phase_hours`, `share_floor` and `fable_factor` are the ask

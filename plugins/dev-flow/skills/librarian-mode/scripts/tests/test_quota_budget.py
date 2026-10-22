@@ -620,7 +620,7 @@ class TestSamplesAndSink(Base):
         self.assertEqual(rows[0]["at"], NOW)
 
     def sink(self, rows, day="2026-09-21"):
-        d = os.path.join(self.cfg, "claude-analytics", "samples")
+        d = os.path.join(self.cfg, "agent-analytics", "samples")
         os.makedirs(d, exist_ok=True)
         with open(os.path.join(d, day + ".jsonl"), "a") as f:
             for ts, five, week in rows:
@@ -898,7 +898,7 @@ class TestPoisonedInput(Base):
         self.assertEqual([x["at"] for x in rows], [NOW - H, NOW])
 
     def test_sink_line_is_skipped(self):
-        d = os.path.join(self.cfg, "claude-analytics", "samples")
+        d = os.path.join(self.cfg, "agent-analytics", "samples")
         os.makedirs(d)
         with open(os.path.join(d, "2026-09-22.jsonl"), "w") as f:
             f.write(DEEP + "\n")
@@ -1136,8 +1136,8 @@ class TestEpoch(Base):
 
 
 class TestSinkEdges(Base):
-    def sinkdir(self):
-        d = os.path.join(self.cfg, "claude-analytics", "samples")
+    def sinkdir(self, name="agent-analytics"):
+        d = os.path.join(self.cfg, name, "samples")
         os.makedirs(d, exist_ok=True)
         return d
 
@@ -1175,17 +1175,42 @@ class TestSinkEdges(Base):
         self.assertEqual(r["source"]["history"], "samples")
 
     def test_sink_dir_is_the_writers_path(self):
-        # claude-analytics writes CFG/claude-analytics/samples/<UTC day>.jsonl;
+        # agent-analytics writes CFG/agent-analytics/samples/<UTC day>.jsonl;
         # nothing writes under plugin data, so that is not a sink.
-        os.makedirs(os.path.join(self.cfg, "plugins", "data", "claude-analytics-kmacmcfarlane", "samples"))
+        os.makedirs(os.path.join(self.cfg, "plugins", "data", "agent-analytics-kmacmcfarlane", "samples"))
         self.assertEqual(qb.sink_dirs(self.cfg), [])
         d = self.sinkdir()
         self.assertEqual(qb.sink_dirs(self.cfg), [d])
 
+    def test_new_and_old_dirs_in_order_and_override_replaces_both(self):
+        old = self.sinkdir("claude-analytics")
+        self.assertEqual(qb.sink_dirs(self.cfg), [old])        # old only
+        new = self.sinkdir()
+        self.assertEqual(qb.sink_dirs(self.cfg), [new, old])   # new first
+        o = os.path.join(self.cfg, "elsewhere")
+        os.makedirs(o)
+        self.assertEqual(qb.sink_dirs(self.cfg, o), [o])
+        self.assertEqual(qb.sink_dirs(self.cfg, o + "x"), [])
+
+    def test_both_dirs_merge_without_double_count(self):
+        new, old = self.sinkdir(), self.sinkdir("claude-analytics")
+        for d, name, rows in ((old, "2026-09-21.jsonl", [(NOW - 2 * H, 10.0), (NOW - H, 11.0)]),
+                              (new, "2026-09-21.jsonl", [(NOW - 2 * H, 10.0), (NOW - H, 11.0)]),
+                              (old, "2026-09-20.jsonl", [(NOW - 30 * H, 5.0)]),
+                              (new, "2026-09-22.jsonl", [(NOW - 60, 12.0)])):
+            with open(os.path.join(d, name), "w") as f:
+                for ts, five in rows:
+                    f.write(self.line(ts, five))
+        got = qb.read_sink(qb.sink_dirs(self.cfg), NOW)
+        self.assertEqual(sorted(x["at"] for x in got),
+                         sorted([NOW - 30 * H, NOW - 2 * H, NOW - H, NOW - 60]))
+        _, r, _ = self.run_qb()
+        self.assertEqual((r["source"]["reading"], r["windows"]["five_hour"]["used"]), ("sink", 12.0))
+
     def test_absent_or_non_dir_sink_is_no_sink(self):
         self.assertEqual(qb.sink_dirs(self.cfg), [])
-        os.makedirs(os.path.join(self.cfg, "claude-analytics"))
-        with open(os.path.join(self.cfg, "claude-analytics", "samples"), "w") as f:
+        os.makedirs(os.path.join(self.cfg, "agent-analytics"))
+        with open(os.path.join(self.cfg, "agent-analytics", "samples"), "w") as f:
             f.write("not a dir\n")
         self.assertEqual(qb.sink_dirs(self.cfg), [])
 
@@ -1193,8 +1218,8 @@ class TestSinkEdges(Base):
         # A samples dir that is a symlink (e.g. to a shared mount) is still the sink.
         real = os.path.join(self.cfg, "elsewhere", "samples")
         os.makedirs(real)
-        os.makedirs(os.path.join(self.cfg, "claude-analytics"))
-        link = os.path.join(self.cfg, "claude-analytics", "samples")
+        os.makedirs(os.path.join(self.cfg, "agent-analytics"))
+        link = os.path.join(self.cfg, "agent-analytics", "samples")
         os.symlink(real, link)
         self.assertEqual(qb.sink_dirs(self.cfg), [link])
         with open(os.path.join(real, "2026-09-22.jsonl"), "w") as f:
@@ -1382,7 +1407,7 @@ class TestFifo(Base):
         self.assertFalse(os.path.exists(os.path.join(self.store, "samples.jsonl")))
 
     def test_fifo_sink_day_file_reads_as_absent(self):
-        d = os.path.join(self.cfg, "claude-analytics", "samples")
+        d = os.path.join(self.cfg, "agent-analytics", "samples")
         self.fifo(os.path.join(d, "2026-09-22.jsonl"))
         with open(os.path.join(d, "2026-09-21.jsonl"), "w") as f:
             f.write(json.dumps({"ts": NOW - 60, "session_id": "s", "rate_limits": {
