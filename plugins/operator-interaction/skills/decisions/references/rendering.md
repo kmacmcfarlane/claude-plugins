@@ -480,7 +480,8 @@ keep the `plain-names` skill's rule, the plain name first and the id a trailing 
 - Label first with its short name, per the `plain-names` skill's § Source labels.
 - **In the title.** A decision raised from one labelled item opens its title on the label:
   **41 — F7 (oversize upload) · Cap the upload size?** The number stays the decision's
-  handle, and the store's.
+  handle, and the store's. On an answer page the label follows the title (the
+  `decision-page` skill).
 - **Replies by label.** The operator may answer by the label (`F7: a`); it is read as the
   decision whose title carries it, and echoed with both: *Read as: 41 — F7 (oversize
   upload) → (a) …* (`references/replies.md`).

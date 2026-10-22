@@ -7,7 +7,7 @@
    tag size. Every view shows the decision's impact across all its options: the map and a closed
    card its effect, an open card its Impact lines, each option's More its own effect, reach, undo
    (only where it is one-way or costly; ⚠ on a row flagged one-way) and cost. A decision raised from
-   one labelled item of a source opens its title on the label and its short name. Inside a card the essentials are flat (TLDR, Context, Impact, options, follow-ups,
+   one labelled item of a source shows its title, then the label and its short name, muted. Inside a card the essentials are flat (TLDR, Context, Impact, options, follow-ups,
    words, recommendation); background, dependencies and evidence sit in folds. A part with a
    more-detail button, above or inside a fold, steps to more detail on a click (terse bullets)
    and again to full detail (headed sections); each level replaces the part's text, and the next
@@ -203,7 +203,8 @@ details.pane>div{padding:6px 0 2px;font-size:.92rem;max-width:70ch;display:flex;
 .impline i{font-style:normal;font-family:var(--f-mono);font-size:.8rem;color:var(--muted)}
 /* the option marker for undo: an option one-way or costly to undo (its blocks row flagged oneway) */
 .impline i.owu,.lbl.owu{color:var(--warn);font-weight:600}
-/* a source label first in a title (F7), its short name after it */
+/* a source label after a title (F7), muted, its short name after it */
+.slabm{color:var(--muted);font-weight:500}
 .slab{font-family:var(--f-mono);font-stretch:100%;font-weight:600;font-size:.92em}
 /* an excerpt's code block: verbatim lines on the sunk surface, a mono caption (lang, source) over them; long
    lines scroll inside the block, never the page; a control character shows as a warn-coloured U+ tag */
@@ -271,10 +272,10 @@ const recHead=c=>recOpt(c)[3];
 /* the rec slot: "rec (b)", or the no-recommendation label */
 const recPill=c=>c.rec?'<span class="pill rec">rec ('+esc(c.rec)+')</span>':'<span class="pill none">'+esc(c.norec||"no recommendation")+'</span>';
 const recSub=c=>c.rec?fmtPlain(recHead(c)):"";
-/* a decision raised from one labelled item of a source opens its title on the label and its short name:
-   F7 (oversize upload) · Cap the upload size */
-const srcLabel=c=>isLabel(c.label)?'<span class="slab">'+esc(c.label.id)+'</span> ('+esc(c.label.name)+') · ':'';
-const titleHtml=c=>srcLabel(c)+esc(c.t);
+/* a decision raised from one labelled item of a source shows its title first, then the label and its short
+   name, muted (answer 313; chat keeps the label first): Cap the upload size · F7 (oversize upload) */
+const srcLabel=c=>isLabel(c.label)?'<span class="slabm"> · <span class="slab">'+esc(c.label.id)+'</span> <span class="slabn">('+esc(c.label.name)+')</span></span>':'';
+const titleHtml=c=>esc(c.t)+srcLabel(c);
 const metaPills=c=>(c.warn?'<span class="pill warn">⚠ one-way</span>':'')+(c.class?'<span class="pill cls">'+esc(c.class)+'</span>':'');
 const fid=k=>esc(k.replace(/\s/g,"_"));
 

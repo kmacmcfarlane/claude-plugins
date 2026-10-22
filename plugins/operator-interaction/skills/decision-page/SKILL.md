@@ -110,8 +110,8 @@ The rules below are what the digest condenses:
   carries goes in backticks in `act` or `evidence`, as something to type or open. The caller
   passes an id → plain-name map where it has one (its items' short names); otherwise look each
   one up once per page. A decision raised from one labelled item of a source (a review's
-  finding, a plan's question) carries `label`, `{id, name}`: the page opens its title on it,
-  *F7 (oversize upload) · …*, and that label passes anywhere on the page with its short name
+  finding, a plan's question) carries `label`, `{id, name}`: the page shows it after the title,
+  *… · F7 (oversize upload)*, and that label passes anywhere on the page with its short name
   beside it (the `decisions` skill's `references/rendering.md` § Source labels).
 - The TLDR comes first on the card: one or two terse fragment bullets. It names no
   recommendation: the options mark it. Say what is decided, and what rides on it.

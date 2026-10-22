@@ -205,7 +205,8 @@ alternative not taken, in case practice argues for it.
   raised from one labelled item opens its title on it, **41 — F7 (oversize upload) · …**;
   the number stays the handle; a reply by label is read as that decision and echoed with the
   number, the label and the name. It reverses the build design that a label trails as a tag
-  (*Terms defined where shown*). The operator chose label-first on the answer page too,
+  (*Terms defined where shown*). The operator chose label-first on the answer page too (until
+  2026-10-22: since answer 313 the page puts the title first and the label after it, below),
   which narrows *No ids on an answer page* (2026-10-09) for a label with its short name;
   until the page carries a label, its rule stands as written. Not taken: label-first in
   chat only (269 (b)); numbering decisions by the label (269 (c)), which would have reversed
@@ -228,3 +229,13 @@ alternative not taken, in case practice argues for it.
   surface whose feedback raised it, the other surface following only by a decision of its own
   (the practice the operator corrected, which kept 259's render and check, 261, 263 and 268
   chat-only).
+- **The label after the title on an answer page** (2026-10-22, answer 313: "labels in TUI
+  chat on the title line, label after title in decision pages (we don't need to refer to it
+  by label as often on decision pages)"; the label muted, and the doc fallback following the
+  page, designs made in planning, not the operator's) — on an answer page and in its tick-box
+  doc a card's title comes first and its source label after it, muted, with its short name:
+  *Escape formula cells in exports? · F4 (formula cells in exports)*. Chat and the
+  librarian's stored headline keep the label first. It reverses the page half of *Source
+  labels first, with a short name* (269 (a)). Not taken: the label first on the page too, as
+  269's page half was built (2026-10-20); the short name only, the label in Context
+  (313 (b)); the label alone (313 (c)).

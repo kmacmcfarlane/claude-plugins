@@ -436,5 +436,75 @@ class BundleText(unittest.TestCase):
         self.assertTrue(bundle_text_problems(r, ru, sc.replace("before bundle groups", "before")))
 
 
+# ---- V2 (the label after the title on the page), answer 313
+
+TITLE_HARNESS = r"""
+const d = JSON.parse(require("fs").readFileSync(0, "utf8"));
+process.stdout.write(JSON.stringify(d.cards.map(c => titleHtml(c))));
+"""
+TITLE_DEF = "const titleHtml=c=>esc(c.t)+srcLabel(c);"
+
+
+def title_problems(h, t, label_id):
+    """A labelled title that does not open on its title, or whose label is not muted after it."""
+    if not h.startswith(t):
+        return ["the title does not come first"]
+    if not re.search(r'<span class="slabm"> · <span class="slab">' + re.escape(label_id) + r'</span>', h):
+        return ["the label is not after the title, muted"]
+    return []
+
+
+@unittest.skipUnless(NODE, "node is not installed")
+class LabelAfterTitle(unittest.TestCase):
+
+    def test_the_title_comes_first(self):
+        titles = node_page(example(), TITLE_HARNESS)
+        self.assertEqual(title_problems(titles[2], "Theme colour", "D3"), [])
+        # a card with no label keeps its title alone
+        self.assertEqual(titles[0], "Docs build home")
+
+    def test_mutant_label_first(self):
+        script = page_free_script()
+        self.assertIn(TITLE_DEF, script)
+        mutant = script.replace(TITLE_DEF, "const titleHtml=c=>srcLabel(c)+esc(c.t);")
+        titles = node_page(example(), TITLE_HARNESS, mutant)
+        self.assertEqual(title_problems(titles[2], "Theme colour", "D3"), ["the title does not come first"])
+
+
+LABEL_CLAUSE = "On an answer page the label follows the title (the `decision-page` skill)"
+
+
+def label_text_problems(rendering, plain, rulings):
+    out = []
+    if LABEL_CLAUSE not in flat(rendering):
+        out.append("rendering.md lacks the page clause")
+    if LABEL_CLAUSE not in flat(plain):
+        out.append("plain-names lacks the page clause")
+    b = bullet(rulings, "The label after the title on an answer page")
+    if "(2026-10-22, answer 313" not in b or "Not taken: the label first on the page too" not in b:
+        out.append("no ruling for the label after the title, dated, with its Not taken")
+    if "since answer 313 the page puts the title first" not in bullet(rulings, "Source labels first, with a short name"):
+        out.append("269's ruling does not say the page half changed")
+    return out
+
+
+class LabelText(unittest.TestCase):
+    def setUp(self):
+        self.args = [(PLUGIN / "skills" / "decisions" / "references" / "rendering.md").read_text(),
+                     (PLUGIN / "skills" / "plain-names" / "SKILL.md").read_text(), RULINGS.read_text()]
+
+    def test_both_skills_say_it(self):
+        self.assertEqual(label_text_problems(*self.args), [])
+
+    def test_mutations(self):
+        r, p, ru = self.args
+        cut = lambda s: s.replace("On an answer page the label follows the title", "")
+        self.assertIn("rendering.md lacks the page clause", label_text_problems(cut(r), p, ru))
+        self.assertIn("plain-names lacks the page clause", label_text_problems(r, cut(p), ru))
+        self.assertTrue(label_text_problems(r, p, ru.replace("**The label after the title on an answer page**", "**Labels**")))
+        self.assertTrue(label_text_problems(r, p, ru.replace("Not taken: the label first on the page too", "Not taken: none")))
+        self.assertTrue(label_text_problems(r, p, ru.replace("since answer 313 the page puts", "the page puts")))
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -14,8 +14,8 @@ first); this file sets only the layout.
 - One heading per group, in list order; a bundle's (a layer with `shared`) reads
   `<title> — N decisions, <note>`, then a **Shared context:** line with its shared context; under it, one section per decision, headed with its
   number, short name and effect at tag size: `41 · Docs build home → sets where the docs build
-  runs, and who can publish`; a card with a `label` puts the label and its short name before
-  its own, `43 · D3 (site colour off the logo) · Theme colour → …`.
+  runs, and who can publish`; a card with a `label` puts the label and its short name after
+  its own, `43 · Theme colour · D3 (site colour off the logo) → …`.
 - In each section, the card's essentials as text: the TLDR bullets first, then **Context:**
   (the terms the card uses, then where the operator left it), then ⚠ one-way when it is and
   **Impact:**, across all the options, describing the system the work builds, never the review or

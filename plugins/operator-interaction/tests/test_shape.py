@@ -367,10 +367,12 @@ class SourceLabel(unittest.TestCase):
     short name (answer 269 (a), widened); the id lint passes a declared label only with its name
     beside it."""
 
-    def test_the_title_opens_on_the_label_and_its_short_name(self):
+    def test_the_title_comes_first_then_the_label_and_its_short_name(self):
+        # answer 313: on the page the title first, the label after it, muted
         res = run_page(example())
         h = card(res, 43)["html"]
-        self.assertIn('<h3><span class="slab">D3</span> (site colour off the logo) · Theme colour</h3>', h)
+        self.assertIn('Theme colour<span class="slabm"> · <span class="slab">D3</span> '
+                      '<span class="slabn">(site colour off the logo)</span></span>', h)
         # a card with no label keeps its title alone
         self.assertIn("<h3>Docs build home</h3>", card(res, 41)["html"])
         # the map and the popup use the same title
@@ -383,7 +385,7 @@ class SourceLabel(unittest.TestCase):
         c43(d)["label"] = {"id": "<b>", "name": "<img src=x>"}
         h = card(run_page(d), 43)["html"]
         self.assertNotIn("<img", h)
-        self.assertIn('<span class="slab">&lt;b&gt;</span> (&lt;img src=x&gt;)', h)
+        self.assertIn('<span class="slab">&lt;b&gt;</span> <span class="slabn">(&lt;img src=x&gt;)</span>', h)
 
     def test_a_malformed_label_is_refused(self):
         for bad in ("D3", {"id": "D3"}, {"id": "D 3", "name": "x y"}, {"id": "D3", "name": " "},
