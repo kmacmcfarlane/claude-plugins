@@ -15,7 +15,8 @@
    click goes back to the summary. The static lines do not step. More beside an option shows it
    in full (open on a one-way card). A part, facet or field that is empty or "none" is not shown
    (isNone). A decision reference ([[N]]) reads N · short name: hovering or focusing it shows its
-   tooltip, and a click opens its card when it is on the page. All content comes from cards.json beside
+   tooltip, and a click opens its card when it is on the page; on one not on the page a tap or click
+   pins the tooltip, and a second tap, a tap elsewhere or Escape closes it. All content comes from cards.json beside
    this page; answers go to the db collection "answers", one document per decision number. */
 :root{
   --bg:#f3f5f8; --surface:#ffffff; --sunk:#e9edf3; --ink:#1a2130; --muted:#5b6578; --line:#d5dbe5;
@@ -222,6 +223,8 @@ details.pane>div{padding:6px 0 2px;font-size:.92rem;max-width:70ch;display:flex;
 .xcc{color:var(--warn);border:1px solid currentColor;border-radius:3px;padding:0 2px;font-size:.85em}
 
 /* a decision reference's tooltip, on hover or focus; it never takes the pointer */
+/* pinned, it takes the pointer: a tap on it closes it and reaches nothing underneath */
+.tip.pinned{pointer-events:auto}
 .tip{position:absolute;z-index:10;width:min(420px,calc(100vw - 32px));background:var(--surface);border:1px solid var(--accent);border-radius:8px;box-shadow:var(--shadow);padding:10px 12px;display:flex;flex-direction:column;gap:6px;font-size:.86rem;pointer-events:none}
 .tip .lbl{margin-bottom:1px}
 .tip-h{font-family:var(--f-display);font-stretch:88%;font-weight:700;font-size:1rem;display:flex;gap:8px;align-items:baseline}
@@ -238,7 +241,7 @@ footer{color:var(--muted);font-size:.85rem;max-width:70ch}
   <header>
     <h1 id="title">Decision answers</h1>
     <p class="lede" id="lede"></p>
-    <p class="lede">For each decision, pick one option or one follow-up (the radio buttons allow only one), and add your words if you like. Each click saves at once; there is no submit button. Tell Claude in chat when you're done. The map under the progress bar lists the groups; each decision is one line in its group, and a click on the line opens its card (<b>Expand all</b> and <b>Collapse all</b> open or close every card). <b>Use recommendation</b> and <b>Later</b> beside a line answer without opening the card. A <span class="slug-t">number · name</span> is a decision: hover over it to see it; click it to open its card. Each line shows, after an arrow (→), what the decision changes in the system the work builds, across its options; each card opens on a TLDR, then its Context (the terms it uses), then its impact, one facet a line, then one line per option; the folds under it go from compressed to full detail. A part with a <i>more detail</i> button, above or inside a fold, shows more detail as short bullets when you click it or its text, and full detail in headed sections on a second click; <b>More</b> beside an option shows it in full, with its own effect, reach, undo and cost. A part with nothing to say (none) is left out. An Impact describes the system the work builds, never the review or the process; its <i>later:</i> line says what waiting holds up.<span id="doclink"></span></p>
+    <p class="lede">For each decision, pick one option or one follow-up (the radio buttons allow only one), and add your words if you like. Each click saves at once; there is no submit button. Tell Claude in chat when you're done. The map under the progress bar lists the groups; each decision is one line in its group, and a click on the line opens its card (<b>Expand all</b> and <b>Collapse all</b> open or close every card). <b>Use recommendation</b> and <b>Later</b> beside a line answer without opening the card. A <span class="slug-t">number · name</span> is a decision: hover over it or focus it to see it, and click it to open its card; on one not on this page, a tap or click pins what it shows, and a second tap, a tap elsewhere or Escape closes it. Each line shows, after an arrow (→), what the decision changes in the system the work builds, across its options; each card opens on a TLDR, then its Context (the terms it uses), then its impact, one facet a line, then one line per option; the folds under it go from compressed to full detail. A part with a <i>more detail</i> button, above or inside a fold, shows more detail as short bullets when you click it or its text, and full detail in headed sections on a second click; <b>More</b> beside an option shows it in full, with its own effect, reach, undo and cost. A part with nothing to say (none) is left out. An Impact describes the system the work builds, never the review or the process; its <i>later:</i> line says what waiting holds up.<span id="doclink"></span></p>
     <div class="banner" id="nodb" hidden>This view can't save answers. Nothing you pick here is kept; answer in chat instead (<code id="nodbex">N: a</code>).</div>
     <div class="banner" id="viewonly" hidden>You are viewing these answers. Only the page's owner can answer here.</div>
     <div class="banner" id="nodata" hidden>The decisions didn't load. Reload the page; if it keeps failing, ask Claude for them in chat.</div>
@@ -769,11 +772,12 @@ function place(el){
   let top=b.bottom+6;if(top+hgt>innerHeight-8&&b.top-hgt-6>8)top=b.top-hgt-6;
   tip.style.left=(left+scrollX)+"px";tip.style.top=(top+scrollY)+"px";
 }
+function pinTip(){tipPinned=true;tip.classList.add("pinned")}
 function showTip(el){
-  if(tipFor&&tipFor!==el){tipFor.removeAttribute("aria-describedby");tipPinned=false}
+  if(tipFor&&tipFor!==el){tipFor.removeAttribute("aria-describedby");tipPinned=false;tip.classList.remove("pinned")}
   tipFor=el;tip.innerHTML=tipHtml(el.dataset.ref);tip.hidden=false;place(el);el.setAttribute("aria-describedby","tip");
 }
-function hideTip(){if(tipFor)tipFor.removeAttribute("aria-describedby");tip.hidden=true;tipFor=null;tipPinned=false}
+function hideTip(){if(tipFor)tipFor.removeAttribute("aria-describedby");tip.hidden=true;tipFor=null;tipPinned=false;tip.classList.remove("pinned")}
 const hoverable=matchMedia("(hover:hover)").matches;
 document.addEventListener("mouseover",e=>{
   if(!hoverable)return;
@@ -801,10 +805,14 @@ document.addEventListener("input",e=>{
   clearTimeout(timers[n]);timers[n]=setTimeout(()=>{timers[n]=null;syncAll();write(n)},600);
 });
 document.addEventListener("click",e=>{
+  /* a tap on a pinned tooltip closes it and stops there: nothing under it (an option, a quick answer) runs */
+  if(e.target.closest("#tip")){e.preventDefault();e.stopPropagation();hideTip();return}
   const s=e.target.closest(".slug");
   /* a reference not on the page has no card to open: a tap or click pins its tooltip, a second one closes it */
   if(s){e.preventDefault();e.stopPropagation();if(s.dataset.goto){hideTip();goCard(s.dataset.goto)}
-    else if(tipFor===s&&tipPinned)hideTip();else{showTip(s);tipPinned=true}return}
+    else if(tipFor===s&&tipPinned)hideTip();else{showTip(s);pinTip()}return}
+  /* a tap elsewhere closes a pinned tooltip. Not verified: iOS may not deliver a tap on plain text to this
+     listener; a second tap on the reference and Escape still close it */
   if(tipPinned)hideTip();
   const q=e.target.closest("[data-quick]");
   if(q){const n=q.dataset.n,c=byN.get(n);if(!c||(q.dataset.quick==="rec"&&!c.rec))return;choose(n,q.dataset.quick==="rec"?c.rec:"later");return}

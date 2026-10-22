@@ -292,7 +292,7 @@ def TIP_FNS():
 DESCRIBE_HARNESS = r"""
 const mk = ref => ({dataset: {ref}, attrs: {}, setAttribute(k, v) { this.attrs[k] = [v, tip.innerHTML]; },
   removeAttribute(k) { delete this.attrs[k]; }});
-const tip = {hidden: true, innerHTML: "", style: {}};
+const tip = {hidden: true, innerHTML: "", style: {}, classList: {add() {}, remove() {}}};
 const place = () => {}, tipHtml = k => "tip " + k;
 let tipFor = null, tipPinned = false;
 const a = mk("41"), b = mk("38"), log = [];
@@ -317,10 +317,76 @@ def describe_problems(fns):
     return probs
 
 
+# the page-bound tooltip and click code, run under node on stand-ins for the page: the slice from the tooltip
+# to the end of the click listener, with every listener it adds caught
+SHELL_HARNESS = r"""
+const handlers = {};
+const document = {addEventListener: (t, f) => { handlers[t] = f; }, activeElement: null,
+  documentElement: {clientWidth: 800, style: {}}, querySelectorAll: () => [], getElementById: () => null};
+const classes = new Set();
+const tipEl = {hidden: true, innerHTML: "", style: {}, offsetWidth: 100, offsetHeight: 50,
+  classList: {add: c => classes.add(c), remove: c => classes.delete(c), contains: c => classes.has(c)}};
+const $ = s => s === "#tip" ? tipEl : null;
+const matchMedia = () => ({matches: true}), innerHeight = 800, scrollX = 0, scrollY = 0;
+const getSelection = () => "";
+const calls = [];
+const choose = (...a) => calls.push("choose"), write = (...a) => calls.push("write");
+const stepSection = () => {}, toggleOption = () => {}, setAll = () => {}, tipHtml = k => "tip " + k;
+let byN = new Map([["41", {rec: "b"}]]), readonly = false, answers = {}, timers = {};
+const el = (sels, dataset) => ({dataset: dataset || {}, attrs: {},
+  closest(s) { return sels.includes(s) ? this : null; }, setAttribute(k, v) { this.attrs[k] = v; },
+  removeAttribute(k) { delete this.attrs[k]; }, getBoundingClientRect: () => ({left: 0, top: 0, bottom: 10})});
+const ev = target => { const e = {target, pd: false, sp: false}; e.preventDefault = () => { e.pd = true; };
+  e.stopPropagation = () => { e.sp = true; }; return e; };
+""" + "%s" + r"""
+const ref = el([".slug", "[data-ref]", "button"], {ref: "38"}), ref2 = el([".slug", "[data-ref]", "button"], {ref: "39"});
+const plain = el([]), tipBody = el(["#tip"]), quick = el(["[data-quick]", "button"], {quick: "rec", n: "41"});
+const log = {};
+handlers.click(ev(ref)); log.pinned = tipPinned; log.pinnedClass = classes.has("pinned");
+handlers.mouseover(ev(plain)); log.afterLeave = {shown: !tipEl.hidden, pinned: tipPinned};
+showTip(ref2); log.afterMove = {pinned: tipPinned, pinnedClass: classes.has("pinned")};
+handlers.click(ev(ref)); hideTip(); log.afterHide = {pinned: tipPinned, shown: !tipEl.hidden};
+handlers.click(ev(ref));
+/* a tap where the pinned tooltip covers a quick answer: the tooltip takes it only while pinned (CSS) */
+const e = ev(TIP_TAKES_POINTER && classes.has("pinned") ? tipBody : quick);
+handlers.click(e); log.tap = {calls, pd: e.pd, sp: e.sp, shown: !tipEl.hidden};
+process.stdout.write(JSON.stringify(log));
+"""
+
+
+def shell_log(html):
+    from test_sticky import rules, decls
+    takes = decls(rules(html).get(".tip.pinned", "")).get("pointer-events") == "auto"
+    code = html[html.index('const tip=$("#tip")'):html.index('addEventListener("resize"')]
+    script = (SHELL_HARNESS % code).replace("TIP_TAKES_POINTER", "true" if takes else "false")
+    out = subprocess.run([NODE, "-e", script], capture_output=True, text=True, timeout=60)
+    if out.returncode != 0:
+        raise AssertionError("node failed: " + out.stderr)
+    return json.loads(out.stdout)
+
+
+def pinned_problems(log):
+    out = []
+    if not (log["pinned"] and log["pinnedClass"]):
+        out.append("a tap does not pin the tooltip")
+    if not (log["afterLeave"]["shown"] and log["afterLeave"]["pinned"]):
+        out.append("the pointer leaving hides a pinned tooltip")
+    if log["afterMove"]["pinned"] or log["afterMove"]["pinnedClass"]:
+        out.append("showing another reference keeps the tooltip pinned")
+    if log["afterHide"]["pinned"] or log["afterHide"]["shown"]:
+        out.append("hiding leaves the tooltip pinned")
+    tap = log["tap"]
+    if tap["calls"]:
+        out.append("a tap on the pinned tooltip answered a decision: %s" % tap["calls"])
+    if not (tap["pd"] and tap["sp"]) or tap["shown"]:
+        out.append("a tap on the pinned tooltip does not close it and stop there")
+    return out
+
+
 def pin_problems(html):
     click = html[html.index('document.addEventListener("click"'):html.index('addEventListener("resize"')]
     out = []
-    if "else if(tipFor===s&&tipPinned)hideTip();else{showTip(s);tipPinned=true}" not in click:
+    if "else if(tipFor===s&&tipPinned)hideTip();else{showTip(s);pinTip()}" not in click:
         out.append("a tap on a reference not on the page shows nothing")
     if "if(tipPinned)hideTip();" not in click:
         out.append("a pinned tooltip is not closed by a tap elsewhere")
@@ -372,10 +438,31 @@ class ReferenceTooltip(unittest.TestCase):
         self.assertNotEqual(moved, fns)
         self.assertTrue(describe_problems(moved))
 
+    def test_a_pinned_tooltip_takes_the_tap_and_answers_nothing(self):
+        html = PAGE.read_text()
+        self.assertEqual(pinned_problems(shell_log(html)), [])
+        mutants = {
+            "pointer-events back to none": (".tip.pinned{pointer-events:auto}", ".tip.pinned{pointer-events:none}",
+                                             "a tap on the pinned tooltip answered a decision"),
+            "the tooltip guard dropped": ('if(e.target.closest("#tip")){e.preventDefault();e.stopPropagation();hideTip();return}', "",
+                                          "a tap on the pinned tooltip does not close it and stop there"),
+            "hideTip keeps the pin": ("tipFor=null;tipPinned=false;", "tipFor=null;", "hiding leaves the tooltip pinned"),
+            "leaving hides a pinned one": ("else if(tipFor&&!tipPinned&&tipFor", "else if(tipFor&&tipFor",
+                                           "the pointer leaving hides a pinned tooltip"),
+            "moving keeps the pin": ('tipFor.removeAttribute("aria-describedby");tipPinned=false;tip.classList.remove("pinned")}',
+                                     'tipFor.removeAttribute("aria-describedby")}',
+                                     "showing another reference keeps the tooltip pinned"),
+        }
+        for name, (old, new, want) in mutants.items():
+            with self.subTest(mutant=name):
+                self.assertEqual(html.count(old), 1, name)
+                probs = pinned_problems(shell_log(html.replace(old, new)))
+                self.assertTrue(any(p.startswith(want) for p in probs), (name, probs))
+
     def test_a_tap_on_a_reference_not_on_the_page_pins_its_tooltip(self):
         # a touch screen has no hover and does not focus a tapped button: the click shows it
         self.assertEqual(pin_problems(PAGE.read_text()), [])
-        mutant = PAGE.read_text().replace("else{showTip(s);tipPinned=true}", "")
+        mutant = PAGE.read_text().replace("else{showTip(s);pinTip()}", "")
         self.assertIn("a tap on a reference not on the page shows nothing", pin_problems(mutant))
 
     def test_a_cards_tooltip(self):

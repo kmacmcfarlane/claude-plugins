@@ -625,7 +625,9 @@ def popup_problems(schema, html):
     if re.search(r"tag size[^.|]*\bin\s+the\s+map|\bthe map and a closed card", flat(schema)):
         out.append("the schema puts the effect in the map")
     lede = static_lede(html)
-    if "hover over it to see it; click it to open its card" not in lede or "hover or click it to see that decision" in lede:
+    if ("hover over it or focus it to see it, and click it to open its card" not in lede
+            or "a second tap, a tap elsewhere or Escape closes it" not in lede
+            or "hover or click it to see that decision" in lede):
         out.append("the lede's reference sentence is not the tooltip's")
     if "At a glance" in html or 'id="pop"' in html:
         out.append("the page keeps the heads-up map or the popup")
@@ -645,7 +647,8 @@ class ShellText(unittest.TestCase):
         restored = self.schema.replace("first on the open card; its medium", "first on the open card and in the popup; its medium")
         self.assertNotEqual(restored, self.schema)
         self.assertIn("the schema names a popup", popup_problems(restored, self.html))
-        old = self.html.replace("hover over it to see it; click it to open its card", "hover or click it to see that decision")
+        old = self.html.replace("hover over it or focus it to see it, and click it to open its card",
+                                "hover or click it to see that decision")
         self.assertIn("the lede's reference sentence is not the tooltip's", popup_problems(self.schema, old))
 
     def test_the_ruling(self):
