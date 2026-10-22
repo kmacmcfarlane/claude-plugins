@@ -3780,6 +3780,16 @@ class TestLint(WiTestCase):
         # fix round 2: long lowercase directory names stay paths
         "LD_DIR=/usr/lib/x86_64-linux-gnu/averyverylongdirectoryname",
         "PYTHONPATH=./venv/lib/python3/site-packages/some_long_package_name",
+        # fix round 3: a hash define, location keys, path lists
+        "-DGIT_SHA=" + "0123456789abcdef" * 2 + "01234567",
+        "SSH_AUTH_SOCK=/run/user/1000/keyring/ssh",
+        "PASSWORD_STORE_DIR=~/.password-store",
+        "TOKEN_DIR=/var/run/tokens",
+        "CREDS_DIR=/run/secrets/x",
+        "PATH=/usr/local/bin:/usr/bin:/bin",
+        "LD_LIBRARY_PATH=/usr/local/cuda/lib64:/usr/lib/x86_64-linux-gnu",
+        "KUBECONFIG=~/.kube/config:~/.kube/other",
+        "PATH=$HOME/bin:$PATH",
         "- 2026-10-22 docker run -e XAUTHORITY=/tmp/.docker.xauth img",
         "CXX=/usr/bin/g++-12 make",
         "DB_PASSWORD_FILE=/run/secrets/db_password",
@@ -3808,6 +3818,18 @@ class TestLint(WiTestCase):
         "FOO=./AbCdEfGhIjKlMnOpQrStUvWxYz",
         "FOO=/fAkEfAkE/K7FAKEX/bPxRfiCYFAKEXAMPLEKEY",
         "XAUTHORITY=./fake0Fake1fake2FAKE3fake",
+        # fix round 3: a define with no secret word still flags a token
+        "-DGITHUB_PAT=" + "0123456789abcdef" * 2 + "01234567",
+        "-DDATADOG_API=" + "0123456789abcdef" * 2,
+        "-DHMAC_SEED=" + "0123456789abcdef" * 4,
+        "-DSIGNING_SALT=" + "fedcba9876543210" * 4,
+        "-DFOO=/x/" + "0123456789abcdef" * 2 + "01234567",
+        "-DFOO=~/AbCdEfGhIjKlMnOpQrStUvWxYz",
+        "-DFOO=./FAKEfakeFAKEfakeFAKEfake",
+        "-DAWS_SAK=fAkEfAkEfAkE/K7FAKEX/bPxRfiCYFAKEXAMPLEKEY",
+        # a location key or a path list with a token in it
+        "TOKEN_DIR=fake0Fake1fake2FAKE3fake",
+        "PATH=/usr/bin:fake0Fake1fake2FAKE3fake",
     )
 
     def test_paths_and_defines_stay_clean(self):

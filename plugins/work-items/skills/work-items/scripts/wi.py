@@ -5635,34 +5635,75 @@ def _path_segment(seg):
     return _harmless_segment(seg)
 
 
-def _plain_path(value):
-    """A value that is plainly a filesystem path (0f7e), quotes around it
-    dropped: it starts as _PATH_START_RE says, and every segment after
-    that start (split on - _ . / ~) is a harmless path segment
-    (_path_segment), a trailing run of + allowed (g++, c++). A path after
-    a bare / needs two segments, one after ~/ ./ ../ or a variable one:
-    /tmp/.docker.xauth, ./.Xauthority, $HOME/.Xauthority, /usr/bin/g++-12.
-    A token behind a slash (/FAKEfake0000FAKEfake, ./<40 hex>) is no path:
-    its segment is live."""
-    value = value.strip("\"'`").rstrip(",;")
+def _one_path(value, bare=2):
+    """One path (_plain_path): it starts as _PATH_START_RE says, and every
+    segment after that start (split on - _ . / ~) is a harmless path
+    segment (_path_segment), a trailing run of + allowed (g++, c++). A path
+    after a bare / needs `bare` segments (two alone, one in a list), one
+    after ~/ ./ ../ or a variable one: /tmp/.docker.xauth, ./.Xauthority, $HOME/.Xauthority,
+    /usr/bin/g++-12. A token behind a slash (/FAKEfake0000FAKEfake,
+    ./<40 hex>) is no path: its segment is live."""
     m = _PATH_START_RE.match(value)
     if not m:
         return False
     segs = [seg.rstrip("+") for seg in _SEG_SPLIT_RE.split(value[m.end():])
             if seg]
-    need = 2 if value.startswith("/") else 1
+    need = bare if value.startswith("/") else 1
     return (len(segs) >= need
             and all(seg and _path_segment(seg) for seg in segs))
 
 
+# a whole $NAME or ${NAME} in a path list (PATH=$HOME/bin:$PATH)
+_LIST_VAR_RE = re.compile(r"\$[A-Za-z_][A-Za-z0-9_]*|\$\{[A-Za-z_][A-Za-z0-9_]*\}")
+
+
+def _plain_path(value):
+    """A value that is plainly a filesystem path (0f7e), quotes around it
+    dropped: one path (_one_path), or a :-separated list of them (PATH,
+    LD_LIBRARY_PATH, KUBECONFIG; fix round 3) whose every part is a path
+    or a whole $NAME / ${NAME}, at least one a path as _one_path takes it
+    alone (so /bin may sit in /usr/bin:/bin). A list with any other
+    part (a token, an empty part, a URL's scheme) is no plain path."""
+    value = value.strip("\"'`").rstrip(",;")
+    parts = value.split(":")
+    return (all(_one_path(p, 1) or _LIST_VAR_RE.fullmatch(p) for p in parts)
+            and any(_one_path(p) for p in parts))
+
+
+# A secret-word key whose last segment is one of these names where the
+# secret lives, not the secret (SSH_AUTH_SOCK, PASSWORD_STORE_DIR,
+# TOKEN_DIR), so a plain path under it is no secret (fix round 3). key is
+# not one: GIT_SSH_KEY=~/.ssh/id_ed25519 is judged as before.
+_LOCATION_WORDS = frozenset((
+    "sock", "socket", "dir", "home", "root", "store", "prefix", "path"))
+# a hex value under a define naming one of these is a hash, not a secret
+_HASH_WORDS = frozenset(("sha", "commit", "hash", "rev"))
+
+
+def _define_flagged(name, value):
+    """A -D<NAME>=value define whose NAME holds no secret word and whose
+    value is no plain path (fix round 3): it flags when the value looks
+    live (_looks_live) or any of its segments (split on - _ . / ~) is a
+    token by _path_segment (a long hex, digit or mixed-case letter run,
+    a + or = inside), save a whole hex value under a NAME holding sha,
+    commit, hash or rev (-DGIT_SHA=<40 hex>). RelWithDebInfo, ON and
+    1.2.3-beta stay clean."""
+    if (_HEX_RE.fullmatch(value)
+            and _HASH_WORDS.intersection(_key_segments(name))):
+        return False
+    return _looks_live(value) or not all(
+        _path_segment(seg) for seg in _SEG_SPLIT_RE.split(value) if seg)
+
+
 def _assign_secret(line):
     """A KEY=value match (SECRET_ASSIGN_RE) that counts (0f7e): the value is
-    no plain path (_plain_path) unless the KEY holds a secret word
-    (PGPASSWORD=/hunter22/abc still flags), and a -D<NAME>=value define
-    (the D glued to a single -, as cmake and compilers take it:
-    -DCMAKE_BUILD_TYPE=...) counts only when NAME holds a secret word
-    (_secret_key: -DDB_PASSWORD, -DKEY=/hunter22/abc) or the value looks
-    live (_looks_live), so -DCMAKE_CUDA_HOST_COMPILER=/usr/bin/g++-12 and
+    no plain path (_plain_path) unless the KEY holds a secret word and is
+    no location key (PGPASSWORD=/hunter22/abc still flags,
+    SSH_AUTH_SOCK=/run/... does not; see _LOCATION_WORDS), and a
+    -D<NAME>=value define (the D glued to a single -, as cmake and
+    compilers take it: -DCMAKE_BUILD_TYPE=...) whose NAME holds no secret
+    word counts only as _define_flagged says, so
+    -DCMAKE_CUDA_HOST_COMPILER=/usr/bin/g++-12 and
     -DCMAKE_BUILD_TYPE=RelWithDebInfo stay clean. A secret-word KEY with a
     token value (API_TOKEN=ghp_...) still flags."""
     for m in SECRET_ASSIGN_RE.finditer(line):
@@ -5672,10 +5713,11 @@ def _assign_secret(line):
                   and (lead == 0 or line[lead - 1] != "-"))
         # a define's name is the key without its D (-DKEY: KEY)
         secret = _secret_key(key) or (define and _secret_key(key[1:]))
-        if _plain_path(value) and not secret:
+        location = _key_segments(key)[-1] in _LOCATION_WORDS
+        if _plain_path(value) and (not secret or location):
             continue
         if (define and not secret
-                and not _looks_live(value.strip("\"'`"))):
+                and not _define_flagged(key[1:], value.strip("\"'`"))):
             continue
         return True
     return False
