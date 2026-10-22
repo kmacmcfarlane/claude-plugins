@@ -68,6 +68,33 @@ class ImpactLine(unittest.TestCase):
         self.assertIn("the recommended option's own effect from its option line", flat)
 
 
+# rules 259 and 268 in the store (decision-page parity, S6): the two clauses, each with a mutant
+SYSTEM_CLAUSE = "Effect and Reach are about the thing the work builds, never the process, which is Wait"
+MECH_TEMPLATE = "(a) <option> — <its effect, by its mechanism>"
+
+
+def store_clause_problems(text):
+    out = []
+    if SYSTEM_CLAUSE not in " ".join(text.split()):
+        out.append("no system clause (259)")
+    if MECH_TEMPLATE not in text or "by its mechanism, how it happens" not in " ".join(text.split()):
+        out.append("no mechanism clause (268)")
+    return out
+
+
+class StoredRules(unittest.TestCase):
+
+    def test_both_clauses(self):
+        self.assertEqual(store_clause_problems(DECISIONS.read_text()), [])
+
+    def test_mutations(self):
+        text = DECISIONS.read_text()
+        self.assertIn("no system clause (259)",
+                      store_clause_problems(text.replace("never the process, which is Wait", "")))
+        self.assertIn("no mechanism clause (268)",
+                      store_clause_problems(text.replace("<its effect, by its mechanism>", "<its effect>")))
+
+
 class UndoMarker(unittest.TestCase):
 
     def test_the_impact_template_marks_its_optional_undo(self):
