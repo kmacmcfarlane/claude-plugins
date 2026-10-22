@@ -1177,7 +1177,7 @@ class TestSinkEdges(Base):
     def test_sink_dir_is_the_writers_path(self):
         # agent-analytics writes CFG/agent-analytics/samples/<UTC day>.jsonl;
         # nothing writes under plugin data, so that is not a sink.
-        os.makedirs(os.path.join(self.cfg, "plugins", "data", "claude-analytics-kmacmcfarlane", "samples"))
+        os.makedirs(os.path.join(self.cfg, "plugins", "data", "agent-analytics-kmacmcfarlane", "samples"))
         self.assertEqual(qb.sink_dirs(self.cfg), [])
         d = self.sinkdir()
         self.assertEqual(qb.sink_dirs(self.cfg), [d])

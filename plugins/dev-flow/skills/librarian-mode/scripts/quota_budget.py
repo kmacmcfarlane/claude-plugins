@@ -321,7 +321,7 @@ def parse_sample(d):
 
 
 def parse_sink_sample(d):
-    """A sample from a agent-analytics sampler line, per the writer's contract:
+    """A sample from an agent-analytics sampler line, per the writer's contract:
     the line's top-level `ts`, `session_id` and `rate_limits` block. `v`, `key`,
     `sandbox` and `payload` (and the rate_limits inside it) are ignored, so a
     line without the top-level fields - the sampler's earliest - yields None, as
@@ -365,8 +365,8 @@ def read_jsonl(path, parse, tail=SAMPLES_TAIL):
 
 def sink_dirs(cfg, override=None):
     """The sampler's sink: CFG/agent-analytics/samples/ first, then the old
-    CFG/claude-analytics/samples/ (its owner renamed the dir and leaves the old
-    one as a read-only copy for a while), the paths its owner (agent-analytics)
+    CFG/claude-analytics/samples/ (during its owner's rename the old dir is
+    read too), the paths its owner (agent-analytics)
     fixes - not plugin data, which an uninstall deletes. Each is listed only
     when it is a directory; [] when neither is. An override replaces both."""
     if override:

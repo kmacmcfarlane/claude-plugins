@@ -187,9 +187,9 @@ it. There is one file and the last writer wins.
   `YYYY-MM-DD.jsonl`, each carrying top-level `ts` (epoch seconds; ISO 8601 is also
   read), `session_id` and `rate_limits`, beside `v`, `key`, `sandbox` and `payload`, which
   are ignored. While the sampler's owner renames its data dir, the old
-  `CFG/claude-analytics/samples/` is read too when it exists, and a line present in both
-  (same time, session and windows) counts once. A line without the top-level fields (the sampler's earliest lines) is
-  skipped. Only `YYYY-MM-DD.jsonl` files are
+  `CFG/claude-analytics/samples/` is read too when it exists, and a line repeated (same
+  time, session and windows) counts once. A line without the top-level fields (the
+  sampler's earliest lines) is skipped. Only `YYYY-MM-DD.jsonl` files are
   read (never, say, `usage-cache-*.jsonl`). A line stamped more than 5 min in the future is
   dropped before anything else, so a skewed clock can neither keep the sink live nor win
   the reading. A live sink also supplies the
