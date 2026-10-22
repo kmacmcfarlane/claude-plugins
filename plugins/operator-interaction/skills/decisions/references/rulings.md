@@ -186,7 +186,10 @@ alternative not taken, in case practice argues for it.
 - **Explain the mechanism** (2026-10-20, answer 268 (a), from the operator's words on a
   finding labelled "exposes an archived library in its public API": "How do importers break?
   what are the consequences?") — every effect, finding and risk says how it happens, who
-  meets it and when, and the before and after of the fix; the cold read checks it. Not
+  meets it and when, and the before and after of the fix; the cold read checks it. On the
+  answer page (2026-10-22, *Both surfaces*; a design made in planning, not the operator's):
+  the writer digest's floor and cold read state it, and the pre-publish runner's `mech` lint
+  catches an option's effect of four words or fewer. Not
   taken: the rule on findings and risk cards only (268 (b)).
 - **Source labels first, with a short name** (2026-10-20, answer 269 (a), widened: "Be sure
   to expand Fn style labels (in all forms, not just starting with "F") to include a

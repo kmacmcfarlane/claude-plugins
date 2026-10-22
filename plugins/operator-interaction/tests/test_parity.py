@@ -188,5 +188,84 @@ class SystemLint(unittest.TestCase):
                 self.assertEqual(self.process_lines(d), [])
 
 
+# ---- S2 (mechanism on the page), rule 268
+
+def mechanism_text_problems(digest, schema, skill, rulings):
+    out = []
+    if "the options, each with its consequence by its mechanism: how it happens, who meets it and when, and the before and after" not in flat(digest):
+        out.append("the digest's floor does not ask for the mechanism")
+    if "Could you say how it happens, not only that it does?" not in flat(digest):
+        out.append("the digest's cold read does not ask it")
+    if "`happens` the effect by its mechanism" not in flat(schema):
+        out.append("the schema's blocks row does not say it")
+    if "each effect by its mechanism" not in flat(skill):
+        out.append("SKILL.md does not say it")
+    b = bullet(rulings, "Explain the mechanism")
+    if "On the answer page (2026-10-22, *Both surfaces*" not in b or "`mech` lint" not in b:
+        out.append("rule 268 does not name its page form")
+    return out
+
+
+class MechanismText(unittest.TestCase):
+    def setUp(self):
+        self.args = [DIGEST.read_text(), SCHEMA.read_text(), PAGE_SKILL_MD.read_text(), RULINGS.read_text()]
+
+    def test_the_page_says_it(self):
+        self.assertEqual(mechanism_text_problems(*self.args), [])
+
+    def test_mutations(self):
+        for i, (old, new) in enumerate([("by its mechanism: how", "by its: how"),
+                                        ("`happens` the effect by its mechanism", "`happens` the effect"),
+                                        ("each effect by its mechanism", "each effect"),
+                                        ("`mech` lint", "lint")]):
+            with self.subTest(old=old):
+                args = list(self.args)
+                j = [0, 1, 2, 3][i]
+                self.assertIn(old, args[j])
+                args[j] = args[j].replace(old, new)
+                self.assertTrue(mechanism_text_problems(*args))
+
+
+@unittest.skipUnless(NODE, "node is not installed")
+class MechanismLint(unittest.TestCase):
+    """The runner's `mech` lint: an option's effect of a bare label, four words or fewer."""
+
+    def mech_lines(self, d):
+        return [x for x in runner(d)[1].splitlines() if "say its mechanism" in x]
+
+    def test_the_example_is_clean(self):
+        self.assertEqual(runner(example())[:2], (0, ""))
+
+    def test_a_bare_label_fires(self):
+        d = example()
+        d["cards"][0]["blocks"]["a"]["happens"] = "importers break"
+        code, out, _ = runner(d)
+        self.assertEqual(code, 2, out)
+        self.assertIn('lint: card 41: impact: (a)\'s effect is 2 words ("importers break"): say its '
+                      "mechanism", out)
+
+    def test_a_no_change_statement_and_z_stay_clean(self):
+        d = example()
+        d["cards"][0]["blocks"]["a"]["happens"] = "Nothing changes."
+        d["cards"][0]["o"][-1][2] = "it waits"
+        self.assertEqual(self.mech_lines(d), [])
+
+    def test_an_option_with_no_row_is_read_from_its_impact(self):
+        d = example()
+        del d["cards"][2]["blocks"]
+        d["cards"][2]["o"][1][2] = "screenshots break"
+        self.assertEqual(self.mech_lines(d), ["lint: card 43: impact: (b)'s effect is 2 words "
+                                              '("screenshots break"): say its mechanism, how it '
+                                              "happens, who meets it and when, and the before and "
+                                              "after; or leave it knowingly"])
+
+    def test_the_threshold_is_four_words(self):
+        d = example()
+        d["cards"][0]["blocks"]["a"]["happens"] = "the importers break downstream"
+        self.assertEqual(len(self.mech_lines(d)), 1)
+        d["cards"][0]["blocks"]["a"]["happens"] = "the importers break downstream today"
+        self.assertEqual(self.mech_lines(d), [])
+
+
 if __name__ == "__main__":
     unittest.main()

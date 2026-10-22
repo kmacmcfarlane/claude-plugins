@@ -127,7 +127,8 @@ The rules below are what the digest condenses:
   options. Each option's own effect lives in its `blocks` row.
 - Every card carries `blocks`, its Impact row per option but (z) (effect, reach, cost where
   it has one, and undo only where the option is one-way or costly), shown in that option's
-  **More**; a ⚠ one-way card is refused without them. A row whose option is one-way or costly
+  **More**, each effect by its mechanism (how it happens, who meets it and when, the before
+  and after), never a bare label (the runner's `mech` lint); a ⚠ one-way card is refused without them. A row whose option is one-way or costly
   to undo carries `oneway: true` and its undo: the page refuses a flagged row without one, and
   the runner lints a ⚠ card with no flagged row (an older page still shows). A round ask
   carries `ifleft` and `roundcosts`; a status-quo default, `ifunanswered`.

@@ -17,6 +17,7 @@
         medium terse bullets with a sub-bullet or two, high headed sections; the Impact's medium
         one bullet per facet;
       - a card Impact effect that reads as the recommended option's alone;
+      - the mechanism: an option's effect of a bare label, MECH_MIN words or fewer (rule 268);
       - the system: a process phrase (a review comment, another round, your time, a blocked
         session) in an Effect or Reach, which describe the thing the work builds (rule 259);
       - depth (decision 198, the sizes in references/cards-schema.md § Size, read at each part's
@@ -231,6 +232,18 @@ function systemOnly(c, say) {
     if (m) say("process " + where, "impact: " + where + " names the process (\"" + m[0] + "\"): Effect and Reach describe the system the work builds, its code, data, users and deploys; move the process effect to wait, or leave it knowingly when the system the work builds is itself a review or a process"); }
 }
 
+/* ---- the mechanism lint (rule 268): each option's effect says how it happens, who meets it and when, and the
+   before and after. A proxy: it catches only the bare label, an effect of MECH_MIN words or fewer, read from the
+   option's blocks row (happens), else its impact; never (z)'s, and never a no-change statement ---- */
+const MECH_MIN = 4;
+const NO_CHANGE = /^[^A-Za-z]*(no|nothing|none|unchanged)\b/i;
+function mech(c, say) {
+  for (const o of c.o) { if (o[0] === "z") continue;
+    const r = row(c, o[0]), e = r && typeof r.happens === "string" ? r.happens : o[2], n = words(e);
+    if (typeof e === "string" && e.trim() && n <= MECH_MIN && !NO_CHANGE.test(e))
+      say("mech " + o[0], "impact: (" + o[0] + ")'s effect is " + n + " words (\"" + e.trim() + "\"): say its mechanism, how it happens, who meets it and when, and the before and after; or leave it knowingly"); }
+}
+
 /* ---- the depth lints (decision 198): sizes read at each part's top level, words split on whitespace ---- */
 const topOf = (sum, ls) => ls.length ? ls[ls.length - 1] : sum;
 const row = (c, k) => c.blocks && typeof c.blocks === "object" ? c.blocks[k] || null : null;
@@ -351,6 +364,7 @@ function lint(d) {
     shapes(c, say);
     recOnly(c, say);
     systemOnly(c, say);
+    mech(c, say);
     depth(c, say);
     oneway(c, say);
     labelName(c, say);

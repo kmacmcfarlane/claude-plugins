@@ -13,7 +13,8 @@ Each card meets the `decisions` skill's floor: what is decided in plain words, e
 glossed; its Impact (effect, wait, reach, cost, and undo only where an option is one-way
 or costly to undo), its Effect and Reach about the system the work builds, never the
 process (that is its Wait); Why now and what it blocks; Why ask;
-the options, each with its consequence; decide later as `(z)`; the recommendation, or the
+the options, each with its consequence by its mechanism: how it happens, who meets it and
+when, and the before and after; decide later as `(z)`; the recommendation, or the
 labelled reason there is none. Keep the caller's numbers. No ids anywhere on the page: a
 decision by its slug `[[N]]`, an item, series, branch or commit by its short name; a fact
 only an id carries goes in backticks in `act` or `evidence`. A decision raised from one
@@ -69,7 +70,7 @@ must start `https://`, or it is not shown.
 | `whyask` | yes | what goes wrong if the recommendation were taken alone |
 | `class` | no | the class that opens Why ask, when the caller names classes |
 | `warn` | no | `true` for ⚠ one-way |
-| `blocks` | expected on every card; required when `warn` | `{letter: {happens, who, undo, cost, oneway}}` for every option but `z`, each cell ~5–25 words; `undo` only on an option one-way or costly to undo, `cost` optional; `oneway: true` on each option one-way or costly to undo, which then needs its `undo`; a ⚠ card flags its one-way rows; shown in the option's **More** |
+| `blocks` | expected on every card; required when `warn` | `{letter: {happens, who, undo, cost, oneway}}` for every option but `z`, each cell ~5–25 words, `happens` the effect by its mechanism, never a bare label; `undo` only on an option one-way or costly to undo, `cost` optional; `oneway: true` on each option one-way or costly to undo, which then needs its `undo`; a ⚠ card flags its one-way rows; shown in the option's **More** |
 | `act` | when an option asks the operator to act; optional otherwise | `{letter: ["step", …]}`, not `z`; each list non-empty, each step text on one line, no `<placeholder>`; a step names where a secret goes, never its value; a paste text holding an angle-bracketed word, or of more than one line, goes in a file named by its `/…` path |
 | `dep` | no | usually slugs with the answer that matters (`[[41]] (b)`); leave it out when there is none |
 | `rec` | yes | an option letter, or `null` |
@@ -93,7 +94,7 @@ levels), its `impact` and its `blocks` row.
 
 An option: `title` at most six words, verb first; `oneLine` reads after the page's label
 (`because:` on the rec, `not recommended because:` on the others, `if left:` on `z`,
-`if chosen:` with no rec); `full` and `impact` are the option and its consequence.
+`if chosen:` with no rec); `full` and `impact` are the option and its consequence, by its mechanism, not a label.
 
 ## An excerpt
 
@@ -132,7 +133,8 @@ all ~600–900. Never pad: a fact no source holds goes under `unknown`.
 
 ## The runner's thresholds
 
-The lints fire past these (`scripts/check_cards.js`):
+The lints fire past these values, except `mech`, which fires at or under its value
+(`scripts/check_cards.js`):
 
 | Threshold | Value |
 |---|---|
@@ -144,6 +146,7 @@ The lints fire past these (`scripts/check_cards.js`):
 | bullets in the TLDR | 2 |
 | words in a summary Impact facet | 16 |
 | words in the card in all | 1350 |
+| words in an option's effect, at or under which mech fires | 4 |
 
 ## The checks
 
@@ -178,6 +181,7 @@ lint prints `lint: card N:`, then the start below (— is none); a page-wide one
 | `what` | — | a leftover `what`: move it into `context` |
 | `shape` | `shape:` | a level off its shape, Context past its size, a long Impact facet, a label's short name past 6 words |
 | `rec-only` | `impact:` | an Impact effect that reads as the recommended option's alone |
+| `mech` | `impact:` | an option's effect, but `z`'s (its `blocks` row's `happens`, else its `impact`), of 4 words or fewer that does not open on no, nothing, none or unchanged: a label, not the mechanism |
 | `process` | `impact:` | a process phrase (a review comment, another round, your time, a blocked session) in an Effect or Reach at any level, a `blocks` row or an option's `impact` but `z`'s; never the wait, never a round ask |
 | `grow` | `depth:` | a level not longer than the one below it |
 | `bg` | `depth:` | Background thin (where levelled) or long |
@@ -190,4 +194,5 @@ lint prints `lint: card N:`, then the start below (— is none); a page-wide one
 
 Then the cold read: list each noun phrase in the Impact, TLDR, option titles and one lines
 that names a specific thing, and point to its gloss in `context`. Of each effect, ask: does
-it name what happens to the thing being built?
+it name what happens to the thing being built? Could you say how it happens, not only that
+it does?
