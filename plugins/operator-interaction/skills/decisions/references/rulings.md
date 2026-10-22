@@ -181,7 +181,10 @@ alternative not taken, in case practice argues for it.
   card, with its own number, Impact, options and recommendation, under one group heading
   that adds the shared context; `ok N-M` still takes every recommendation. When one answer
   fits every item, it stays one card naming each. It applies *A recommendation on every
-  decision* (2026-09-29) and *Plain integers* (2026-10-08). Not taken: one card with a pick
+  decision* (2026-09-29) and *Plain integers* (2026-10-08). On the answer page (2026-10-22,
+  *Both surfaces*; a design made in planning, not the operator's): a bundle is a layer
+  carrying its shared context, under a group band with a closed Shared context fold; the page
+  has no batch answer (decision 304, answered (b)). Not taken: one card with a pick
   per item (263 (b)), which would have reversed both; always one answer for all (263 (c)).
 - **Explain the mechanism** (2026-10-20, answer 268 (a), from the operator's words on a
   finding labelled "exposes an archived library in its public API": "How do importers break?

@@ -35,7 +35,7 @@ must start `https://`, or it is not shown.
 | Key | Required | Shape |
 |---|---|---|
 | `page` | no | `{title, lede, doc: {name, url}}`; `title` is `(<owner>) <session name>`, else `<repo>: open decisions` (SKILL.md step 2), the `<title>` set to match; `url` must start `https://` |
-| `layers` | yes | `[[key, title, note], …]`, the groups in display order |
+| `layers` | yes | `[[key, title, note, shared], …]`, the groups in display order; `shared` optional: a bundle's shared context, the terms and source every card in it uses, in plain words, which a card's Context may lean on; `note` then says what the cards share. A bundle holds two or more whole item cards |
 | `follow` | yes | copied from below as it stands |
 | `cards` | yes | one per decision, in the `decisions` skill's order |
 | `refs` | no | `{"N": {short, q, a, when}}` for a slugged decision not on the page |
@@ -155,7 +155,7 @@ a bad or duplicate `n`; option letters not single `a`–`z`, out of order, or no
 a `rec` not among them, or null without `norec`; a missing required field; empty `rev`; blank
 `context`; a TLDR bullet, at any level, opening on Rec or Recommend… or saying I or we
 recommend; an `impact` missing effect, wait or reach, or with an undo or cost not text; a
-`label` not `{id, name}`; a `basis` outside the four; a `follow` other than the
+`label` not `{id, name}`; a layer's `shared` not text; a `basis` outside the four; a `follow` other than the
 six; a non-number `refs` key; a ⚠ card without `blocks`, or a `blocks` key not a letter but
 `z`, or a row without its text, or a `oneway` not true or false; a row flagged `oneway: true`
 without its `undo`; an `act` not keyed by letters but `z`, a list empty or
@@ -172,10 +172,11 @@ lint prints `lint: card N:`, then the start below (— is none); a page-wide one
 
 | Key | Line starts | Fires on |
 |---|---|---|
-| `page` | `page:` | an id in the page title, the lede, a layer's title or note, or a `refs` short or question |
+| `page` | `page:` | an id in the page title, the lede, a layer's title, note or shared context, or a `refs` short or question |
+| `group` | `page:` | a bundle (a layer with `shared`) holding fewer than two cards |
 | `refs` | `page:` | a `refs` answer holding an id (left as given when it is the operator's words) |
 | `id` | — | an id in any card text: a hash, an item tag, a ticket key, a label like OQ3, decision N; a label a card declares passes with its short name beside it |
-| `count` | — | a count in the flat part or a visible level that Context does not name |
+| `count` | — | a count in the flat part or a visible level that Context (with its bundle's `shared`) does not name |
 | `named` | — | a named mode, setting, review, plan, document, … not glossed in Context |
 | `tldr` | — | a TLDR bullet, at any level, that may carry the recommendation |
 | `what` | — | a leftover `what`: move it into `context` |

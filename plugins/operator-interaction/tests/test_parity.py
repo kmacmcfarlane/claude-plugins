@@ -18,7 +18,10 @@ import sys
 import unittest
 from pathlib import Path
 
-from test_impact import NODE, PAGE, example
+import json
+import subprocess
+
+from test_impact import NODE, PAGE, example, page_free_script
 from test_context import runner
 
 PLUGIN = Path(__file__).resolve().parent.parent
@@ -265,6 +268,172 @@ class MechanismLint(unittest.TestCase):
         self.assertEqual(len(self.mech_lines(d)), 1)
         d["cards"][0]["blocks"]["a"]["happens"] = "the importers break downstream today"
         self.assertEqual(self.mech_lines(d), [])
+
+
+# ---- S4 (bundles as page groups), rule 263
+
+# data in; check() and each layer's heading, rendered by the page-free helper, out
+LAYER_HARNESS = r"""
+const d = JSON.parse(require("fs").readFileSync(0, "utf8"));
+const bad = check(d);
+let layers = [];
+if (!bad.length) {
+  CARDS = d.cards; REFS = d.refs || {}; FOLLOW = d.follow; LAYERS = d.layers;
+  byN = new Map(CARDS.map(c => [String(c.n), c])); FOLLOW_KEYS = new Set(FOLLOW.map(f => f[0]));
+  layers = LAYERS.map(l => layerHtml(l, CARDS.filter(c => c.L === l[0])));
+}
+process.stdout.write(JSON.stringify({bad, layers}));
+"""
+
+
+def node_page(data, harness, script=None):
+    out = subprocess.run([NODE, "-e", (script or page_free_script()) + harness],
+                         input=json.dumps(data), capture_output=True, text=True, timeout=60)
+    if out.returncode != 0:
+        raise AssertionError("node failed: " + out.stderr)
+    return json.loads(out.stdout)
+
+
+SHARED = ("A redirect is one config line that sends a reader from an old URL to its new one. "
+          "Both cards follow the move to CI.")
+
+
+def bundle():
+    d = example()
+    d["layers"][1].append(SHARED)
+    return d
+
+
+def heading(h):
+    """The band before the cards."""
+    return h[:h.index('<div class="gcards">')]
+
+
+def band_problems(h, n, shared):
+    """What a layer's band lacks: the Group label, its count, the share line, and the Shared context
+    fold, closed, its summary the first sentence (only when the layer has shared context)."""
+    out = []
+    head = heading(h)
+    if '<span class="lbl">Group</span>' not in head:
+        out.append("no Group label")
+    if '<span class="pill cls">%d decision%s</span>' % (n, "" if n == 1 else "s") not in head:
+        out.append("no count")
+    if '<span class="lbl inl">What they share:</span>' not in head:
+        out.append("no share line")
+    fold = re.search(r'<details class="gfold"( open)?><summary>(.*?)</summary>', head)
+    if shared is None:
+        if fold:
+            out.append("a plain layer shows a Shared context fold")
+        return out
+    if not fold:
+        out.append("no Shared context fold")
+    elif fold.group(1):
+        out.append("the Shared context fold is open")
+    elif shared.split(". ")[0] not in fold.group(2) or "Both cards" in fold.group(2):
+        out.append("the fold's summary is not the first sentence")
+    return out
+
+
+@unittest.skipUnless(NODE, "node is not installed")
+class BundleGroups(unittest.TestCase):
+
+    def test_the_example_and_a_bundle_pass_the_check(self):
+        self.assertEqual(node_page(example(), LAYER_HARNESS)["bad"], [])
+        self.assertEqual(node_page(bundle(), LAYER_HARNESS)["bad"], [])
+
+    def test_a_non_text_shared_is_refused(self):
+        for v in (3, ["x"], {"t": "x"}):
+            d = example()
+            d["layers"][1].append(v)
+            self.assertIn("layer 1: shared (its fourth element) must be text: the context every card "
+                          "in the bundle shares", node_page(d, LAYER_HARNESS)["bad"])
+
+    def test_a_bundle_shows_its_band_and_a_closed_fold(self):
+        res = node_page(bundle(), LAYER_HARNESS)
+        self.assertEqual(band_problems(res["layers"][1], 2, SHARED), [])
+        self.assertIn(SHARED, res["layers"][1])
+        # the cards follow, under the rail
+        self.assertLess(res["layers"][1].index('<div class="gcards">'), res["layers"][1].index('id="card-42"'))
+
+    def test_a_plain_layer_shows_no_fold(self):
+        res = node_page(example(), LAYER_HARNESS)
+        self.assertEqual(band_problems(res["layers"][0], 1, None), [])
+        self.assertEqual(band_problems(res["layers"][1], 2, None), [])
+
+    def test_mutations(self):
+        h = node_page(bundle(), LAYER_HARNESS)["layers"][1]
+        self.assertIn("the Shared context fold is open",
+                      band_problems(h.replace('<details class="gfold">', '<details class="gfold" open>'), 2, SHARED))
+        plain = node_page(example(), LAYER_HARNESS)["layers"][1]
+        self.assertIn("no Shared context fold", band_problems(plain, 2, SHARED))
+        self.assertIn("a plain layer shows a Shared context fold", band_problems(h, 2, None))
+        self.assertIn("no count", band_problems(h, 3, SHARED))
+
+    def test_the_heading_is_escaped(self):
+        d = example()
+        d["layers"][1][1] = "<script>x</script>"
+        d["layers"][1].append('<img src=x onerror="alert(1)"> shared.')
+        h = node_page(d, LAYER_HARNESS)["layers"][1]
+        self.assertNotIn("<script>", h)
+        self.assertNotIn("<img", h)
+        self.assertIn("&lt;img src=x onerror=&quot;alert(1)&quot;&gt;", h)
+
+
+@unittest.skipUnless(NODE, "node is not installed")
+class BundleRunner(unittest.TestCase):
+
+    def test_a_count_glossed_only_in_the_shared_context(self):
+        d = bundle()
+        d["layers"][1][3] = SHARED + " The three are the build, the cache and the publish step."
+        d["cards"][2]["tldr"][-1] = "Start the three now"
+        self.assertEqual(runner(d)[:2], (0, ""))
+        # the same card in a plain layer: its Context alone does not name the three
+        d["layers"][1].pop()
+        code, out, _ = runner(d)
+        self.assertEqual(code, 2, out)
+        self.assertIn('lint: card 43: "three" counts things its context does not name', out)
+
+    def test_a_one_card_bundle_is_linted(self):
+        d = example()
+        d["layers"][0].append("The build moves to CI.")
+        code, out, _ = runner(d)
+        self.assertEqual(code, 2, out)
+        self.assertIn("lint: page: group direction holds 1 card: a bundle", out)
+        # two cards: clean
+        self.assertEqual(runner(bundle())[:2], (0, ""))
+
+    def test_an_id_in_the_shared_context_is_linted(self):
+        d = bundle()
+        d["layers"][1][3] += " See KAPPA-3570."
+        self.assertIn("lint: page: KAPPA-3570 looks like an id (the shared context of layer details)",
+                      runner(d)[1])
+
+
+def bundle_text_problems(rendering, rulings, schema):
+    out = []
+    if "On an answer page a group is a layer carrying its shared context" not in flat(rendering):
+        out.append("rendering.md does not say a page group carries its shared context")
+    b = bullet(rulings, "Bundles as groups of whole item cards")
+    if "On the answer page (2026-10-22, *Both surfaces*" not in b or "Shared context fold" not in b:
+        out.append("rule 263 does not name its page form")
+    if "A `cards.json` written before bundle groups (2026-10-22)" not in flat(schema):
+        out.append("no older-data paragraph")
+    return out
+
+
+class BundleText(unittest.TestCase):
+    def setUp(self):
+        self.args = [(PLUGIN / "skills" / "decisions" / "references" / "rendering.md").read_text(),
+                     RULINGS.read_text(), SCHEMA.read_text()]
+
+    def test_both_skills_say_it(self):
+        self.assertEqual(bundle_text_problems(*self.args), [])
+
+    def test_mutations(self):
+        r, ru, sc = self.args
+        self.assertTrue(bundle_text_problems(r.replace("On an answer page a\n  group is a layer", "A group"), ru, sc))
+        self.assertTrue(bundle_text_problems(r, ru.replace("Shared context fold", "fold"), sc))
+        self.assertTrue(bundle_text_problems(r, ru, sc.replace("before bundle groups", "before")))
 
 
 if __name__ == "__main__":

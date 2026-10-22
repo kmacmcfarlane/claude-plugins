@@ -22,7 +22,7 @@ or one that says `rec (b)`, I or we recommend, my or our recommendation, `(recom
 `(b) is recommended`); an
 `impact` without its effect, wait and reach as text, or with an undo or cost that is not text;
 a `label` that is not `{id, name}`, the id one word and the name one line; a `basis` word outside
-the four; a `follow` list other than the fixed six; a `refs` key that is not a number; a ⚠
+the four; a layer whose fourth element (`shared`) is not text; a `follow` list other than the fixed six; a `refs` key that is not a number; a ⚠
 card without its `blocks`; a `blocks` entry that is not an option letter other than `z`, or
 lacks its text, or carries a `oneway` that is not true or false; a row flagged `oneway: true`
 without its undo; an `act` that is not keyed by option letters other than `z`, a key whose list
@@ -58,7 +58,7 @@ open. The runner lints an id anywhere the page shows text (SKILL.md step 2).
 | Key | Type | Required | What |
 |---|---|---|---|
 | `page` | object | no | `title` (the heading and tab title; set by SKILL.md step 2's title rule), `lede` (one or two sentences: what this set of decisions is about; slugs allowed), `doc` (`{name, url}`, a reading copy; `url` must start `https://`, otherwise it is not shown) |
-| `layers` | array | yes | the groups, in display order: `[key, title, note]` each. `note` is one sentence under the group heading |
+| `layers` | array | yes | the groups, in display order: `[key, title, note, shared]` each, `shared` optional. `note` is one sentence under the group heading, after *What they share:*. `shared`, text, marks a **bundle** (the `decisions` skill's `references/rendering.md` § A bundle as a group): the shared context, the terms and the source every card in it uses, in plain words, shown in a closed **Shared context** fold under the heading; each item is a whole card, whose Context may lean on it (the runner reads a card's Context with its bundle's shared context). A bundle holds two or more cards; one answer for every item stays one card naming each |
 | `follow` | array | yes | the six follow-ups, exactly as in the example, in that order: `[key, label, placeholder, words prompt]`. Keys `later`, `tell me`, `expand`, `dig into`, `you decide`, `drop`; placeholders `[when]` on `later`, `[what]` on `tell me` and `dig into`, empty on the rest |
 | `cards` | array | yes | one card per decision, in list order (the `decisions` skill's order) |
 | `refs` | object | no | decisions mentioned by slug that are not on the page, keyed by number as a string: `{short, q, a, when}` — short name, the question as asked, the answer as given, when |
@@ -256,7 +256,9 @@ only on a part that carries levels, long (1.5 times) on any.
 card the effect, beside the rec pill (the map also beside the recommended option's title),
 which mark the recommendation; an open card the Impact, one facet a line; and each option's
 **More** its own effect, reach, undo (where it is one-way or costly) and cost (its `blocks`
-row). An Impact describes the system the work builds, never the review or the process, which
+row). Each group opens on a band: the *Group* label, its title, a count of its decisions and
+*What they share:* its note; a bundle adds a closed **Shared context** fold whose summary is
+the context's first sentence. An Impact describes the system the work builds, never the review or the process, which
 is its Wait: the lede says so, and the runner's `process` lint catches a process phrase in an
 Effect or Reach. A card with a `label` opens its title on it, with its short name, in every view. It opens every card on its
 TLDR, then its Context, then its Impact: a page is read away from the conversation, so its
@@ -323,6 +325,12 @@ counting answer, and each card revised anyway, gets its `impact` across the opti
 levels in their shapes and its ids replaced by names, each with a new `rev`, handed over as
 shown again. A card the operator has answered stays as it is, its lints left knowingly,
 unless it is revised for another reason; its effect may still read as the recommendation's.
+
+A `cards.json` written before bundle groups (2026-10-22) has layers of three elements: each is
+a plain group and renders as before, under the group band. On a republish, a bundle whose
+items need different answers becomes a layer with its `shared` context; its cards keep their
+numbers. A card moved into a bundle layer whose own text is unchanged keeps its `rev`; one
+whose Context is shortened to lean on the shared context gets a new `rev`.
 
 ## An excerpt
 

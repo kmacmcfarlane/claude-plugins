@@ -200,6 +200,8 @@ class WriterDigest(unittest.TestCase):
         self.assertEqual(emitted["process"], {"impact:"})
         # rule 268 on the page (7434 S2): the mechanism lint too
         self.assertEqual(emitted["mech"], {"impact:"})
+        # rule 263 on the page (7434 S4): the bundle lint is page-wide
+        self.assertEqual(emitted["group"], {"page:"})
         self.assertEqual(emitted["id"], {""})
         self.assertEqual(lint_problems(self.js, self.digest), [])
 

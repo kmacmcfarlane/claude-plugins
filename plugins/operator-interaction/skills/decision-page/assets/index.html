@@ -90,9 +90,27 @@ button{font:inherit;cursor:pointer;color:inherit}
 .ans{min-width:7.5rem;text-align:right}
 @media (max-width:640px){.row{grid-template-columns:2.6rem minmax(0,1fr)}.quick,.ans{grid-column:2}.ans{text-align:left}}
 
+/* a group: a band with its label, title, count and what its cards share (a bundle adds a closed Shared
+   context fold), then its cards inset under a rail */
+.layer{display:flex;flex-direction:column;gap:12px}
+.ghead{display:flex;flex-direction:column;gap:6px;padding:12px 14px;border:1px solid var(--line);border-radius:8px;background:var(--sunk);min-width:0}
+.gtop{display:flex;flex-wrap:wrap;gap:6px 12px;align-items:baseline}
+.gtop h2{font-size:1.3rem;font-weight:800;letter-spacing:-.005em;text-transform:none;color:var(--ink)}
+.gtop h2:focus{outline:none}
+.gtop h2:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.gshares{font-size:.9rem;color:var(--muted);max-width:72ch}
+.lbl.inl{display:inline;margin-right:.3em}
+details.gfold{font-size:.9rem;max-width:72ch;min-width:0}
+details.gfold>summary{cursor:pointer;list-style:none;color:var(--ink)}
+details.gfold>summary::before{content:"▸ ";color:var(--accent);display:inline-block;transition:transform .15s}
+details.gfold[open]>summary::before{transform:rotate(90deg)}
+details.gfold>summary .lbl{display:inline;margin-right:.4em}
+.gsum{color:var(--muted)}
+details.gfold>div{padding:6px 0 2px 1.1em}
+.gcards{display:flex;flex-direction:column;gap:10px;padding-left:14px;border-left:2px solid var(--line);min-width:0}
+@media (max-width:640px){.gcards{padding-left:8px}}
+
 /* cards */
-.layer{display:flex;flex-direction:column;gap:10px}
-.layer-note{color:var(--muted);font-size:.9rem;max-width:70ch}
 details.card{background:var(--surface);border:1px solid var(--line);border-radius:8px}
 details.card[open]{border-color:var(--accent)}
 details.card>summary{list-style:none;cursor:pointer;display:grid;grid-template-columns:3.2rem minmax(0,1fr) auto;gap:4px 12px;align-items:baseline;padding:12px 14px}
@@ -204,7 +222,7 @@ details.pane>div{padding:6px 0 2px;font-size:.92rem;max-width:70ch;display:flex;
 .pop .muted{color:var(--muted);font-size:.8rem}
 .pop-f{display:flex;gap:6px;flex-wrap:wrap}
 footer{color:var(--muted);font-size:.85rem;max-width:70ch}
-@media (prefers-reduced-motion:reduce){.meter>i,details.more>summary::before,details.pane>summary::before{transition:none}}
+@media (prefers-reduced-motion:reduce){.meter>i,details.more>summary::before,details.pane>summary::before,details.gfold>summary::before{transition:none}}
 </style>
 
 <div class="wrap">
@@ -335,7 +353,9 @@ function check(d){
   if(!Array.isArray(d.cards)||!d.cards.length)bad.push("cards: missing");
   if(bad.length)return bad;
   const keys=new Set(),seen=new Set();
-  d.layers.forEach((l,i)=>{if(!Array.isArray(l)||!isStr(l[0])||!isStr(l[1]))bad.push("layer "+i+": needs [key, title, note]");else keys.add(l[0])});
+  d.layers.forEach((l,i)=>{if(!Array.isArray(l)||!isStr(l[0])||!isStr(l[1]))bad.push("layer "+i+": needs [key, title, note]");else{keys.add(l[0]);
+    /* a bundle's shared context, optional: text, or the layer is refused */
+    if(l[3]!=null&&!isStr(l[3]))bad.push("layer "+i+": shared (its fourth element) must be text: the context every card in the bundle shares")}});
   for(const c of d.cards){
     const w="card "+(Number.isInteger(c&&c.n)?c.n:"?");
     /* undo is optional: shown only where an option is one-way or costly (older data carries it everywhere) */
@@ -576,6 +596,19 @@ function cardHtml(c){
     +'</div></div></details>';
 }
 
+/* a group's heading (rule 263 on the page): a band with the Group label, its title, a count pill and what its
+   cards share (its note); a bundle, a layer whose fourth element is its shared context, adds a closed Shared
+   context fold whose summary is that context's first sentence. Its cards follow, inset under a rail */
+const firstSentence=s=>{const m=String(s).match(/^[\s\S]*?[.!?](?=\s|$)/);return m?m[0]:String(s)};
+function layerHtml(l,cs){
+  const [key,title,note,shared]=l,id="layer-"+fid(key),n=cs.length;
+  return '<section class="layer" id="'+id+'" aria-labelledby="'+id+'-h"><div class="ghead"><div class="gtop"><span class="lbl">Group</span>'
+    +'<h2 id="'+id+'-h" tabindex="-1">'+esc(title)+'</h2><span class="pill cls">'+n+' decision'+(n===1?'':'s')+'</span></div>'
+    +(isTxt(note)?'<p class="gshares"><span class="lbl inl">What they share:</span>'+fmt(note)+'</p>':'')
+    +(isTxt(shared)?'<details class="gfold"><summary><span class="lbl">Shared context</span><span class="gsum">'+fmtPlain(firstSentence(shared))+'</span></summary><div><p>'+fmt(shared)+'</p></div></details>':'')
+    +'</div><div class="gcards">'+cs.map(cardHtml).join("")+'</div></section>';
+}
+
 /* ---- end of the page-free part: everything above runs without a page, and the tests load it ---- */
 
 /* an answer counts for the card revision it was given to: no clocks are compared */
@@ -608,11 +641,7 @@ function renderHud(){
 
 function renderCards(){
   let h="";
-  for(const [key,title,note] of LAYERS){
-    h+='<section class="layer" aria-label="'+esc(title)+'"><h2>'+esc(title)+'</h2>'+(note?'<p class="layer-note">'+fmt(note)+'</p>':'');
-    for(const c of CARDS.filter(x=>x.L===key))h+=cardHtml(c);
-    h+='</section>';
-  }
+  for(const l of LAYERS)h+=layerHtml(l,CARDS.filter(x=>x.L===l[0]));
   $("#cards").innerHTML=h;
 }
 

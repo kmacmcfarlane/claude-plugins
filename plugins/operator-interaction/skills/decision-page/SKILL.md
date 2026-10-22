@@ -78,7 +78,9 @@ text, so by default:
 The rules below are what the digest condenses:
 
 - One card per decision, in the `decisions` skill's order; groups (`layers`) as its
-  groups. Short names (`t`) the operator would say; plain names for items (the
+  groups. A bundle whose items need different answers is a layer carrying its `shared`
+  context, each item a whole card (the runner reads a card's Context with it); one answer
+  for every item stays one card naming each. Short names (`t`) the operator would say; plain names for items (the
   `plain-names` skill).
 - Every card carries `rev`, a revision label (the UTC time you wrote it, by convention). Any
   change to a card gets a new `rev`, Context included: an **Added:** line after `tell me`,

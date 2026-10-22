@@ -437,7 +437,8 @@ does not say what is decided (SKILL.md § The floor, item 1).
   **Shared context:** the terms and the source every card in the group uses, in plain words.
   ```
 
-  The heading adds the shared context and replaces nothing on the cards. The group keeps
+  The heading adds the shared context and replaces nothing on the cards. On an answer page a
+  group is a layer carrying its shared context (the `decision-page` skill). The group keeps
   the order's rules (SKILL.md § Order): placed by its most pressing member, kept together.
   Each card has its own list line, and `ok 51-53` takes every recommendation in it, ⚠ cards
   skipped as in any batch.

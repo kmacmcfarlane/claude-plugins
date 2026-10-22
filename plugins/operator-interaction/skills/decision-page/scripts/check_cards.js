@@ -10,7 +10,9 @@
         the page title, the lede, the layer titles and notes, refs), whatever Context says; the
         page is the reader's only context. Backtick spans, https links and slugs are not ids;
       - terms: a count or a named thing in the flat part, or in the medium and high levels of the
-        Impact, the TLDR and the rec line, that Context's summary does not introduce;
+        Impact, the TLDR and the rec line, that Context's summary (with its bundle's shared context)
+        does not introduce;
+      - groups: a bundle (a layer with shared context) holding fewer than two cards;
       - the TLDR: a bullet that may carry the recommendation, at every level, headings, bullets
         and sub-bullets in reading order; a leftover what;
       - shapes: summaries a sentence or two (the TLDR one or two bullets, an Impact facet a line),
@@ -327,7 +329,12 @@ function pageIds(d, out) {
   const look = (at, s) => { if (typeof s === "string") for (const x of ids(s)) if (!seen.has(at + x[0])) { seen.add(at + x[0]); say(idLine(x, at)); } };
   const pg = d.page && typeof d.page === "object" ? d.page : {};
   look("the page title", pg.title); look("the lede", pg.lede);
-  for (const l of d.layers) { look("the title of layer " + l[0], l[1]); look("the note of layer " + l[0], l[2]); }
+  for (const l of d.layers) { look("the title of layer " + l[0], l[1]); look("the note of layer " + l[0], l[2]);
+    look("the shared context of layer " + l[0], l[3]);
+    /* a bundle groups two or more item cards (rule 263) */
+    const n = d.cards.filter(c => c.L === l[0]).length;
+    if (typeof l[3] === "string" && l[3].trim() && n < 2)
+      say("group " + l[0] + " holds " + n + " card" + (n === 1 ? "" : "s") + ": a bundle (a layer with shared context) groups two or more item cards; give a lone item its own Context and a plain layer, or leave it knowingly"); }
   for (const k in (d.refs || {})) { const r = d.refs[k] || {};
     look("refs " + k + " short", r.short); look("refs " + k + " q", r.q);
     if (typeof r.a === "string") for (const x of ids(r.a))
@@ -341,7 +348,9 @@ function lint(d) {
   for (const c of d.cards) {
     const w = "lint: card " + c.n + ": ";
     const hasWhat = typeof c.what === "string" && c.what.trim();
-    const ctx = c.context + (hasWhat ? " " + c.what : "");
+    /* an item card in a bundle may lean on its group's shared context (rule 263) */
+    const sh = (d.layers.find(l => l[0] === c.L) || [])[3];
+    const ctx = c.context + (hasWhat ? " " + c.what : "") + (typeof sh === "string" ? " " + sh : "");
     const ctxNums = new Set(counts(ctx).map(x => x.n)), ctxLow = ctx.toLowerCase();
     const seen = new Set(), say = (key, line) => { if (!seen.has(key)) { seen.add(key); out.push(w + line); } };
     for (const [at, s] of cardTexts(c)) for (const x of ids(s)) say("id " + x[0], idLine(x, at));
