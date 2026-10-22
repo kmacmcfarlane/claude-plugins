@@ -3777,6 +3777,9 @@ class TestLint(WiTestCase):
         "XAUTHORITY=${HOME}/.Xauthority",
         "XAUTHORITY=../run/docker_xauth",
         "XAUTHORITY=./.Xauthority",
+        # fix round 2: long lowercase directory names stay paths
+        "LD_DIR=/usr/lib/x86_64-linux-gnu/averyverylongdirectoryname",
+        "PYTHONPATH=./venv/lib/python3/site-packages/some_long_package_name",
         "- 2026-10-22 docker run -e XAUTHORITY=/tmp/.docker.xauth img",
         "CXX=/usr/bin/g++-12 make",
         "DB_PASSWORD_FILE=/run/secrets/db_password",
@@ -3795,6 +3798,16 @@ class TestLint(WiTestCase):
         "PGPASSWORD=/hunter22/abc",
         "HTPASSWD=./hunter22/abc",
         "FOO_PW=/abc/def",
+        # fix round 2: a define's name is read without its D, and a long
+        # hex, digit or mixed-case letter segment is no directory name
+        "-DKEY=/hunter22/abc",
+        "-DPW=/hunter22/abc",
+        "FOO=./" + "0123456789abcdef" * 2 + "01234567",
+        "FOO=~/" + "0123456789abcdef" * 2 + "01234567",
+        'FOO="$HOME/' + "0123456789abcdef" * 2 + '01234567"',
+        "FOO=./AbCdEfGhIjKlMnOpQrStUvWxYz",
+        "FOO=/fAkEfAkE/K7FAKEX/bPxRfiCYFAKEXAMPLEKEY",
+        "XAUTHORITY=./fake0Fake1fake2FAKE3fake",
     )
 
     def test_paths_and_defines_stay_clean(self):

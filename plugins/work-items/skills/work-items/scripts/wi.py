@@ -5622,14 +5622,28 @@ _PATH_START_RE = re.compile(
     r"(?:~|\.\.?|\$[A-Za-z_][A-Za-z0-9_]*|\$\{[A-Za-z_][A-Za-z0-9_]*\})?/")
 
 
+def _path_segment(seg):
+    """A path segment that is harmless (_harmless_segment), save one of 16+
+    characters that is all hex, all digits, or letters only in mixed case:
+    a key or token, not a directory name (0f7e fix round 2). A long
+    lowercase name (x86_64-linux-gnu, site-packages) stays harmless, as
+    its segments are split on - and _ before this."""
+    if len(seg) >= 16 and (_HEX_RE.fullmatch(seg) or seg.isdigit()
+                           or (seg.isalpha() and not seg.islower()
+                               and not seg.isupper())):
+        return False
+    return _harmless_segment(seg)
+
+
 def _plain_path(value):
     """A value that is plainly a filesystem path (0f7e), quotes around it
     dropped: it starts as _PATH_START_RE says, and every segment after
-    that start (split on - _ . / ~) is harmless (_harmless_segment), a
-    trailing run of + allowed (g++, c++). A path after a bare / needs two
-    segments, one after ~/ ./ ../ or a variable one: /tmp/.docker.xauth,
-    ./.Xauthority, $HOME/.Xauthority, /usr/bin/g++-12. A token behind a slash
-    (/FAKEfake0000FAKEfake) is no path: its segment is live."""
+    that start (split on - _ . / ~) is a harmless path segment
+    (_path_segment), a trailing run of + allowed (g++, c++). A path after
+    a bare / needs two segments, one after ~/ ./ ../ or a variable one:
+    /tmp/.docker.xauth, ./.Xauthority, $HOME/.Xauthority, /usr/bin/g++-12.
+    A token behind a slash (/FAKEfake0000FAKEfake, ./<40 hex>) is no path:
+    its segment is live."""
     value = value.strip("\"'`").rstrip(",;")
     m = _PATH_START_RE.match(value)
     if not m:
@@ -5638,26 +5652,29 @@ def _plain_path(value):
             if seg]
     need = 2 if value.startswith("/") else 1
     return (len(segs) >= need
-            and all(seg and _harmless_segment(seg) for seg in segs))
+            and all(seg and _path_segment(seg) for seg in segs))
 
 
 def _assign_secret(line):
     """A KEY=value match (SECRET_ASSIGN_RE) that counts (0f7e): the value is
     no plain path (_plain_path) unless the KEY holds a secret word
-    (PGPASSWORD=/hunter22/abc still flags), and a -D<NAME>=value define (the D glued
-    to a single -, as cmake and compilers take it: -DCMAKE_BUILD_TYPE=...)
-    counts only when NAME holds a secret word (_secret_key: -DDB_PASSWORD)
-    or the value looks live (_looks_live), so -DCMAKE_CUDA_HOST_COMPILER=
-    /usr/bin/g++-12 and -DCMAKE_BUILD_TYPE=RelWithDebInfo stay clean. A
-    secret-word KEY with a token value (API_TOKEN=ghp_...) still flags."""
+    (PGPASSWORD=/hunter22/abc still flags), and a -D<NAME>=value define
+    (the D glued to a single -, as cmake and compilers take it:
+    -DCMAKE_BUILD_TYPE=...) counts only when NAME holds a secret word
+    (_secret_key: -DDB_PASSWORD, -DKEY=/hunter22/abc) or the value looks
+    live (_looks_live), so -DCMAKE_CUDA_HOST_COMPILER=/usr/bin/g++-12 and
+    -DCMAKE_BUILD_TYPE=RelWithDebInfo stay clean. A secret-word KEY with a
+    token value (API_TOKEN=ghp_...) still flags."""
     for m in SECRET_ASSIGN_RE.finditer(line):
         key, value = m.group("key"), m.group("value")
-        if _plain_path(value) and not _secret_key(key):
-            continue
         lead = m.start("key") - 1
-        if (m.group("lead") == "-" and key.startswith("D")
-                and (lead == 0 or line[lead - 1] != "-")
-                and not _secret_key(key[1:])
+        define = (m.group("lead") == "-" and key.startswith("D")
+                  and (lead == 0 or line[lead - 1] != "-"))
+        # a define's name is the key without its D (-DKEY: KEY)
+        secret = _secret_key(key) or (define and _secret_key(key[1:]))
+        if _plain_path(value) and not secret:
+            continue
+        if (define and not secret
                 and not _looks_live(value.strip("\"'`"))):
             continue
         return True
