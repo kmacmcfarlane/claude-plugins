@@ -3790,6 +3790,10 @@ class TestLint(WiTestCase):
         "LD_LIBRARY_PATH=/usr/local/cuda/lib64:/usr/lib/x86_64-linux-gnu",
         "KUBECONFIG=~/.kube/config:~/.kube/other",
         "PATH=$HOME/bin:$PATH",
+        # finish round: hex under a define whose last word names a hash
+        "-DBUILD_COMMIT=" + "0123456789abcdef" * 2 + "01234567",
+        "-DSRC_REV=" + "0123456789abcdef" * 2 + "01234567",
+        "-DCOMMIT_HASH=" + "0123456789abcdef" * 4,
         "- 2026-10-22 docker run -e XAUTHORITY=/tmp/.docker.xauth img",
         "CXX=/usr/bin/g++-12 make",
         "DB_PASSWORD_FILE=/run/secrets/db_password",
@@ -3830,6 +3834,21 @@ class TestLint(WiTestCase):
         # a location key or a path list with a token in it
         "TOKEN_DIR=fake0Fake1fake2FAKE3fake",
         "PATH=/usr/bin:fake0Fake1fake2FAKE3fake",
+        # finish round: hex tokens behind a location key or in a path
+        # list, defines that only look like hash names, and hash names
+        # qualified as keyed material
+        "TOKEN_DIR=/run/" + "0123456789abcdef" * 2 + "01234567",
+        "AUTH_ROOT=~/" + "0123456789abcdef" * 2 + "01234567",
+        "PATH=/usr/bin:/" + "0123456789abcdef" * 2 + "01234567",
+        "-DSHARED=" + "0123456789abcdef" * 2 + "01234567",
+        "-DREVIEW=" + "0123456789abcdef" * 2 + "01234567",
+        "-DSHA256_SALT=" + "0123456789abcdef" * 4,
+        "-DSHA256_SEED=" + "0123456789abcdef" * 4,
+        "-DHMAC_SHA256=" + "0123456789abcdef" * 4,
+        "-DHMAC_SHA=" + "0123456789abcdef" * 4,
+        "-DTOTP_SEED_SHA1=" + "0123456789abcdef" * 2 + "01234567",
+        "-DSALT_HASH=" + "0123456789abcdef" * 4,
+        "-DAPI_HASH=" + "0123456789abcdef" * 2,
     )
 
     def test_paths_and_defines_stay_clean(self):

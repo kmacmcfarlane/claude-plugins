@@ -1212,6 +1212,35 @@ The `=` forms take a kebab-case key (`db-pass=…`) and `pw` (`pw=…`).
   makes a segment live; all letters, all digits or all hex at any length,
   or 12 characters or fewer that do not mix upper case, lower case and
   digits), so a work-item id, path, version or UUID stays clean.
+- **Plain paths.** A value that is plainly a filesystem path passes under
+  a key with no secret word, in every form above (`KEY=…` included):
+  `XAUTHORITY=/tmp/.docker.xauth`, `XAUTHORITY="$HOME/.Xauthority"`,
+  `CXX=/usr/bin/g++-12`. A plain path starts `/`, `~/`, `./`, `../`,
+  `$NAME/` or `${NAME}/`, and each segment after that start, split on
+  `-`, `_`, `.`, `/` and `~`, is harmless as above, a trailing `+` allowed
+  (`g++`), save a segment of 16+ characters that is all hex, all digits
+  or mixed-case letters, which is a token; after a bare `/` it needs two
+  segments, after any other start one. A `:`-separated list is a plain
+  path when every part is one or a whole `$NAME` or `${NAME}` and at
+  least one part is a path on its own (`PATH=/usr/local/bin:/usr/bin:/bin`,
+  `PATH=$HOME/bin:$PATH`, `KUBECONFIG=~/.kube/config:~/.kube/other`). A
+  secret-word key whose last segment names a location (`sock`, `socket`,
+  `dir`, `home`, `root`, `store`, `prefix`, `path`) passes a plain path
+  too (`SSH_AUTH_SOCK=/run/user/1000/keyring/ssh`,
+  `PASSWORD_STORE_DIR=~/.password-store`); any other secret-word key still
+  flags one (`PGPASSWORD=/…/…`, `GIT_SSH_KEY=~/.ssh/id_ed25519`).
+- **`-D` defines.** A `-D<NAME>=value` define (the `D` glued to one `-`,
+  as cmake and compilers take it) is read with `NAME` as its key. When
+  `NAME` holds a secret word it is judged as that key (`-DDB_PASSWORD=…`
+  flags). Otherwise it flags only a value that is no plain path and that
+  looks live or holds a token segment (16+ hex, digits or mixed-case
+  letters, or a `+` or `=`), so `-DCMAKE_CUDA_HOST_COMPILER=/usr/bin/g++-12`
+  and `-DCMAKE_BUILD_TYPE=RelWithDebInfo` stay clean. A whole hex value
+  passes when `NAME`'s last word, digits dropped, is `sha`, `commit`,
+  `hash` or `rev` and no word of it is `hmac`, `salt`, `seed`, `pepper`,
+  `signing`, `sign`, `api`, `otp`, `totp`, `nonce`, `key`, `secret` or
+  `token`: `-DGIT_SHA=…` and `-DCOMMIT_HASH=…` pass, `-DHMAC_SHA256=…`,
+  `-DSALT_HASH=…` and `-DSHARED=…` flag.
 - **Placeholders.** A value is a placeholder only as a whole-value `$NAME`,
   `${NAME}`, `${{ name }}`, `$(command)`, `{name}` or `{{ name }}`; all `*`
   (masked) or all `.` (elided, `…` included); or `<…>` holding lowercase
@@ -1246,9 +1275,11 @@ The `=` forms take a kebab-case key (`db-pass=…`) and `pw` (`pw=…`).
   holding an unencoded `/` or `@`, and a token as the URL's user
   (`https://<token>@host`); a value more than one line below its key (a
   YAML block after a blank line, a key two continued lines up), and a
-  YAML value on the next indented line with no `|` or `>`; and an
+  YAML value on the next indented line with no `|` or `>`; an
   `Authorization` header with a scheme other than `Bearer`, `Basic` or
-  `Token`.
+  `Token`; and, in a plain path, a long one-case letter segment
+  (`/opt/FAKESECRETVALUEXYZ`) or a short lowercase-and-digit one
+  (`/usr/bin:/hunter22`), which pass as directory names.
 
 `wi note` refuses, writing nothing, a line lint would flag. Lint's shapes
 are a floor, not every secret: the path-and-key rule is the guard.

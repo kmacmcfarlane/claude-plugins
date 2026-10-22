@@ -5128,10 +5128,11 @@ def cmd_import(args):
 # non-space characters, not a $VAR, <placeholder> or {template}. A KEY glued
 # to a word, or after a URL's ? or & (a query string), stays unmatched.
 # Each match is then judged by _assign_secret (0f7e): a value that is
-# plainly a filesystem path (XAUTHORITY=/tmp/.docker.xauth) is no secret
-# under a key without a secret word,
-# and a -D<NAME>=value define (cmake, a compiler) counts only as other
-# keys do (see _assign_secret).
+# plainly a filesystem path or a : list of them (XAUTHORITY=/tmp/.x,
+# PATH=/usr/bin:/bin) is no secret under a key without a secret word or
+# under a location key (SSH_AUTH_SOCK, TOKEN_DIR), and a -D<NAME>=value
+# define (cmake, a compiler) whose NAME holds no secret word counts only
+# a live or token-shaped value (see _define_flagged).
 SECRET_ASSIGN_RE = re.compile(
     r"(?:^|(?P<lead>[^A-Za-z0-9_?&]))(?P<key>[A-Z][A-Z0-9_]{2,})="
     r"(?![$<{])(?P<value>\S{8,})")
@@ -5676,8 +5677,23 @@ def _plain_path(value):
 # not one: GIT_SSH_KEY=~/.ssh/id_ed25519 is judged as before.
 _LOCATION_WORDS = frozenset((
     "sock", "socket", "dir", "home", "root", "store", "prefix", "path"))
-# a hex value under a define naming one of these is a hash, not a secret
+# a hex value under a define whose last word is one of these is a hash,
+# not a secret, unless another word qualifies it as keyed material
+# (HMAC_SHA256, SALT_HASH, TOTP_SEED_SHA1; finish round)
 _HASH_WORDS = frozenset(("sha", "commit", "hash", "rev"))
+_HASH_QUALIFIERS = frozenset((
+    "hmac", "salt", "seed", "pepper", "signing", "sign", "api", "otp",
+    "totp", "nonce", "key", "secret", "token"))
+
+
+def _hash_name(name):
+    """A define NAME that names a hash: its last word segment (digit runs
+    dropped, so SHA256 is sha) is in _HASH_WORDS and no segment is in
+    _HASH_QUALIFIERS. GIT_SHA, BUILD_COMMIT, SRC_REV and COMMIT_HASH are;
+    SHA256_SALT, HMAC_SHA, API_HASH, SHARED and REVIEW are not."""
+    words = [seg for seg in _key_segments(name) if not seg.isdigit()]
+    return (bool(words) and words[-1] in _HASH_WORDS
+            and not _HASH_QUALIFIERS.intersection(words))
 
 
 def _define_flagged(name, value):
@@ -5685,11 +5701,10 @@ def _define_flagged(name, value):
     value is no plain path (fix round 3): it flags when the value looks
     live (_looks_live) or any of its segments (split on - _ . / ~) is a
     token by _path_segment (a long hex, digit or mixed-case letter run,
-    a + or = inside), save a whole hex value under a NAME holding sha,
-    commit, hash or rev (-DGIT_SHA=<40 hex>). RelWithDebInfo, ON and
-    1.2.3-beta stay clean."""
-    if (_HEX_RE.fullmatch(value)
-            and _HASH_WORDS.intersection(_key_segments(name))):
+    a + or = inside), save a whole hex value under a hash NAME
+    (_hash_name: -DGIT_SHA=<40 hex>). RelWithDebInfo, ON and 1.2.3-beta
+    stay clean."""
+    if _HEX_RE.fullmatch(value) and _hash_name(name):
         return False
     return _looks_live(value) or not all(
         _path_segment(seg) for seg in _SEG_SPLIT_RE.split(value) if seg)
