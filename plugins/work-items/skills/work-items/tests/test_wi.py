@@ -1996,6 +1996,26 @@ class TestNote(WiTestCase):
                     "path and key, never the value); nothing written\n")
                 self.assertEqual(path.read_bytes(), before)
 
+    def test_paths_and_defines_are_accepted(self):
+        # 0f7e: a cmake define naming a compiler, an XAUTHORITY path
+        path = self.item()
+        for text in TestLint.PATH_LINES:
+            with self.subTest(text=text):
+                self.wi_ok(["note", self.IID, "--", text])
+                self.assertIn(text, path.read_text())
+
+    def test_secrets_beside_paths_are_refused(self):
+        path = self.item()
+        before = path.read_bytes()
+        for text in TestLint.PATH_SECRETS:
+            with self.subTest(text=text):
+                r = run(["note", self.IID, "--", text], self.root)
+                self.assertEqual(r.returncode, 1, r.stdout + r.stderr)
+                self.assertEqual(
+                    r.stderr, "wi: text 1: likely secret value (record the "
+                    "path and key, never the value); nothing written\n")
+                self.assertEqual(path.read_bytes(), before)
+
     def test_a_text_that_is_exactly_the_separator_is_refused(self):
         path = self.item()
         before = path.read_bytes()
@@ -3743,6 +3763,109 @@ class TestLint(WiTestCase):
         start = time.perf_counter()
         self.assertTrue(wi.secret_findings("token = " + "f(" * 1000000))
         self.assertLess(time.perf_counter() - start, 5.0)
+
+    # 0f7e: filesystem paths and -D<NAME>=value defines are no secrets
+    PATH_LINES = (
+        "cmake -DCMAKE_CUDA_HOST_COMPILER=/usr/bin/g++-12 ..",
+        "-DCMAKE_CUDA_HOST_COMPILER=/usr/bin/g++-12",
+        "cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_CXX_COMPILER=/usr/bin/clang++-17 ..",
+        "XAUTHORITY=/tmp/.docker.xauth",
+        "export XAUTHORITY=$HOME/.Xauthority",
+        'export XAUTHORITY="$HOME/.Xauthority"',
+        "XAUTHORITY='/tmp/.docker.xauth'",
+        "XAUTHORITY=~/.Xauthority",
+        "XAUTHORITY=${HOME}/.Xauthority",
+        "XAUTHORITY=../run/docker_xauth",
+        "XAUTHORITY=./.Xauthority",
+        # fix round 2: long lowercase directory names stay paths
+        "LD_DIR=/usr/lib/x86_64-linux-gnu/averyverylongdirectoryname",
+        "PYTHONPATH=./venv/lib/python3/site-packages/some_long_package_name",
+        # fix round 3: a hash define, location keys, path lists
+        "-DGIT_SHA=" + "0123456789abcdef" * 2 + "01234567",
+        "SSH_AUTH_SOCK=/run/user/1000/keyring/ssh",
+        "PASSWORD_STORE_DIR=~/.password-store",
+        "TOKEN_DIR=/var/run/tokens",
+        "CREDS_DIR=/run/secrets/x",
+        "PATH=/usr/local/bin:/usr/bin:/bin",
+        "LD_LIBRARY_PATH=/usr/local/cuda/lib64:/usr/lib/x86_64-linux-gnu",
+        "KUBECONFIG=~/.kube/config:~/.kube/other",
+        "PATH=$HOME/bin:$PATH",
+        # finish round: hex under a define whose last word names a hash
+        "-DBUILD_COMMIT=" + "0123456789abcdef" * 2 + "01234567",
+        "-DSRC_REV=" + "0123456789abcdef" * 2 + "01234567",
+        "-DCOMMIT_HASH=" + "0123456789abcdef" * 4,
+        "- 2026-10-22 docker run -e XAUTHORITY=/tmp/.docker.xauth img",
+        "CXX=/usr/bin/g++-12 make",
+        "DB_PASSWORD_FILE=/run/secrets/db_password",
+    )
+    # obviously fake values that must still flag
+    PATH_SECRETS = (
+        "API_TOKEN=ghp_" + "FAKEfake0000" * 3,
+        "PASSWORD=hunter2xyz",
+        "-DDB_PASSWORD=s3cr3tvalue",
+        "cmake -DAPI_TOKEN=fake0fake1fake2fakeXYZ ..",
+        "-DFAKE_ID=fake0fake1fake2fake3",
+        "API_TOKEN=/FAKEfake0000FAKEfake0000FAKEfake0000",
+        "XAUTHORITY=~/fake0Fake1fake2FAKE3fake",
+        "DB_PASS=/etc/" + "FAKEfake0000" * 3,
+        # fix round 1: a secret-word key keeps flagging a path-shaped value
+        "PGPASSWORD=/hunter22/abc",
+        "HTPASSWD=./hunter22/abc",
+        "FOO_PW=/abc/def",
+        # fix round 2: a define's name is read without its D, and a long
+        # hex, digit or mixed-case letter segment is no directory name
+        "-DKEY=/hunter22/abc",
+        "-DPW=/hunter22/abc",
+        "FOO=./" + "0123456789abcdef" * 2 + "01234567",
+        "FOO=~/" + "0123456789abcdef" * 2 + "01234567",
+        'FOO="$HOME/' + "0123456789abcdef" * 2 + '01234567"',
+        "FOO=./AbCdEfGhIjKlMnOpQrStUvWxYz",
+        "FOO=/fAkEfAkE/K7FAKEX/bPxRfiCYFAKEXAMPLEKEY",
+        "XAUTHORITY=./fake0Fake1fake2FAKE3fake",
+        # fix round 3: a define with no secret word still flags a token
+        "-DGITHUB_PAT=" + "0123456789abcdef" * 2 + "01234567",
+        "-DDATADOG_API=" + "0123456789abcdef" * 2,
+        "-DHMAC_SEED=" + "0123456789abcdef" * 4,
+        "-DSIGNING_SALT=" + "fedcba9876543210" * 4,
+        "-DFOO=/x/" + "0123456789abcdef" * 2 + "01234567",
+        "-DFOO=~/AbCdEfGhIjKlMnOpQrStUvWxYz",
+        "-DFOO=./FAKEfakeFAKEfakeFAKEfake",
+        "-DAWS_SAK=fAkEfAkEfAkE/K7FAKEX/bPxRfiCYFAKEXAMPLEKEY",
+        # a location key or a path list with a token in it
+        "TOKEN_DIR=fake0Fake1fake2FAKE3fake",
+        "PATH=/usr/bin:fake0Fake1fake2FAKE3fake",
+        # finish round: hex tokens behind a location key or in a path
+        # list, defines that only look like hash names, and hash names
+        # qualified as keyed material
+        "TOKEN_DIR=/run/" + "0123456789abcdef" * 2 + "01234567",
+        "AUTH_ROOT=~/" + "0123456789abcdef" * 2 + "01234567",
+        "PATH=/usr/bin:/" + "0123456789abcdef" * 2 + "01234567",
+        "-DSHARED=" + "0123456789abcdef" * 2 + "01234567",
+        "-DREVIEW=" + "0123456789abcdef" * 2 + "01234567",
+        "-DSHA256_SALT=" + "0123456789abcdef" * 4,
+        "-DSHA256_SEED=" + "0123456789abcdef" * 4,
+        "-DHMAC_SHA256=" + "0123456789abcdef" * 4,
+        "-DHMAC_SHA=" + "0123456789abcdef" * 4,
+        "-DTOTP_SEED_SHA1=" + "0123456789abcdef" * 2 + "01234567",
+        "-DSALT_HASH=" + "0123456789abcdef" * 4,
+        "-DAPI_HASH=" + "0123456789abcdef" * 2,
+    )
+
+    def test_paths_and_defines_stay_clean(self):
+        for line in self.PATH_LINES:
+            with self.subTest(line=line):
+                self.assertEqual(wi.secret_findings(line), [], line)
+        r = self.lint_notes(*self.PATH_LINES)
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+        self.assertNotIn("likely secret value", r.stdout)
+
+    def test_secrets_beside_paths_still_flag(self):
+        for line in self.PATH_SECRETS:
+            with self.subTest(line=line):
+                self.assertTrue(wi.secret_findings(line), line)
+                r = self.lint_notes(line)
+                self.assertEqual(r.returncode, 3, r.stdout)
+                self.assertIn("likely secret value", r.stdout)
 
     def test_conflict_markers_flagged(self):
         (self.root / "items" / "conflicted-0000.md").write_text(

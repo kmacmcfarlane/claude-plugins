@@ -5127,8 +5127,15 @@ def cmd_import(args):
 # no longer hides it. The value rule is the bare form's, unchanged: 8+
 # non-space characters, not a $VAR, <placeholder> or {template}. A KEY glued
 # to a word, or after a URL's ? or & (a query string), stays unmatched.
+# Each match is then judged by _assign_secret (0f7e): a value that is
+# plainly a filesystem path or a : list of them (XAUTHORITY=/tmp/.x,
+# PATH=/usr/bin:/bin) is no secret under a key without a secret word or
+# under a location key (SSH_AUTH_SOCK, TOKEN_DIR), and a -D<NAME>=value
+# define (cmake, a compiler) whose NAME holds no secret word counts only
+# a live or token-shaped value (see _define_flagged).
 SECRET_ASSIGN_RE = re.compile(
-    r"(?:^|[^A-Za-z0-9_?&])[A-Z][A-Z0-9_]{2,}=(?![$<{])\S{8,}")
+    r"(?:^|(?P<lead>[^A-Za-z0-9_?&]))(?P<key>[A-Z][A-Z0-9_]{2,})="
+    r"(?![$<{])(?P<value>\S{8,})")
 SECRET_KV_RE = re.compile(
     r"(?i)\b(api[_-]?key|secret|token|password|passwd|credential|webhook[_-]?url)\b"
     r"['\"]?\s*[:=]\s*['\"]?"
@@ -5439,6 +5446,9 @@ def _shape_value_flagged(key, raw, quote="", rest=None):
     value = raw.rstrip("\"'`,;)]}")
     if not value or _placeholder(value, rest):
         return False
+    # a plain path is no secret under such a key (0f7e: CXX=/usr/bin/g++-12)
+    if _plain_path(value):
+        return False
     tok = _VALUE_TOKEN_RE.match(raw)
     if not tok or raw[tok.end():tok.end() + 1] == "(":
         return False
@@ -5608,10 +5618,130 @@ def _auth_secret(line):
     return False
 
 
+# a path's start: /, ~/, ./, ../, or a $NAME/ or ${NAME}/ variable
+_PATH_START_RE = re.compile(
+    r"(?:~|\.\.?|\$[A-Za-z_][A-Za-z0-9_]*|\$\{[A-Za-z_][A-Za-z0-9_]*\})?/")
+
+
+def _path_segment(seg):
+    """A path segment that is harmless (_harmless_segment), save one of 16+
+    characters that is all hex, all digits, or letters only in mixed case:
+    a key or token, not a directory name (0f7e fix round 2). A long
+    lowercase name (x86_64-linux-gnu, site-packages) stays harmless, as
+    its segments are split on - and _ before this."""
+    if len(seg) >= 16 and (_HEX_RE.fullmatch(seg) or seg.isdigit()
+                           or (seg.isalpha() and not seg.islower()
+                               and not seg.isupper())):
+        return False
+    return _harmless_segment(seg)
+
+
+def _one_path(value, bare=2):
+    """One path (_plain_path): it starts as _PATH_START_RE says, and every
+    segment after that start (split on - _ . / ~) is a harmless path
+    segment (_path_segment), a trailing run of + allowed (g++, c++). A path
+    after a bare / needs `bare` segments (two alone, one in a list), one
+    after ~/ ./ ../ or a variable one: /tmp/.docker.xauth, ./.Xauthority, $HOME/.Xauthority,
+    /usr/bin/g++-12. A token behind a slash (/FAKEfake0000FAKEfake,
+    ./<40 hex>) is no path: its segment is live."""
+    m = _PATH_START_RE.match(value)
+    if not m:
+        return False
+    segs = [seg.rstrip("+") for seg in _SEG_SPLIT_RE.split(value[m.end():])
+            if seg]
+    need = bare if value.startswith("/") else 1
+    return (len(segs) >= need
+            and all(seg and _path_segment(seg) for seg in segs))
+
+
+# a whole $NAME or ${NAME} in a path list (PATH=$HOME/bin:$PATH)
+_LIST_VAR_RE = re.compile(r"\$[A-Za-z_][A-Za-z0-9_]*|\$\{[A-Za-z_][A-Za-z0-9_]*\}")
+
+
+def _plain_path(value):
+    """A value that is plainly a filesystem path (0f7e), quotes around it
+    dropped: one path (_one_path), or a :-separated list of them (PATH,
+    LD_LIBRARY_PATH, KUBECONFIG; fix round 3) whose every part is a path
+    or a whole $NAME / ${NAME}, at least one a path as _one_path takes it
+    alone (so /bin may sit in /usr/bin:/bin). A list with any other
+    part (a token, an empty part, a URL's scheme) is no plain path."""
+    value = value.strip("\"'`").rstrip(",;")
+    parts = value.split(":")
+    return (all(_one_path(p, 1) or _LIST_VAR_RE.fullmatch(p) for p in parts)
+            and any(_one_path(p) for p in parts))
+
+
+# A secret-word key whose last segment is one of these names where the
+# secret lives, not the secret (SSH_AUTH_SOCK, PASSWORD_STORE_DIR,
+# TOKEN_DIR), so a plain path under it is no secret (fix round 3). key is
+# not one: GIT_SSH_KEY=~/.ssh/id_ed25519 is judged as before.
+_LOCATION_WORDS = frozenset((
+    "sock", "socket", "dir", "home", "root", "store", "prefix", "path"))
+# a hex value under a define whose last word is one of these is a hash,
+# not a secret, unless another word qualifies it as keyed material
+# (HMAC_SHA256, SALT_HASH, TOTP_SEED_SHA1; finish round)
+_HASH_WORDS = frozenset(("sha", "commit", "hash", "rev"))
+_HASH_QUALIFIERS = frozenset((
+    "hmac", "salt", "seed", "pepper", "signing", "sign", "api", "otp",
+    "totp", "nonce", "key", "secret", "token"))
+
+
+def _hash_name(name):
+    """A define NAME that names a hash: its last word segment (digit runs
+    dropped, so SHA256 is sha) is in _HASH_WORDS and no segment is in
+    _HASH_QUALIFIERS. GIT_SHA, BUILD_COMMIT, SRC_REV and COMMIT_HASH are;
+    SHA256_SALT, HMAC_SHA, API_HASH, SHARED and REVIEW are not."""
+    words = [seg for seg in _key_segments(name) if not seg.isdigit()]
+    return (bool(words) and words[-1] in _HASH_WORDS
+            and not _HASH_QUALIFIERS.intersection(words))
+
+
+def _define_flagged(name, value):
+    """A -D<NAME>=value define whose NAME holds no secret word and whose
+    value is no plain path (fix round 3): it flags when the value looks
+    live (_looks_live) or any of its segments (split on - _ . / ~) is a
+    token by _path_segment (a long hex, digit or mixed-case letter run,
+    a + or = inside), save a whole hex value under a hash NAME
+    (_hash_name: -DGIT_SHA=<40 hex>). RelWithDebInfo, ON and 1.2.3-beta
+    stay clean."""
+    if _HEX_RE.fullmatch(value) and _hash_name(name):
+        return False
+    return _looks_live(value) or not all(
+        _path_segment(seg) for seg in _SEG_SPLIT_RE.split(value) if seg)
+
+
+def _assign_secret(line):
+    """A KEY=value match (SECRET_ASSIGN_RE) that counts (0f7e): the value is
+    no plain path (_plain_path) unless the KEY holds a secret word and is
+    no location key (PGPASSWORD=/hunter22/abc still flags,
+    SSH_AUTH_SOCK=/run/... does not; see _LOCATION_WORDS), and a
+    -D<NAME>=value define (the D glued to a single -, as cmake and
+    compilers take it: -DCMAKE_BUILD_TYPE=...) whose NAME holds no secret
+    word counts only as _define_flagged says, so
+    -DCMAKE_CUDA_HOST_COMPILER=/usr/bin/g++-12 and
+    -DCMAKE_BUILD_TYPE=RelWithDebInfo stay clean. A secret-word KEY with a
+    token value (API_TOKEN=ghp_...) still flags."""
+    for m in SECRET_ASSIGN_RE.finditer(line):
+        key, value = m.group("key"), m.group("value")
+        lead = m.start("key") - 1
+        define = (m.group("lead") == "-" and key.startswith("D")
+                  and (lead == 0 or line[lead - 1] != "-"))
+        # a define's name is the key without its D (-DKEY: KEY)
+        secret = _secret_key(key) or (define and _secret_key(key[1:]))
+        location = _key_segments(key)[-1] in _LOCATION_WORDS
+        if _plain_path(value) and (not secret or location):
+            continue
+        if (define and not secret
+                and not _define_flagged(key[1:], value.strip("\"'`"))):
+            continue
+        return True
+    return False
+
+
 def _secret_hit(line):
     if "PRIVATE KEY-----" in line:
         return "PEM private key material"
-    if (SECRET_ASSIGN_RE.search(line) or SECRET_KV_RE.search(line)
+    if (_assign_secret(line) or SECRET_KV_RE.search(line)
             or _shape_secret(line) or _auth_secret(line)
             or _table_secret(line) or _url_secret(line)):
         return "likely secret value (record the path and key, never the value)"
