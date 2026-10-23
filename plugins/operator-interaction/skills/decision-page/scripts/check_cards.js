@@ -1,9 +1,14 @@
 #!/usr/bin/env node
 /* decision-page pre-publish check (operator-interaction). Run on the working copy's cards.json
-   before a publish: node check_cards.js path/to/cards.json
+   before a publish, or on one card record before it is raised:
+
+     node check_cards.js path/to/cards.json
+     node check_cards.js --record path/to/record.json
 
    1. the page's own check(): the template's page-free part, loaded from ../assets/index.html,
-      so this refuses exactly what the page refuses;
+      so this refuses exactly what the page refuses (decision-page/5, each card a decision-card/5
+      record plus L and dep). With --record, the card checks alone (no layer, no slug check), and
+      the page-only L and dep refused in a record;
    2. on a file that passes, lints, each line saying how to fix it, or that the thing may be left
       knowingly:
       - ids: a machine-readable id anywhere the page shows text (every card field and level, act,
@@ -18,16 +23,17 @@
       - shapes: summaries a sentence or two (the TLDR one or two bullets, an Impact facet a line),
         medium terse bullets with a sub-bullet or two, high headed sections; the Impact's medium
         one bullet per facet;
-      - a card Impact effect that reads as the recommended option's alone;
+      - an Impact reach that reads as the recommended option's alone;
       - the mechanism: an option's effect of a bare label, MECH_MIN words or fewer (rule 268);
       - the system: a process phrase (a review comment, another round, your time, a blocked
-        session) in an Effect or Reach, which describe the thing the work builds (rule 259);
+        session) in an option's effect or reach, or the Impact's reach, which describe the thing
+        the work builds (rule 259);
       - depth (decision 198, the sizes in references/cards-schema.md § Size, read at each part's
         top level; levels are optional on every part, decision 201): a level not longer than the
         one below it; Background, an option's detail or the evidence thin where it carries
-        levels, or long; an option but (z) with no blocks row; a card long in all; a detail key
-        the page does not show;
-      - one-way options: a ⚠ card with no blocks row flagged oneway; a flagged row while the
+        levels, or long; an option but (z) with no reach; a card long in all; a detail key the
+        page does not show; what a new card owes (why, whyask, reason) missing;
+      - one-way options: a ⚠ card with no option flagged oneway; a flagged option while the
         Impact carries no undo.
       Lints are proxies.
 
@@ -41,16 +47,16 @@ const fail = msg => { process.stdout.write("check_cards: " + msg + "\n"); proces
 const why = e => String((e && e.message) || e).split("\n")[0];
 
 /* the template's page-free part: the same slice the tests load */
-function loadCheck() {
+function loadPage() {
   const tpl = path.join(__dirname, "..", "assets", "index.html");
   let html;
   try { html = fs.readFileSync(tpl, "utf8"); } catch (e) { fail("cannot read the template " + tpl + ": " + why(e)); }
   const start = html.indexOf("<script>"), end = html.indexOf(END_MARK);
   if (start < 0 || end < start) fail("the template has no page-free part (its script or the end-of-page-free-part marker is missing): " + tpl);
   try {
-    const page = vm.runInNewContext(html.slice(start + "<script>".length, end) + "\n;({check})", {});
-    if (typeof page.check !== "function") throw new Error("no check()");
-    return page.check;
+    const page = vm.runInNewContext(html.slice(start + "<script>".length, end) + "\n;({check, recordProblems})", {});
+    if (typeof page.check !== "function" || typeof page.recordProblems !== "function") throw new Error("no check() or recordProblems()");
+    return page;
   } catch (e) { fail("the template's page-free part does not load: " + why(e)); }
 }
 
@@ -121,13 +127,16 @@ const named = s => [...strip(s).matchAll(NAMED)].map(m => { const w = m[1].toLow
    whole word and recommend…, never Recent or Records */
 const REC_BROAD = /^[^A-Za-z]*(rec|recommend\w*|suggest\w*)\b|\bwe\s+suggest\b/i;
 
+/* the options, objects in letter order */
+const opts = c => Array.isArray(c.options) ? c.options : [];
+const IMP = ["wait", "reach", "undo", "cost"];
 /* the flat part a cold reader reads first: what context must introduce, for counts and named things */
 function flat(c) {
   const out = [c.t];
-  for (const k of ["effect", "wait", "reach", "undo", "cost"]) out.push(c.impact[k]);
+  for (const k of IMP) out.push(c.impact[k]);
   out.push(...c.tldr);
-  for (const o of c.o) out.push(o[3], o[4]);
-  for (const k of ["ifleft", "roundcosts", "ifunanswered", "reason", "unknown", "norec", "dep"]) out.push(c[k]);
+  for (const o of opts(c)) out.push(o.title, o.line);
+  for (const k of ["ifleft", "roundcosts", "ifunanswered", "reason", "norec", "dep"]) out.push(c[k]);
   return out.filter(s => typeof s === "string");
 }
 /* every text in a value, in reading order: a section's heading, then each bullet and its sub-bullets */
@@ -149,9 +158,8 @@ const LEVEL = ["summary", "medium", "high"], DETAIL_NAME = ["more detail", "full
 /* the parts a card shows, by their detail key; the first four are always visible */
 const PART = {context: "Context", impact: "the Impact line", tldr: "the TLDR", rec: "the rec line",
   why: "Why now", whyask: "Why ask", dep: "Depends on", evidence: "the Evidence"};
-const FACETS = ["effect", "wait", "reach", "undo", "cost"];
 const levelsOf = (c, k) => c.detail && typeof c.detail === "object" && Array.isArray(c.detail[k]) ? c.detail[k] : [];
-const optLevels = (c, k) => { const o = c.detail && typeof c.detail === "object" ? c.detail.o : null; return o && typeof o === "object" && Array.isArray(o[k]) ? o[k] : []; };
+const optLevels = o => Array.isArray(o.detail) ? o.detail : [];
 
 function shapes(c, say) {
   const sh = (key, line) => say("shape " + key, "shape: " + line);
@@ -162,13 +170,13 @@ function shapes(c, say) {
   if (cs > 2 || cw > 60) sh("ctx", "Context's summary is " + (cs > 2 ? cs + " sentences" : cw + " words") + ": keep it to one or two sentences, about 60 words, with the terms the card uses; move the rest to its levels, or leave it knowingly");
   if (c.tldr.length > 2) sh("tldr n", "the TLDR has " + c.tldr.length + " bullets: keep it to one or two terse bullets");
   c.tldr.forEach((b, i) => terse("TLDR bullet " + (i + 1), b));
-  for (const k of FACETS) if (typeof c.impact[k] === "string" && words(c.impact[k]) > 16)
+  for (const k of IMP) if (typeof c.impact[k] === "string" && words(c.impact[k]) > 16)
     sh("imp " + k, "Impact " + k + " is " + words(c.impact[k]) + " words: keep each facet on its line to about 16; its detail goes in the Impact's levels");
   /* a fold part's summary, where the part carries levels (a part with none is a small call's whole text) */
   const fold = (name, key, sum, ls) => { if (ls.length && sum != null && sentences(textsOf(sum).join(" ")) > 2)
     sh("sum " + key, name + "'s summary is " + sentences(textsOf(sum).join(" ")) + " sentences: keep it to one or two; its levels carry the rest"); };
   for (const k of ["why", "whyask", "dep", "evidence"]) fold(PART[k], k, c[k], levelsOf(c, k));
-  for (const o of c.o) fold("(" + o[0] + ")'s text", "o" + o[0], o[1], optLevels(c, o[0]));
+  for (const o of opts(c)) fold("(" + o.k + ")'s text", "o" + o.k, o.text, optLevels(o));
   /* medium, terse bullets with a sub-bullet or two; high, headed sections */
   const medium = (name, m) => {
     if (typeof m === "string") return sh(name + " m", name + " more detail is prose: write it as terse bullets, with a sub-bullet or two where they help");
@@ -185,12 +193,12 @@ function shapes(c, say) {
     if (ls[0] != null) medium(PART[k], ls[0]);
     if (ls[1] != null) high(PART[k], ls[1]);
   }
-  for (const o of c.o) { const ls = optLevels(c, o[0]);
-    if (ls[0] != null) medium("(" + o[0] + ")'s text", ls[0]);
-    if (ls[1] != null) high("(" + o[0] + ")'s text", ls[1]); }
+  for (const o of opts(c)) { const ls = optLevels(o);
+    if (ls[0] != null) medium("(" + o.k + ")'s text", ls[0]);
+    if (ls[1] != null) high("(" + o.k + ")'s text", ls[1]); }
   /* the Impact's medium: one bullet per facet, the options in its sub-bullets; its high renders as facet sections */
   const im = levelsOf(c, "impact")[0];
-  if (im && typeof im === "object") for (const k of FACETS) { const v = im[k]; if (v == null) continue;
+  if (im && typeof im === "object") for (const k of IMP) { const v = im[k]; if (v == null) continue;
     const at = "the Impact's more detail, " + k;
     if (Array.isArray(v)) { sh("imp m " + k, at + ", is a list: give each facet one bullet, and put the options in its sub-bullets"); continue; }
     const t = typeof v === "string" ? v : v.t, sub = typeof v === "string" ? [] : v.sub || [];
@@ -200,102 +208,108 @@ function shapes(c, say) {
   }
 }
 
-/* ---- the rec-only effect lint: the card's Impact is the decision's across its options ---- */
+/* ---- the rec-only lint: the card's Impact is the decision's across its options. With no card-level effect
+   (v5), it reads the Impact's reach, at every level: a reach that shares its words with the recommended option
+   and with no other reads as that option's alone, and belongs on it. Undo and cost may name one option by design;
+   they are not read ---- */
 const STOP = new Set("a an the and or of to in on for is are be it its this that from with by at as no not one any who what can".split(" "));
 const toks = s => new Set((String(s).toLowerCase().replace(/\[\[[0-9]+\]\]/g, "").match(/[a-z0-9]+/g) || []).filter(w => !STOP.has(w) && w.length > 2));
 const share = (e, r) => { const E = toks(e), R = toks(r); if (!E.size) return 0; let n = 0; for (const w of E) if (R.has(w)) n++; return n / E.size; };
 function recOnly(c, say) {
   if (!c.rec) return;
-  const optText = o => [o[2], o[3], o[4], ((c.blocks && c.blocks[o[0]]) || {}).happens || ""].join(" ");
-  const r = c.o.find(o => o[0] === c.rec), others = c.o.filter(o => o[0] !== c.rec && o[0] !== "z");
-  const effects = [["", c.impact.effect], ...levelsOf(c, "impact").map((l, i) => [" (" + DETAIL_NAME[i] + ")", l && typeof l === "object" ? textsOf(l.effect).join(" ") : ""])];
-  for (const [at, e] of effects) {
-    if (!e) continue;
+  const optText = o => [o.title, o.line, o.effect, o.reach, o.cost].filter(s => typeof s === "string").join(" ");
+  const r = opts(c).find(o => o.k === c.rec), others = opts(c).filter(o => o.k !== c.rec && o.k !== "z");
+  if (!r || !others.length) return;
+  const vals = [["", c.impact.reach], ...levelsOf(c, "impact").map((l, i) => [" (" + DETAIL_NAME[i] + ")", l && typeof l === "object" ? textsOf(l.reach).join(" ") : ""])];
+  for (const [at, e] of vals) {
+    if (!e || typeof e !== "string") continue;
     const sr = share(e, optText(r)), so = Math.max(0, ...others.map(o => share(e, optText(o))));
-    if ((e.match(/\([a-y]\)/g) || []).length < 2 && sr >= 0.4 && sr - so >= 0.25)
-      say("rec-only" + at, "impact: the effect" + at + " reads as the recommended option's (\"" + e.slice(0, 60) + "\"): say what the decision changes across its options; each option's effect is in its blocks row");
+    if ((e.match(/\([a-y]\)/g) || []).length < 2 && sr >= 0.4 && so === 0)
+      say("rec-only" + at, "impact: the reach" + at + " reads as the recommended option's (\"" + e.slice(0, 60) + "\"): say who or what any option reaches; the option's own reach is on the option");
   }
 }
 
 /* ---- the system lint (rule 259): Effect and Reach describe the thing the work builds, never the process, which
    is the Wait. Phrases, not bare words: "the code review checklist", "a comment in the hook" and "a round-trip"
-   are system effects. Read: the card's effect and reach, at every level; each blocks row's happens and who; each
-   option's impact but (z)'s. Never the wait; never a round ask (ifleft or roundcosts), whose system is the round ---- */
+   are system effects. Read: the Impact's reach, at every level; each option's effect and reach but (z)'s. Never
+   the wait; never a round ask (ifleft or roundcosts), whose system is the round ---- */
 const PROCESS = /\breview comments?\b|\b(another|next|a|review) round\b(?!-)|\byour (attention|time)\b|\b(held|waits?|waiting) (for|on|until) (you|review|the operator)\b|\bblocked session\b|\bsession (is )?blocked\b/i;
 function systemOnly(c, say) {
   if (c.ifleft != null || c.roundcosts != null) return;
-  const at = [["the effect", c.impact.effect], ["the reach", c.impact.reach]];
-  levelsOf(c, "impact").forEach((l, i) => { if (l && typeof l === "object") for (const k of ["effect", "reach"])
-    at.push(["the " + k + " (" + DETAIL_NAME[i] + ")", textsOf(l[k]).join(" ")]); });
-  if (c.blocks && typeof c.blocks === "object") for (const k in c.blocks) { const r = c.blocks[k] || {};
-    at.push(["(" + k + ")'s effect", r.happens], ["(" + k + ")'s reach", r.who]); }
-  for (const o of c.o) if (o[0] !== "z") at.push(["(" + o[0] + ")'s impact", o[2]]);
+  const at = [["the reach", c.impact.reach]];
+  levelsOf(c, "impact").forEach((l, i) => { if (l && typeof l === "object") at.push(["the reach (" + DETAIL_NAME[i] + ")", textsOf(l.reach).join(" ")]); });
+  for (const o of opts(c)) if (o.k !== "z") at.push(["(" + o.k + ")'s effect", o.effect], ["(" + o.k + ")'s reach", o.reach]);
   for (const [where, s] of at) { const m = typeof s === "string" ? s.match(PROCESS) : null;
     if (m) say("process " + where, "impact: " + where + " names the process (\"" + m[0] + "\"): Effect and Reach describe the system the work builds, its code, data, users and deploys; move the process effect to wait, or leave it knowingly when the system the work builds is itself a review or a process"); }
 }
 
 /* ---- the mechanism lint (rule 268): each option's effect says how it happens, who meets it and when, and the
-   before and after. A proxy: it catches only the bare label, an effect of MECH_MIN words or fewer, read from the
-   option's blocks row (happens), else its impact; never (z)'s, and never a no-change statement ---- */
+   before and after. A proxy: it catches only the bare label, an effect of MECH_MIN words or fewer; never (z)'s,
+   and never a no-change statement ---- */
 const MECH_MIN = 4;
 const NO_CHANGE = /^[^A-Za-z]*(no|nothing|none|unchanged)\b/i;
 function mech(c, say) {
-  for (const o of c.o) { if (o[0] === "z") continue;
-    const r = row(c, o[0]), e = r && typeof r.happens === "string" ? r.happens : o[2], n = words(e);
+  for (const o of opts(c)) { if (o.k === "z") continue;
+    const e = o.effect, n = words(e);
     if (typeof e === "string" && e.trim() && n <= MECH_MIN && !NO_CHANGE.test(e))
-      say("mech " + o[0], "impact: (" + o[0] + ")'s effect is " + n + " words (\"" + e.trim() + "\"): say its mechanism, how it happens, who meets it and when, and the before and after; or leave it knowingly"); }
+      say("mech " + o.k, "impact: (" + o.k + ")'s effect is " + n + " words (\"" + e.trim() + "\"): say its mechanism, how it happens, who meets it and when, and the before and after; or leave it knowingly"); }
 }
 
 /* ---- the depth lints (decision 198): sizes read at each part's top level, words split on whitespace ---- */
 const topOf = (sum, ls) => ls.length ? ls[ls.length - 1] : sum;
-const row = (c, k) => c.blocks && typeof c.blocks === "object" ? c.blocks[k] || null : null;
 
 function depth(c, say) {
   const imp = c.impact;
-  const summary = {context: c.context, impact: [imp.effect, imp.wait, imp.reach, imp.undo, imp.cost], tldr: c.tldr,
-    rec: [c.reason, c.unknown], why: c.why, whyask: c.whyask, dep: c.dep, evidence: c.evidence};
+  const summary = {context: c.context, impact: IMP.map(k => imp[k]), tldr: c.tldr,
+    rec: [c.reason], why: c.why, whyask: c.whyask, dep: c.dep, evidence: c.evidence};
   /* a level replaces the one below it, so it says more */
   const grow = (name, key, sum, ls) => { const ws = [words(sum), ...ls.map(words)];
     for (let i = 1; i < ws.length; i++) if (ws[i] <= ws[i - 1])
       say("grow " + key + i, "depth: " + name + " " + LEVEL[i] + " is not longer than its " + LEVEL[i - 1] + " (" + ws[i] + " words against " + ws[i - 1] + "): each level is a fuller rendition of the one below it"); };
   for (const k in PART) grow(PART[k], k, summary[k], levelsOf(c, k));
-  for (const o of c.o) grow("(" + o[0] + ")'s text", "o" + o[0], o[1], optLevels(c, o[0]));
+  for (const o of opts(c)) grow("(" + o.k + ")'s text", "o" + o.k, o.text, optLevels(o));
+  /* what a new card owes, which the page does not refuse so an upgraded older card renders with nothing invented */
+  const missing = ["why", "whyask"].filter(k => !(typeof c[k] === "string" && c[k].trim()));
+  if (missing.length) say("bg", "depth: " + missing.join(" and ") + " missing: a new card says why now and why it is asked (the Background fold); leave it knowingly only on an upgraded older card");
+  if (!(typeof c.reason === "string" && c.reason.trim()))
+    say("reason", "depth: reason missing: a new card gives the one-clause reason for its rec (or for its basis word, with no rec); leave it knowingly only on an upgraded older card");
   /* the 198 sizes, at the top level: Background ~150, each option ~60-120, Evidence ~150, a card ~600-900.
      Levels scale with the decision (201): a part with none may stay short, so thin is linted only where
      the writer gave levels; long is linted everywhere */
   const bg = words(topOf(c.why, levelsOf(c, "why"))) + words(topOf(c.whyask, levelsOf(c, "whyask")));
   const bgLv = levelsOf(c, "why").length + levelsOf(c, "whyask").length > 0;
-  if (bgLv && bg < 60) say("bg", "depth: Background is " + bg + " words at its fullest: write Why now and Why ask near 150 together, from the record and the work behind it, or leave it knowingly; never pad");
+  if (!missing.length && bgLv && bg < 60) say("bg", "depth: Background is " + bg + " words at its fullest: write Why now and Why ask near 150 together, from the record and the work behind it, or leave it knowingly; never pad");
   else if (bg > 225) say("bg", "depth: Background is " + bg + " words at its fullest: keep Why now and Why ask near 150 together");
   let optWords = 0;
-  for (const o of c.o) {
-    const k = o[0], top = words(topOf(o[1], optLevels(c, k))), r = row(c, k);
-    if (k === "z") { optWords += top + words(o[2]); continue; }
-    if (!r && !c.warn) say("row " + k, "depth: (" + k + ") has no blocks row: give it happens and who, its undo where it is one-way or costly, and cost where it has one");
-    const ow = top + (r ? words([r.happens, r.who, r.undo, r.cost]) : 0);
-    optWords += ow + words(o[2]);
-    if (optLevels(c, k).length && ow < 30) say("opt " + k, "depth: (" + k + ")'s detail is " + ow + " words (its fullest text and its blocks row): write it near 60–120, what happens, undo, who and cost, from the sources; or leave it knowingly");
-    else if (ow > 180) say("opt " + k, "depth: (" + k + ")'s detail is " + ow + " words (its fullest text and its blocks row): keep it near 60–120");
+  for (const o of opts(c)) {
+    const top = words(topOf(o.text, optLevels(o)));
+    if (o.k === "z") { optWords += top + words(o.effect); continue; }
+    if (!(typeof o.reach === "string" && o.reach.trim()) && c.oneway !== true)
+      say("row " + o.k, "depth: (" + o.k + ") has no reach: give it who or what it reaches, its undo where it is one-way or costly, and its cost where it has one");
+    const ow = top + words([o.effect, o.reach, o.undo, o.cost]);
+    optWords += ow;
+    if (optLevels(o).length && ow < 30) say("opt " + o.k, "depth: (" + o.k + ")'s detail is " + ow + " words (its fullest text and its effect, reach, undo and cost): write it near 60–120, from the sources; or leave it knowingly");
+    else if (ow > 180) say("opt " + o.k, "depth: (" + o.k + ")'s detail is " + ow + " words (its fullest text and its effect, reach, undo and cost): keep it near 60–120");
   }
   const ev = words(topOf(c.evidence, levelsOf(c, "evidence")));
   if (levelsOf(c, "evidence").length && c.basis !== "none" && ev < 60) say("ev", "depth: evidence is " + ev + " words at its fullest: give the basis drill-down near 150, what was observed, inferred and assumed, with the paths and links behind each; or leave it knowingly");
   else if (ev > 225) say("ev", "depth: evidence is " + ev + " words at its fullest: keep it near 150");
-  /* the card in all: the flat part and Context at their summary, the fold parts at their top level, each option's impact; not act */
+  /* the card in all: the flat part and Context at their summary, the fold parts at their top level, each option's detail; not act */
   const all = words(flat(c)) + words(c.context) + bg + ev + optWords;
   if (all > 1350) say("all", "depth: the card is " + all + " words in all: keep it near 600–900; a small call gets a short card");
   if (c.detail && typeof c.detail === "object")
-    for (const k of Object.keys(c.detail)) if (!(k in PART) && k !== "o")
-      say("key " + k, "depth: detail." + k + " is not a part the page shows, so it is ignored: the parts are " + Object.keys(PART).join(", ") + " and o");
+    for (const k of Object.keys(c.detail)) if (!(k in PART))
+      say("key " + k, "depth: detail." + k + " is not a part the page shows, so it is ignored: the parts are " + Object.keys(PART).join(", ") + ", and each option's own detail");
 }
 
-/* ---- the one-way lints: the page refuses a row flagged oneway without its undo; these catch what it lets
-   through, so an older ⚠ page still shows ---- */
+/* ---- the one-way lints: the page refuses an option flagged oneway without its undo; these catch what it lets
+   through ---- */
 function oneway(c, say) {
-  const rows = c.blocks && typeof c.blocks === "object" ? Object.keys(c.blocks).filter(k => c.blocks[k] && c.blocks[k].oneway === true) : [];
-  if (c.warn && !rows.length)
-    say("oneway", "oneway: a ⚠ one-way card has no blocks row flagged one-way: set oneway: true, with its undo, on each option one-way or costly to undo; or leave it knowingly on a card the operator has answered");
-  if (rows.length && !(typeof c.impact.undo === "string" && c.impact.undo.trim()))
-    say("oneway impact", "oneway: (" + rows.join(", ") + ") is flagged one-way but the Impact carries no undo: name it there, (" + rows[0] + ") and how it is undone, or that it cannot be");
+  const flagged = opts(c).filter(o => o.oneway === true).map(o => o.k);
+  if (c.oneway === true && !flagged.length)
+    say("oneway", "oneway: a ⚠ one-way card has no option flagged one-way: set oneway: true, with its undo, on each option one-way or costly to undo; or leave it knowingly on a card the operator has answered");
+  if (flagged.length && !(typeof c.impact.undo === "string" && c.impact.undo.trim()))
+    say("oneway impact", "oneway: (" + flagged.join(", ") + ") is flagged one-way but the Impact carries no undo: name it there, (" + flagged[0] + ") and how it is undone, or that it cannot be");
 }
 
 /* ---- the source label's short name: plain words, about 2 to 6 ---- */
@@ -309,19 +323,21 @@ function labelName(c, say) {
 const idLine = ([t, n], at) => t + " looks like an id (" + at + "): "
   + (n ? "name the decision by its slug [[" + n + "]], with its card or a refs entry" : "name the thing by its short name or title, a decision by its slug [[N]]")
   + "; the page is the reader's only context; leave it if it is a term the reader knows (S3, UTF-8)";
-/* the texts a card shows, by part: everything but rev, n, L and the option letters */
+/* the texts a card shows, by part: everything the page renders but rev, n, L and the option letters */
 function cardTexts(c) {
   const out = [];
   const put = (at, v) => { for (const s of textsOf(v)) out.push([at, s]); };
   if (c.label && typeof c.label === "object") put("label", c.label.name);
-  for (const k of ["t", "context", "what", "class", "why", "whyask", "dep", "ifleft", "roundcosts", "ifunanswered", "reason", "unknown", "norec", "evidence"]) put(k, c[k]);
-  put("impact", c.impact); put("tldr", c.tldr);
-  for (const o of c.o) put("(" + o[0] + ")", o.slice(1));
-  if (c.blocks && typeof c.blocks === "object") for (const k in c.blocks) put("blocks (" + k + ")", c.blocks[k]);
-  if (c.act && typeof c.act === "object") for (const k in c.act) put("act (" + k + ")", c.act[k]);
+  for (const k of ["t", "context", "what", "class", "why", "whyask", "dep", "ifleft", "roundcosts", "ifunanswered", "reason", "norec", "evidence", "open"]) put(k, c[k]);
+  for (const k of IMP) put("impact", c.impact[k]);
+  put("tldr", c.tldr);
+  for (const o of opts(c)) {
+    for (const k of ["title", "line", "text", "effect", "reach", "undo", "cost"]) put("(" + o.k + ")", o[k]);
+    if (Array.isArray(o.act)) put("act (" + o.k + ")", o.act);
+    if (Array.isArray(o.detail)) put("detail (" + o.k + ")", o.detail);
+  }
   if (c.detail && typeof c.detail === "object") for (const k in c.detail)
-    if (k === "o" && c.detail.o && typeof c.detail.o === "object") { for (const x in c.detail.o) put("detail.o." + x, c.detail.o[x]); }
-    else put("detail." + k, c.detail[k]);
+    put("detail." + k, k === "impact" && Array.isArray(c.detail.impact) ? c.detail.impact.map(l => l && typeof l === "object" ? IMP.map(f => l[f]) : l) : c.detail[k]);
   return out;
 }
 function pageIds(d, out) {
@@ -341,57 +357,63 @@ function pageIds(d, out) {
       say("refs " + k + " a holds " + x[0] + ", which looks like an id: if these are the operator's own words, leave them as given; otherwise name the thing"); }
 }
 
+/* the card lints, one card; w opens each line ("lint: card 41: "), sh is its bundle's shared context */
+function lintCard(c, w, sh, out) {
+  const hasWhat = typeof c.what === "string" && c.what.trim();
+  /* an item card in a bundle may lean on its group's shared context (rule 263) */
+  const ctx = c.context + (hasWhat ? " " + c.what : "") + (typeof sh === "string" ? " " + sh : "");
+  const ctxNums = new Set(counts(ctx).map(x => x.n)), ctxLow = ctx.toLowerCase();
+  const seen = new Set(), say = (key, line) => { if (!seen.has(key)) { seen.add(key); out.push(w + line); } };
+  for (const [at, s] of cardTexts(c)) for (const x of ids(s)) say("id " + x[0], idLine(x, at));
+  /* the terms a visible text uses, against Context's summary; at is "" for the flat part, or " (part, level)" */
+  const terms = (fields, at) => {
+    for (const s of fields) for (const x of counts(s)) if (!ctxNums.has(x.n))
+      say("count " + x.n, "\"" + x.word + "\"" + at + " counts things its context does not name: say what the " + x.word + " things are, or list them, in context");
+    for (const s of fields) for (const t of named(s)) if (!ctxLow.includes(t))
+      say("named " + t, "\"" + t + "\"" + at + " is not glossed in its context: give it a one-line gloss in context, what it is and where it comes from");
+  };
+  terms(flat(c), "");
+  c.tldr.forEach((b, i) => { if (REC_BROAD.test(b))
+    say("tldr " + i, "tldr bullet " + (i + 1) + " may carry the recommendation: the options mark it; say what is decided instead, or leave it if it reports someone else's"); });
+  /* the visible parts' medium and high: each steps alone, so the Context beside them may be its summary */
+  for (const k of ["impact", "tldr", "rec"]) levelsOf(c, k).forEach((r, i) => terms(k === "impact" && r && typeof r === "object" ? textsOf(IMP.map(f => r[f])) : textsOf(r), " (" + PART[k] + ", " + DETAIL_NAME[i] + ")"));
+  /* a TLDR level's headings, bullets and sub-bullets, numbered in reading order as the page numbers them */
+  levelsOf(c, "tldr").forEach((bs, m) => textsOf(bs).forEach((b, i) => { if (REC_BROAD.test(b))
+    say("tldr " + m + "." + i, "tldr bullet " + (i + 1) + " (" + DETAIL_NAME[m] + ") may carry the recommendation: the options mark it; say what is decided instead, or leave it if it reports someone else's"); }));
+  if (hasWhat) say("what", "what present: move it into context (after the terms, before the cue) and delete it");
+  shapes(c, say);
+  recOnly(c, say);
+  systemOnly(c, say);
+  mech(c, say);
+  depth(c, say);
+  oneway(c, say);
+  labelName(c, say);
+}
+
 function lint(d) {
   const out = [];
   DECLARED = declare(d.cards);
   pageIds(d, out);
-  for (const c of d.cards) {
-    const w = "lint: card " + c.n + ": ";
-    const hasWhat = typeof c.what === "string" && c.what.trim();
-    /* an item card in a bundle may lean on its group's shared context (rule 263) */
-    const sh = (d.layers.find(l => l[0] === c.L) || [])[3];
-    const ctx = c.context + (hasWhat ? " " + c.what : "") + (typeof sh === "string" ? " " + sh : "");
-    const ctxNums = new Set(counts(ctx).map(x => x.n)), ctxLow = ctx.toLowerCase();
-    const seen = new Set(), say = (key, line) => { if (!seen.has(key)) { seen.add(key); out.push(w + line); } };
-    for (const [at, s] of cardTexts(c)) for (const x of ids(s)) say("id " + x[0], idLine(x, at));
-    /* the terms a visible text uses, against Context's summary; at is "" for the flat part, or " (part, level)" */
-    const terms = (fields, at) => {
-      for (const s of fields) for (const x of counts(s)) if (!ctxNums.has(x.n))
-        say("count " + x.n, "\"" + x.word + "\"" + at + " counts things its context does not name: say what the " + x.word + " things are, or list them, in context");
-      for (const s of fields) for (const t of named(s)) if (!ctxLow.includes(t))
-        say("named " + t, "\"" + t + "\"" + at + " is not glossed in its context: give it a one-line gloss in context, what it is and where it comes from");
-    };
-    terms(flat(c), "");
-    c.tldr.forEach((b, i) => { if (REC_BROAD.test(b))
-      say("tldr " + i, "tldr bullet " + (i + 1) + " may carry the recommendation: the options mark it; say what is decided instead, or leave it if it reports someone else's"); });
-    /* the visible parts' medium and high: each steps alone, so the Context beside them may be its summary */
-    for (const k of ["impact", "tldr", "rec"]) levelsOf(c, k).forEach((r, i) => terms(textsOf(r), " (" + PART[k] + ", " + DETAIL_NAME[i] + ")"));
-    /* a TLDR level's headings, bullets and sub-bullets, numbered in reading order as the page numbers them */
-    levelsOf(c, "tldr").forEach((bs, m) => textsOf(bs).forEach((b, i) => { if (REC_BROAD.test(b))
-      say("tldr " + m + "." + i, "tldr bullet " + (i + 1) + " (" + DETAIL_NAME[m] + ") may carry the recommendation: the options mark it; say what is decided instead, or leave it if it reports someone else's"); }));
-    if (hasWhat) say("what", "what present: move it into context (after the terms, before the cue) and delete it");
-    shapes(c, say);
-    recOnly(c, say);
-    systemOnly(c, say);
-    mech(c, say);
-    depth(c, say);
-    oneway(c, say);
-    labelName(c, say);
-  }
+  for (const c of d.cards) lintCard(c, "lint: card " + c.n + ": ", (d.layers.find(l => l[0] === c.L) || [])[3], out);
   return out;
 }
 
 /* ---- the run ---- */
-const check = loadCheck();
-const file = process.argv[2];
-if (!file) fail("usage: node check_cards.js path/to/cards.json");
+const page = loadPage();
+const args = process.argv.slice(2);
+const record = args[0] === "--record";
+const file = record ? args[1] : args[0];
+if (!file || args.length !== (record ? 2 : 1)) fail("usage: node check_cards.js path/to/cards.json, or node check_cards.js --record path/to/record.json");
 let text, d;
 try { text = fs.readFileSync(file, "utf8"); } catch (e) { fail("cannot read " + file + ": " + why(e)); }
 try { d = JSON.parse(text); } catch (e) { fail("not valid JSON: " + why(e)); }
 let bad;
-try { bad = check(d); } catch (e) { fail("the page's check stopped on this file: " + why(e)); }
+try { bad = record ? page.recordProblems(d) : page.check(d); } catch (e) { fail("the page's check stopped on this file: " + why(e)); }
 if (bad.length) { process.stdout.write(bad.join("\n") + "\n"); process.exit(1); }
-let lines;
-try { lines = lint(d); } catch (e) { fail("the lints stopped on this file: " + why(e)); }
+let lines = [];
+try {
+  if (record) { DECLARED = declare([d]); lintCard(d, "lint: record " + d.n + ": ", null, lines); }
+  else lines = lint(d);
+} catch (e) { fail("the lints stopped on this file: " + why(e)); }
 if (lines.length) { process.stdout.write(lines.join("\n") + "\n"); process.exit(2); }
 process.exit(0);

@@ -14,33 +14,36 @@ first); this file sets only the layout.
 - One heading per group, in list order, with a short table of contents, as the page's map
   gives one: its decisions by number and short name; a bundle's (a layer with `shared`) reads
   `<title> — N decisions, <note>`, then a **Shared context:** line with its shared context; under it, one section per decision, headed with its
-  number, short name and effect at tag size: `41 · Docs build home → sets where the docs build
-  runs, and who can publish`; a card with a `label` puts the label and its short name after
-  its own, `43 · Theme colour · D3 (site colour off the logo) → …`.
+  number, short name and the recommended option's effect, its letter first, as the page's row
+  shows it: `41 · Docs build home → (b) every merge to main builds and publishes the site from
+  CI`; with no recommendation, each option's in a few words, `→ (a) …; (b) …`; a card with a
+  `label` puts the label and its short name after its own, `43 · Theme colour · D3 (site
+  colour off the logo) → …`.
 - In each section, the card's essentials as text: the TLDR bullets first, then **Context:**
   (the terms the card uses, then where the operator left it), then ⚠ one-way when it is and
   **Impact:**, across all the options, describing the system the work builds, never the review or
-  the process (what waiting holds up is its `later:` line), one facet a line (`→ effect`, `later: …`, `reach: …`,
-  `⚠ undo: …` only when an option is one-way or costly, each on its own line), **Why now:**, **Why ask:** (class first), and the rec line
-  `Rec (b) · basis strong — reason · unknown: …`. A card with
-  `blocks` (every card, now) also gets the Impact table: a row per option, then the Wait row;
-  Effect, Reach, Undo, Cost.
+  the process (what waiting holds up is its `later:` line), one facet a line (`later: …`, `reach: …`,
+  `⚠ undo: …` only when an option is one-way or costly, `cost: …` where given, each on its own
+  line; there is no card-level effect), **Why now:**, **Why ask:** (class first), and the rec
+  line `Rec (b) · basis strong — reason`. Each card also gets its options' table: a row per
+  option, then the Wait row; Effect, Reach, Undo, Cost, each option's own.
 - A doc cannot toggle a level, so each part shows one rendition. **Context** is at its top
   level, its high in `detail` when it has one: that high holds the facts a cold reader has
-  lost (`references/cards-schema.md` § A card, `detail`), and a doc reader has no click to
-  reach it. The Impact line, the TLDR and the rec line are at their summary; Why now and Why
-  ask at their top level. After the rec line, a **More detail** sub-heading carries the other
-  fold parts at their top level: each option in full with its Effect, Reach, Undo and Cost,
-  Depends on, and the Evidence with its paths and links. That is the card-in-all measure of
+  lost (the `decisions` skill's `references/card-record.md` § Levels), and a doc reader has no
+  click to reach it. The Impact line, the TLDR and the rec line are at their summary; Why now
+  and Why ask at their top level. After the rec line, a **More detail** sub-heading carries the
+  other fold parts at their top level: the **Open questions** as a list, each option in full
+  with its Effect, Reach, Undo and Cost, Depends on, and the Evidence with its paths and links.
+  That is the card-in-all measure of
   `references/cards-schema.md` § Size, with Context at its high. A level in sections shows
   each heading as a bold line, its bullets under it.
 - No ids: items, commits and series by their short names or titles, as on the page
   (`references/cards-schema.md` § No ids on the page).
 - Then a tick box per option, in letter order, the recommended one in bold, each with its own
-  effect, its `impact`: `☐ **(b) Publish from CI** — publishing no longer depends on one
-  machine; about 4 minutes of CI per merge`.
-- When the card has `act`, after the option tick boxes: **To act on (x):** with its numbered
-  steps, as the card gives them, per option that has them.
+  `effect`: `☐ **(b) Publish from CI** — every merge to main builds and publishes the site
+  from CI`.
+- When an option has `act`, after the option tick boxes: **To act on (x):** with its numbered
+  steps, as the option gives them, per option that has them.
 - Then a tick box per follow-up, with its placeholder: `☐ later [when]`, `☐ tell me [what]`,
   `☐ expand`, `☐ dig into [what]`, `☐ you decide`, `☐ drop`.
 - Then a line for the operator's words: `Your words:` with space to write.

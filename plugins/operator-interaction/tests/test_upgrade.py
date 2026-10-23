@@ -1,0 +1,304 @@
+"""The upgrader moves older page data to decision-page/5, format only, every rev kept.
+
+`skills/decision-page/scripts/upgrade_cards.js`, run under node on two fixtures with invented
+text: `tests/fixtures/cards.legacy.json` (the shipped example before v5, kept verbatim) and
+`tests/fixtures/cards.kit.json` (three cards in the shape of the answer page's working kit, one
+of them in its v4 layout). Each upgrades to a file the page's check passes and the runner runs
+on with no refusal; the legacy map (effect from the blocks row, else the option's impact;
+`warn` to `oneway`; `unknown` to `open`, none dropped); the kit's name trap (its `pros` the one
+line, `prosT` the rows) with its mutant; a minute-form rev normalized; all or nothing (a card
+it cannot map stops the run, nothing written); `--only`, `--records`; a v5 file passed through.
+
+Run from the plugin dir: python3 -m unittest discover -s tests -q
+"""
+
+import copy
+import json
+import pathlib
+import shutil
+import subprocess
+import sys
+import tempfile
+import unittest
+
+from test_impact import NODE
+from test_depth import run_page
+from test_context import runner, SKILL
+from test_record import run_record
+
+UPGRADER = SKILL / "scripts" / "upgrade_cards.js"
+FIXTURES = pathlib.Path(__file__).resolve().parent / "fixtures"
+LEGACY = FIXTURES / "cards.legacy.json"
+KIT = FIXTURES / "cards.kit.json"
+QMAP = {"41": "Where should the docs site be built and published from?",
+        "42": "What happens to the old URLs of the twelve moved pages?",
+        "43": "Which accent colour should the docs site use?",
+        "51": "Should the nightly backup also keep an offsite copy?",
+        "52": "Should old nightly backups be pruned after thirty days?",
+        "53": "When should the backup report be sent?"}
+
+
+def setUpModule():
+    if not NODE:
+        print("WARNING: node is not installed: the upgrader tests (Upgrade) are skipped, so moving older "
+              "page data to decision-page/5 went untested", file=sys.stderr)
+
+
+def load(p):
+    return json.loads(pathlib.Path(p).read_text())
+
+
+def upgrade(data, qmap=QMAP, args=(), script=UPGRADER):
+    """Run the upgrader on data; (exit code, stdout, the output file's data or None, the records dir's files)."""
+    with tempfile.TemporaryDirectory() as tmp:
+        t = pathlib.Path(tmp)
+        (t / "in.json").write_text(data if isinstance(data, str) else json.dumps(data))
+        cmd = [NODE, str(script), str(t / "in.json"), str(t / "out.json")]
+        if qmap is not None:
+            (t / "q.json").write_text(json.dumps(qmap))
+            cmd += ["--questions", str(t / "q.json")]
+        extra = []
+        for a in args:
+            if isinstance(a, list):  # a --only set, written to a file
+                (t / "only.txt").write_text("\n".join(str(n) for n in a) + "\n")
+                extra.append(str(t / "only.txt"))
+            elif a == "RECORDS":
+                extra.append(str(t / "recs"))
+            else:
+                extra.append(a)
+        out = subprocess.run(cmd + extra, capture_output=True, text=True, timeout=60)
+        res = load(t / "out.json") if (t / "out.json").exists() else None
+        recs = {p.name: load(p) for p in sorted((t / "recs").glob("*.json"))} if (t / "recs").exists() else {}
+        raw = (t / "out.json").read_text() if (t / "out.json").exists() else None
+    return out.returncode, out.stdout, res, recs, raw
+
+
+def opt(card, k):
+    return next(o for o in card["options"] if o["k"] == k)
+
+
+def by_n(d):
+    return {c["n"]: c for c in d["cards"]}
+
+
+# the name trap, as a check on an upgraded option: the one-line pro and con are text, the table's pros
+# and cons lists
+def name_trap_problems(o):
+    out = []
+    for k in ("pro", "con"):
+        if k in o and not isinstance(o[k], str):
+            out.append("(%s) %s is not one line" % (o["k"], k))
+    for k in ("pros", "cons"):
+        if k in o and not isinstance(o[k], list):
+            out.append("(%s) %s is not the table's rows" % (o["k"], k))
+    return out
+
+
+TRAP = ('if ("pros" in o) x.pro = o.pros;\n    if ("cons" in o) x.con = o.cons;\n'
+        '    if ("prosT" in o) x.pros = o.prosT;\n    if ("consT" in o) x.cons = o.consT;')
+TRAP_STRAIGHT = ('if ("pros" in o) x.pros = o.pros;\n    if ("cons" in o) x.cons = o.cons;\n'
+                 '    if ("prosT" in o) x.prosT = o.prosT;\n    if ("consT" in o) x.consT = o.consT;')
+
+
+@unittest.skipUnless(NODE, "node is not installed")
+class Upgrade(unittest.TestCase):
+
+    def test_the_legacy_fixture_upgrades_to_a_page_that_passes(self):
+        code, out, d, _, _ = upgrade(load(LEGACY))
+        self.assertEqual(code, 0, out)
+        self.assertEqual(d["format"], "decision-page/5")
+        self.assertEqual(run_page(d)["bad"], [])
+        self.assertEqual(runner(d)[:2], (0, ""))
+        # every rev kept, every card reported
+        old = {c["n"]: c["rev"] for c in load(LEGACY)["cards"]}
+        self.assertEqual({c["n"]: c["rev"] for c in d["cards"]}, old)
+        for n in old:
+            self.assertIn("card %d: legacy, rev kept" % n, out)
+
+    def test_the_legacy_map(self):
+        src = by_n(load(LEGACY))
+        d = by_n(upgrade(load(LEGACY))[2])
+        # effect from the blocks row's happens, reach from who; o[1] the text, o[3] the title, o[4] the line
+        b = opt(d[41], "b")
+        self.assertEqual(b["effect"], src[41]["blocks"]["b"]["happens"])
+        self.assertEqual(b["reach"], src[41]["blocks"]["b"]["who"])
+        self.assertEqual((b["text"], b["title"], b["line"]), tuple(src[41]["o"][1][i] for i in (1, 3, 4)))
+        self.assertEqual(b["act"], src[41]["act"]["b"])
+        self.assertEqual(b["detail"], src[41]["detail"]["o"]["b"])
+        # (z)'s impact is its effect, what waiting does
+        self.assertEqual(opt(d[41], "z")["effect"], src[41]["o"][2][2])
+        # warn -> oneway; the flagged row's undo and flag move into its option
+        self.assertTrue(d[42]["oneway"])
+        self.assertNotIn("warn", d[42])
+        self.assertTrue(opt(d[42], "b")["oneway"])
+        self.assertEqual(opt(d[42], "b")["undo"], src[42]["blocks"]["b"]["undo"])
+        # unknown -> open; "none" leaves no open
+        self.assertEqual(d[41]["open"], [src[41]["unknown"]])
+        self.assertNotIn("open", d[43])
+        # no card-level effect, at any level; no positional options or blocks left
+        for c in d.values():
+            self.assertNotIn("effect", c["impact"])
+            for lv in c.get("detail", {}).get("impact", []):
+                self.assertNotIn("effect", lv)
+            for k in ("o", "blocks", "act", "warn", "unknown"):
+                self.assertNotIn(k, c)
+            self.assertNotIn("o", c.get("detail", {}))
+            self.assertEqual(c["q"], QMAP[str(c["n"])])
+
+    def test_an_option_with_no_row_takes_its_impact_as_its_effect(self):
+        src = load(LEGACY)
+        del src["cards"][2]["blocks"]
+        d = by_n(upgrade(src)[2])
+        self.assertEqual(opt(d[43], "b")["effect"], src["cards"][2]["o"][1][2])
+        self.assertNotIn("reach", opt(d[43], "b"))
+
+    def test_a_minute_rev_is_normalized_and_a_bad_one_renewed(self):
+        src = load(LEGACY)
+        src["cards"][0]["rev"] = "2026-01-12T09:30Z"
+        src["cards"][1]["rev"] = "version two"
+        code, out, d, _, _ = upgrade(src)
+        self.assertEqual(code, 0, out)
+        d = by_n(d)
+        self.assertEqual(d[41]["rev"], "2026-01-12T09:30:00Z")
+        self.assertIn("card 41: legacy, rev kept, normalized to seconds", out)
+        self.assertRegex(d[42]["rev"], r"^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$")
+        self.assertIn('card 42: legacy, new rev (was "version two")', out)
+
+    def test_the_kit_fixture_upgrades_to_a_page_that_passes(self):
+        code, out, d, _, _ = upgrade(load(KIT))
+        self.assertEqual(code, 0, out)
+        self.assertEqual(run_page(d)["bad"], [])
+        rcode, rout, _ = runner(d)
+        # no refusal; the only lints are the kit's what, which a later feature shows as its own part
+        self.assertIn(rcode, (0, 2), rout)
+        self.assertTrue(all("what present" in x for x in rout.splitlines()), rout)
+        self.assertIn("card 51: kit, rev kept", out)
+        self.assertIn("card 52: kit (v4), rev kept, normalized to seconds", out)
+
+    def test_the_kit_map(self):
+        src = by_n(load(KIT))
+        d = by_n(upgrade(load(KIT))[2])
+        c = d[51]
+        # the name trap: the kit's pros/cons are the one line, prosT/consT the table's rows
+        a = opt(c, "a")
+        self.assertEqual(a["title"], src[51]["options"][0]["text"])
+        self.assertEqual(a["pro"], src[51]["options"][0]["pros"])
+        self.assertEqual(a["con"], src[51]["options"][0]["cons"])
+        self.assertEqual(a["pros"], src[51]["options"][0]["prosT"])
+        self.assertEqual(a["cons"], src[51]["options"][0]["consT"])
+        for o in c["options"]:
+            self.assertEqual(name_trap_problems(o), [], o["k"])
+        self.assertEqual(opt(c, "b")["act"], src[51]["act"]["b"])
+        # assumptions paired with their tripwires; background into why and whyask
+        self.assertEqual(c["assume"], [{"rests": r, "tw": t} for r, t in
+                                       zip(src[51]["assume"]["assumptions"], src[51]["assume"]["tripwires"])])
+        self.assertEqual((c["basis"], c["reason"]), (src[51]["assume"]["basis"], src[51]["assume"]["reason"]))
+        self.assertEqual((c["why"], c["whyask"]), (src[51]["background"]["why"], src[51]["background"]["whyask"]))
+        # evidence attachments into one flat list; the example's mode into form
+        self.assertEqual(c["evidence"], ["Health report — Observed: the disk logs rising read errors.",
+                                         "Observed: it is four years old."])
+        self.assertEqual([x["kind"] for x in c["attached"]], ["example"])
+        self.assertEqual(c["attached"][0]["form"], "invented to illustrate")
+        self.assertNotIn("mode", c["attached"][0])
+        self.assertEqual(d[52]["evidence"], ["Free space — The disk's free space drops about one percent a night."])
+        # scope, finding, rejected
+        self.assertEqual(c["scope"], {"level": "shapes", "says": "the backup job's target list"})
+        self.assertEqual(c["finding"]["mechanism"], src[51]["finding"]["what"])
+        self.assertEqual(c["finding"]["excerpt"], src[51]["finding"]["code"])
+        self.assertEqual(c["rejected"], [{"t": "A second local disk", "why": ["It burns with the first."]}])
+        # likelihood: observed kept; another word kept at the head of seen
+        self.assertEqual(d[53]["likelihood"], {"kind": "observed", "seen": src[53]["likelihood"]["text"]})
+        self.assertEqual(d[52]["likelihood"]["kind"], "evidence")
+        self.assertTrue(d[52]["likelihood"]["seen"].startswith("(estimated) "))
+        # what: {intro, items} into what and items; the dependency line as text with its slug
+        self.assertEqual(d[52]["what"], "The backups the pruning would delete.")
+        self.assertEqual(d[52]["items"][0], {"name": "the nightly backups", "about": "one per night",
+                                             "per": {"a": "older than thirty days deleted"}})
+        self.assertEqual(d[52]["items"][1], {"name": "the weekly snapshots"})
+        self.assertEqual(d[52]["dep"], "only if [[51]] is (a) or (b)")
+        # the v4 layout's assume.unknown is open; no effect on any Impact
+        self.assertEqual(d[52]["open"], ["whether any old backup is needed for an audit"])
+        self.assertEqual(d[51]["open"], src[51]["open"])
+        for x in d.values():
+            self.assertNotIn("effect", x["impact"])
+            self.assertNotIn("background", x)
+
+    def test_the_name_trap_mutant(self):
+        # mapped straight across, the one-line texts land where the table's rows belong
+        js = UPGRADER.read_text()
+        self.assertEqual(js.count(TRAP), 1)
+        with tempfile.TemporaryDirectory() as tmp:
+            m = pathlib.Path(tmp) / "upgrade_cards.js"
+            m.write_text(js.replace(TRAP, TRAP_STRAIGHT))
+            d = by_n(upgrade(load(KIT), script=m)[2])
+        self.assertIn("(a) pros is not the table's rows", name_trap_problems(opt(d[51], "a")))
+
+    def test_all_or_nothing(self):
+        cases = [
+            ("unequal assumptions", lambda d: d["cards"][0]["assume"]["tripwires"].pop(),
+             "card 51: assume has 2 assumptions and 1 tripwires"),
+            ("unknown scope", lambda d: d["cards"][0]["scope"].__setitem__("k", "nice to have"),
+             'card 51: scope level "nice to have" is not one the record has'),
+            ("unknown field", lambda d: d["cards"][1].__setitem__("mood", "calm"),
+             "card 52: field mood is not one the kit's schema names"),
+            ("writer marker", lambda d: d["cards"][2]["options"][0].__setitem__("plan", "@@WRITE | was: x"),
+             "card 53: a writer marker (@@WRITE) is still in it"),
+            ("newer stamp", lambda d: d["cards"][2].__setitem__("format", "decision-card/6"),
+             "card 53: in a newer format (decision-card/6): never downgraded"),
+        ]
+        for name, put, want in cases:
+            with self.subTest(case=name):
+                d = load(KIT)
+                put(d)
+                code, out, res, _, _ = upgrade(d)
+                self.assertEqual(code, 1, out)
+                self.assertIn(want, out)
+                self.assertIn("nothing written", out)
+                self.assertIsNone(res)
+        # no question for a card
+        q = dict(QMAP)
+        del q["53"]
+        code, out, res, _, _ = upgrade(load(KIT), qmap=q)
+        self.assertEqual(code, 1, out)
+        self.assertIn("card 53: no q: give its question in --questions", out)
+        self.assertIsNone(res)
+
+    def test_only_upgrades_the_set(self):
+        d = load(KIT)
+        d["cards"][2]["mood"] = "calm"  # outside the set: never checked
+        code, out, res, _, _ = upgrade(d, args=("--only", [51, 52]))
+        self.assertEqual(code, 0, out)
+        self.assertEqual([c["n"] for c in res["cards"]], [51, 52])
+        # a number in the set that is not in the file is a problem
+        code, out, res, _, _ = upgrade(load(KIT), args=("--only", [51, 99]))
+        self.assertEqual(code, 1, out)
+        self.assertIn("card 99: in the set, not in", out)
+
+    def test_records(self):
+        code, out, res, recs, _ = upgrade(load(LEGACY), args=("--records", "RECORDS"))
+        self.assertEqual(code, 0, out)
+        self.assertEqual(sorted(recs), ["41.json", "42.json", "43.json"])
+        for name, r in recs.items():
+            self.assertNotIn("L", r, name)
+            self.assertNotIn("dep", r, name)
+            self.assertEqual(r["format"], "decision-card/5")
+            self.assertEqual(run_record(r), (0, ""), name)
+        self.assertEqual(by_n(res)[42]["dep"], "[[41]] (b)")
+
+    def test_a_v5_file_passes_through(self):
+        _, _, _, _, raw = upgrade(load(LEGACY))
+        code, out, res, _, raw2 = upgrade(raw)
+        self.assertEqual(code, 0, out)
+        self.assertIn("already decision-page/5", out)
+        self.assertEqual(raw2, raw)
+
+    def test_a_file_it_cannot_place_is_refused(self):
+        code, out, res, _, _ = upgrade({"cards": [{"n": 1, "t": "x"}]})
+        self.assertEqual(code, 1, out)
+        self.assertIn("a shape the upgrader cannot place", out)
+        code, out, _, _, _ = upgrade("{")
+        self.assertEqual(code, 2, out)
+
+
+if __name__ == "__main__":
+    unittest.main()

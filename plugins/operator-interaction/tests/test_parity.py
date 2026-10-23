@@ -31,6 +31,8 @@ PAGE_SKILL_MD = PAGE_SKILL / "SKILL.md"
 SCHEMA = PAGE_SKILL / "references" / "cards-schema.md"
 DIGEST = PAGE_SKILL / "references" / "writer-digest.md"
 FALLBACK = PAGE_SKILL / "references" / "fallback.md"
+RECORD = PLUGIN / "skills" / "decisions" / "references" / "card-record.md"
+LEGACY = PLUGIN / "skills" / "decisions" / "references" / "legacy-cards.md"
 
 
 def setUpModule():
@@ -139,13 +141,11 @@ class SystemText(unittest.TestCase):
 
 PROCESS_FIRES = [
     # (where on card 41, a setter, the line's place)
-    ("effect", lambda c: c["impact"].__setitem__("effect", "review comments wait"), "the effect"),
     ("reach", lambda c: c["impact"].__setitem__("reach", "another round of review"), "the reach"),
-    ("happens", lambda c: c["blocks"]["b"].__setitem__("happens", "the change waits on review"), "(b)'s effect"),
-    ("who", lambda c: c["blocks"]["a"].__setitem__("who", "a blocked session"), "(a)'s reach"),
-    ("option", lambda c: c["o"][1].__setitem__(2, "the session is blocked"), "(b)'s impact"),
-    ("medium", lambda c: c["detail"]["impact"][0]["effect"].__setitem__("t", "costs your time each run"),
-     "the effect (more detail)"),
+    ("effect", lambda c: c["options"][1].__setitem__("effect", "the change waits on review"), "(b)'s effect"),
+    ("option reach", lambda c: c["options"][0].__setitem__("reach", "a blocked session"), "(a)'s reach"),
+    ("medium", lambda c: c["detail"]["impact"][0]["reach"].__setitem__("t", "costs your time each run"),
+     "the reach (more detail)"),
     ("high", lambda c: c["detail"]["impact"][1].__setitem__("reach", ["your attention each week"]),
      "the reach (full detail)"),
 ]
@@ -175,32 +175,36 @@ class SystemLint(unittest.TestCase):
     def test_wait_z_and_a_round_ask_are_never_read(self):
         d = example()
         d["cards"][0]["impact"]["wait"] = "review comments wait for you"
-        d["cards"][0]["o"][-1][2] = "another round of review waits"
+        d["cards"][0]["options"][-1]["effect"] = "another round of review waits"
         self.assertEqual(self.process_lines(d), [])
         d = example()
-        d["cards"][0]["impact"]["effect"] = "review comments wait"
+        d["cards"][0]["impact"]["reach"] = "review comments wait"
         d["cards"][0]["ifleft"] = "the leftover findings stay open"
+        self.assertEqual(self.process_lines(d), [])
+        # an effect an older writer left on the Impact is ignored, never read
+        d = example()
+        d["cards"][0]["impact"]["effect"] = "review comments wait"
         self.assertEqual(self.process_lines(d), [])
 
     def test_system_effects_that_share_a_word_stay_clean(self):
         for s in PROCESS_CLEAN:
             with self.subTest(text=s):
                 d = example()
-                d["cards"][0]["impact"]["effect"] = s
+                d["cards"][0]["options"][0]["effect"] = s
                 d["cards"][0]["impact"]["reach"] = s
                 self.assertEqual(self.process_lines(d), [])
 
 
 # ---- S2 (mechanism on the page), rule 268
 
-def mechanism_text_problems(digest, schema, skill, rulings):
+def mechanism_text_problems(digest, record, skill, rulings):
     out = []
     if "the options, each with its consequence by its mechanism: how it happens, who meets it and when, and the before and after" not in flat(digest):
         out.append("the digest's floor does not ask for the mechanism")
     if "Could you say how it happens, not only that it does?" not in flat(digest):
         out.append("the digest's cold read does not ask it")
-    if "`happens` the effect by its mechanism" not in flat(schema):
-        out.append("the schema's blocks row does not say it")
+    if "its own effect, by its mechanism" not in flat(record):
+        out.append("the card record's option effect does not say it")
     if "each effect by its mechanism" not in flat(skill):
         out.append("SKILL.md does not say it")
     b = bullet(rulings, "Explain the mechanism")
@@ -211,14 +215,14 @@ def mechanism_text_problems(digest, schema, skill, rulings):
 
 class MechanismText(unittest.TestCase):
     def setUp(self):
-        self.args = [DIGEST.read_text(), SCHEMA.read_text(), PAGE_SKILL_MD.read_text(), RULINGS.read_text()]
+        self.args = [DIGEST.read_text(), RECORD.read_text(), PAGE_SKILL_MD.read_text(), RULINGS.read_text()]
 
     def test_the_page_says_it(self):
         self.assertEqual(mechanism_text_problems(*self.args), [])
 
     def test_mutations(self):
         for i, (old, new) in enumerate([("by its mechanism: how", "by its: how"),
-                                        ("`happens` the effect by its mechanism", "`happens` the effect"),
+                                        ("its own effect, by its mechanism", "its own effect"),
                                         ("each effect by its mechanism", "each effect"),
                                         ("`mech` lint", "lint")]):
             with self.subTest(old=old):
@@ -241,7 +245,7 @@ class MechanismLint(unittest.TestCase):
 
     def test_a_bare_label_fires(self):
         d = example()
-        d["cards"][0]["blocks"]["a"]["happens"] = "importers break"
+        d["cards"][0]["options"][0]["effect"] = "importers break"
         code, out, _ = runner(d)
         self.assertEqual(code, 2, out)
         self.assertIn('lint: card 41: impact: (a)\'s effect is 2 words ("importers break"): say its '
@@ -249,14 +253,13 @@ class MechanismLint(unittest.TestCase):
 
     def test_a_no_change_statement_and_z_stay_clean(self):
         d = example()
-        d["cards"][0]["blocks"]["a"]["happens"] = "Nothing changes."
-        d["cards"][0]["o"][-1][2] = "it waits"
+        d["cards"][0]["options"][0]["effect"] = "Nothing changes."
+        d["cards"][0]["options"][-1]["effect"] = "it waits"
         self.assertEqual(self.mech_lines(d), [])
 
-    def test_an_option_with_no_row_is_read_from_its_impact(self):
+    def test_the_line_is_exact(self):
         d = example()
-        del d["cards"][2]["blocks"]
-        d["cards"][2]["o"][1][2] = "screenshots break"
+        d["cards"][2]["options"][1]["effect"] = "screenshots break"
         self.assertEqual(self.mech_lines(d), ["lint: card 43: impact: (b)'s effect is 2 words "
                                               '("screenshots break"): say its mechanism, how it '
                                               "happens, who meets it and when, and the before and "
@@ -264,9 +267,9 @@ class MechanismLint(unittest.TestCase):
 
     def test_the_threshold_is_four_words(self):
         d = example()
-        d["cards"][0]["blocks"]["a"]["happens"] = "the importers break downstream"
+        d["cards"][0]["options"][0]["effect"] = "the importers break downstream"
         self.assertEqual(len(self.mech_lines(d)), 1)
-        d["cards"][0]["blocks"]["a"]["happens"] = "the importers break downstream today"
+        d["cards"][0]["options"][0]["effect"] = "the importers break downstream today"
         self.assertEqual(self.mech_lines(d), [])
 
 
@@ -424,7 +427,7 @@ def bundle_text_problems(rendering, rulings, schema):
 class BundleText(unittest.TestCase):
     def setUp(self):
         self.args = [(PLUGIN / "skills" / "decisions" / "references" / "rendering.md").read_text(),
-                     RULINGS.read_text(), SCHEMA.read_text()]
+                     RULINGS.read_text(), LEGACY.read_text()]
 
     def test_both_skills_say_it(self):
         self.assertEqual(bundle_text_problems(*self.args), [])
@@ -644,7 +647,7 @@ class ShellText(unittest.TestCase):
         self.assertEqual(popup_problems(self.schema, self.html), [])
 
     def test_mutations(self):
-        restored = self.schema.replace("first on the open card; its medium", "first on the open card and in the popup; its medium")
+        restored = self.schema.replace("`tldr` first on the open card; then", "`tldr` first on the open card and in the popup; then")
         self.assertNotEqual(restored, self.schema)
         self.assertIn("the schema names a popup", popup_problems(restored, self.html))
         old = self.html.replace("hover over it or focus it to see it, and click it to open its card",

@@ -306,3 +306,5 @@ it appears: **paging** on a cold re-show.
 - `references/rationale.md` — why each rule, with its sources
 - `references/rulings.md` — what the operator has ruled, each with the alternative not taken; designs made in review marked
 - `references/gallery.md` — worked examples of every case (illustrative)
+- `references/card-record.md` — the card as data, `decision-card/5`: its fields, what each requires, an option, the levels
+- `references/legacy-cards.md` — reading a card with no format: the reader rules, the maps to the record, the older eras

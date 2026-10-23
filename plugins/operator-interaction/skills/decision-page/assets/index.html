@@ -3,13 +3,15 @@
 <style>
 /* decision-page template (operator-interaction). One reading column: a map of the groups under
    the progress bar, with Expand all and Collapse all, then each group's cards, each closed to a
-   one-line row (number, title, ⚠, the rec pill and the effect, the answer) with Use
-   recommendation and Later beside it. An open card opens on its TLDR, then its Context
-   (the terms it uses), then its Impact, one facet a line. Every view shows the decision's impact
-   across all its options: a card's row its effect, an open card its Impact lines, each option's More its own effect, reach, undo
-   (only where it is one-way or costly; ⚠ on a row flagged one-way) and cost. A decision raised from
+   one-line row (number, title, ⚠, the rec pill and the recommended option's effect with its letter, the
+   answer) with Use recommendation and Later beside it. An open card opens on its TLDR, then its Context
+   (the terms it uses), then a closed Open questions fold, then its Impact, one facet a line (wait, reach,
+   undo, cost: there is no card-level effect). Every view shows impact: a card's row the recommended
+   option's effect, an open card its Impact lines, each option's More its own effect, reach, undo
+   (only where it is one-way or costly; ⚠ on an option flagged one-way) and cost. A decision raised from
    one labelled item of a source shows its title, then the label and its short name, muted. Inside a card the essentials are flat (TLDR, Context, Impact, options, follow-ups,
-   words, recommendation); background, dependencies and evidence sit in folds. A part with a
+   words, recommendation); background, dependencies and evidence sit in folds. The data is
+   decision-page/5: each card a decision-card/5 record (options as objects) plus L and dep. A part with a
    more-detail button, above or inside a fold, steps to more detail on a click (terse bullets)
    and again to full detail (headed sections); each level replaces the part's text, and the next
    click goes back to the summary. The static lines do not step. More beside an option shows it
@@ -205,11 +207,15 @@ details.pane>div{padding:6px 0 2px;font-size:.92rem;max-width:70ch;display:flex;
 .recline em{color:var(--muted)}
 .eff{color:var(--muted)}
 .eff b{font-family:var(--f-mono);font-weight:600;color:var(--ink);margin-right:.25em}
+/* the row's effect is the recommended option's: its letter first, in the rec colour (answer 340 (a)) */
+.eff .rl{font-family:var(--f-mono);font-weight:600;color:var(--rec);margin-right:.3em}
+/* Open questions: a closed fold above the Impact, its summary the count and the first question */
+details.ofold>div ul{margin:0;padding-left:1.2em;display:flex;flex-direction:column;gap:3px}
 /* the Impact: one facet a line, at every level */
 .impline{font-size:.92rem;max-width:70ch;border-left:3px solid var(--accent);padding:6px 12px;background:var(--sunk);border-radius:0 6px 6px 0;display:flex;flex-direction:column;gap:2px;min-width:0}
 .impline .lbl{display:block;margin-bottom:1px}
 .impline i{font-style:normal;font-family:var(--f-mono);font-size:.8rem;color:var(--muted)}
-/* the option marker for undo: an option one-way or costly to undo (its blocks row flagged oneway) */
+/* the option marker for undo: an option one-way or costly to undo (flagged oneway) */
 .impline i.owu,.lbl.owu{color:var(--warn);font-weight:600}
 /* a source label after a title (F7), muted, its short name after it */
 .slabm{color:var(--muted);font-weight:500}
@@ -242,7 +248,7 @@ footer{color:var(--muted);font-size:.85rem;max-width:70ch}
   <header>
     <h1 id="title">Decision answers</h1>
     <p class="lede" id="lede"></p>
-    <p class="lede">For each decision, pick one option or one follow-up (the radio buttons allow only one), and add your words if you like. Each click saves at once; there is no submit button. Tell Claude in chat when you're done. The map under the progress bar lists the groups; each decision is one line in its group, and a click on the line opens its card (<b>Expand all</b> and <b>Collapse all</b> open or close every card). <b>Use recommendation</b> and <b>Later</b> beside a line answer without opening the card. A <span class="slug-t">number · name</span> is a decision: hover over it or focus it to see it, and click it to open its card; on one not on this page, a tap or click pins what it shows, and a second tap, a tap elsewhere or Escape closes it. Each line shows, after an arrow (→), what the decision changes in the system the work builds, across its options; each card opens on a TLDR, then its Context (the terms it uses), then its impact, one facet a line, then one line per option; the folds under it go from compressed to full detail. A part with a <i>more detail</i> button, above or inside a fold, shows more detail as short bullets when you click it or its text, and full detail in headed sections on a second click; <b>More</b> beside an option shows it in full, with its own effect, reach, undo and cost. A part with nothing to say (none) is left out. An Impact describes the system the work builds, never the review or the process; its <i>later:</i> line says what waiting holds up.<span id="doclink"></span></p>
+    <p class="lede">For each decision, pick one option or one follow-up (the radio buttons allow only one), and add your words if you like. Each click saves at once; there is no submit button. Tell Claude in chat when you're done. The map under the progress bar lists the groups; each decision is one line in its group, and a click on the line opens its card (<b>Expand all</b> and <b>Collapse all</b> open or close every card). <b>Use recommendation</b> and <b>Later</b> beside a line answer without opening the card. A <span class="slug-t">number · name</span> is a decision: hover over it or focus it to see it, and click it to open its card; on one not on this page, a tap or click pins what it shows, and a second tap, a tap elsewhere or Escape closes it. Each line shows, after an arrow (→) and its letter, what the recommended option changes in the system the work builds (with no recommendation, each option's, in a few words); each card opens on a TLDR, then its Context (the terms it uses), then its impact, one facet a line, then one line per option; the folds under it go from compressed to full detail. A part with a <i>more detail</i> button, above or inside a fold, shows more detail as short bullets when you click it or its text, and full detail in headed sections on a second click; <b>More</b> beside an option shows it in full, with its own effect, reach, undo and cost. A part with nothing to say (none) is left out. An Impact describes the system the work builds, never the review or the process; its <i>later:</i> line says what waiting holds up. <b>Open questions</b>, folded above the Impact, lists what is not known yet.<span id="doclink"></span></p>
     <div class="banner" id="nodb" hidden>This view can't save answers. Nothing you pick here is kept; answer in chat instead (<code id="nodbex">N: a</code>).</div>
     <div class="banner" id="viewonly" hidden>You are viewing these answers. Only the page's owner can answer here.</div>
     <div class="banner" id="nodata" hidden>The decisions didn't load. Reload the page; if it keeps failing, ask Claude for them in chat.</div>
@@ -273,7 +279,7 @@ const nameOf=k=>{const c=byN.get(k);if(c)return c.t;const r=REFS[k];return r?r.s
 /* a decision reference, N · short name (answer 335's feedback): a card on the page is a link that opens its card
    (data-goto); a decision in refs shows its tooltip only, a tap or click pinning it (so a touch screen shows it
    too). Hovering or focusing either shows its tooltip (tipHtml); aria-describedby is set only while it shows.
-   The check refuses any other [[N]]; an older page's shows as plain text */
+   The check refuses any other [[N]] */
 const slug=k=>{const t=esc(k)+(nameOf(k)?' · '+esc(nameOf(k)):'');
   if(byN.has(k))return '<button type="button" class="slug in" data-ref="'+esc(k)+'" data-goto="'+esc(k)+'">'+t+'</button>';
   if(Object.prototype.hasOwnProperty.call(REFS,k))return '<button type="button" class="slug" data-ref="'+esc(k)+'">'+t+'</button>';
@@ -289,27 +295,42 @@ const srcLabel=c=>isLabel(c.label)?'<span class="slabm"> · <span class="slab">'
 const titleHtml=c=>esc(c.t)+srcLabel(c);
 const fid=k=>esc(k.replace(/\s/g,"_"));
 
-/* impact, one vocabulary at every size (the decisions skill): Effect, Wait, Reach, Undo, Cost */
-/* tag size: the effect alone, after an arrow (a card's row) */
-const tagEffect=c=>'<span class="eff"><b>→</b>'+fmtPlain(c.impact.effect)+'</span>';
+/* impact, one vocabulary at every size (the decisions skill). A card has no card-level Effect (the operator's v5
+   ruling, 2026-10-22): its Impact is Wait, Reach, Undo, Cost; each option carries its own effect */
+/* the options, as objects in letter order; opt(c, k) is option k, or null */
+const optsOf=c=>c&&Array.isArray(c.options)?c.options.filter(isObj):[];
+const optOf=(c,k)=>optsOf(c).find(o=>o.k===k)||null;
+/* the row's effect (answer 340 (a)): the recommended option's own effect, its letter first; with no
+   recommendation, each real option's effect in a few words, (a) …; (b) … */
+const ROW_FEW=6;
+const fewWords=s=>{const w=String(s).trim().split(/\s+/);return w.length>ROW_FEW?w.slice(0,ROW_FEW).join(" ")+" …":w.join(" ")};
+const rowEffectText=c=>{
+  if(c.rec){const o=optOf(c,c.rec);return o&&shown(o.effect)?'<span class="rl">('+esc(c.rec)+')</span>'+fmtPlain(o.effect):""}
+  return optsOf(c).filter(o=>o.k!=="z"&&shown(o.effect)).map(o=>'<span class="rl">('+esc(o.k)+')</span>'+fmtPlain(fewWords(o.effect))).join("; ")};
 /* the facets in their one order: key, the label a line opens with, the heading at full detail */
-const IMP_FACETS=[["effect","→","Effect"],["wait","later:","Wait"],["reach","reach:","Reach"],["undo","undo:","Undo"],["cost","cost:","Cost"]];
-/* a card with a blocks row flagged oneway: its undo is the one-way option's, marked ⚠ undo: (the decisions
-   skill's option marker). Undo is shown only where an option is one-way or costly; older data carries it
-   everywhere and keeps the plain label */
-const oneWay=c=>!!c&&isObj(c.blocks)&&Object.keys(c.blocks).some(k=>isObj(c.blocks[k])&&c.blocks[k].oneway===true);
-const impLabel=(k,l,ow)=>k==="effect"?'<b>→</b>':(k==="undo"&&ow?'<i class="owu">⚠ '+l+'</i>':'<i>'+l+'</i>');
-/* the facets the check requires (effect, wait, reach) and an undo when given are decision-wide statements:
+const IMP_FACETS=[["wait","later:","Wait"],["reach","reach:","Reach"],["undo","undo:","Undo"],["cost","cost:","Cost"]];
+/* a card with an option flagged oneway: its undo is the one-way option's, marked ⚠ undo: (the decisions
+   skill's option marker). Undo is shown only where an option is one-way or costly */
+const oneWay=c=>optsOf(c).some(o=>o.oneway===true);
+const impLabel=(k,l,ow)=>k==="undo"&&ow?'<i class="owu">⚠ '+l+'</i>':'<i>'+l+'</i>';
+/* the facets the check requires (wait, reach) and an undo when given are decision-wide statements:
    shown whatever they say ("undo: none" says an option is one-way). Cost is optional: a none cost is not shown */
 const facetShown=(k,v,ok)=>ok(v)&&(k!=="cost"||!isNone(v));
-/* the card's Impact, across all its options: one facet a line, → effect, later:, reach:, undo: when an option
-   is one-way or costly, and cost: when given */
+/* the card's Impact, across all its options: one facet a line, later:, reach:, undo: when an option
+   is one-way or costly, and cost: when given. An impact.effect an older writer left is ignored */
 const impactLine=c=>{const i=c.impact,ow=oneWay(c);
   return '<div class="impline"><span class="lbl">Impact</span>'+IMP_FACETS.map(([k,l])=>facetShown(k,i[k],isTxt)?'<p>'+impLabel(k,l,ow)+' '+fmt(i[k])+'</p>':'').join("")+'</div>'};
+/* Open questions (was unknown): a closed fold above the Impact, a bullet each; its summary the count and the
+   first, cut at about 12 words. Left out when there are none */
+const OPEN_CUT=12;
+const openFold=c=>{const qs=Array.isArray(c.open)?c.open.filter(shown):[];if(!qs.length)return "";
+  const w=String(qs[0]).trim().split(/\s+/),first=w.length>OPEN_CUT?w.slice(0,OPEN_CUT).join(" ")+" …":w.join(" ");
+  return '<details class="gfold ofold"><summary><span class="lbl">Open questions</span><span class="gsum">'+qs.length+' open: '+fmtPlain(first)+'</span></summary>'
+    +'<div><ul>'+qs.map(q=>'<li>'+fmtD(q)+'</li>').join("")+'</ul></div></details>'};
 
 /* what it takes to act on option k (the decisions skill's To act on part): its numbered steps, flat
    under the option, never folded; empty when the option asks nothing of the operator */
-const actList=(c,k)=>{const st=c&&c.act&&typeof c.act==="object"?c.act[k]:null;
+const actList=(c,k)=>{const o=optOf(c,k),st=o?o.act:null;
   if(!Array.isArray(st)||!st.length)return "";
   return '<div class="act"><span class="lbl">To act on ('+esc(k)+'):</span><ol>'+st.map(x=>'<li>'+fmt(x)+'</li>').join("")+'</ol></div>'};
 /* a fill-in placeholder: an angle-bracketed word with no spaces, such as <dir> or <path> */
@@ -334,7 +355,7 @@ const isObj=v=>!!v&&typeof v==="object"&&!Array.isArray(v);
    displayed. One test, used wherever a part may be left out: missing, blank, "none", "none.", "n/a",
    "n/a." or a lone dash (trimmed, any case); a list of nothing but those; a bullet whose text is one.
    "Nothing." is not among them: it can be a statement. The fields whose none is itself a statement (the
-   required Impact facets, each option's Undo cell, basis, the rec line's unknown) never pass through it */
+   required Impact facets, each option's Undo, basis) never pass through it */
 const NONE_WORDS=new Set(["","none","none.","n/a","n/a.","-","–","—"]);
 const isNone=v=>v==null||(typeof v==="string"&&NONE_WORDS.has(v.trim().toLowerCase()))
   ||(Array.isArray(v)&&v.every(isNone))||(isObj(v)&&!("h" in v)&&isNone(v.t));
@@ -350,78 +371,127 @@ const textsOf=x=>typeof x==="string"?[x]:Array.isArray(x)?x.reduce((a,y)=>a.conc
 const isFacet=v=>isItem(v)||isList(v);
 /* a source label: {id, name}, the label one word on one line, its short name one line of plain words */
 const isLabel=v=>isObj(v)&&isTxt(v.id)&&!/\s/.test(v.id)&&isTxt(v.name)&&!/[\r\n]/.test(v.name);
-/* the detail keys whose renditions are text or a list (impact, tldr and o have their own shapes) */
+/* the detail keys whose renditions are text or a list (impact and tldr have their own shapes; dep is page-only) */
 const DETAIL_TEXT=["context","rec","why","whyask","dep","evidence"];
 
 /* the data is checked before anything renders: a card that fails is a refused file, not a half page */
 const FOLLOW_FIXED=["later","tell me","expand","dig into","you decide","drop"];
-function check(d){
+/* the format stamps (answer 343 (a)): the page envelope decision-page/5, each card a decision-card/5 record. A file
+   or card with no stamp is in an older format: the upgrader (scripts/upgrade_cards.js) moves it, rev kept */
+const PAGE_FORMAT="decision-page/5",CARD_FORMAT="decision-card/5";
+const stampOf=(v,name)=>{const m=typeof v==="string"?v.match(/^([a-z-]+)\/([0-9]+)$/):null;return m&&m[1]===name?Number(m[2]):null};
+/* a rev or raised time: UTC, to the second (the minute form is read, never written) */
+const UTC_RE=/^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}(:[0-9]{2})?Z$/;
+const isPosInt=v=>typeof v==="number"&&Number.isInteger(v)&&v>=1;
+/* the fields a decision-card/5 record no longer has, and what holds each now */
+const OLDER_KEYS={o:"options (objects)",blocks:"each option's effect, reach, undo, cost and oneway",act:"each option's act",
+  warn:"oneway",unknown:"open",stakes:"the Impact's undo and reach"};
+/* [medium, high]: one or two levels, each passing ok */
+const levels=(v,ok)=>Array.isArray(v)&&v.length>=1&&v.length<=2&&v.every(ok);
+
+/* one card record's problems; w names it ("card 41"); keys, on a page, the layer keys its L must be one of.
+   Only what a card needs to render is refused here: what a new card owes (why, whyask, reason, …) is the
+   runner's lint, so an upgraded older card renders with nothing invented */
+function cardProblems(c,w,keys){
   const bad=[],isStr=v=>typeof v==="string";
-  if(!d||typeof d!=="object")return ["cards.json is not an object"];
-  if(!Array.isArray(d.layers)||!d.layers.length)bad.push("layers: missing");
-  if(!Array.isArray(d.follow)||d.follow.map(f=>Array.isArray(f)&&f[0]).join("|")!==FOLLOW_FIXED.join("|"))bad.push("follow: must be the six fixed follow-ups");
-  if(!Array.isArray(d.cards)||!d.cards.length)bad.push("cards: missing");
-  if(bad.length)return bad;
-  const keys=new Set(),seen=new Set();
-  d.layers.forEach((l,i)=>{if(!Array.isArray(l)||!isStr(l[0])||!isStr(l[1]))bad.push("layer "+i+": needs [key, title, note]");else{keys.add(l[0]);
-    /* a bundle's shared context, optional: text, or the layer is refused */
-    if(l[3]!=null&&!isStr(l[3]))bad.push("layer "+i+": shared (its fourth element) must be text: the context every card in the bundle shares")}});
-  for(const c of d.cards){
-    const w="card "+(Number.isInteger(c&&c.n)?c.n:"?");
-    /* undo is optional: shown only where an option is one-way or costly (older data carries it everywhere) */
-    if(c&&(!c.impact||typeof c.impact!=="object"||!["effect","wait","reach"].every(k=>isStr(c.impact[k])&&c.impact[k].trim())||["undo","cost"].some(k=>k in c.impact&&!isStr(c.impact[k]))))bad.push(w+": impact needs effect, wait and reach as text (undo and cost optional, as text)");
-    if(!c||!Number.isInteger(c.n)||c.n<0){bad.push(w+": n must be a whole number");continue}
-    if(seen.has(c.n))bad.push(w+": number used twice");seen.add(c.n);
-    if(!keys.has(c.L))bad.push(w+": L is not a layer key");
-    if(c.label!=null&&!isLabel(c.label))bad.push(w+": label must be {id, name}: the source's label as one word (F7), and its short name in plain words on one line");
-    for(const k of ["t","why","whyask","basis","reason","unknown","rev"])if(!isStr(c[k]))bad.push(w+": "+k+" missing");
-    if(isStr(c.rev)&&!c.rev.trim())bad.push(w+": rev is empty");
-    if(!isStr(c.context)||!c.context.trim())bad.push(w+": context missing: give the card a Context that introduces the terms, items and concepts the rest of it uses");
-    if(!["strong","partial","thin","none"].includes(c.basis))bad.push(w+": basis must be strong, partial, thin or none");
-    if(!Array.isArray(c.tldr)||!c.tldr.every(isStr))bad.push(w+": tldr must be a list of text");
-    else{const i=c.tldr.findIndex(recBullet);if(i>=0)bad.push(w+": tldr bullet "+(i+1)+" carries the recommendation: the options mark it; say what is decided instead")}
-    if(!Array.isArray(c.o)||!c.o.length){bad.push(w+": no options");continue}
-    const ls=[];
-    for(const o of c.o){if(!Array.isArray(o)||o.length!==5||!o.every(isStr)||!/^[a-z]$/.test(o[0])){bad.push(w+": each option is [letter a-z, full, impact, title, one line]");break}ls.push(o[0])}
+  if(!isObj(c))return [w+": a card must be an object"];
+  const f=stampOf(c.format,"decision-card");
+  if(c.format==null||(f!==null&&f<5))return [w+": in an older format (no "+CARD_FORMAT+" stamp): upgrade it (scripts/upgrade_cards.js) and republish"];
+  if(f===null)return [w+": format must be "+CARD_FORMAT];
+  if(f>5)return [w+": in a newer format ("+c.format+") than this page template reads: leave it off the page and hand it over, or update the plugins"];
+  for(const k in OLDER_KEYS)if(k in c)bad.push(w+": "+k+" is an older field: "+CARD_FORMAT+" holds "+OLDER_KEYS[k]+" instead; upgrade the card");
+  if(!isPosInt(c.n))bad.push(w+": n must be a whole number of 1 or more");
+  if(keys&&!keys.has(c.L))bad.push(w+": L is not a layer key");
+  if(c.label!=null&&!isLabel(c.label))bad.push(w+": label must be {id, name}: the source's label as one word (F7), and its short name in plain words on one line");
+  for(const k of ["t","q","rev","basis"])if(!isTxt(c[k]))bad.push(w+": "+k+" missing");
+  if(isStr(c.q)&&/[\r\n]/.test(c.q))bad.push(w+": q must be one line: the question as asked");
+  if(isTxt(c.rev)&&!UTC_RE.test(c.rev))bad.push(w+": rev must be a UTC time, YYYY-MM-DDTHH:MM:SSZ");
+  if(c.raised!=null&&!(isStr(c.raised)&&UTC_RE.test(c.raised)))bad.push(w+": raised must be a UTC time, YYYY-MM-DDTHH:MM:SSZ");
+  for(const k of ["reason","why","whyask","class","ifleft","roundcosts","ifunanswered","norec"])if(c[k]!=null&&!isStr(c[k]))bad.push(w+": "+k+" must be text");
+  if(c.oneway!=null&&typeof c.oneway!=="boolean")bad.push(w+": oneway must be true or false");
+  if(!isTxt(c.context))bad.push(w+": context missing: give the card a Context that introduces the terms, items and concepts the rest of it uses");
+  if(isStr(c.basis)&&!["strong","partial","thin","none"].includes(c.basis))bad.push(w+": basis must be strong, partial, thin or none");
+  if(!Array.isArray(c.tldr)||!c.tldr.every(isStr))bad.push(w+": tldr must be a list of text");
+  else{const i=c.tldr.findIndex(recBullet);if(i>=0)bad.push(w+": tldr bullet "+(i+1)+" carries the recommendation: the options mark it; say what is decided instead")}
+  if(c.open!=null&&!(Array.isArray(c.open)&&c.open.every(isStr)))bad.push(w+": open must be a list of text, one open question each");
+  /* undo and cost are optional; an effect an older writer left is ignored, never shown */
+  if(!isObj(c.impact)||!["wait","reach"].every(k=>isTxt(c.impact[k]))||["undo","cost"].some(k=>k in c.impact&&!isStr(c.impact[k])))
+    bad.push(w+": impact needs wait and reach as text (undo and cost optional, as text; there is no card-level effect)");
+  if(c.evidence!=null&&!isStr(c.evidence)&&!isFlat(c.evidence))bad.push(w+": evidence must be text or a non-empty list of text");
+  /* the options: objects in letter order, (z) decide later last, each letter once */
+  const os=c.options;let ls=[];
+  if(!Array.isArray(os)||!os.length)bad.push(w+": options missing: a list of option objects, (z) last");
+  else if(os.some(o=>!isObj(o)||typeof o.k!=="string"||!/^[a-z]$/.test(o.k)||!isTxt(o.title)))bad.push(w+": each option is an object with k (one letter a-z) and its title");
+  else{
+    ls=os.map(o=>o.k);
     if(ls[ls.length-1]!=="z")bad.push(w+": the last option must be (z) decide later");
     if(new Set(ls).size!==ls.length||ls.slice(0,-1).join("")!==ls.slice(0,-1).sort().join(""))bad.push(w+": options must be in letter order, each letter once");
     if(c.rec===null){if(!isStr(c.norec))bad.push(w+": rec null needs norec")}
     else if(!ls.includes(c.rec))bad.push(w+": rec is not one of its option letters");
-    /* undo is optional on a row (an option with none is reversible at little cost); oneway, when given, is true or false */
-    const row=b=>!!b&&typeof b==="object"&&isStr(b.happens)&&isStr(b.who)&&["undo","cost"].every(k=>!(k in b)||isStr(b[k]))&&(!("oneway" in b)||typeof b.oneway==="boolean");
-    /* a one-way card's rows: happens and who non-blank; the undo is required only on a row flagged oneway (below),
-       so an older ⚠ file, which carries no flag, is never refused for it */
-    const full=b=>row(b)&&[b.happens,b.who].every(x=>x.trim());
-    if(c.warn&&(typeof c.blocks!=="object"||!c.blocks||!ls.every(k=>k==="z"||full(c.blocks[k]))))bad.push(w+": a ⚠ one-way card needs blocks {happens, who} for every option but (z), each non-empty");
-    if(c.blocks!=null&&(typeof c.blocks!=="object"||Object.keys(c.blocks).some(k=>k==="z"||!ls.includes(k)||!row(c.blocks[k]))))bad.push(w+": blocks are keyed by option letter, not (z), each {happens, who, undo?, cost?} as text, oneway? true or false");
-    /* a row flagged oneway (one-way or costly to undo) decides the read-back: it says how it is undone, and at
-       what cost, or that it cannot be */
-    else if(c.blocks!=null)for(const k of Object.keys(c.blocks))if(c.blocks[k].oneway===true&&!(isStr(c.blocks[k].undo)&&c.blocks[k].undo.trim()))
-      bad.push(w+": ("+k+") is flagged one-way (oneway: true) but has no undo: say how it is reversed and at what cost, or that it cannot be and why");
-    if(c.act!=null){
-      if(typeof c.act!=="object"||Array.isArray(c.act)||Object.keys(c.act).some(k=>k==="z"||!ls.includes(k)||!Array.isArray(c.act[k])||!c.act[k].length||!c.act[k].every(x=>isStr(x)&&x.trim())))bad.push(w+": act is keyed by option letter, not (z), each a non-empty list of steps as text");
-      else for(const k in c.act)for(const x of c.act[k]){
-        /* a step is one line (only an excerpt draws multi-line text, as a code block): multi-line paste text goes in a file */
-        if(/[\r\n]/.test(x)){bad.push(w+": act ("+k+") has a line break in a step: put text of more than one line in a file named by its path");break}
-        const m=x.match(PLACEHOLDER);if(m){bad.push(w+": act ("+k+") has a fill-in placeholder "+m[0]+": write the value, or name the file that holds the text by its path");break}}
-    }
-    if(c.evidence!=null&&!isStr(c.evidence)&&!isFlat(c.evidence))bad.push(w+": evidence must be text or a non-empty list of text");
-    /* detail: [medium, high] per part (null is absent); a key a later template adds is not refused, the runner lints it */
-    if(c.detail!=null){const dt=c.detail,lv=(v,ok)=>Array.isArray(v)&&v.length>=1&&v.length<=2&&v.every(ok);
-      if(typeof dt!=="object"||Array.isArray(dt))bad.push(w+": detail must be an object holding [medium, high] per part");
-      else{
-        for(const k of DETAIL_TEXT)if(k in dt&&!lv(dt[k],isRend))bad.push(w+": detail."+k+" must be [medium, high], each text, bullets or sections");
-        if("impact" in dt&&!lv(dt.impact,i=>isObj(i)&&isFacet(i.effect)&&["wait","reach","undo","cost"].every(f=>!(f in i)||isStr(i[f])||isFacet(i[f]))))bad.push(w+": detail.impact must be [medium, high], each {effect, wait, reach, undo, cost} with each facet text, a bullet or a list of bullets, effect required");
-        if("tldr" in dt){
-          if(!lv(dt.tldr,b=>isList(b)||isSecs(b)))bad.push(w+": detail.tldr must be [medium, high], each bullets or sections");
-          else dt.tldr.forEach((b,m)=>{const i=textsOf(b).findIndex(recBullet);if(i>=0)bad.push(w+": detail.tldr "+["medium","high"][m]+" bullet "+(i+1)+" carries the recommendation: the options mark it; say what is decided instead")});
-        }
-        if("o" in dt){
-          if(!isObj(dt.o)||Object.keys(dt.o).some(k=>k==="z"||!ls.includes(k)))bad.push(w+": detail.o is keyed by option letter, not (z), each [medium, high] as text, bullets or sections");
-          else for(const k in dt.o)if(!lv(dt.o[k],isRend)){bad.push(w+": detail.o."+k+" must be [medium, high], each text, bullets or sections");break}
-        }
+    for(const o of os){const x=w+": ("+o.k+")";
+      for(const k of ["line","text","effect","reach","undo","cost"])if(o[k]!=null&&!isStr(o[k]))bad.push(x+" "+k+" must be text");
+      if(o.k!=="z"&&!isTxt(o.effect))bad.push(x+" needs its effect: what it changes, by its mechanism");
+      /* a ⚠ one-way card shows every option's reach: the read-back weighs it */
+      if(c.oneway===true&&o.k!=="z"&&!isTxt(o.reach))bad.push(x+" needs its reach: a ⚠ one-way card gives every option but (z) its reach");
+      if(o.oneway!=null&&typeof o.oneway!=="boolean")bad.push(x+" oneway must be true or false");
+      /* an option flagged oneway (one-way or costly to undo) decides the read-back: it says how it is undone, and at
+         what cost, or that it cannot be */
+      else if(o.oneway===true&&!isTxt(o.undo))bad.push(w+": ("+o.k+") is flagged one-way (oneway: true) but has no undo: say how it is reversed and at what cost, or that it cannot be and why");
+      if(o.act!=null){
+        if(o.k==="z")bad.push(x+" has act: decide later asks nothing of the operator");
+        else if(!Array.isArray(o.act)||!o.act.length||!o.act.every(s=>isStr(s)&&s.trim()))bad.push(x+" act must be a non-empty list of steps as text");
+        else for(const s of o.act){
+          /* a step is one line (only an excerpt draws multi-line text, as a code block): multi-line paste text goes in a file */
+          if(/[\r\n]/.test(s)){bad.push(w+": act ("+o.k+") has a line break in a step: put text of more than one line in a file named by its path");break}
+          const m=s.match(PLACEHOLDER);if(m){bad.push(w+": act ("+o.k+") has a fill-in placeholder "+m[0]+": write the value, or name the file that holds the text by its path");break}}
       }
+      if(o.detail!=null&&!levels(o.detail,isRend))bad.push(x+" detail must be [medium, high], each text, bullets or sections");
     }
+  }
+  /* detail: [medium, high] per part (null is absent); a key a later template adds is not refused, the runner lints it */
+  if(c.detail!=null){const dt=c.detail;
+    if(!isObj(dt))bad.push(w+": detail must be an object holding [medium, high] per part");
+    else{
+      for(const k of DETAIL_TEXT)if(k in dt&&!levels(dt[k],isRend))bad.push(w+": detail."+k+" must be [medium, high], each text, bullets or sections");
+      if("impact" in dt&&!levels(dt.impact,i=>isObj(i)&&["wait","reach","undo","cost"].some(f=>f in i)&&["wait","reach","undo","cost"].every(f=>!(f in i)||isFacet(i[f]))))
+        bad.push(w+": detail.impact must be [medium, high], each {wait, reach, undo, cost} with each facet text, a bullet or a list of bullets");
+      if("tldr" in dt){
+        if(!levels(dt.tldr,b=>isList(b)||isSecs(b)))bad.push(w+": detail.tldr must be [medium, high], each bullets or sections");
+        else dt.tldr.forEach((b,m)=>{const i=textsOf(b).findIndex(recBullet);if(i>=0)bad.push(w+": detail.tldr "+["medium","high"][m]+" bullet "+(i+1)+" carries the recommendation: the options mark it; say what is decided instead")});
+      }
+      if("o" in dt)bad.push(w+": detail.o is an older field: "+CARD_FORMAT+" keeps each option's levels in its own detail; upgrade the card");
+    }
+  }
+  return bad;
+}
+/* one record file (the store's, or a writer's before raising it): the card checks, with no layer, and nothing
+   page-only in it */
+function recordProblems(c){
+  const w="record "+(isObj(c)&&isPosInt(c.n)?c.n:"?");
+  const bad=cardProblems(c,w,null);
+  if(isObj(c))for(const k of ["L","dep"])if(k in c)bad.push(w+": "+k+" is page-only: a record never holds it");
+  if(isObj(c)&&isObj(c.detail)&&"dep" in c.detail)bad.push(w+": detail.dep is page-only: a record never holds it");
+  return bad;
+}
+function check(d){
+  const bad=[];
+  if(!d||typeof d!=="object")return ["cards.json is not an object"];
+  const pf=stampOf(d.format,"decision-page");
+  if(d.format==null||(pf!==null&&pf<5))return ["cards.json is in an older format: upgrade it (scripts/upgrade_cards.js) and republish"];
+  if(pf===null)return ["format must be "+PAGE_FORMAT];
+  if(pf>5)return ["this page template is older than its data ("+d.format+"): update the plugins"];
+  if(!Array.isArray(d.layers)||!d.layers.length)bad.push("layers: missing");
+  if(!Array.isArray(d.follow)||d.follow.map(f=>Array.isArray(f)&&f[0]).join("|")!==FOLLOW_FIXED.join("|"))bad.push("follow: must be the six fixed follow-ups");
+  if(!Array.isArray(d.cards)||!d.cards.length)bad.push("cards: missing");
+  if(bad.length)return bad;
+  const keys=new Set(),seen=new Set(),isStr=v=>typeof v==="string";
+  d.layers.forEach((l,i)=>{if(!Array.isArray(l)||!isStr(l[0])||!isStr(l[1]))bad.push("layer "+i+": needs [key, title, note]");else{keys.add(l[0]);
+    /* a bundle's shared context, optional: text, or the layer is refused */
+    if(l[3]!=null&&!isStr(l[3]))bad.push("layer "+i+": shared (its fourth element) must be text: the context every card in the bundle shares")}});
+  for(const c of d.cards){
+    const w="card "+(isObj(c)&&isPosInt(c.n)?c.n:"?");
+    bad.push(...cardProblems(c,w,keys));
+    if(isObj(c)&&isPosInt(c.n)){if(seen.has(c.n))bad.push(w+": number used twice");seen.add(c.n)}
   }
   for(const k in (d.refs||{}))if(!/^[0-9]+$/.test(k))bad.push("refs: key "+k+" is not a number");
   /* the reference rule (answer 335's feedback): an open decision a card names goes on the page as a card, a ref is
@@ -501,7 +571,6 @@ const codeBlock=x=>{const lang=isTxt(x.lang)?x.lang:"",src=isTxt(x.src)?x.src:""
    then its high (sections), then back. A level replaces the part's text. A part with only its summary has
    no toggle */
 const detOf=(c,k)=>{const d=c.detail;return d&&typeof d==="object"&&Array.isArray(d[k])?d[k]:[]};
-const detOpt=(c,k)=>{const d=c.detail,o=d&&typeof d==="object"?d.o:null;return o&&typeof o==="object"&&Array.isArray(o[k])?o[k]:[]};
 const nextLevel=(cur,max)=>(cur+1)%(max+1);
 const lvText=(lvl,max)=>lvl>=max?"less detail":(lvl===0?"more detail":"full detail");
 /* text as a paragraph; a list as bullets, each {t, sub} with its sub-bullets nested; sections as a heading
@@ -530,14 +599,13 @@ const impactHigh=(i,ow)=>'<div class="impline"><span class="lbl">Impact</span>'
 const impactLevel=(i,m,ow)=>m===0?impactMedium(i,ow):impactHigh(i,ow);
 const tldrHtml=(bs,f)=>'<div><span class="lbl">TLDR</span><ul class="tldr">'+bs.map(b=>'<li>'+f(b)+'</li>').join("")+'</ul></div>';
 const tldrLevel=x=>'<div><span class="lbl">TLDR</span>'+rend(x,fmtD)+'</div>';
-/* the rec line: its summary is the reason and the unknown; a level replaces both with one string */
+/* the rec line: its head (the rec, the basis word) and its reason; a level replaces the reason. What is not known
+   is the card's Open questions, never this line */
 const recHeadHtml=c=>(c.rec?'Rec <strong>('+esc(c.rec)+')</strong>':'<em>'+esc(c.norec||"no recommendation")+'</em>')+' · basis <strong>'+esc(c.basis)+'</strong>';
 const recLine=(c,x)=>x==null
-  ?'<p class="recline">'+recHeadHtml(c)+(shown(c.reason)?' — <em>'+fmt(c.reason)+'</em>':'')+' · unknown: '+fmt(c.unknown||"none")+'</p>'
+  ?'<p class="recline">'+recHeadHtml(c)+(shown(c.reason)?' — <em>'+fmt(c.reason)+'</em>':'')+'</p>'
   :(Array.isArray(x)?'<div class="recline">'+recHeadHtml(c)+' —'+rend(x,fmtD)+'</div>'
-    :(i=>'<p class="recline">'+recHeadHtml(c)+' — <em>'+fmtD(i<0?x:x.slice(0,i))+'</em>'+(i<0?'':' · unknown: '+fmtD(x.slice(i+RECUNK.length)))+'</p>')(x.indexOf(RECUNK)));
-/* a rec level is "<reason> · unknown: <unknown>", shown as the summary shows the two */
-const RECUNK=" · unknown: ";
+    :'<p class="recline">'+recHeadHtml(c)+' — <em>'+fmtD(x)+'</em></p>');
 const optPara=(k,x)=>Array.isArray(x)?'<div><span class="mono ol">('+esc(k)+')</span>'+rend(x,fmtD)+'</div>':'<p><span class="mono ol">('+esc(k)+')</span> '+fmtD(x)+'</p>';
 /* every part's renditions as HTML, summary first: {key: [summary, medium?, high?]}. Context's levels keep
    its labelled wrapper, so its label shows at every level; the visible summaries never link */
@@ -552,12 +620,13 @@ function parts(c){
     imp:[impactLine(c)].concat(detOf(c,"impact").map((x,m)=>impactLevel(x,m,oneWay(c)))),
     tldr:[tldrHtml(c.tldr,fmt)].concat(detOf(c,"tldr").map(tldrLevel)),
     rec:[recLine(c,null)].concat(detOf(c,"rec").map(x=>recLine(c,x))),
-    why:[labelled("Why now",c.why)].concat(detOf(c,"why").map(x=>labelled("Why now",x))),
-    whyask:[labelled("Why ask",c.whyask,cls)].concat(detOf(c,"whyask").map(x=>labelled("Why ask",x,cls))),
+    why:opt(c.why,detOf(c,"why"),"Not summarised: more detail shows why now.",x=>labelled("Why now",x)),
+    whyask:opt(c.whyask,detOf(c,"whyask"),"Not summarised: more detail shows why it is asked.",x=>labelled("Why ask",x,cls)),
     dep:opt(c.dep,dl,"Not summarised: more detail shows what it depends on.",x=>labelled("Depends on",x)),
     ev:opt(c.evidence,ev,"Not summarised: more detail shows the evidence.",x=>rend(x,fmtD))
   };
-  for(const [k,full] of c.o)P["opt-"+k]=[optPara(k,full)].concat(detOpt(c,k).map(x=>optPara(k,x)));
+  for(const o of optsOf(c)){const lv=Array.isArray(o.detail)?o.detail:[];
+    P["opt-"+o.k]=shown(o.text)?[optPara(o.k,o.text)].concat(lv.map(x=>optPara(o.k,x))):(lv.length?lv.map(x=>optPara(o.k,x)):[""])}
   return P;
 }
 /* one part: its renditions, one shown at a time, and a button naming the next step; just the summary when it has
@@ -570,33 +639,32 @@ function secHtml(c,key,label,rs,start){
     +'<div id="'+id+'" data-secbody>'+rs.map((h,i)=>'<div class="lv"'+(i!==at?' hidden':'')+'>'+h+'</div>').join("")+'</div></div>';
 }
 /* More beside option k: the option in full. Its text opens at its fullest level and steps through the rest
-   (less detail goes to its summary, then up again); then its impact line, static; then Effect, Reach, Undo
-   and Cost from its blocks row. On a ⚠ one-way card the row comes first, so its Undo sits at the top as the
-   block's table row did. With no blocks row its impact is its Effect ((z)'s, what waiting does, its Wait).
-   Each piece that is none is left out (isNone), but Undo: a none Undo says the option cannot be undone. A row
-   with no undo is reversible at little cost, and shows none; a row flagged oneway marks its Undo ⚠ */
+   (less detail goes to its summary, then up again); then its Effect, Reach, Undo and Cost. On a ⚠ one-way card
+   the facets come first, so its Undo sits at the top as the block's table row did. (z)'s effect, what waiting
+   does, is its Wait. Each piece that is none is left out (isNone), but Undo: a none Undo says the option cannot
+   be undone. An option with no undo is reversible at little cost, and shows none; one flagged oneway marks its
+   Undo ⚠ */
 function optionDetail(c,k,P){
-  const o=c.o.find(x=>x[0]===k);
+  const o=optOf(c,k);
   if(!o)return "";
   P=P||parts(c);
-  const rs=P["opt-"+k],b=(c.blocks&&c.blocks[k])||null;
+  const rs=P["opt-"+k];
   const f=(l,v)=>isTxt(v)&&shown(v)?'<p><span class="lbl">'+l+'</span>'+fmtD(v)+'</p>':'';
-  const text=shown(o[1])||rs.length>1?secHtml(c,"opt-"+k,"Option ("+k+")",rs,rs.length-1):"";
-  if(!b)return text+f(k==="z"?"Wait":"Effect",o[2]);
-  const same=x=>String(x).trim().toLowerCase()===String(b.happens).trim().toLowerCase();
-  const imp=shown(o[2])&&!same(o[2])?'<p class="impact">'+fmt(o[2])+'</p>':'';
-  const facets=f("Effect",b.happens)+f("Reach",b.who)+(isTxt(b.undo)?'<p>'+(b.oneway===true?'<span class="lbl owu">⚠ Undo</span>':'<span class="lbl">Undo</span>')+fmtD(b.undo)+'</p>':'')+f("Cost",b.cost);
-  return c.warn?facets+text+imp:text+imp+facets;
+  const text=rs.length>1?secHtml(c,"opt-"+k,"Option ("+k+")",rs,rs.length-1):(rs[0]||"");
+  if(k==="z")return text+f("Wait",o.effect);
+  const facets=f("Effect",o.effect)+f("Reach",o.reach)+(isTxt(o.undo)?'<p>'+(o.oneway===true?'<span class="lbl owu">⚠ Undo</span>':'<span class="lbl">Undo</span>')+fmtD(o.undo)+'</p>':'')+f("Cost",o.cost);
+  return c.oneway===true?facets+text:text+facets;
 }
-/* the effect a card's row shows after the rec pill: the Effect across the options, at tag size (the page's
-   *Impact across the options*, while decision 335 is open). One helper, so its source can change alone */
-const rowEffect=c=>tagEffect(c);
+/* the effect a card's row shows after the rec pill (answer 340 (a)): the recommended option's own effect, its
+   letter first, plain text at tag size; with no recommendation, each option's in a few words. One helper, so its
+   source can change alone */
+const rowEffect=c=>{const t=rowEffectText(c);return t?'<span class="eff"><b>→</b>'+t+'</span>':''};
 /* a card's one-line row (the operator's prototype feedback, 2026-10-22): the fold marker, the number, the title
    with its label after it, the ⚠ pill on a one-way card, the rec pill and the row's effect, then the answer. It is
    the card's summary, its one open-and-close control, so it holds no other control and no link */
 const rowHtml=c=>{const n=esc(c.n);
   return '<span class="tw" aria-hidden="true"></span><span class="n">'+n+'</span><h3>'+titleHtml(c)+'</h3>'
-    +(c.warn?'<span class="pill warn">⚠ one-way</span>':'')
+    +(c.oneway===true?'<span class="pill warn">⚠ one-way</span>':'')
     +'<span class="rrec">'+recPill(c)+rowEffect(c)+'</span>'
     +'<span class="ans" id="sum-'+n+'">'+ansLabel(c,answers[c.n])+'</span>'};
 /* the row's quick answers (answer 334 (a)): Use recommendation on a card with one, and Later, beside the row and
@@ -608,17 +676,17 @@ const quickHtml=c=>{const n=esc(c.n);
 function cardHtml(c){
   const n=esc(c.n),g="d"+n,P=parts(c);
   let h='<div class="cardw '+(c.rec?'q2':'q1')+'"><details class="card" id="card-'+n+'"><summary>'+rowHtml(c)+'</summary>'
-    +'<div class="body">'+secHtml(c,"tldr","TLDR",P.tldr)+secHtml(c,"ctx","Context",P.ctx)+secHtml(c,"imp","Impact",P.imp)
+    +'<div class="body">'+secHtml(c,"tldr","TLDR",P.tldr)+secHtml(c,"ctx","Context",P.ctx)+openFold(c)+secHtml(c,"imp","Impact",P.imp)
     +line("If left:",c.ifleft)+line("A round costs:",c.roundcosts)+line("If unanswered:",c.ifunanswered)
     +'<fieldset><legend>Your answer: one option or one follow-up</legend><div class="opts">';
-  for(const [k,full,imp,ttl,why] of c.o){
+  for(const o of optsOf(c)){const k=o.k;
     const isRec=!!c.rec&&k===c.rec, lab=k==="z"?"if left:":(isRec?"because:":(c.rec?"not recommended because:":"if chosen:"));
     /* More: every option with something to show; open at the start on a ⚠ one-way card, whose Impact rows
        the decisions skill shows unfolded */
-    const more=g+'-'+fid(k)+'-more',det=optionDetail(c,k,P),open=!!c.warn&&k!=="z";
+    const more=g+'-'+fid(k)+'-more',det=optionDetail(c,k,P),open=c.oneway===true&&k!=="z";
     h+='<div class="opt'+(isRec?' isrec':'')+'"><label class="optl"><input type="radio" name="'+g+'" id="'+g+'-'+fid(k)+'" value="'+esc(k)+'">'
-      +'<span class="ot"><span class="ol">('+esc(k)+')</span>'+esc(ttl)+(isRec?'<span class="pill rec">recommended</span>':'')+'</span>'
-      +(shown(why)?'<span class="oi"><em>'+lab+'</em> '+fmt(why)+'</span>':'')+'</label>'
+      +'<span class="ot"><span class="ol">('+esc(k)+')</span>'+esc(o.title)+(isRec?'<span class="pill rec">recommended</span>':'')+'</span>'
+      +(shown(o.line)?'<span class="oi"><em>'+lab+'</em> '+fmt(o.line)+'</span>':'')+'</label>'
       +(det?'<button type="button" class="btn omore'+(open?' on':'')+'" data-omore="'+esc(k)+'" data-n="'+n+'" aria-expanded="'+open+'" aria-controls="'+more+'" aria-label="More decision detail on option ('+esc(k)+')">More</button>':'')
       +actList(c,k)
       +(det?'<div class="odet" id="'+more+'"'+(open?'':' hidden')+'>'+det+'</div>':'')+'</div>';
@@ -627,19 +695,18 @@ function cardHtml(c){
   for(const [k,label,ph] of FOLLOW){
     h+='<label class="chip"><input type="radio" name="'+g+'" id="'+g+'-'+fid(k)+'" value="'+esc(k)+'">'+esc(label)+(ph?' <span class="ph">'+esc(ph)+'</span>':'')+'</label>';
   }
+  const bg=secHtml(c,"why","Why now",P.why)+secHtml(c,"whyask","Why ask",P.whyask);
   return h+'</div></div><div><label class="lbl" for="'+g+'-words">Your words</label>'
     +'<textarea id="'+g+'-words" data-n="'+n+'"></textarea></div></div></fieldset>'
     +secHtml(c,"rec","Recommendation",P.rec)
     +'<div class="cardfoot"><span class="lbl">Details, most compressed first</span><button class="btn" type="button" data-clear="'+n+'">Clear answer</button></div>'
     +'<div class="panes">'
-    +'<details class="pane"><summary>Background</summary><div>'+secHtml(c,"why","Why now",P.why)+secHtml(c,"whyask","Why ask",P.whyask)+'</div></details>'
+    +(bg?'<details class="pane"><summary>Background</summary><div>'+bg+'</div></details>':'')
     +(P.dep[0]?'<details class="pane"><summary>Dependencies</summary><div>'+secHtml(c,"dep","Depends on",P.dep)+'</div></details>':'')
-    /* Basis always (its word is a statement, none included); the Unknown line here only when it is not none:
-       the rec line states "unknown: none" */
-    +'<details class="pane"><summary>Evidence and unknowns</summary><div><p><span class="lbl">Basis</span>'+esc(c.basis)+(shown(c.reason)?' — '+fmt(c.reason):'')+'</p>'+secHtml(c,"ev","Evidence",P.ev)+(shown(c.unknown)?'<p><span class="lbl">Unknown</span>'+fmt(c.unknown)+'</p>':'')+'</div></details>'
+    /* Basis always (its word is a statement, none included) */
+    +'<details class="pane"><summary>Evidence</summary><div><p><span class="lbl">Basis</span>'+esc(c.basis)+(shown(c.reason)?' — '+fmt(c.reason):'')+'</p>'+secHtml(c,"ev","Evidence",P.ev)+'</div></details>'
     +'</div></div></details>'+quickHtml(c)+'</div>';
 }
-
 /* a group's heading (rule 263 on the page): a band with the Group label, its title, a count pill and what its
    cards share (its note); a bundle, a layer whose fourth element is its shared context, adds a closed Shared
    context fold whose summary is that context's first sentence. Its cards follow, inset under a rail */
@@ -671,9 +738,9 @@ function tipHtml(k){
   if(c){const a=answers[c.n],at=ansText(c,a);
     return '<p class="tip-h"><span class="n">'+esc(k)+'</span><span>'+titleHtml(c)+'</span></p>'
       +'<p><span class="lbl">Context</span>'+fmtPlain(c.context)+'</p>'
-      +'<ol class="tip-o">'+c.o.map(o=>{const rec=!!c.rec&&o[0]===c.rec;
-        return '<li'+(rec?' class="isrec"':'')+'><span class="ol">('+esc(o[0])+')</span> '+esc(o[3])
-          +(shown(o[4])?'<span class="tip-l"> — '+fmtPlain(o[4])+'</span>':'')+(rec?'<span class="pill rec">recommended</span>':'')+'</li>'}).join("")+'</ol>'
+      +'<ol class="tip-o">'+optsOf(c).map(o=>{const rec=!!c.rec&&o.k===c.rec,one=shown(o.line)?o.line:o.effect;
+        return '<li'+(rec?' class="isrec"':'')+'><span class="ol">('+esc(o.k)+')</span> '+esc(o.title)
+          +(shown(one)?'<span class="tip-l"> — '+fmtPlain(one)+'</span>':'')+(rec?'<span class="pill rec">recommended</span>':'')+'</li>'}).join("")+'</ol>'
       +'<p class="tip-a">your answer: '+(at?esc(at):'none yet')+(a&&a.words?' — “'+esc(a.words)+'”':'')+'</p>'}
   if(r)return '<p class="tip-h"><span class="n">'+esc(k)+'</span><span>'+esc(r.short)+'</span></p>'
     +'<p><span class="lbl">Asked</span>'+code(esc(r.q))+'</p><p><span class="lbl">Answer</span>'+code(esc(r.a))+'</p>'
@@ -847,7 +914,7 @@ fetch("cards.json").then(r=>{if(!r.ok)throw new Error("cards.json: HTTP "+r.stat
   if(typeof pg.title==="string"&&pg.title){$("#title").textContent=pg.title;document.title=pg.title}
   $("#lede").innerHTML=typeof pg.lede==="string"?fmt(pg.lede):"";
   if(pg.doc&&typeof pg.doc.url==="string"&&/^https:\/\//.test(pg.doc.url))$("#doclink").innerHTML=' The reading copy is <a href="'+esc(pg.doc.url)+'" target="_blank" rel="noopener">'+esc(pg.doc.name||"this doc")+'</a>.';
-  $("#nodbex").textContent=CARDS[0].n+": "+(CARDS[0].rec||CARDS[0].o[0][0]);
+  $("#nodbex").textContent=CARDS[0].n+": "+(CARDS[0].rec||CARDS[0].options[0].k);
   renderMap();renderCards();applyRaw();
 }).catch(e=>{$("#nodata").hidden=false;$("#count").textContent="not loaded"});
 

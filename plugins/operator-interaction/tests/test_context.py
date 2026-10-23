@@ -36,9 +36,10 @@ SKILL_MD = SKILL / "SKILL.md"
 REV_RULE = (
     "Any change to a card gets a new `rev`, Context included: an **Added:** line after "
     "`tell me`, more detail after `expand`, a `dig into` finding, a corrected fact, a re-ask. "
-    "Only the one-time format migration keeps it: a card written before Context existed, whose "
-    "own `what` and resume cue move into `context`, and whose terms are glossed from its own "
-    "folds alone. A gloss drawn from anywhere outside the card is new information: a new `rev`.")
+    "Only a format-only upgrade keeps it: an older card moved to `decision-card/5` by the "
+    "`decision-page` skill's `scripts/upgrade_cards.js`, its fields moved and none added. A fact "
+    "drawn from anywhere outside the card is new information: a new `rev`.")
+RECORD = SKILL.parent / "decisions" / "references" / "card-record.md"
 
 
 def setUpModule():
@@ -235,7 +236,7 @@ class DecisionPageContext(unittest.TestCase):
             # Context's summary rendition, once; its levels repeat the labelled wrapper only
             self.assertEqual(card.count(blk["open"]), 1, blk["n"])
             # under decision 197 (a) the Background fold holds Why now and Why ask only
-            bg = card[card.index("<summary>Background</summary>"):card.index("<summary>Evidence and unknowns</summary>")]
+            bg = card[card.index("<summary>Background</summary>"):card.index("<summary>Evidence</summary>")]
             self.assertIn(blk["why"], bg, blk["n"])
             if blk["n"] == 42:
                 self.assertNotIn(blk["what"], bg)
@@ -246,14 +247,15 @@ class DecisionPageContext(unittest.TestCase):
         self.assertNotIn("function fillPop", html)
         tip = html[html.index("function tipHtml("):html.index("/* ---- end of the page-free part")]
         self.assertNotIn("contextBlock(", tip)
-        self.assertNotIn("tagEffect(", tip)
+        self.assertNotIn("rowEffect(", tip)
+        self.assertNotIn("impactLine(", tip)
 
     def test_the_page_free_part_holds_no_lookbehind(self):
         # a lookbehind is a syntax error in an older browser, and stops the whole script
         self.assertNotIn("(?<", page_free_script())
 
 
-TIP_ONE_LINE = "+(shown(o[4])?'<span class=\"tip-l\"> — '+fmtPlain(o[4])+'</span>':'')"
+TIP_ONE_LINE = "+(shown(one)?'<span class=\"tip-l\"> — '+fmtPlain(one)+'</span>':'')"
 
 
 def tip_text(h):
@@ -268,11 +270,12 @@ def tip_problems(tip, card, answer="none yet"):
     if "Context" not in text or tip_text(card["context"].split("[[")[0])[:40] not in text:
         out.append("no Context")
     at = -1
-    for o in card["o"]:
-        want = "(%s) %s — %s" % (o[0], o[3], o[4].split("[[")[0])
+    for o in card["options"]:
+        # its one line, else its effect
+        want = "(%s) %s — %s" % (o["k"], o["title"], (o.get("line") or o["effect"]).split("[[")[0])
         i = text.find(want)
         if i < 0 or i < at:
-            out.append("option (%s) is not shown as (x) title — one line, in order" % o[0])
+            out.append("option (%s) is not shown as (x) title — one line, in order" % o["k"])
         at = max(at, i)
     if card["rec"] and not re.search(r'<li class="isrec"><span class="ol">\(%s\)</span>[^<]*'
                                      r'(<span class="tip-l">.*?</span>)?<span class="pill rec">recommended'
@@ -528,6 +531,12 @@ class ReferenceTooltip(unittest.TestCase):
         d["_answers"] = {"41": {"choice": "b", "words": "ship it"}}
         tip = run_page(d)["blocks"][0]["tip"]
         self.assertEqual(tip_problems(tip, d["cards"][0], "(b) · rec — “ship it”"), [])
+        # an option with no one line shows its effect
+        d = example()
+        del d["cards"][0]["options"][0]["line"]
+        tip = run_page(d)["blocks"][0]["tip"]
+        self.assertEqual(tip_problems(tip, d["cards"][0]), [])
+        self.assertIn("Nothing changes; the maintainer publishes by hand.", tip_text(tip))
 
     def test_mutant_title_alone(self):
         script = page_free_script()
@@ -546,7 +555,7 @@ class ReferenceTooltip(unittest.TestCase):
     def test_the_tooltip_is_escaped(self):
         d = example()
         d["cards"][0]["context"] = '<script>x</script> the cache ([[38]])'
-        d["cards"][0]["o"][0][3] = '<img src=x onerror="alert(1)">'
+        d["cards"][0]["options"][0]["title"] = '<img src=x onerror="alert(1)">'
         d["refs"]["38"]["q"] = "<script>y</script>"
         res = run_page(d)
         for h in (res["blocks"][0]["tip"], res["refTips"]["38"]):
@@ -683,12 +692,15 @@ class DecisionPageRunner(unittest.TestCase):
         setters = {
             "t": lambda c: c.__setitem__("t", "Docs build KAPPA-3570"),
             "tldr": lambda c: c["tldr"].append("KAPPA-3570 asks for it"),
-            "title": lambda c: c["o"][0].__setitem__(3, "Keep KAPPA-3570"),
-            "one line": lambda c: c["o"][0].__setitem__(4, "per KAPPA-3570"),
+            "title": lambda c: c["options"][0].__setitem__("title", "Keep KAPPA-3570"),
+            "one line": lambda c: c["options"][0].__setitem__("line", "per KAPPA-3570"),
+            "open": lambda c: c["open"].append("whether KAPPA-3570 matters"),
         }
-        for k in ("effect", "wait", "reach", "undo", "cost"):
+        for k in ("wait", "reach", "undo", "cost"):
             setters["impact." + k] = (lambda k: lambda c: c["impact"].__setitem__(k, "per KAPPA-3570"))(k)
-        for k in ("ifleft", "roundcosts", "ifunanswered", "reason", "unknown", "norec", "dep"):
+        for k in ("effect", "reach", "cost"):
+            setters["option " + k] = (lambda k: lambda c: c["options"][0].__setitem__(k, "per KAPPA-3570"))(k)
+        for k in ("ifleft", "roundcosts", "ifunanswered", "reason", "norec", "dep"):
             setters[k] = (lambda k: lambda c: c.__setitem__(k, "per KAPPA-3570"))(k)
         for name, put in setters.items():
             with self.subTest(field=name):
@@ -702,15 +714,15 @@ class DecisionPageRunner(unittest.TestCase):
     def test_ids_in_the_folds_levels_act_lede_layers_and_refs_are_linted(self):
         last_b = lambda lv: lv[-1]["b"]
         for put, needle in (
-                (lambda d: d["cards"][0]["o"][0].__setitem__(1, "see KAPPA-3570"), "lint: card 41: "),
+                (lambda d: d["cards"][0]["options"][0].__setitem__("text", "see KAPPA-3570"), "lint: card 41: "),
                 (lambda d: d["cards"][0].__setitem__("evidence", "see KAPPA-3570"), "lint: card 41: "),
                 (lambda d: last_b(d["cards"][0]["detail"]["why"][1]).append("See KAPPA-3570."),
                  "lint: card 41: "),
-                (lambda d: last_b(d["cards"][0]["detail"]["o"]["b"][1]).append("See KAPPA-3570."),
+                (lambda d: last_b(d["cards"][0]["options"][1]["detail"][1]).append("See KAPPA-3570."),
                  "lint: card 41: "),
-                (lambda d: d["cards"][0]["blocks"]["a"].__setitem__("who", "per KAPPA-3570"),
+                (lambda d: d["cards"][0]["options"][0].__setitem__("reach", "per KAPPA-3570"),
                  "lint: card 41: "),
-                (lambda d: d["cards"][0]["act"]["b"].append("Close KAPPA-3570."), "lint: card 41: "),
+                (lambda d: d["cards"][0]["options"][1]["act"].append("Close KAPPA-3570."), "lint: card 41: "),
                 (lambda d: d["page"].__setitem__("lede", "From KAPPA-3570."), "lint: page: "),
                 (lambda d: d["layers"][0].__setitem__(2, "From KAPPA-3570."), "lint: page: "),
                 (lambda d: d["refs"]["38"].__setitem__("q", "Clear KAPPA-3570?"), "lint: page: ")):
@@ -720,7 +732,7 @@ class DecisionPageRunner(unittest.TestCase):
                 self.assert_lint(d, needle + "KAPPA-3570 looks like an id")
         # in backticks it is something the operator types: clean
         d = example()
-        d["cards"][0]["act"]["b"].append("Run `close KAPPA-3570` in the tracker.")
+        d["cards"][0]["options"][1]["act"].append("Run `close KAPPA-3570` in the tracker.")
         self.assert_clean(d)
 
     def test_counts_and_named_things_in_the_folds_act_lede_and_layers_are_not_linted(self):
@@ -728,8 +740,8 @@ class DecisionPageRunner(unittest.TestCase):
         t = "The three reviewers, in content mode."
         for put in (lambda d: d["cards"][0].__setitem__("evidence", "Observed: " + t),
                     lambda d: last_b(d["cards"][0]["detail"]["why"][1]).append(t),
-                    lambda d: d["cards"][0]["blocks"]["a"].__setitem__("who", t),
-                    lambda d: d["cards"][0]["act"]["b"].append("Ask " + t),
+                    lambda d: d["cards"][0]["options"][0].__setitem__("reach", t),
+                    lambda d: d["cards"][0]["options"][1]["act"].append("Ask " + t),
                     lambda d: d["page"].__setitem__("lede", t),
                     lambda d: d["layers"][0].__setitem__(2, t)):
             d = example()
@@ -738,7 +750,7 @@ class DecisionPageRunner(unittest.TestCase):
 
     def test_slugs_and_hex_colours_are_not_ids(self):
         d = example()
-        d["cards"][2]["o"][0][4] = "keeps #2d56c8, as [[38]] left it"
+        d["cards"][2]["options"][0]["line"] = "keeps #2d56c8, as [[38]] left it"
         self.assert_clean(d)
 
     def test_well_known_terms_are_linted_never_refused(self):
@@ -759,7 +771,7 @@ class DecisionPageRunner(unittest.TestCase):
 
     def test_numbers_that_are_not_counts_are_not_linted(self):
         d = example()
-        d["cards"][1]["o"][0][4] = "12 redirects keep old links working"  # twelve, in context
+        d["cards"][1]["options"][0]["line"] = "12 redirects keep old links working"  # twelve, in context
         d["cards"][0]["tldr"] = [
             "Takes about 4 minutes, from 2026-10-08, reaching 50% of readers in 2 weeks",
             "v1.2.3 ships at 14:05, a two-way door"]
@@ -772,7 +784,7 @@ class DecisionPageRunner(unittest.TestCase):
 
     def test_a_named_thing_its_context_does_not_gloss_is_linted(self):
         d = example()
-        d["cards"][0]["o"][0][3] = "Turn on content mode"
+        d["cards"][0]["options"][0]["title"] = "Turn on content mode"
         self.assert_lint(d, '"content mode" is not glossed in its context: give it a one-line '
                             "gloss in context")
         d["cards"][0]["context"] = d["cards"][0]["context"][:-1] + "; content mode serves pages as text."
@@ -806,11 +818,15 @@ class RevRule(unittest.TestCase):
     written, so no copy drifts."""
 
     def test_the_rev_rule_is_in_identical_words_in_all_four_places(self):
+        # the v5 upgrade keeps rev, so page answers keep counting
         flat = lambda p: re.sub(r"\s+", " ", p.read_text())
-        self.assertEqual(flat(SCHEMA).count(REV_RULE), 2, "cards-schema.md: the rev row and "
-                         "§ Republishing older data")
+        self.assertEqual(flat(RECORD).count(REV_RULE), 1, "card-record.md: the rev row")
+        self.assertEqual(flat(SCHEMA).count(REV_RULE), 1, "cards-schema.md: § Republishing older data")
         self.assertEqual(flat(SKILL_MD).count(REV_RULE), 2, "SKILL.md: step 2's rev bullet and "
                          "step 3's republish paragraph")
+        # the retired migration wording is gone from all four
+        for p in (RECORD, SCHEMA, SKILL_MD):
+            self.assertNotIn("Only the one-time format migration keeps it", flat(p), p.name)
 
 
 if __name__ == "__main__":
