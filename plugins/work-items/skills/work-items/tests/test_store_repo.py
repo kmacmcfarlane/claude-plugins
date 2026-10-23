@@ -2976,6 +2976,141 @@ class TestPerChange(StoreRepoCase):
         self.assertNotIn(NOT_COMMITTED, r.stderr)
 
 
+CARD = "cards/one-aaaa/1/2026-10-23T10-00-00Z.card5.json"
+
+
+class TestCardsOwnPath(StoreRepoCase):
+    """3b51 W1: `cards/` (decision card records, one immutable JSON file per
+    revision at cards/<id>/<N>/<file>.json) is one of the store's own paths
+    in every list wi keeps of them: OWN_PATHS (and so `_uncommitted` and
+    `wi commit`), the journal's shapes, STORE_ENTRIES and _is_own_path."""
+
+    def card(self, store, rel=CARD, text='{"n": 1}\n'):
+        path = store / rel
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(text)
+        return path
+
+    def head_files(self, repo):
+        return self.git(repo, "show", "--name-only", "--no-renames",
+                        "--format=", "HEAD").stdout.split()
+
+    def test_raise_shaped_write_is_one_commit(self):
+        """A card file and its item written under one lock, as a raise
+        writes them, land in one commit of a `repo: own` store."""
+        store = self.make_own()
+        before = self.git(store, "rev-list", "--count", "HEAD").stdout
+        path = store / CARD
+        with wi.Lock(store):
+            for level in ("cards", "cards/one-aaaa", "cards/one-aaaa/1"):
+                os.mkdir(store / level)
+            wi.atomic_write(path, '{"n": 1}\n', create=True)
+            item = store / "items" / "one-aaaa.md"
+            wi.atomic_write(item, item.read_text() + "decision 1: q?\n")
+        after = self.git(store, "rev-list", "--count", "HEAD").stdout
+        self.assertEqual(int(after), int(before) + 1)
+        self.assertEqual(sorted(self.head_files(store)),
+                         sorted([CARD, "items/one-aaaa.md"]))
+        self.assertEqual(self.git(store, "status", "--porcelain").stdout, "")
+
+    def test_journal_pattern(self):
+        self.assertTrue(wi._journal_own(
+            "cards/a-b/12/2026-10-23T10-00-00Z.card5.json"))
+        self.assertTrue(wi._journal_own(CARD))
+        for rel in ("cards/.x/1/f.json",          # a dotted item segment
+                    "cards/a/1/.f.json",          # a dotted file name
+                    "cards/a/b/f.json",           # N not digits
+                    "cards/a/1/f.json.tmp1",      # a write's temp file
+                    "cards/a/1/f.md",             # not JSON
+                    "cards/a/1/2/f.json",         # one level too deep
+                    "cards/a/f.json",             # one level short
+                    "cards/f.json", "cards"):
+            with self.subTest(rel=rel):
+                self.assertFalse(wi._journal_own(rel))
+
+    def test_journal_keeps_card_records(self):
+        store = self.make_own()
+        written = [CARD, "cards/one-aaaa/1/.gitattributes", "items/a.md"]
+        with mock.patch.object(wi, "_JOURNAL", [store / p for p in written]):
+            self.assertEqual(wi._journal_paths(store), [CARD, "items/a.md"])
+
+    def test_uncommitted_counts_a_card_file(self):
+        store = self.make_own()
+        self.assertEqual(wi._uncommitted(store), 0)
+        self.card(store)
+        self.assertEqual(wi._uncommitted(store), 1)
+
+    def test_own_wi_commit_stages_a_card_file(self):
+        store = self.make_own()
+        self.card(store)
+        r = self.wi(["commit", "-m", "cards"], store)
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+        self.assertEqual(self.head_files(store), [CARD])
+
+    def test_host_tracked_wi_commit_stages_a_card_file(self):
+        host = self.make_host(ignore=False)
+        store = host / ".work-items"
+        self.store_files(store, own=False)
+        self.git(host, "add", "-A")
+        self.git(host, "commit", "-q", "-m", "store")
+        self.card(store)
+        ident = {"GIT_AUTHOR_NAME": "t", "GIT_AUTHOR_EMAIL": "t@t",
+                 "GIT_COMMITTER_NAME": "t", "GIT_COMMITTER_EMAIL": "t@t"}
+        r = self.wi(["commit", "-m", "cards"], store, env=ident)
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+        self.assertTrue(r.stdout.startswith("committed "), r.stdout)
+        self.assertEqual(self.head_files(host), [f".work-items/{CARD}"])
+
+    def test_cards_is_not_a_foreign_entry(self):
+        store = self.tmp / "plain"
+        self.store_files(store, own=False)
+        self.card(store)
+        self.assertIsNone(wi._foreign_entry(store))
+        (store / "other").mkdir()
+        self.assertEqual(wi._foreign_entry(store), "other")
+
+    def test_is_own_path(self):
+        self.assertTrue(wi._is_own_path("cards/a/1/f.json"))
+        self.assertTrue(wi._is_own_path(CARD))
+        self.assertFalse(wi._is_own_path("cardsx/a/1/f.json"))
+        self.assertFalse(wi._is_own_path("src/cards/a/1/f.json"))
+
+    def test_store_repo_tracking_cards_is_adopted(self):
+        """A store repo whose HEAD holds a card file is not 'holding other
+        files' (_is_own_path, through init's adoption check)."""
+        store = self.make_own()
+        self.card(store)
+        self.git(store, "add", "-A")
+        self.git(store, "commit", "-q", "-m", "card")
+        wi._own_repo_check(store)              # no refusal
+        (store / "other.txt").write_text("x\n")
+        self.git(store, "add", "other.txt")
+        with self.assertRaisesRegex(wi.WiError, r"holding other files "
+                                    r"\(other\.txt\)"):
+            wi._own_repo_check(store)
+
+    def test_host_form_ignores_card_only_rules(self):
+        """The ruling on the host form: a host rule that ignores only card
+        records does not ignore the store, so init still adds the store's
+        line and an own store's host check still reports it."""
+        for name, rule in (("json", "*.json"), ("dir", "cards/")):
+            with self.subTest(name):
+                host = self.make_host(name=f"host-{name}", ignore=False)
+                (host / ".gitignore").write_text(rule + "\n")
+                store = host / ".work-items"
+                self.store_files(store)
+                self.git(store, "init", "-q", "--template=")
+                probs = [m for _, m in wi._host_checks(store, host)]
+                self.assertTrue(any("does not ignore" in m for m in probs),
+                                probs)
+                ok, msg = wi.ensure_ignored(store, repo=host)
+                self.assertTrue(ok, msg)
+                self.assertNotIn("already ignored", msg)
+                self.assertEqual((host / ".gitignore").read_text(),
+                                 f"{rule}\n/.work-items/\n")
+                self.assertEqual(wi._host_checks(store, host), [])
+
+
 class TestGitPins(StoreRepoCase):
     """Pins of the git behaviour d1e9 rests on; a git change shows here."""
 
