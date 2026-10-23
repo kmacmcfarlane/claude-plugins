@@ -3089,6 +3089,27 @@ class TestCardsOwnPath(StoreRepoCase):
                                     r"\(other\.txt\)"):
             wi._own_repo_check(store)
 
+    def test_host_form_ignores_card_only_rules(self):
+        """The ruling on the host form: a host rule that ignores only card
+        records does not ignore the store, so init still adds the store's
+        line and an own store's host check still reports it."""
+        for name, rule in (("json", "*.json"), ("dir", "cards/")):
+            with self.subTest(name):
+                host = self.make_host(name=f"host-{name}", ignore=False)
+                (host / ".gitignore").write_text(rule + "\n")
+                store = host / ".work-items"
+                self.store_files(store)
+                self.git(store, "init", "-q", "--template=")
+                probs = [m for _, m in wi._host_checks(store, host)]
+                self.assertTrue(any("does not ignore" in m for m in probs),
+                                probs)
+                ok, msg = wi.ensure_ignored(store, repo=host)
+                self.assertTrue(ok, msg)
+                self.assertNotIn("already ignored", msg)
+                self.assertEqual((host / ".gitignore").read_text(),
+                                 f"{rule}\n/.work-items/\n")
+                self.assertEqual(wi._host_checks(store, host), [])
+
 
 class TestGitPins(StoreRepoCase):
     """Pins of the git behaviour d1e9 rests on; a git change shows here."""

@@ -1287,7 +1287,18 @@ def _sidecar_ignored_warning(root):
 def _ignore_rule(root, *extra, where=None):
     """The (source, line, pattern) of the rule that ignores a new item's
     path in the store (or, in the store's own form, a new card record's),
-    None when nothing does, False when git cannot say.
+    None when nothing does, False when git cannot say. _ignore_hits has
+    every ignored probe path."""
+    hits = _ignore_hits(root, *extra, where=where)
+    if hits is False:
+        return False
+    return hits[0][:3] if hits else None
+
+
+def _ignore_hits(root, *extra, where=None):
+    """Each (source, line, pattern, path) by which git ignores one of the
+    probe paths, in git's order; [] when none is ignored, False when git
+    cannot say.
     where=(repo, rel) asks from that repo's top on the store's paths there
     (rel/items, rel/<probe>), so a store that is its own repo is judged by
     the repo around it, not by its own (d1e9 D3 step 4); the source git
@@ -1301,19 +1312,25 @@ def _ignore_rule(root, *extra, where=None):
                                stdin=f"items\0{PROBE_ITEM}\0{PROBE_CARD}\0")
     else:
         repo, rel = where
+        # item probes only, never PROBE_CARD: this form asks whether the
+        # repo around the store ignores the store as a whole (init's ignore
+        # line, an own store's host check), and a rule that ignores only
+        # card records (`cards/`, `*.json`) does not; counting it would skip
+        # the store's ignore line and let the host commit it (3b51 W1)
         r = _git(repo, "check-ignore", "-v", "-z", *extra, "--stdin",
                  stdin=f"{rel}/items\0{rel}/{PROBE_ITEM}\0")
     if r is None or r.returncode not in (0, 1):
         return False
     fields = r.stdout.split("\0")
     inside = None if where is None else where[1].rstrip("/") + "/"
+    hits = []
     for i in range(0, len(fields) - 3, 4):   # source, linenum, pattern, path
-        src, lineno, pattern = fields[i:i + 3]
+        src, lineno, pattern, path = fields[i:i + 4]
         if inside and src.startswith(inside):
             continue                                  # the store's own rule
         if pattern and not pattern.startswith("!"):   # a negation un-ignores
-            return (src, lineno, pattern)
-    return None
+            hits.append((src, lineno, pattern, path))
+    return hits
 
 
 def _custody_body(root):
@@ -1324,11 +1341,14 @@ def _custody_body(root):
     # (which git allows only with --stdin) gives NUL-separated fields with
     # paths unquoted, so a source path holding ':N:', a tab or a non-ASCII
     # byte parses; _git decodes the raw bytes without failing.
-    rule = _ignore_rule(root)
-    if rule is False:
+    hits = _ignore_hits(root)
+    if hits is False:
         return None
-    if rule:
-        src, lineno, pattern = rule
+    if hits:
+        src, lineno, pattern, _ = hits[0]
+        # a rule that ignores only card records leaves new items tracked
+        what = ("new card records" if all(h[3] == PROBE_CARD for h in hits)
+                else "new items")
         shape, _ = sandbox_shape(root)
         where = f"{src}:{lineno} '{pattern}'"
         # sidecar: the nested repo owns the store, so host advice
@@ -1351,8 +1371,8 @@ def _custody_body(root):
         else:
             remedy = f"remove or negate that rule{there}"
         if shape == "sidecar":
-            return f"new items are git-ignored by {where}; fix: {remedy}"
-        fix = [f"new items are git-ignored by {where}; fix: {remedy}"]
+            return f"{what} are git-ignored by {where}; fix: {remedy}"
+        fix = [f"{what} are git-ignored by {where}; fix: {remedy}"]
         if shape is not None:
             fix.append(" and set trackInHost: true in the sandbox config (a "
                        "claude-sandbox launcher at 490d8ca or later warns "

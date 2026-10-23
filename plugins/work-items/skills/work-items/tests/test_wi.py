@@ -4765,9 +4765,21 @@ class TestStoreCustodyWarning(WiTestCase):
                 self.store_in(repo, gi=gi)
                 self.git(repo, "add", "-A")
                 self.git(repo, "commit", "-qm", "store")
-                self.assert_warns(f"git-ignored by {rule}", fix,
-                                  self.SANDBOX_FIX,
-                                  absent=(self.SIDECAR_FIX, "rewrite it"))
+                self.assert_warns(f"new card records are git-ignored by "
+                                  f"{rule}", fix, self.SANDBOX_FIX,
+                                  absent=(self.SIDECAR_FIX, "rewrite it",
+                                          "new items"))
+
+    def test_items_and_cards_rule_names_items(self):
+        # a rule that also ignores new items is named as before
+        for name, gi, rule in (
+                ("md", "*.md\ncards/\n", ".gitignore:1 '*.md'"),
+                ("all", "*.json\n*.md\n", ".gitignore:2 '*.md'")):
+            with self.subTest(name):
+                repo = self.tmp / f"both-{name}"
+                self.store_in(repo, gi=gi)
+                self.assert_warns(f"new items are git-ignored by {rule}",
+                                  absent=("card records",))
 
     def excludes_under(self, repo, dirname):
         """core.excludesFile '*.md' under tmp/<dirname> (bytes, so a

@@ -80,7 +80,7 @@ a tracked old store beside the git-ignored `.work-items/`.
   README.md            what this is, in ten lines
   items/<id>.md        every item, regardless of status
   archive/YYYY/<id>.md closed items moved by `wi archive` (explicit, batched)
-  cards/<id>/<N>/*.json decision card records, one immutable file per revision (never moved by archiving)
+  cards/<id>/<N>/      card records, one immutable .json per revision; never archived
   store.yaml           the store's recorded tracking choice (§ Store tracking)
   .lock                gitignored; flock target for same-machine mutations
   .git/                the store's own repo, when it has one (§ The store's own repo)
@@ -198,7 +198,10 @@ problem, fixed by moving the store (§ Moving a store).
   sidecar layout neither fix offers `--no-track`. Like every custody warning, it is one
   line in `prime` (exit unchanged) and a problem in `lint` (exit 3). The check asks git
   about a new item's path and a new card record's path under `cards/`, so a rule that
-  ignores only card records (a `cards/` or `*.json` line) gets the same warning.
+  ignores only card records (a `cards/` or `*.json` line) gets the same warning, naming
+  them: "new card records are git-ignored by `<rule>`" in place of "new items". The check
+  that a store with its own repo is ignored by the repo around it asks about item paths
+  only: there a rule that ignores only card records does not ignore the store.
 
 `status:` is the only authority on state. `done` never moves a file — a
 status-only close is a two-line front-matter change that merges cleanly
