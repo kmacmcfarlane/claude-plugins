@@ -224,7 +224,7 @@ every option, or that option, is reversible at little cost.
 ## Republishing older data
 
 A `cards.json` with no `decision-page/5` stamp is in an older format, and the template refuses
-it. Upgrade it first with `scripts/upgrade_cards.js` (format only, every `rev` kept), then
+it. Upgrade it first with `scripts/upgrade_cards.js` (format only, every `rev` kept byte for byte), then
 republish. Any change to a card gets a new `rev`, Context included: an **Added:** line after `tell me`, more detail after `expand`, a `dig into` finding, a corrected fact, a re-ask. Only a format-only upgrade keeps it: an older card moved to `decision-card/5` by the `decision-page` skill's `scripts/upgrade_cards.js`, its fields moved and none added. A fact drawn from anywhere outside the card is new information: a new `rev`.
 What each older era held, and what a republish writes into it, is the `decisions` skill's
 `references/legacy-cards.md`.

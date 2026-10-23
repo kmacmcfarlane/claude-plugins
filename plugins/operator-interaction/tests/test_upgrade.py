@@ -6,7 +6,7 @@ text: `tests/fixtures/cards.legacy.json` (the shipped example before v5, kept ve
 of them in its v4 layout). Each upgrades to a file the page's check passes and the runner runs
 on with no refusal; the legacy map (effect from the blocks row, else the option's impact;
 `warn` to `oneway`; `unknown` to `open`, none dropped); the kit's name trap (its `pros` the one
-line, `prosT` the rows) with its mutant; a minute-form rev normalized; all or nothing (a card
+line, `prosT` the rows) with its mutant; every rev kept byte for byte; all or nothing (a card
 it cannot map stops the run, nothing written); `--only`, `--records`; a v5 file passed through.
 
 Run from the plugin dir: python3 -m unittest discover -s tests -q
@@ -94,6 +94,8 @@ def name_trap_problems(o):
     return out
 
 
+REV_KEPT = '{ note.rev = "rev kept"; return rev; }'
+REV_NORMALISED = '{ note.rev = "rev kept"; return rev.replace(/T([0-9][0-9]:[0-9][0-9])Z$/, "T$1:00Z"); }'
 TRAP = ('if ("pros" in o) x.pro = o.pros;\n    if ("cons" in o) x.con = o.cons;\n'
         '    if ("prosT" in o) x.pros = o.prosT;\n    if ("consT" in o) x.cons = o.consT;')
 TRAP_STRAIGHT = ('if ("pros" in o) x.pros = o.pros;\n    if ("cons" in o) x.cons = o.cons;\n'
@@ -152,17 +154,27 @@ class Upgrade(unittest.TestCase):
         self.assertEqual(opt(d[43], "b")["effect"], src["cards"][2]["o"][1][2])
         self.assertNotIn("reach", opt(d[43], "b"))
 
-    def test_a_minute_rev_is_normalized_and_a_bad_one_renewed(self):
+    def test_a_minute_rev_survives_byte_for_byte_and_a_bad_one_is_renewed(self):
+        # an answer counts only when its rev equals its card's exactly: the upgrade never rewrites one
         src = load(LEGACY)
         src["cards"][0]["rev"] = "2026-01-12T09:30Z"
         src["cards"][1]["rev"] = "version two"
         code, out, d, _, _ = upgrade(src)
         self.assertEqual(code, 0, out)
+        self.assertEqual(run_page(d)["bad"], [])
         d = by_n(d)
-        self.assertEqual(d[41]["rev"], "2026-01-12T09:30:00Z")
-        self.assertIn("card 41: legacy, rev kept, normalized to seconds", out)
+        self.assertEqual(d[41]["rev"], "2026-01-12T09:30Z")
+        self.assertIn("card 41: legacy, rev kept", out)
         self.assertRegex(d[42]["rev"], r"^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$")
         self.assertIn('card 42: legacy, new rev (was "version two")', out)
+        # mutant: an upgrader that normalises the minute form to seconds
+        js = UPGRADER.read_text()
+        self.assertEqual(js.count(REV_KEPT), 1)
+        with tempfile.TemporaryDirectory() as tmp:
+            m = pathlib.Path(tmp) / "upgrade_cards.js"
+            m.write_text(js.replace(REV_KEPT, REV_NORMALISED))
+            mutant = by_n(upgrade(src, script=m)[2])
+        self.assertNotEqual(mutant[41]["rev"], src["cards"][0]["rev"])
 
     def test_the_kit_fixture_upgrades_to_a_page_that_passes(self):
         code, out, d, _, _ = upgrade(load(KIT))
@@ -173,7 +185,10 @@ class Upgrade(unittest.TestCase):
         self.assertIn(rcode, (0, 2), rout)
         self.assertTrue(all("what present" in x for x in rout.splitlines()), rout)
         self.assertIn("card 51: kit, rev kept", out)
-        self.assertIn("card 52: kit (v4), rev kept, normalized to seconds", out)
+        self.assertIn("card 52: kit (v4), rev kept;", out)
+        self.assertEqual(by_n(d)[52]["rev"], "2026-02-03T08:15Z")
+        # an evidence attachment's id is dropped, and said
+        self.assertIn('evidence attachment id "health" dropped', out)
 
     def test_the_kit_map(self):
         src = by_n(load(KIT))
@@ -291,6 +306,85 @@ class Upgrade(unittest.TestCase):
         self.assertEqual(code, 0, out)
         self.assertIn("already decision-page/5", out)
         self.assertEqual(raw2, raw)
+
+    def test_a_bad_or_duplicate_n_is_refused_and_nothing_is_written_anywhere(self):
+        # n names the record file: "../../escaped" must never reach a path, and a duplicate never overwrite one
+        d = load(KIT)
+        d["cards"][0]["n"] = "../../escaped"
+        d["cards"][2]["n"] = 52
+        with tempfile.TemporaryDirectory() as tmp:
+            t = pathlib.Path(tmp)
+            work = t / "a" / "b"
+            work.mkdir(parents=True)
+            (work / "in.json").write_text(json.dumps(d))
+            (work / "q.json").write_text(json.dumps(QMAP))
+            out = subprocess.run([NODE, str(UPGRADER), str(work / "in.json"), str(work / "out.json"),
+                                  "--questions", str(work / "q.json"), "--records", str(work / "recs")],
+                                 capture_output=True, text=True, timeout=60)
+            files = sorted(str(p.relative_to(t)) for p in t.rglob("*") if p.is_file())
+        self.assertEqual(out.returncode, 1, out.stdout)
+        self.assertIn('card "../../escaped": n must be a whole number of 1 or more', out.stdout)
+        self.assertIn("card 52: number used twice", out.stdout)
+        self.assertIn("nothing written", out.stdout)
+        self.assertEqual(files, ["a/b/in.json", "a/b/q.json"])
+        for n in (0, -1, 2.5, True):
+            d = load(KIT)
+            d["cards"][0]["n"] = n
+            code, out, res, _, _ = upgrade(d)
+            self.assertEqual(code, 1, (n, out))
+            self.assertIsNone(res)
+
+    def test_a_bad_option_letter_is_a_listed_problem(self):
+        for k in ("a)(", "", "ab", "A"):
+            with self.subTest(letter=k):
+                d = load(LEGACY)
+                d["cards"][0]["o"][0][0] = k
+                d["cards"][0]["blocks"].pop("a")
+                code, out, res, _, _ = upgrade(d)
+                self.assertEqual(code, 1, out)
+                self.assertIn("card 41: an option letter %s is not one letter a-z" % json.dumps(k), out)
+                self.assertIsNone(res)
+        d = load(KIT)
+        d["cards"][0]["options"][0]["k"] = "a("
+        code, out, _, _, _ = upgrade(d)
+        self.assertEqual(code, 1, out)
+        self.assertIn('card 51: an option letter "a(" is not one letter a-z', out)
+
+    def test_a_v5_file_honours_only_and_records(self):
+        _, _, _, _, raw = upgrade(load(LEGACY))
+        code, out, res, recs, raw2 = upgrade(raw, args=("--only", [41, 43], "--records", "RECORDS"))
+        self.assertEqual(code, 0, out)
+        self.assertEqual([c["n"] for c in res["cards"]], [41, 43])
+        self.assertEqual(res["format"], "decision-page/5")
+        self.assertEqual(sorted(recs), ["41.json", "43.json"])
+        for r in recs.values():
+            self.assertNotIn("L", r)
+        self.assertEqual(by_n(res)[41], by_n(json.loads(raw))[41])
+        # --records alone: OUT stays byte for byte, every record written
+        code, out, _, recs, raw3 = upgrade(raw, args=("--records", "RECORDS"))
+        self.assertEqual(code, 0, out)
+        self.assertEqual(raw3, raw)
+        self.assertEqual(sorted(recs), ["41.json", "42.json", "43.json"])
+        # an unstamped card in a stamped file is refused
+        bad = json.loads(raw)
+        del bad["cards"][1]["format"]
+        code, out, res, _, _ = upgrade(bad)
+        self.assertEqual(code, 1, out)
+        self.assertIn("card 42: not stamped decision-card/5 in a decision-page/5 file", out)
+
+    def test_a_likelihood_with_no_basis(self):
+        d = load(KIT)
+        del d["cards"][2]["likelihood"]["basis"]
+        res = by_n(upgrade(d)[2])
+        self.assertEqual(res[53]["likelihood"], {"kind": "evidence", "seen": d["cards"][2]["likelihood"]["text"]})
+        self.assertNotIn("undefined", json.dumps(res[53]))
+
+    def test_a_link_to_a_dropped_evidence_id_is_refused(self):
+        d = load(KIT)
+        d["cards"][0]["context"] += " See [[att:health|the health report]]."
+        code, out, res, _, _ = upgrade(d)
+        self.assertEqual(code, 1, out)
+        self.assertIn('card 51: a link names evidence attachment "health"', out)
 
     def test_a_file_it_cannot_place_is_refused(self):
         code, out, res, _, _ = upgrade({"cards": [{"n": 1, "t": "x"}]})

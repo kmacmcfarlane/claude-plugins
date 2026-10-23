@@ -8,7 +8,10 @@
      2. the kit (the live page's working shape, v4 or v5 layout): options as objects with no format stamp,
         pros/cons as the inline lines and prosT/consT as the table rows, assume, background, attachments;
      3. already decision-card/5 (stamped): passed through as it is.
-   A file whose envelope is already decision-page/5 is copied to OUT unchanged ("already decision-page/5").
+   A file whose envelope is already decision-page/5 is copied to OUT byte for byte ("already decision-page/5");
+   it still honours --only (OUT then holds the set's cards) and --records (the set's records written).
+   Every rev is kept byte for byte: an answer counts only when its rev equals its card's exactly. Every n must be a
+   whole number of 1 or more, used once; it names the record file.
 
    --questions QMAP  a JSON object {"N": "the question"}: each upgraded card's q (the headline's question). A card
                      that carries its own q keeps it.
@@ -18,7 +21,7 @@
 
    All or nothing: any card it cannot fully map (no q, a field it does not know, an unknown scope level, unequal
    assumption lists, a writer marker, a newer stamp) stops the run: exit 1, every problem listed with its card,
-   nothing written. On success it prints a line per card (rev kept, normalized to seconds, or new) and every
+   nothing written. On success it prints a line per card (rev kept byte for byte, or new) and every
    value it moved with a note, and exits 0. It reads JSON and writes JSON; it never evaluates content.
    Exit 2: usage, or a file that cannot be read or parsed. Node built-ins only. */
 "use strict";
@@ -31,6 +34,9 @@ const isObj = v => !!v && typeof v === "object" && !Array.isArray(v);
 const isStr = v => typeof v === "string";
 const REV_SECONDS = /^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$/;
 const REV_MINUTES = /^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}Z$/;
+const LETTER = /^[a-z]$/;
+/* a decision number: a whole number of 1 or more (it names a record file under --records) */
+const isPosInt = v => typeof v === "number" && Number.isInteger(v) && v >= 1;
 const nowUtc = () => new Date().toISOString().replace(/\.[0-9]+Z$/, "Z");
 const stampOf = (v, name) => { const m = isStr(v) ? v.match(/^([a-z-]+)\/([0-9]+)$/) : null; return m && m[1] === name ? Number(m[2]) : null; };
 
@@ -41,10 +47,10 @@ function readJson(f, what) {
   try { return JSON.parse(t); } catch (e) { usage(what + " " + f + " is not valid JSON: " + String(e.message).split("\n")[0]); }
 }
 
-/* ---- the rev: kept; the minute form normalized to seconds; anything else the write pattern refuses gets a new one */
+/* ---- the rev: kept byte for byte (an answer counts only when its rev equals the card's exactly; the minute form is
+   one the record reads); anything else the rev pattern refuses gets a new one */
 function upgradeRev(rev, note) {
-  if (isStr(rev) && REV_SECONDS.test(rev)) { note.rev = "rev kept"; return rev; }
-  if (isStr(rev) && REV_MINUTES.test(rev)) { note.rev = "rev kept, normalized to seconds"; return rev.replace(/Z$/, ":00Z"); }
+  if (isStr(rev) && (REV_SECONDS.test(rev) || REV_MINUTES.test(rev))) { note.rev = "rev kept"; return rev; }
   note.rev = "new rev (was " + JSON.stringify(rev) + ")";
   return nowUtc();
 }
@@ -79,7 +85,10 @@ function fromLegacy(c, bad, note) {
   out.options = [];
   for (const o of c.o) {
     if (!Array.isArray(o) || o.length !== 5 || !o.every(isStr)) { bad.push("an option is not [letter, full, impact, title, one line]"); continue; }
-    const [k, full, imp, title, one] = o, b = isObj(blocks[k]) ? blocks[k] : null;
+    const [k, full, imp, title, one] = o;
+    /* the letter is checked before anything is built from it (a regex, a key) */
+    if (!LETTER.test(k)) { bad.push("an option letter " + JSON.stringify(k) + " is not one letter a-z"); continue; }
+    const b = isObj(blocks[k]) ? blocks[k] : null;
     const x = {k, title};
     if (!isNone(one)) x.line = one;
     if (!isNone(full)) x.text = full;
@@ -157,6 +166,7 @@ function fromKit(c, bad, note) {
   if (isObj(c.likelihood)) {
     const b = c.likelihood.basis;
     if (b === "observed") out.likelihood = {kind: "observed", seen: c.likelihood.text};
+    else if (!isStr(b) || !b.trim()) { out.likelihood = {kind: "evidence", seen: c.likelihood.text}; note.moved.push("likelihood with no basis read as evidence"); }
     else { out.likelihood = {kind: "evidence", seen: "(" + b + ") " + c.likelihood.text}; note.moved.push("likelihood basis " + JSON.stringify(b) + " kept at the head of seen"); }
   }
   /* open questions: v5's open, or v4's assume.unknown, none dropped */
@@ -178,6 +188,11 @@ function fromKit(c, bad, note) {
   for (const x of Array.isArray(c.attached) ? c.attached : []) {
     if (!isObj(x)) { bad.push("an attachment is not an object"); continue; }
     if (x.kind === "evidence") {
+      /* the record's evidence is a flat list of text: an attachment id is dropped, and a link to it would break */
+      if (isStr(x.id) && x.id) {
+        if (JSON.stringify(c).includes("[[att:" + x.id)) bad.push("a link names evidence attachment " + JSON.stringify(x.id) + ", whose id the record's evidence list drops");
+        else note.moved.push("evidence attachment id " + JSON.stringify(x.id) + " dropped");
+      }
       const t = isStr(x.title) && x.title.trim() ? x.title.trim() + " — " : "";
       if (isStr(x.body)) ev.push(t + x.body);
       else if (Array.isArray(x.body)) x.body.forEach((b, i) => ev.push((i ? "" : t) + b));
@@ -196,6 +211,7 @@ function fromKit(c, bad, note) {
   out.options = [];
   for (const o of Array.isArray(c.options) ? c.options : []) {
     if (!isObj(o)) { bad.push("an option is not an object"); continue; }
+    if (!isStr(o.k) || !LETTER.test(o.k)) { bad.push("an option letter " + JSON.stringify(o.k) + " is not one letter a-z"); continue; }
     for (const k of Object.keys(o)) if (!KIT_OPTION.has(k)) bad.push("(" + o.k + ") field " + k + " is not one the kit's schema names");
     const x = {k: o.k, title: o.text};
     for (const k of ["line", "effect", "reach", "undo", "cost", "plan"]) if (k in o && !(k !== "undo" && isNone(o[k]))) x[k] = o[k];
@@ -274,16 +290,24 @@ function main() {
     process.stdout.write("upgrade_cards: " + inFile + ": format " + JSON.stringify(d.format) + (pf !== null && pf > 5 ? " is newer than this upgrader: never downgraded" : " is not one it reads") + "\n");
     process.exit(1);
   }
-  if (pf === 5) {
-    fs.writeFileSync(outFile, fs.readFileSync(inFile));
-    process.stdout.write(inFile + ": already " + PAGE_FORMAT + ", copied as it is\n");
-    process.exit(0);
-  }
-  const problems = [], lines = [], cards = [];
+  const v5 = pf === 5;
+  const problems = [], lines = [], cards = [], seenN = new Set();
   for (const c of d.cards) {
     const n = isObj(c) ? c.n : undefined;
     if (only && !only.has(n)) continue;
-    const r = upgradeCard(c, qmap), w = "card " + (n === undefined ? "?" : n);
+    const w = "card " + (isPosInt(n) ? n : JSON.stringify(n === undefined ? null : n));
+    /* the number names the record file: a whole number of 1 or more, once each, checked before anything is written */
+    if (!isPosInt(n)) { problems.push(w + ": n must be a whole number of 1 or more"); continue; }
+    if (seenN.has(n)) { problems.push(w + ": number used twice"); continue; }
+    seenN.add(n);
+    if (v5) {
+      /* already decision-page/5: each card passes through as it is; a card not stamped is a file the upgrader cannot place */
+      if (stampOf(c.format, "decision-card") !== 5) { problems.push(w + ": not stamped " + CARD_FORMAT + " in a " + PAGE_FORMAT + " file"); continue; }
+      cards.push(c);
+      lines.push(w + ": already " + CARD_FORMAT + ", passed through");
+      continue;
+    }
+    const r = upgradeCard(c, qmap);
     if (r.bad.length) { for (const b of r.bad) problems.push(w + ": " + b); continue; }
     cards.push(r.card);
     lines.push(w + ": " + (r.note.shape ? r.note.shape + ", " : "") + r.note.rev + (r.note.moved.length ? "; " + r.note.moved.join("; ") : ""));
@@ -299,8 +323,6 @@ function main() {
   const scan = v => { if (isStr(v)) { for (const m of v.matchAll(/\[\[([0-9]+)\]\]/g)) slugs.add(m[1]); } else if (Array.isArray(v)) v.forEach(scan); else if (isObj(v)) Object.values(v).forEach(scan); };
   cards.forEach(scan);
   for (const s of slugs) if (!kept.has(s) && !(s in refs)) lines.push("note: [[" + s + "]] is named but is neither a card here nor a ref: give it a refs entry or its card");
-  const outDoc = {format: PAGE_FORMAT};
-  for (const k of Object.keys(d)) if (k !== "format") outDoc[k] = k === "cards" ? cards : d[k];
   if (opt.records) {
     fs.mkdirSync(opt.records, {recursive: true});
     for (const c of cards) {
@@ -309,8 +331,16 @@ function main() {
       fs.writeFileSync(path.join(opt.records, c.n + ".json"), JSON.stringify(r, null, 2) + "\n");
     }
   }
+  /* a decision-page/5 file with no set is copied byte for byte; with --only, its envelope holds the set's cards */
+  if (v5 && !only) {
+    fs.writeFileSync(outFile, fs.readFileSync(inFile));
+    process.stdout.write(lines.join("\n") + "\n" + inFile + ": already " + PAGE_FORMAT + ", copied as it is\n");
+    return;
+  }
+  const outDoc = {format: PAGE_FORMAT};
+  for (const k of Object.keys(d)) if (k !== "format") outDoc[k] = k === "cards" ? cards : d[k];
   fs.writeFileSync(outFile, JSON.stringify(outDoc, null, 2) + "\n");
-  process.stdout.write(lines.join("\n") + "\n" + outFile + ": " + cards.length + " card" + (cards.length === 1 ? "" : "s") + ", " + PAGE_FORMAT + "\n");
+  process.stdout.write(lines.join("\n") + "\n" + outFile + ": " + cards.length + " card" + (cards.length === 1 ? "" : "s") + ", " + PAGE_FORMAT + (v5 ? " (already; the set only)" : "") + "\n");
 }
 
 main();

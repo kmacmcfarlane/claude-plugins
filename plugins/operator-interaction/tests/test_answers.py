@@ -63,6 +63,45 @@ def doc_problems(res):
     return out
 
 
+FRESH_HARNESS = r"""
+let answers = {}, raw = {};
+const timers = {}, inflight = {};
+let synced = 0; const syncAll = () => { synced++; };
+const byN = new Map([["41", {n: 41, rev: "2026-01-12T09:30Z"}], ["42", {n: 42, rev: "2026-01-12T09:30:00Z"}]]);
+""" + "%s" + r"""
+raw = {"41": {choice: "b", words: "", rev: "2026-01-12T09:30Z", at: "x"},
+       "42": {choice: "a", words: "", rev: "2026-01-11T08:00:00Z", at: "y"},
+       "99": {choice: "a", words: "", rev: "2026-01-12T09:30Z", at: "z"}};
+applyRaw();
+process.stdout.write(JSON.stringify(answers));
+"""
+FRESH = "const fresh=(c,v)=>!!v&&v.rev===c.rev;"
+
+
+def apply_raw(html):
+    code = html[html.index("const fresh="):html.index("function renderMap(")]
+    out = subprocess.run([NODE, "-e", FRESH_HARNESS % code], capture_output=True, text=True, timeout=60)
+    if out.returncode != 0:
+        raise AssertionError("node failed: " + out.stderr)
+    return json.loads(out.stdout)
+
+
+@unittest.skipUnless(NODE, "node is not installed")
+class AnswersCount(unittest.TestCase):
+    """An answer counts only when its rev equals its card's exactly (`fresh`): one given to another rev reads as open."""
+
+    def test_only_an_exact_rev_counts(self):
+        html = PAGE.read_text()
+        self.assertEqual(html.count(FRESH), 1)
+        got = apply_raw(html)
+        # 41's minute-form rev matches byte for byte; 42's answer was given to an older rev; 99 is not on the page
+        self.assertEqual(sorted(got), ["41"])
+        self.assertEqual(got["41"]["choice"], "b")
+        # mutant: a fresh that ignores rev counts the stale answer
+        mutant = apply_raw(html.replace(FRESH, "const fresh=(c,v)=>!!v;"))
+        self.assertIn("42", mutant)
+
+
 @unittest.skipUnless(NODE, "node is not installed")
 class AnswerDocument(unittest.TestCase):
 

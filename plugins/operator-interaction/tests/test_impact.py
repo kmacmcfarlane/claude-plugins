@@ -243,6 +243,14 @@ class DecisionPageImpact(unittest.TestCase):
                 v41 = run_page(example(), mutant)["views"][0]
                 self.assertIn(want, row_problems(v41, d["cards"][0]))
 
+    def test_with_no_recommendation_each_effect_is_cut_to_a_few_words(self):
+        # ROW_FEW (6): card 43 has no recommendation; its (a) effect is 7 words, its (b) 12
+        self.assertIn("const ROW_FEW=6;", page_free_script())
+        tag = run_page(example())["views"][2]["tag"]
+        self.assertEqual(few_problems(tag), [])
+        mutant = page_free_script().replace("const ROW_FEW=6;", "const ROW_FEW=12;")
+        self.assertTrue(few_problems(run_page(example(), mutant)["views"][2]["tag"]))
+
     def test_the_page_renders_impact_in_every_view(self):
         # the open card, rendered: its Impact line, the effect on its row (its summary), and each option's own
         # effect in its More; the Impact has no effect facet (no card-level effect)
@@ -272,6 +280,18 @@ ROW_LETTER = "'<span class=\"rl\">('+esc(c.rec)+')</span>'+fmtPlain(o.effect)"
 ROW_NO_LETTER = "fmtPlain(o.effect)"
 ROW_REC = "const o=optOf(c,c.rec);"
 ROW_FIRST = "const o=optsOf(c)[0];"
+
+
+def few_problems(tag):
+    """Card 43's row with no recommendation: each option's effect cut at six words, then an ellipsis."""
+    out = []
+    for want in ('<span class="rl">(a)</span>No visual change; the site stays …',
+                 '<span class="rl">(b)</span>Links and headings turn the logo&#39;s …'):
+        if want not in tag:
+            out.append("not cut at six words: " + want)
+    if "blue." in tag or "CI publish" in tag:
+        out.append("an effect shown past six words")
+    return out
 
 
 def effect_facet_problems(card):

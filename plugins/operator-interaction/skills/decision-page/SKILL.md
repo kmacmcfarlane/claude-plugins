@@ -85,7 +85,7 @@ The rules below are what the digest condenses:
   with `L` and `dep` added. **Older data is upgraded first**: a `cards.json` with no stamp
   (a page published before, its read-back copy) goes through `scripts/upgrade_cards.js`
   (`node scripts/upgrade_cards.js IN OUT --questions QMAP`, under the skill's base directory;
-  format only, every `rev` kept), which refuses, all or nothing, a card it cannot map; the
+  format only, every `rev` kept byte for byte), which refuses, all or nothing, a card it cannot map; the
   `decisions` skill's `references/legacy-cards.md` reads what it leaves. A card in a newer
   format than the template reads stays off the page and is handed back to the caller.
 - One card per decision, in the `decisions` skill's order; groups (`layers`) as its
@@ -258,7 +258,7 @@ seen, and reading the page alone does not count. A new path makes a new artifact
 empty answers collection.
 
 A published `cards.json` with no `decision-page/5` stamp is upgraded before the republish
-(step 2's first rule): `scripts/upgrade_cards.js`, every `rev` kept, so the answers already
+(step 2's first rule): `scripts/upgrade_cards.js`, every `rev` kept byte for byte, so the answers already
 given keep counting. Any change to a card gets a new `rev`, Context included: an **Added:** line after `tell me`, more detail after `expand`, a `dig into` finding, a corrected fact, a re-ask. Only a format-only upgrade keeps it: an older card moved to `decision-card/5` by the `decision-page` skill's `scripts/upgrade_cards.js`, its fields moved and none added. A fact drawn from anywhere outside the card is new information: a new `rev`.
 
 What an older card holds, and what a republish writes into it, is the `decisions` skill's
@@ -365,7 +365,7 @@ answer page*, and the card rules the page renders.
   with no mechanism, and the depth lints (a level not longer than the one below, thin or long
   depth, an option with no reach, what a new card owes); `--record FILE` checks one record
 - `scripts/upgrade_cards.js` — the upgrader under node: an older `cards.json` (the legacy
-  shipped shape, or the page's working kit) to `decision-page/5`, format only, every `rev` kept,
+  shipped shape, or the page's working kit) to `decision-page/5`, format only, every `rev` kept byte for byte,
   all or nothing; `--questions`, `--only`, `--records`
 - the `decisions` skill's `references/card-record.md` (the record) and
   `references/legacy-cards.md` (older cards, the upgrader's map)

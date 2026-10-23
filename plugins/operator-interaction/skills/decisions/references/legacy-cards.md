@@ -27,9 +27,9 @@ page's `impact.effect`) is not shown; its options' own effects are.
 ## The upgrader
 
 The `decision-page` skill's `scripts/upgrade_cards.js` moves a `cards.json` to
-`decision-page/5`, format only, every `rev` kept (a minute-form `rev` is written to the second,
-`…T09:30Z` → `…T09:30:00Z`; any other `rev` the write pattern refuses gets a new one, reported
-*new rev*). It tells the shapes apart card by card and refuses, all or nothing, any card it
+`decision-page/5`, format only, every `rev` kept byte for byte (an answer counts only when its
+`rev` equals its card's exactly, so a minute-form `rev`, `…T09:30Z`, stays as it is; a `rev`
+that is no UTC time at all gets a new one, reported *new rev*). It tells the shapes apart card by card and refuses, all or nothing, any card it
 cannot fully map: no question (`--questions`), a field the shape does not have, an unknown
 scope level, unequal assumption lists, a writer marker, a newer stamp. `--only` limits it to a
 set of decisions; `--records` also writes one record per card, without `L` and `dep`.

@@ -29,7 +29,7 @@ Two kinds of required:
 |---|---|---|---|
 | `format` | `"decision-card/5"` | to render | the stamp. A reader refuses a newer number, naming it, and never downgrades it |
 | `n` | integer | to render | the decision number, 1 or more: the caller's own, never reused |
-| `rev` | `YYYY-MM-DDTHH:MM:SSZ` | to render | the card's revision. Any change to a card gets a new `rev`, Context included: an **Added:** line after `tell me`, more detail after `expand`, a `dig into` finding, a corrected fact, a re-ask. Only a format-only upgrade keeps it: an older card moved to `decision-card/5` by the `decision-page` skill's `scripts/upgrade_cards.js`, its fields moved and none added. A fact drawn from anywhere outside the card is new information: a new `rev`. Written to the second; a minute-form `rev` (`…T09:30Z`) is read, never written. It is compared only for equality, never as a time |
+| `rev` | `YYYY-MM-DDTHH:MM:SSZ` | to render | the card's revision. Any change to a card gets a new `rev`, Context included: an **Added:** line after `tell me`, more detail after `expand`, a `dig into` finding, a corrected fact, a re-ask. Only a format-only upgrade keeps it: an older card moved to `decision-card/5` by the `decision-page` skill's `scripts/upgrade_cards.js`, its fields moved and none added. A fact drawn from anywhere outside the card is new information: a new `rev`. A new card writes it to the second; a minute-form `rev` (`…T09:30Z`) from older data is read, and an upgrade keeps it byte for byte, since an answer counts only when its `rev` equals the card's exactly. It is compared only for equality, never as a time |
 | `raised` | `YYYY-MM-DDTHH:MM:SSZ` | optional | when the decision was first raised |
 | `t` | text | to render | the short name, 2–6 words, a noun phrase: what a slug shows |
 | `q` | text, one line | to render | the question as asked, the headline's |
@@ -95,7 +95,9 @@ have no row above yet: `assume` (`[{rests, tw}]`), `what` as the What part with 
 (`[{t, why}]`), and on an option `pro`, `con`, `pros`, `cons` and `plan`. A reader keeps them as
 data and does not show them; each joins the tables above when the page and the chat card show
 it. In the kit, `pros` and `cons` were the one-line texts and `prosT` and `consT` the table's
-rows; the record names the one-line texts `pro` and `con` and the rows `pros` and `cons`.
+rows; the record names the one-line texts `pro` and `con` and the rows `pros` and `cons`. The
+kit's `evidence` attachments become the record's `evidence`, a flat list of text: their ids are
+dropped (the upgrader reports each, and refuses a card whose text links to one).
 
 ## Older cards
 

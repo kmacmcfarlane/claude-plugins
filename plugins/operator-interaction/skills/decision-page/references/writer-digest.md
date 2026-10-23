@@ -10,7 +10,7 @@ start, and the runner's thresholds.
 
 **Write only `decision-page/5`, each card a `decision-card/5` record plus `L` and `dep`.** A
 `cards.json` in an older format is upgraded first: `node scripts/upgrade_cards.js IN OUT
---questions QMAP` (format only, every `rev` kept), then written on.
+--questions QMAP` (format only, every `rev` kept byte for byte), then written on.
 
 ## The floor, per card
 
@@ -217,7 +217,7 @@ page-wide one prints `lint: page:`.
 | `tldr` | — | a TLDR bullet, at any level, that may carry the recommendation |
 | `what` | — | a leftover `what`: move it into `context` |
 | `shape` | `shape:` | a level off its shape, Context past its size, a long Impact facet, a label's short name past 6 words |
-| `rec-only` | `impact:` | an Impact reach, at any level, that shares its words with the recommended option and no other |
+| `rec-only` | `impact:` | an Impact reach, at any level, that shares 40% or more of its words with the recommended option and none with any other option (the v5 form: with no card-level effect, the reach is what it reads; a reach naming two or more options is the decision's) |
 | `mech` | `impact:` | an option's effect, but `z`'s, of 4 words or fewer that does not open on no, nothing, none or unchanged: a label, not the mechanism |
 | `process` | `impact:` | a process phrase (a review comment, another round, your time, a blocked session) in an option's effect or reach but `z`'s, or the Impact's reach at any level; never the wait, never a round ask |
 | `grow` | `depth:` | a level not longer than the one below it |
