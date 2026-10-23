@@ -452,6 +452,25 @@ class TestDocs(unittest.TestCase):
         cls.fmt = FORMAT_MD.read_text()
         cls.rules = _section(cls.skill, "Protecting the store") or ""
 
+    def test_format_own_path_lists_name_cards(self):
+        """3b51 W1: every list of the store's own paths in format.md names
+        `cards`: what a store with no .git may hold at its top, where a
+        git dir may not lie, § Pathspecs, and the shapes a write commits."""
+        text = " ".join(self.fmt.split())
+        for needle in (
+                "anything but `items`, `archive`, `cards`, `README.md`, "
+                "`store.yaml`, `.gitignore`, `.lock`",
+                "(`items`, `archive`, `cards`, `README.md`, `store.yaml`, "
+                "`.gitignore`: a git dir there",
+                "The store's own paths are `items`, `archive`, `cards`, "
+                "`README.md`, `store.yaml` and `.gitignore`.",
+                "a card record three levels under `cards/` "
+                "(`cards/<id>/<N>/<name>.json`"):
+            with self.subTest(needle=needle):
+                self.assertIn(needle, text)
+        # no list of the own paths left without it
+        self.assertNotIn("`items`, `archive`, `README.md`", text)
+
     def test_skill_has_the_section_and_points_at_the_reference(self):
         self.assertTrue(self.rules, "SKILL.md lacks § Protecting the store")
         self.assertIn("references/store-safety.md", self.rules)

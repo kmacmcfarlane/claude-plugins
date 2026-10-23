@@ -1118,6 +1118,9 @@ GIT_TIMEOUT = 2.0
 # being added.
 UNTRACKED_MIN_ITEMS = 10
 PROBE_ITEM = "items/wi-custody-probe-0000.md"   # a new item's would-be path
+# a new card record's would-be path: an ignore rule that catches only
+# cards/ (or *.json) hides every record a raise writes
+PROBE_CARD = "cards/wi-custody-probe-0000/1/2026-01-01T00-00-00Z.card5.json"
 
 
 def _git(cwd, *args, stdin=None, timeout=GIT_TIMEOUT, extra_env=None,
@@ -1146,14 +1149,15 @@ def _git(cwd, *args, stdin=None, timeout=GIT_TIMEOUT, extra_env=None,
 def _dir_level(pattern, root):
     """True when an ignore pattern excludes a directory on the store's path
     (a trailing '/', or its last segment matches a parent dir of the probe
-    item). git cannot re-include a path under an excluded directory, so a
-    negation is dead advice for such a rule. Heuristic: the parents checked
-    are every component of the store's absolute path, plus items/."""
+    item or probe card). git cannot re-include a path under an excluded
+    directory, so a negation is dead advice for such a rule. Heuristic: the
+    parents checked are every component of the store's absolute path, plus
+    items/ and cards/."""
     p = pattern.strip()
     if p.endswith("/"):
         return True
     last = p.rsplit("/", 1)[-1]
-    parents = list(root.absolute().parts[1:]) + ["items"]
+    parents = list(root.absolute().parts[1:]) + ["items", "cards"]
     return any(fnmatch.fnmatchcase(d, last) for d in parents)
 
 
@@ -1282,7 +1286,8 @@ def _sidecar_ignored_warning(root):
 
 def _ignore_rule(root, *extra, where=None):
     """The (source, line, pattern) of the rule that ignores a new item's
-    path in the store, None when nothing does, False when git cannot say.
+    path in the store (or, in the store's own form, a new card record's),
+    None when nothing does, False when git cannot say.
     where=(repo, rel) asks from that repo's top on the store's paths there
     (rel/items, rel/<probe>), so a store that is its own repo is judged by
     the repo around it, not by its own (d1e9 D3 step 4); the source git
@@ -1292,7 +1297,8 @@ def _ignore_rule(root, *extra, where=None):
     `add -A` stages the store (a gitlink, for a store with its own repo)."""
     if where is None:
         r = _custody_git(root)(root, "check-ignore", "-v", "-z", *extra,
-                               "--stdin", stdin=f"items\0{PROBE_ITEM}\0")
+                               "--stdin",
+                               stdin=f"items\0{PROBE_ITEM}\0{PROBE_CARD}\0")
     else:
         repo, rel = where
         r = _git(repo, "check-ignore", "-v", "-z", *extra, "--stdin",
@@ -1451,7 +1457,8 @@ STORE_GIT_SCRUB = frozenset((
     "GIT_ICASE_PATHSPECS", "GIT_GLOB_PATHSPECS", "GIT_NOGLOB_PATHSPECS"))
 STORE_GIT_TIMEOUT = 10.0
 # the store's own paths: what wi writes, and all a store repo commits
-OWN_PATHS = ("items", "archive", "README.md", STORE_FILE, ".gitignore")
+OWN_PATHS = ("items", "archive", "cards", "README.md", STORE_FILE,
+             ".gitignore")
 STALE_INDEX_LOCK = 600   # seconds
 
 
@@ -2015,10 +2022,13 @@ def _not_own_why(rs):
 
 
 # what wi itself writes in a store: an item one level under items/, an
-# archived one under archive/<year>/, and the three store files. A name with
-# a leading dot is never an item, so a .gitattributes written there (an
-# export aimed into the store) is never committed (d1e9 F5 review)
-_JOURNAL_ITEM = re.compile(r"(items|archive/[0-9]{4})/[^/.][^/]*\.md")
+# archived one under archive/<year>/, a card record at
+# cards/<id>/<N>/<file>.json, and the three store files. A name with a
+# leading dot is never an item or a record, so a .gitattributes written
+# there (an export aimed into the store) is never committed (d1e9 F5
+# review); each cards/ segment but N takes the same rule
+_JOURNAL_ITEM = re.compile(r"(items|archive/[0-9]{4})/[^/.][^/]*\.md"
+                           r"|cards/[^/.][^/]*/[0-9]+/[^/.][^/]*\.json")
 
 
 def _journal_own(rel):
@@ -2819,8 +2829,8 @@ STORE_README = ("# Work items\n\nOne markdown file per item, managed by `wi` "
 STORE_GITIGNORE = ".lock\n*.tmp*\n"
 _DEDICATED = object()   # _own_repo_check: a store at the top of its own repo
 # what a store's directory may hold before `git init` makes it a repo
-STORE_ENTRIES = ("items", "archive", "README.md", STORE_FILE, ".gitignore",
-                 ".lock")
+STORE_ENTRIES = ("items", "archive", "cards", "README.md", STORE_FILE,
+                 ".gitignore", ".lock")
 # the operator's ruling on d1e9 F3: init refuses while an old-location store
 # is not yet moved; this flag is for a project whose `.work/` or
 # `.claude-sandbox/work/` is its own, not a work-item store left behind
@@ -2840,7 +2850,8 @@ def _env_without(names):
 
 def _is_own_path(path):
     """True for a store-relative path among the store's own paths."""
-    return path in OWN_PATH_FILES or path.startswith(("items/", "archive/"))
+    return path in OWN_PATH_FILES or path.startswith(
+        ("items/", "archive/", "cards/"))
 
 
 def _foreign_entry(root):

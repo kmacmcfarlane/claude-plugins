@@ -4750,6 +4750,25 @@ class TestStoreCustodyWarning(WiTestCase):
                                   absent=("negate", "rewrite it",
                                           self.SIDECAR_FIX))
 
+    def test_cards_only_rule_warns(self):
+        # 3b51 W1: a rule that ignores only card records (cards/<id>/<N>/
+        # *.json) hides every record a raise writes, while items stay
+        # tracked; the custody probe asks git about a card path too
+        for name, gi, rule, fix in (
+                ("dir", "*.pyc\ncards/\n", ".gitignore:2 'cards/'",
+                 self.NARROW_FIX),
+                ("bare", "cards\n", ".gitignore:1 'cards'", self.NARROW_FIX),
+                ("json", "*.json\n", ".gitignore:1 '*.json'",
+                 "remove or negate that rule")):
+            with self.subTest(name):
+                repo = self.tmp / f"cards-{name}"
+                self.store_in(repo, gi=gi)
+                self.git(repo, "add", "-A")
+                self.git(repo, "commit", "-qm", "store")
+                self.assert_warns(f"git-ignored by {rule}", fix,
+                                  self.SANDBOX_FIX,
+                                  absent=(self.SIDECAR_FIX, "rewrite it"))
+
     def excludes_under(self, repo, dirname):
         """core.excludesFile '*.md' under tmp/<dirname> (bytes, so a
         non-UTF-8 name works), written straight into .git/config."""

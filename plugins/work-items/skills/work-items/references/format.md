@@ -80,6 +80,7 @@ a tracked old store beside the git-ignored `.work-items/`.
   README.md            what this is, in ten lines
   items/<id>.md        every item, regardless of status
   archive/YYYY/<id>.md closed items moved by `wi archive` (explicit, batched)
+  cards/<id>/<N>/*.json decision card records, one immutable file per revision (never moved by archiving)
   store.yaml           the store's recorded tracking choice (§ Store tracking)
   .lock                gitignored; flock target for same-machine mutations
   .git/                the store's own repo, when it has one (§ The store's own repo)
@@ -195,7 +196,9 @@ problem, fixed by moving the store (§ Moving a store).
   warning, marked as against its recorded choice. A store with no recorded choice gets the
   `silently untracked` warning as before, its fix ending with recording the choice. In a
   sidecar layout neither fix offers `--no-track`. Like every custody warning, it is one
-  line in `prime` (exit unchanged) and a problem in `lint` (exit 3).
+  line in `prime` (exit unchanged) and a problem in `lint` (exit 3). The check asks git
+  about a new item's path and a new card record's path under `cards/`, so a rule that
+  ignores only card records (a `cards/` or `*.json` line) gets the same warning.
 
 `status:` is the only authority on state. `done` never moves a file — a
 status-only close is a two-line front-matter change that merges cleanly
@@ -439,7 +442,7 @@ repo, new or adopted, in this order:
    - the store's own git config has `include.path` or an `includeIf.<condition>.path`, which
      could set `core.hooksPath` over the `/dev/null` `init` writes, for a hand-run git;
    - the store directory is itself a bare git directory ("a git directory, not a store");
-   - a store with no `.git` holds, at its top, anything but `items`, `archive`,
+   - a store with no `.git` holds, at its top, anything but `items`, `archive`, `cards`,
      `README.md`, `store.yaml`, `.gitignore`, `.lock` and a write's `*.tmp*` file:
      "`<root>` holds `<name>`, which is not a store file: refusing to give it its own repo",
      since `git init` would make a repo of it all;
@@ -492,7 +495,7 @@ its own; run `wi init --no-track` again where git is available`, exit 0.
 run through the store runner (below) with a 2 s bound, before any lock is taken. The `.git`
 is valid when that call exits 0, the repo is not bare, its top is the store (real paths),
 and its git dir and common dir both lie inside the store but in none of its own paths
-(`items`, `archive`, `README.md`, `store.yaml`, `.gitignore`: a git dir there would be
+(`items`, `archive`, `cards`, `README.md`, `store.yaml`, `.gitignore`: a git dir there would be
 committed with them, "`.git` points into the store's own path `<path>`"). So a `.git`
 directory, a `.git`
 file whose `gitdir:` lies inside the store, and a `.git` symlink to a place inside it are
@@ -554,7 +557,7 @@ reads (is the store ignored, does the host track it) use plain git, since they r
 in the index (a removal to stage included) or untracked and not ignored. git fails on a
 pathspec that matches nothing, which an empty directory does (an `items/` whose items were
 all archived). When git cannot list, the paths on disk are used. The store's own paths are
-`items`, `archive`, `README.md`, `store.yaml` and `.gitignore`.
+`items`, `archive`, `cards`, `README.md`, `store.yaml` and `.gitignore`.
 
 **What `prime` and `lint` report.** Problems are a `prime` header line and a `lint` problem
 (exit 3); notices are a `prime` header line and a `lint` stderr line, exit unchanged.
@@ -604,7 +607,9 @@ What it does:
   validation while the lock is held.
 - **Only what the command wrote** is committed, and only the shapes `wi` writes: an item
   file one level under `items/` (`items/<name>.md`, no leading dot), an archived one
-  (`archive/<year>/<name>.md`), and `README.md`, `store.yaml` and `.gitignore`. For
+  (`archive/<year>/<name>.md`), a card record three levels under `cards/`
+  (`cards/<id>/<N>/<name>.json`, N digits, no leading dot on any other segment), and
+  `README.md`, `store.yaml` and `.gitignore`. For
   `archive` each moved item's source is committed too, so the history shows the move as a
   rename. The pathspec rule applies (Pathspecs, above): a source that was never committed
   and is gone from disk drops out, and only its destination is committed. A file the
