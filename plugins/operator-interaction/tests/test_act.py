@@ -2,7 +2,7 @@
 
 Two halves:
 
-- the decision page (`decision-page` skill): its `act` field, the data check that refuses a
+- the decision page (`decision-page` skill): each option's `act`, the data check that refuses a
   malformed one or a fill-in placeholder, and `actList`, which renders an option's steps;
   loaded from `assets/index.html` and run under node against `assets/cards.example.json`
   and broken copies of it;
@@ -53,7 +53,7 @@ let acts = [];
 if (!bad.length) {
   CARDS = d.cards; REFS = d.refs || {}; FOLLOW = d.follow;
   byN = new Map(CARDS.map(c => [String(c.n), c])); FOLLOW_KEYS = new Set(FOLLOW.map(f => f[0]));
-  acts = CARDS.map(c => ({n: c.n, html: Object.fromEntries(c.o.map(o => [o[0], actList(c, o[0])])),
+  acts = CARDS.map(c => ({n: c.n, html: Object.fromEntries(c.options.map(o => [o.k, actList(c, o.k)])),
                           card: cardHtml(c)}));
 }
 process.stdout.write(JSON.stringify({bad, acts}));
@@ -78,48 +78,51 @@ class DecisionPageAct(unittest.TestCase):
 
     def test_the_example_carries_act_and_passes(self):
         d = example()
-        self.assertIn("b", d["cards"][0]["act"])
+        self.assertTrue(d["cards"][0]["options"][1]["act"])
         res = run_page(d)
         self.assertEqual(res["bad"], [])
 
     def test_act_is_optional(self):
         d = example()
-        del d["cards"][0]["act"]
+        del d["cards"][0]["options"][1]["act"]
         self.assertEqual(run_page(d)["bad"], [])
 
-    def test_act_keyed_by_z_or_an_unknown_letter_is_refused(self):
-        for key in ("z", "q"):
-            d = example()
-            d["cards"][0]["act"][key] = ["a step"]
-            self.assert_refused(d, "card 41: act is keyed by option letter")
+    def test_act_on_z_is_refused(self):
+        d = example()
+        d["cards"][0]["options"][2]["act"] = ["a step"]
+        self.assert_refused(d, "card 41: (z) has act: decide later asks nothing of the operator")
 
-    def test_act_that_is_not_an_object_is_refused(self):
-        for bad in (["a step"], "a step", 3):
+    def test_act_that_is_not_a_list_is_refused(self):
+        for bad in ({"b": ["a step"]}, "a step", 3):
             d = example()
-            d["cards"][0]["act"] = bad
-            self.assert_refused(d, "card 41: act is keyed by option letter")
+            d["cards"][0]["options"][1]["act"] = bad
+            self.assert_refused(d, "card 41: (b) act must be a non-empty list of steps as text")
+
+    def test_an_older_card_level_act_is_refused(self):
+        d = example()
+        d["cards"][0]["act"] = {"b": ["a step"]}
+        self.assert_refused(d, "card 41: act is an older field")
 
     def test_an_empty_or_non_text_step_list_is_refused(self):
         for steps in ([], [""], ["  "], [3], ["ok", None], "a step"):
             d = example()
-            d["cards"][0]["act"]["b"] = steps
-            self.assert_refused(d, "card 41: act is keyed by option letter")
-
+            d["cards"][0]["options"][1]["act"] = steps
+            self.assert_refused(d, "card 41: (b) act must be a non-empty list of steps as text")
     def test_a_fill_in_placeholder_is_refused(self):
         for step in ("run it from <dir>/run.sh", "open <path>", "paste <br> as is"):
             d = example()
-            d["cards"][0]["act"]["b"] = ["first step", step]
+            d["cards"][0]["options"][1]["act"] = ["first step", step]
             self.assert_refused(d, "card 41: act (b) has a fill-in placeholder")
 
     def test_a_step_with_a_line_break_is_refused(self):
         for step in ("paste:\nline one\nline two", "one\r\ntwo"):
             d = example()
-            d["cards"][0]["act"]["b"] = ["first step", step]
+            d["cards"][0]["options"][1]["act"] = ["first step", step]
             self.assert_refused(d, "card 41: act (b) has a line break")
 
     def test_an_angle_bracket_with_a_space_is_not_a_placeholder(self):
         d = example()
-        d["cards"][0]["act"]["b"] = ["run it when the count is < 5 and > 2"]
+        d["cards"][0]["options"][1]["act"] = ["run it when the count is < 5 and > 2"]
         self.assertEqual(run_page(d)["bad"], [])
 
     def test_act_list_renders_each_step_in_order_under_its_option(self):
@@ -139,7 +142,7 @@ class DecisionPageAct(unittest.TestCase):
 
     def test_act_text_is_escaped(self):
         d = example()
-        d["cards"][0]["act"]["b"] = ['<img src=x onerror="alert(1)" >', "<script >x</script >"]
+        d["cards"][0]["options"][1]["act"] = ['<img src=x onerror="alert(1)" >', "<script >x</script >"]
         b = run_page(d)["acts"][0]["html"]["b"]
         self.assertNotIn("<img", b)
         self.assertNotIn("<script", b)

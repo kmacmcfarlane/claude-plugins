@@ -3,8 +3,9 @@
 `skills/decision-page/references/writer-digest.md` is what a page's writer reads in place of
 `references/cards-schema.md` and the example. It must carry:
 
-- every key of the schema's Top level, A card and An excerpt tables (but `what`, older data
-  only), each with the schema's own Required cell;
+- every key of the schema's Top level, A page card and An excerpt tables, and of the card
+  record's A card and An option tables (the `decisions` skill's `references/card-record.md`;
+  but `what`, older data only), each with its own Required cell;
 - every lint key the pre-publish runner, `scripts/check_cards.js`, emits, and none it does
   not, each with the start its printed line has (`shape:`, `impact:`, `depth:`, `page:` or
   none);
@@ -25,6 +26,7 @@ from pathlib import Path
 SKILL = Path(__file__).resolve().parent.parent / "skills" / "decision-page"
 DIGEST = SKILL / "references" / "writer-digest.md"
 SCHEMA = SKILL / "references" / "cards-schema.md"
+RECORD = SKILL.parent / "decisions" / "references" / "card-record.md"
 RUNNER = SKILL / "scripts" / "check_cards.js"
 EXAMPLE = SKILL / "assets" / "cards.example.json"
 
@@ -147,39 +149,59 @@ class WriterDigest(unittest.TestCase):
     def setUpClass(cls):
         cls.digest = DIGEST.read_text(encoding="utf-8")
         cls.schema = SCHEMA.read_text(encoding="utf-8")
+        cls.record = RECORD.read_text(encoding="utf-8")
         cls.js = RUNNER.read_text(encoding="utf-8")
         cls.example = json.loads(EXAMPLE.read_text(encoding="utf-8"))
 
     def test_top_level_fields(self):
         self.assertEqual(required_problems(self.schema, self.digest, "Top level"), [])
-        self.assertTrue({"page", "layers", "follow", "cards", "refs"}
+        self.assertTrue({"format", "page", "layers", "follow", "cards", "refs"}
                         <= set(keyed(section(self.schema, "Top level"), 2)))
 
-    def test_card_fields(self):
-        self.assertEqual(required_problems(self.schema, self.digest, "A card"), [])
-        self.assertGreaterEqual(len(keyed(section(self.schema, "A card"), 2)), 26)
+    def test_page_card_fields(self):
+        # a page card is a card record plus L and dep, the page-only fields
+        self.assertEqual(required_problems(self.schema, self.digest, "A page card"), [])
+        self.assertEqual(set(keyed(section(self.schema, "A page card"), 2)), {"L", "dep"})
 
-    def test_the_new_optional_fields_are_listed(self):
-        # the source label (answer 269) and the row flag (answer 260) ride in the card table, optional
-        self.assertEqual(keyed(section(self.digest, "A card"), 1).get("label"), "no")
-        self.assertIn("oneway", keyed(section(self.digest, "A card"), 2)["blocks"])
-        self.assertIn("oneway", keyed(section(self.schema, "A card"), 3)["blocks"])
+    def test_card_fields(self):
+        # the card and option tables are the record's (card-record.md), Required cells and all
+        self.assertEqual(required_problems(self.record, self.digest, "A card"), [])
+        self.assertGreaterEqual(len(keyed(section(self.record, "A card"), 2)), 26)
+        self.assertEqual(required_problems(self.record, self.digest, "An option"), [])
+        self.assertGreaterEqual(len(keyed(section(self.record, "An option"), 2)), 11)
+
+    def test_the_v5_fields_are_listed(self):
+        card = keyed(section(self.digest, "A card"), 1)
+        self.assertEqual(card.get("format"), "to render")
+        self.assertEqual(card.get("open"), "optional")
+        self.assertEqual(card.get("label"), "optional")
+        self.assertNotIn("o", card)
+        self.assertNotIn("blocks", card)
+        self.assertNotIn("warn", card)
+        self.assertNotIn("unknown", card)
+        self.assertEqual(keyed(section(self.digest, "An option"), 1).get("effect"), "to render, but on (z)")
         # the flag has the decisions skill's ⚠ undo: scope, one-way or costly, in both
-        for text in (self.digest, self.schema):
-            self.assertIn("`oneway: true` on each option one-way or costly to undo", text)
+        self.assertIn("`true` on each option one-way or costly to undo", self.digest)
+        self.assertIn("`true` on an option one-way or costly to undo", self.record)
+        for text in (self.digest, self.record):
             self.assertNotIn("costly but reversible", text)
-        gone = self.digest.replace("| `label` | no |", "| label | no |")
-        self.assertIn("A card: `label` missing", required_problems(self.schema, gone, "A card"))
+        gone = self.digest.replace("| `label` | optional |", "| label | optional |")
+        self.assertIn("A card: `label` missing", required_problems(self.record, gone, "A card"))
 
     def test_card_field_mutations(self):
-        gone = self.digest.replace("| `basis` | yes |", "| basis | yes |")
+        gone = self.digest.replace("| `basis` | to render |", "| basis | to render |")
         self.assertIn("A card: `basis` missing",
-                      required_problems(self.schema, gone, "A card"))
-        req = self.digest.replace("| `norec` | when `rec` is null |", "| `norec` | no |")
-        self.assertTrue(required_problems(self.schema, req, "A card"))
+                      required_problems(self.record, gone, "A card"))
+        req = self.digest.replace("| `norec` | to render when `rec` is null |", "| `norec` | optional |")
+        self.assertNotEqual(req, self.digest)
+        self.assertTrue(required_problems(self.record, req, "A card"))
+        opt = self.digest.replace("| `effect` | to render, but on (z) |", "| `effect` | optional |")
+        self.assertNotEqual(opt, self.digest)
+        self.assertTrue(required_problems(self.record, opt, "An option"))
         top = self.digest.replace("| `refs` | no |", "| `refs` | yes |")
         self.assertTrue(required_problems(self.schema, top, "Top level"))
-
+        page = self.digest.replace("| `L` | yes |", "| L | yes |")
+        self.assertIn("A page card: `L` missing", required_problems(self.schema, page, "A page card"))
     def test_excerpt_fields(self):
         self.assertEqual(required_problems(self.schema, self.digest, "An excerpt"), [])
         self.assertEqual(set(keyed(section(self.schema, "An excerpt"), 2)), {"text", "lang", "src"})

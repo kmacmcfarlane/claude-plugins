@@ -97,7 +97,8 @@ alternative not taken, in case practice argues for it.
   slugs only, page and layer titles included: the page is the reader's only context. Not
   taken: plain words first, the id after (the page's rule from 2026-10-08). The plain-names
   skill's chat rule stands.
-- **Impact across the options on an answer page** (2026-10-09, the operator's direction) — the
+- **Impact across the options on an answer page** (2026-10-09, the operator's direction;
+  reversed 2026-10-22, *No card-level Effect, both surfaces*, below) — the
   card-level Impact covers the decision across all its options, each facet on its own line;
   each option's effect lives in its own detail. Not taken: Effect as the recommended option's
   on a page.
@@ -260,3 +261,32 @@ alternative not taken, in case practice argues for it.
   the operator's. Not taken: the "At a glance" map beside open cards (as built); every card
   open by default; the click popup, as built; the prototype's name-only tooltip for a
   decision not on the page; on-page references with no tooltip.
+- **No card-level Effect, both surfaces** (2026-10-22, the operator's v5 feedback: "drop the
+  card-level Impact Effect (effects by option are awkward and repeated in each option);
+  Wait/Reach/Cost/Undo stay at card level") — a card's Impact is Wait, Reach, Undo and Cost;
+  each option carries its own effect. It reverses *Impact across the options on an answer
+  page* (2026-10-09) and the Effect half of *Effect across the options in chat, and each
+  option's own impact* (2026-10-14); each option's own impact stands. On the answer page it
+  landed with `decision-page/5`: the page ignores an `impact.effect` an older writer left.
+  The facet order kept, Wait, Reach, Undo, Cost (*Impact in every view* less Effect), is a
+  reading made in planning: the operator's words list what stays, not an order. Not taken: a
+  card-level effect kept beside the options' own.
+- **The closed views show the recommended option's effect** (2026-10-23, answer 340 (a)) — a
+  closed page row, the chat list line and the Groom row show the recommended option's own
+  effect, its letter first (`→ (b) …`). With no recommendation, each real option's effect in a
+  few words, `(a) …; (b) …`, and tag size read the same way: readings made in planning, not
+  the operator's. On the answer page it landed with `decision-page/5`. Not taken: (b) no
+  effect, title, recommendation and wait only; (c) every option's effect, one short clause
+  each.
+- **The card record** (2026-10-23, answers 341 (a), 342 (a), 343 (a)) — one record for the
+  card on every surface, stamped `decision-card/5` (`card-record.md`): options as objects
+  carrying their own effect, reach, undo, cost, steps to act and levels; `warn` becomes
+  `oneway`; what is not known is `open`; assumptions paired with their tripwires; levels kept.
+  The store keeps one immutable record per revision. A card with no stamp is legacy, read by
+  one frozen reference (`legacy-cards.md`); writers write only `decision-card/5`; an older card
+  is upgraded on its next touch, format only, `rev` kept, plus one pass at the v5 republish.
+  The answer page's envelope is `decision-page/5`, and its upgrader refuses, all or nothing,
+  what it cannot map. Not taken: 341 (b) positional options with blocks beside them, (c) the
+  kit's shape wholesale with levels dropped, (d) 341 (a) as first shown; 342 (b) without
+  levels, (c) an inline fence, (d) lines renamed; 343 (b) lazy upgrade only, (c) an
+  estate-wide one-shot.

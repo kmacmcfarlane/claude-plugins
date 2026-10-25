@@ -6,7 +6,7 @@ description: "Put a set of decisions to the operator as an answer page: a publis
 # Decision page
 
 A set of decisions on one page the operator works through at their own pace: a map of its
-groups, each card a one-line row that opens flat on its essentials (its TLDR, then its Context, then its Impact) with folds for the rest; a
+groups, each card a one-line row that opens flat on its essentials (its TLDR, then its Context, then its Open questions, folded, then its Impact) with folds for the rest; a
 click on a part with a more-detail button shows it as terse bullets, then in headed sections,
 and **More** beside an option shows that option in full; one choice per card enforced by the
 radio buttons, answers saved as they click. You publish it, they answer, you read the answers
@@ -14,8 +14,9 @@ back and hand them to your caller. The format first served a 24-decision set on 
 are handled.
 
 The page is `assets/index.html`, a fixed template; the decisions are `cards.json` beside it
-(`references/cards-schema.md`). Generation time does not limit use: a new set is a data file
-and a publish.
+(`references/cards-schema.md`), stamped `decision-page/5`, each card a `decision-card/5`
+record (the `decisions` skill's `references/card-record.md`) plus its layer and dependency
+line. Generation time does not limit use: a new set is a data file and a publish.
 
 *The example data (`assets/cards.example.json`) is invented, not about any real project.*
 
@@ -77,17 +78,22 @@ text, so by default:
 
 The rules below are what the digest condenses:
 
+- **Write only `decision-page/5`.** The file carries `"format": "decision-page/5"`; each card is
+  a card record, `"format": "decision-card/5"` (the `decisions` skill's
+  `references/card-record.md`: its fields, what each requires, an option), plus `L` and
+  `dep`, which only a page has. A record the caller already holds is composed as it stands,
+  with `L` and `dep` added. **Older data is upgraded first**: a `cards.json` with no stamp
+  (a page published before, its read-back copy) goes through `scripts/upgrade_cards.js`
+  (`node scripts/upgrade_cards.js IN OUT --questions QMAP`, under the skill's base directory;
+  format only, every `rev` kept byte for byte), which refuses, all or nothing, a card it cannot map; the
+  `decisions` skill's `references/legacy-cards.md` reads what it leaves. A card in a newer
+  format than the template reads stays off the page and is handed back to the caller.
 - One card per decision, in the `decisions` skill's order; groups (`layers`) as its
   groups. A bundle whose items need different answers is a layer carrying its `shared`
   context, each item a whole card (the runner reads a card's Context with it); one answer
   for every item stays one card naming each. Short names (`t`) the operator would say; plain names for items (the
   `plain-names` skill).
-- Every card carries `rev`, a revision label (the UTC time you wrote it, by convention). Any
-  change to a card gets a new `rev`, Context included: an **Added:** line after `tell me`,
-  more detail after `expand`, a `dig into` finding, a corrected fact, a re-ask. Only the
-  one-time format migration keeps it: a card written before Context existed, whose own `what`
-  and resume cue move into `context`, and whose terms are glossed from its own folds alone. A
-  gloss drawn from anywhere outside the card is new information: a new `rev`. The page copies
+- Every card carries `rev`, its revision: the UTC time you wrote it, to the second. Any change to a card gets a new `rev`, Context included: an **Added:** line after `tell me`, more detail after `expand`, a `dig into` finding, a corrected fact, a re-ask. Only a format-only upgrade keeps it: an older card moved to `decision-card/5` by the `decision-page` skill's `scripts/upgrade_cards.js`, its fields moved and none added. A fact drawn from anywhere outside the card is new information: a new `rev`. The page copies
   the `rev` into each answer, and answers given to the old one stop counting, on the page and
   in the read-back.
 - Every card carries `context`, under its TLDR: one or two sentences, written from the
@@ -115,32 +121,31 @@ The rules below are what the digest condenses:
   beside it (the `decisions` skill's `references/rendering.md` § Source labels).
 - The TLDR comes first on the card: one or two terse fragment bullets. It names no
   recommendation: the options mark it. Say what is decided, and what rides on it.
-- Every card carries `impact`, the decision's Impact across all its options (effect, wait,
-  reach, cost where it has one, and undo only where an option is one-way or costly; the
-  `decisions` skill's `references/rendering.md` § Impact), so every view on the page shows it:
-  the effect on a card's row, the facets one a line on an open one, each
-  option's own row in its **More**. Effect and Reach describe the system the work builds,
-  never the review or the process, which is the Wait (the runner's `process` lint). Its `effect` says what the decision changes and settles,
-  favouring no option, written from the card's own option effects (`blocks`, each
-  option's `impact`); copy a stored Effect only when it names each option's outcome or the
-  card was stored or revised on or after 2026-10-14; otherwise write it from the option
-  effects (the pre-publish check's rec-only lint backs this). Its `wait`, `reach` and `undo`
-  are copied from the caller's stored line where it keeps one and they hold across the
-  options. Each option's own effect lives in its `blocks` row.
-- Every card carries `blocks`, its Impact row per option but (z) (effect, reach, cost where
-  it has one, and undo only where the option is one-way or costly), shown in that option's
+- Every card carries `impact`, the decision's Impact across all its options (wait, reach, cost
+  where it has one, and undo only where an option is one-way or costly; the `decisions`
+  skill's `references/rendering.md` § Impact), shown on the open card one facet a line. There
+  is no card-level effect (the operator's v5 ruling, 2026-10-22): each option carries its own,
+  and the card's row shows the recommended option's, its letter first (answer 340 (a)). Reach
+  describes the system the work builds, never the review or the process, which is the Wait
+  (the runner's `process` lint). Its `wait`, `reach` and `undo` are copied from the caller's
+  stored line where it keeps one and they hold across the options.
+- Every option but (z) carries its own `effect`, and on a new card its `reach`, with its `undo`
+  only where it is one-way or costly and its `cost` where it has one, shown in that option's
   **More**, each effect by its mechanism (how it happens, who meets it and when, the before
-  and after), never a bare label (the runner's `mech` lint); a ⚠ one-way card is refused without them. A row whose option is one-way or costly
-  to undo carries `oneway: true` and its undo: the page refuses a flagged row without one, and
-  the runner lints a ⚠ card with no flagged row (an older page still shows). A round ask
-  carries `ifleft` and `roundcosts`; a status-quo default, `ifunanswered`.
+  and after), never a bare label (the runner's `mech` lint); (z)'s effect is what waiting does.
+  A ⚠ one-way card (`oneway: true`) is refused with an option but (z) missing its reach. An
+  option one-way or costly to undo carries `oneway: true` and its undo: the page refuses a
+  flagged option without one, and the runner lints a ⚠ card with no flagged option. A round
+  ask carries `ifleft` and `roundcosts`; a status-quo default, `ifunanswered`.
+- What is not known yet goes in `open`, one question each, folded above the Impact.
 - Every card carries the depth the decisions skill's block holds, scaled to the decision, up to
   the soft sizes (`references/writer-digest.md` § Levels and their shapes): Why now and Why ask
-  in full, a `blocks` row and a full text for every option but (z), and the basis drill-down in
-  `evidence` with its paths and links. **Levels scale with the decision** and are optional on
-  every part: a small call may carry none; a wide or one-way decision carries the most, a
-  medium and a high in `detail` for its visible parts (Context, the Impact line, the TLDR, the
-  rec line) and for the fold items with depth to give. **Each level has its shape**, each
+  in full, an effect, a reach and a full text for every option but (z), and the basis
+  drill-down in `evidence` with its paths and links. **Levels scale with the decision** and are
+  optional on every part: a small call may carry none; a wide or one-way decision carries the
+  most, a medium and a high in `detail` for its visible parts (Context, the Impact line, the
+  TLDR, the rec line), in each option's own `detail`, and for the fold items with depth to
+  give. **Each level has its shape**, each
   clearly sparser than the next (`references/writer-digest.md` § Levels and their shapes): a
   summary is one or two sentences (the TLDR one or two bullets, the Impact one facet a line);
   medium is terse fragment bullets with a sub-bullet or two, the Impact's one bullet per facet
@@ -154,13 +159,13 @@ The rules below are what the digest condenses:
     files, logs and pages its evidence names.
 
   The caller supplies them, or the paths to them. Read each source once per page, not once per
-  card. What no source holds goes under `unknown`, never into the depth. A small call keeps a
+  card. What no source holds goes under `open`, never into the depth. A small call keeps a
   short card. Each level is more writing, on the cards that carry one
   (`references/cards-schema.md` § Size gives the figures): when a page's cards draw on many
   sources, say the cost to the caller before writing, and write the depth of the open cards
   first.
-- A card whose option asks the operator to act carries `act`: its steps, as the **To act
-  on** part in the `decisions` skill's `references/rendering.md` § Card gives them.
+- An option that asks the operator to act carries `act`: its steps, as the **To act on**
+  part in the `decisions` skill's `references/rendering.md` § Card gives them.
 - Every mention of another decision is a slug, `[[N]]`. Every open decision a card names, or
   depends on, goes on the page as a card, so the operator can answer it in place; an answered
   decision not on the page gets a `refs` entry with its answer. The page refuses a `refs`
@@ -201,20 +206,22 @@ The rules below are what the digest condenses:
   PY
   ```
 - Check before publishing that the file passes every refusal `references/writer-digest.md` §
-  The checks lists (the page refuses a file that fails one, and says which): whole-number `n`,
-  single `a`–`z` letters in order ending `z`, a `rec` among them or null with `norec`, a
-  non-empty `rev`, a non-empty `context`, an `impact` with its four facets, no TLDR bullet that
-  carries the recommendation, an `act` keyed by option letters other than `z`, each a non-empty
-  list of one-line steps with no fill-in placeholder, the required fields.
+  The checks lists (the page refuses a file that fails one, and says which): the
+  `decision-page/5` and `decision-card/5` stamps, whole-number `n`, options as objects with
+  single `a`–`z` letters in order ending `z`, a `rec` among them or null with `norec`, a UTC
+  `rev`, a one-line `q`, a non-empty `context`, an `impact` with its wait and reach, each
+  option but (z) with its effect, no TLDR bullet that carries the recommendation, an option's
+  `act` a non-empty list of one-line steps with no fill-in placeholder and never on (z), the
+  fields required to render.
 - With node present, run the skill's `scripts/check_cards.js` (under its base directory) on
   the working copy's `cards.json`. Fix every refusal it prints. For an id, name the thing;
   for a count or a named thing, add the gloss to `context`; or leave the term knowingly. For
-  each `shape:` line, reshape the level; for an `impact:` line, write the effect across the
-  options. For each `depth:` line, fix the depth or the level from the sources, or leave it
-  knowingly, never padded.
+  each `shape:` line, reshape the level; for an `impact:` line, give the option's effect its
+  mechanism, or write the Impact's reach across the options. For each `depth:` line, fix the
+  depth or the level from the sources, or leave it knowingly, never padded.
   On a republish, the depth lines on a card the operator has answered are left knowingly: that
   card keeps its depth as it stands (step 3). Without node, check by reading, and run the cold
-  read.
+  read. A single record is checked the same way with `--record <file>`.
 
 ## Step 3: Publish
 
@@ -232,7 +239,8 @@ The shipped template is the page's design: it already meets the page contract (t
 colour tokens with dark mode, body background, 16px gutter), which settles the Artifact
 tool's design step for a publish or republish of it. Change nothing in it but the `<title>`,
 copied from `page.title` below; a change to the template itself is a new design and goes
-through the `artifact-design` skill.
+through the `artifact-design` skill. The template requires `decision-page/5`: it refuses an
+older `cards.json`, and says so on the page.
 
 Copy `page.title` (step 2's title rule) into the working copy's `<title>` (the tab and the
 gallery card's name); on a republish, copy it again.
@@ -243,30 +251,19 @@ an error. Report what you checked in one line, and that the page itself was not 
 
 **Republishing** (new or revised decisions, same page): call the Artifact tool with `url` set
 to the page's url, `file_path` the working copy of `index.html`, and `files` mapping
-`cards.json` to the new data; leave `capabilities` out to keep the rule. The current
-template refuses a card without `impact`: on a republish, add `impact` to each kept card (a
-`stakes` field may stay; it is ignored). From another conversation, first `read` the
-artifact and read its published `cards.json` (`read` with `path` `cards.json`): the tool
-refuses to replace a published path this conversation has not seen, and reading the page
-alone does not count. A new path makes a new artifact with an
+`cards.json` to the new data; leave `capabilities` out to keep the rule. From another
+conversation, first `read` the artifact and read its published `cards.json` (`read` with
+`path` `cards.json`): the tool refuses to replace a published path this conversation has not
+seen, and reading the page alone does not count. A new path makes a new artifact with an
 empty answers collection.
 
-A `cards.json` written before Context came first has either no `context` (refused) or a
-cue-only one, which passes and shows its `what` after the cue (`references/cards-schema.md` §
-A card, `what`). On a republish, give each kept card a `context`: the terms its Impact line,
-TLDR and options use, each glossed; then its `what`, moved in (delete `what`); then its cue.
-That is the format migration (the `rev` rule above). Any change to a card gets a new `rev`,
-Context included: an **Added:** line after `tell me`, more detail after `expand`, a `dig into`
-finding, a corrected fact, a re-ask. Only the one-time format migration keeps it: a card
-written before Context existed, whose own `what` and resume cue move into `context`, and whose
-terms are glossed from its own folds alone. A gloss drawn from anywhere outside the card is
-new information: a new `rev`.
+A published `cards.json` with no `decision-page/5` stamp is upgraded before the republish
+(step 2's first rule): `scripts/upgrade_cards.js`, every `rev` kept byte for byte, so the answers already
+given keep counting. Any change to a card gets a new `rev`, Context included: an **Added:** line after `tell me`, more detail after `expand`, a `dig into` finding, a corrected fact, a re-ask. Only a format-only upgrade keeps it: an older card moved to `decision-card/5` by the `decision-page` skill's `scripts/upgrade_cards.js`, its fields moved and none added. A fact drawn from anywhere outside the card is new information: a new `rev`.
 
-A `cards.json` written before `detail`, the level shapes or a later field existed: what it
-renders and what a republish writes into it is `references/cards-schema.md` § Republishing
-older data. A card the operator has answered stays as it is, its lints left knowingly, unless
-it is revised for another reason.
-
+What an older card holds, and what a republish writes into it, is the `decisions` skill's
+`references/legacy-cards.md`. A card the operator has answered stays as it is, its lints left
+knowingly, unless it is revised for another reason.
 **Hand over what was shown.** After a publish or republish, for every card whose number and
 `rev` were not on the page before (on a first publish, every card), hand the caller the
 card's number, the publish time (UTC, your clock) and the surface word *page*. A republish
@@ -354,7 +351,9 @@ answer page*, and the card rules the page renders.
 
 ## References
 
-- `references/cards-schema.md` — the cards.json fields, each mapped to the card, and the answers document
+- `references/cards-schema.md` — the cards.json envelope (`decision-page/5`), a page card (a
+  card record plus `L` and `dep`), how the page shows each part, an excerpt, and the answers
+  document
 - `references/writer-digest.md` — what a writer needs in one read: fields, level shapes,
   the floor's must-haves, the refusals and the lint keys
 - `references/fallback.md` — the tick-box doc, and the plain decisions block
@@ -362,5 +361,11 @@ answer page*, and the card rules the page renders.
 - `assets/cards.example.json` — invented example data
 - `scripts/check_cards.js` — the pre-publish check under node: the page's own refusals, then
   lints for ids anywhere on the page, counts and named things a card's Context does not
-  introduce, the level shapes, an effect that reads as the recommendation's, and the depth
-  lints (a level not longer than the one below, thin or long depth, a missing `blocks` row)
+  introduce, the level shapes, a reach that reads as the recommendation's, an option's effect
+  with no mechanism, and the depth lints (a level not longer than the one below, thin or long
+  depth, an option with no reach, what a new card owes); `--record FILE` checks one record
+- `scripts/upgrade_cards.js` — the upgrader under node: an older `cards.json` (the legacy
+  shipped shape, or the page's working kit) to `decision-page/5`, format only, every `rev` kept byte for byte,
+  all or nothing; `--questions`, `--only`, `--records`
+- the `decisions` skill's `references/card-record.md` (the record) and
+  `references/legacy-cards.md` (older cards, the upgrader's map)

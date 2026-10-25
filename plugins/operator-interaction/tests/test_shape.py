@@ -8,7 +8,7 @@ Three parts:
   node against `assets/cards.example.json` and copies of it;
 - the pre-publish runner's shape lints, `scripts/check_cards.js`: summaries a sentence or
   two, medium terse bullets with a sub-bullet or two, high headed sections, the Impact's
-  medium one bullet per facet, and a card Impact effect that reads as the recommendation's;
+  medium one bullet per facet, and a card Impact reach that reads as the recommendation's;
 - the runner's id lint: ids anywhere the page shows text, the page and layer titles and
   `refs` included, with the forms that are not ids left clean.
 
@@ -60,7 +60,7 @@ class DecisionPageShapes(unittest.TestCase):
                 datasets.append(d)
         for sh in shapes:
             d = example()
-            c41(d)["detail"]["o"]["a"] = [sh]
+            c41(d)["options"][0]["detail"] = [sh]
             datasets.append(d)
         for sh in shapes[1:]:
             d = example()
@@ -68,7 +68,7 @@ class DecisionPageShapes(unittest.TestCase):
             datasets.append(d)
         for v in ("text", {"t": "a", "sub": ["b"]}, ["a", {"t": "b", "sub": ["c"]}]):
             d = example()
-            c41(d)["detail"]["impact"] = [{"effect": v, "wait": v, "cost": v}]
+            c41(d)["detail"]["impact"] = [{"wait": v, "reach": v, "cost": v}]
             datasets.append(d)
         for res in run_pages(datasets)["out"]:
             self.assertEqual(res["bad"], [])
@@ -127,30 +127,30 @@ class DecisionPageShapes(unittest.TestCase):
     def test_the_impact_is_one_facet_a_line_at_every_level(self):
         res = run_page(example())
         imp = card(res, 41)["parts"]["imp"]
-        # summary: a paragraph per facet, in the one order
-        # card 41's options are reversible at little cost: no undo, so four facets
-        self.assertEqual(imp[0].count("<p>"), 4)
-        pos = [imp[0].index(t) for t in ("<p><b>→</b>", "<p><i>later:</i>", "<p><i>reach:</i>",
-                                         "<p><i>cost:</i>")]
+        # summary: a paragraph per facet, in the one order, no card-level effect
+        # card 41's options are reversible at little cost: no undo, so three facets
+        self.assertEqual(imp[0].count("<p>"), 3)
+        pos = [imp[0].index(t) for t in ("<p><i>later:</i>", "<p><i>reach:</i>", "<p><i>cost:</i>")]
         self.assertEqual(pos, sorted(pos))
         self.assertNotIn("undo:", imp[0])
+        self.assertNotIn("→", imp[0])
         # medium: one bullet per facet, the options in its sub-bullets
         top = imp[1][imp[1].index('<ul class="lvl">') + len('<ul class="lvl">'):]
-        self.assertEqual(len([x for x in top.split("<li>") if x.startswith(("<b>", "<i>"))]), 4)
-        self.assertIn("<li><b>→</b> sets where the docs build runs, and who can publish"
-                      '<ul class="lvl sub"><li>(a) nothing changes', imp[1])
+        self.assertEqual(len([x for x in top.split("<li>") if x.startswith(("<b>", "<i>"))]), 3)
+        self.assertIn("<li><i>reach:</i> every docs contributor, and the maintainer who publishes today"
+                      '<ul class="lvl sub"><li>(b) also readers', imp[1])
         # high: a section per facet
-        self.assertEqual(imp[2].count('<div class="lvs">'), 4)
+        self.assertEqual(imp[2].count('<div class="lvs">'), 3)
 
     def test_older_text_levels_still_render_as_paragraphs(self):
         d = example()
         c41(d)["detail"]["context"] = ["Older medium text.", "Older high text."]
-        c41(d)["detail"]["impact"] = [{"effect": "older effect", "wait": "older wait"}]
+        c41(d)["detail"]["impact"] = [{"wait": "older wait"}]
         res = run_page(d)
         self.assertEqual(res["bad"], [])
         p = card(res, 41)["parts"]
         self.assertIn("<p>Older medium text.</p>", p["ctx"][1])
-        self.assertIn("<li><b>→</b> older effect</li>", p["imp"][1])
+        self.assertIn("<li><i>later:</i> older wait</li>", p["imp"][1])
 
 
 @unittest.skipUnless(NODE, "node is not installed")
@@ -253,13 +253,13 @@ class ShapeRunner(unittest.TestCase):
         c41(d)["detail"]["impact"][0]["reach"]["t"] = words(15)
         self.lint(d, "lint: card 41: shape: the Impact's more detail, reach is 15 words")
         d = example()
-        c41(d)["detail"]["impact"][0]["effect"]["sub"].append("(c) a third")
-        self.lint(d, "lint: card 41: shape: the Impact's more detail, effect, has 3 sub-bullets: "
+        c41(d)["detail"]["impact"][0]["wait"]["sub"] += ["(a) a second", "(b) a third"]
+        self.lint(d, "lint: card 41: shape: the Impact's more detail, wait, has 3 sub-bullets: "
                      "give a facet one or two; where it differs across more than two options, "
                      "group them")
-        # two sub-bullets on a two-option card: clean
+        # two sub-bullets: clean
         d = example()
-        self.assertEqual(len(c41(d)["detail"]["impact"][0]["effect"]["sub"]), 2)
+        c41(d)["detail"]["impact"][0]["wait"]["sub"] += ["(b) a second"]
         self.clean(d)
 
     def test_card_41s_impact_medium_is_at_least_twice_its_summary(self):
@@ -272,22 +272,35 @@ class ShapeRunner(unittest.TestCase):
         for v in c["detail"]["impact"][0].values():
             self.assertLessEqual(len(v.get("sub", [])) if isinstance(v, dict) else 0, 2)
 
-    def test_an_effect_that_reads_as_the_recommendations_is_linted(self):
+    def test_a_reach_that_reads_as_the_recommendations_is_linted(self):
+        # no card-level effect (v5): the rec-only lint reads the Impact's reach, which covers every option
         d = example()
-        c41(d)["impact"]["effect"] = "publishing no longer depends on one laptop"
-        self.lint(d, "lint: card 41: impact: the effect reads as the recommended option's")
+        c41(d)["impact"]["reach"] = "every docs contributor"
+        self.lint(d, "lint: card 41: impact: the reach reads as the recommended option's")
         d = example()
-        c41(d)["detail"]["impact"][0]["effect"] = "publishing no longer depends on one laptop"
-        self.lint(d, "lint: card 41: impact: the effect (more detail) reads as the recommended "
-                     "option's")
-        # one naming the options is the decision's: clean
-        d = example()
-        c41(d)["impact"]["effect"] = "(a) the laptop publishes; (b) CI publishes"
-        self.clean(d)
+        c41(d)["detail"]["impact"][0]["reach"] = "every docs contributor"
+        self.lint(d, "lint: card 41: impact: the reach (more detail) reads as the recommended option's")
+        # one naming the options, or what any option reaches, is the decision's: clean
+        for reach in ("(a) the maintainer; (b) every docs contributor",
+                      "every docs contributor, and the maintainer who publishes today"):
+            d = example()
+            c41(d)["impact"]["reach"] = reach
+            self.clean(d)
         # a card with no recommendation is never linted for it
         d = example()
-        c43(d)["impact"]["effect"] = "the site matches the logo"
-        self.assertNotIn("impact: the effect", runner(d)[1])
+        c43(d)["impact"]["reach"] = "the guide screenshots"
+        self.assertNotIn("impact: the reach", runner(d)[1])
+        # the threshold: 2 of 5 words shared with the recommended option (40%) fires; 3 of 8 (37.5%) does not
+        d = example()
+        c41(d)["impact"]["reach"] = "docs contributor zebra yak quilt"
+        self.lint(d, "lint: card 41: impact: the reach reads as the recommended option's")
+        d = example()
+        c41(d)["impact"]["reach"] = "docs contributor merge zebra yak quilt violin walrus"
+        self.assertNotIn("impact: the reach", runner(d)[1])
+        # an effect an older writer left on the Impact is ignored, never linted
+        d = example()
+        c41(d)["impact"]["effect"] = "publishing no longer depends on one laptop"
+        self.clean(d)
 
     def test_the_tldr_rec_lint_walks_sections_bullets_and_sub_bullets(self):
         d = example()
@@ -404,7 +417,7 @@ class SourceLabel(unittest.TestCase):
         c43(d)["why"] = "D3 (site colour off the logo) was raised on the brand check."
         self.assertEqual(runner(d)[:2], (0, ""))
         # another card may name it too, with its name
-        d["cards"][0]["unknown"] += ", and whether D3 (Site colour off the logo) is fixed first"
+        d["cards"][0]["open"].append("whether D3 (Site colour off the logo) is fixed first")
         self.assertEqual(runner(d)[:2], (0, ""))
         # bare, it is an id; an undeclared label is one whatever stands beside it
         for s in ("D3 was raised on the brand check.", "D4 (site colour off the logo) was raised."):

@@ -1,4 +1,5 @@
 {
+  "format": "decision-page/5",
   "page": {
     "title": "Docs Site Decisions",
     "lede": "Three invented decisions about a documentation site, to show the format. Read top down: [[41]] sets the direction for the rest."
@@ -55,71 +56,112 @@
   ],
   "cards": [
     {
+      "format": "decision-card/5",
       "n": 41,
+      "rev": "2026-01-12T09:30:00Z",
       "L": "direction",
       "t": "Docs build home",
-      "rev": "2026-01-12T09:30:00Z",
-      "impact": {
-        "effect": "sets where the docs build runs, and who can publish",
-        "wait": "the laptop build stays; [[42]] and [[43]] wait",
-        "reach": "every docs contributor, and the maintainer who publishes today",
-        "cost": "(b) about 4 minutes of CI per merge"
-      },
+      "context": "The docs site is built and published from one maintainer's laptop, where a stale cache (a leftover copy of an old build) broke two publishes this month, and clearing it once ([[38]]) held a week. CI is the shared build service that already runs on every merge to `main`.",
       "tldr": [
         "Docs build and publish from one laptop today",
         "Move them to CI, or keep the laptop build"
       ],
-      "context": "The docs site is built and published from one maintainer's laptop, where a stale cache (a leftover copy of an old build) broke two publishes this month, and clearing it once ([[38]]) held a week. CI is the shared build service that already runs on every merge to `main`.",
       "why": "Two broken publishes this month came from a local cache. Blocks [[42]] and [[43]].",
       "whyask": "Moving the build changes who can publish; the team may rely on publishing by hand.",
       "class": "trust",
-      "ifunanswered": "I leave the build on the laptop and carry on with other work.",
       "rec": "b",
-      "o": [
-        [
-          "a",
-          "Keep building on a laptop. Nothing changes; the maintainer publishes by hand.",
-          "Stale-cache failures continue at about two a month.",
-          "Keep the local build",
-          "the cache failures stay"
-        ],
-        [
-          "b",
-          "Build and publish from CI on every merge to main, with the local build kept for previews.",
-          "Publishing no longer depends on one machine; about 4 minutes of CI per merge.",
-          "Publish from CI",
-          "removes the one-machine dependency"
-        ],
-        [
-          "z",
-          "Decide later.",
-          "The local build stays until you answer; [[42]] and [[43]] wait.",
-          "Decide later",
-          "[[42]] and [[43]] wait"
-        ]
-      ],
-      "blocks": {
-        "a": {
-          "happens": "Nothing changes; the maintainer publishes by hand.",
-          "who": "The maintainer who publishes.",
-          "cost": "About two failed publishes a month."
-        },
-        "b": {
-          "happens": "Every merge to main builds and publishes the site from CI.",
-          "who": "Every docs contributor.",
-          "cost": "About 4 minutes of CI per merge."
-        }
-      },
-      "act": {
-        "b": [
-          "Open `https://ci.example.com/docs-site/settings/secrets` and add a secret named `DOCS_DEPLOY_TOKEN`, holding the deploy token from the docs host's account page. The token goes there only, never into chat or this page.",
-          "Pick (b) here and write done in your words, or say done in chat: I switch publishing to CI and tell you when the first CI publish is live."
-        ]
-      },
       "basis": "strong",
       "reason": "both failures were read in the build logs",
-      "unknown": "whether anyone publishes from a fork",
       "evidence": "Build logs for both failed publishes show the same stale cache directory.",
+      "ifunanswered": "I leave the build on the laptop and carry on with other work.",
+      "open": [
+        "whether anyone publishes from a fork"
+      ],
+      "impact": {
+        "wait": "the laptop build stays; [[42]] and [[43]] wait",
+        "reach": "every docs contributor, and the maintainer who publishes today",
+        "cost": "(b) about 4 minutes of CI per merge"
+      },
+      "options": [
+        {
+          "k": "a",
+          "title": "Keep the local build",
+          "line": "the cache failures stay",
+          "text": "Keep building on a laptop. Nothing changes; the maintainer publishes by hand.",
+          "effect": "Nothing changes; the maintainer publishes by hand.",
+          "reach": "The maintainer who publishes.",
+          "cost": "About two failed publishes a month.",
+          "detail": [
+            [
+              "Keep building on the maintainer's laptop, publishing by hand",
+              "Stale-cache failures stay at about two a month"
+            ],
+            [
+              {
+                "h": "What happens",
+                "b": [
+                  "Keep building on the maintainer's laptop.",
+                  "Nothing changes: they build, check the preview and publish by hand when they choose."
+                ]
+              },
+              {
+                "h": "What it leaves",
+                "b": [
+                  "The stale-cache failures stay at about two a month.",
+                  "Each is found when a reader reports a broken page, and fixed by clearing the cache and publishing again."
+                ]
+              }
+            ]
+          ]
+        },
+        {
+          "k": "b",
+          "title": "Publish from CI",
+          "line": "removes the one-machine dependency",
+          "text": "Build and publish from CI on every merge to main, with the local build kept for previews.",
+          "effect": "Every merge to main builds and publishes the site from CI.",
+          "reach": "Every docs contributor.",
+          "cost": "About 4 minutes of CI per merge.",
+          "act": [
+            "Open `https://ci.example.com/docs-site/settings/secrets` and add a secret named `DOCS_DEPLOY_TOKEN`, holding the deploy token from the docs host's account page. The token goes there only, never into chat or this page.",
+            "Pick (b) here and write done in your words, or say done in chat: I switch publishing to CI and tell you when the first CI publish is live."
+          ],
+          "detail": [
+            [
+              "Build and publish from CI on every merge to `main`",
+              {
+                "t": "the laptop build stays for previews",
+                "sub": [
+                  "each merge publishes within about 4 minutes"
+                ]
+              }
+            ],
+            [
+              {
+                "h": "What happens",
+                "b": [
+                  "Build and publish from CI on every merge to `main`; the laptop build stays for previews only.",
+                  "The first CI publish replaces the live site; each later merge publishes within about 4 minutes."
+                ]
+              },
+              {
+                "h": "What it changes",
+                "b": [
+                  "Publishing no longer waits for one person.",
+                  "A failed build stops the publish instead of shipping a broken page."
+                ]
+              }
+            ]
+          ]
+        },
+        {
+          "k": "z",
+          "title": "Decide later",
+          "line": "[[42]] and [[43]] wait",
+          "text": "Decide later.",
+          "effect": "The local build stays until you answer; [[42]] and [[43]] wait."
+        }
+      ],
       "detail": {
         "context": [
           [
@@ -172,13 +214,6 @@
         ],
         "impact": [
           {
-            "effect": {
-              "t": "sets where the docs build runs, and who can publish",
-              "sub": [
-                "(a) nothing changes; cache failures continue at about two a month",
-                "(b) any merge to `main` publishes within minutes, whoever made it"
-              ]
-            },
             "wait": {
               "t": "the laptop build stays, with its cache failures; [[42]] and [[43]] wait",
               "sub": [
@@ -194,23 +229,6 @@
             "cost": "(b) only: about 4 minutes of CI per merge, and one deploy secret"
           },
           {
-            "effect": [
-              "Sets where the docs build runs, and so who can publish.",
-              {
-                "t": "(a) Nothing changes: the maintainer builds, checks the preview and publishes by hand.",
-                "sub": [
-                  "The cache failures continue at about two a month.",
-                  "Each is found when a reader reports a broken page."
-                ]
-              },
-              {
-                "t": "(b) Any merge to `main` publishes within about 4 minutes, whoever made it.",
-                "sub": [
-                  "A failed build stops the publish instead of shipping a broken page.",
-                  "The first CI publish replaces the live site."
-                ]
-              }
-            ],
             "wait": [
               "The laptop build stays, with about two cache failures a month.",
               "While the maintainer is away from the 20th for two weeks, nobody can publish.",
@@ -278,25 +296,25 @@
                 "CI's builds of the same commits passed"
               ]
             },
-            "unknown: whether anyone publishes from a fork"
+            "CI starts every build from a clean checkout"
           ],
           [
             {
               "h": "Reason",
               "b": [
                 "Both failures were read in the build logs: the same stale cache both times.",
-                "CI's builds of the same commits passed, and CI starts every build from a clean checkout."
+                "CI's builds of the same commits passed."
               ]
             },
             {
-              "h": "Unknown",
+              "h": "Why CI avoids it",
               "b": [
-                "Whether anyone publishes from a fork.",
+                "CI starts every build from a clean checkout, so no old build is ever reused.",
                 {
-                  "t": "Not settled by the repo.",
+                  "t": "The laptop keeps its cache between builds.",
                   "sub": [
-                    "Its settings do not show it.",
-                    "No fork has opened a docs change this year."
+                    "That is where the stale copy came from.",
+                    "Clearing it by hand held for a week."
                   ]
                 }
               ]
@@ -401,37 +419,87 @@
               ]
             }
           ]
-        ],
-        "o": {
-          "a": [
+        ]
+      },
+      "q": "Where should the docs site be built and published from?"
+    },
+    {
+      "format": "decision-card/5",
+      "n": 42,
+      "rev": "2026-01-12T09:30:00Z",
+      "L": "details",
+      "t": "Old URLs after the move",
+      "context": "Building in CI ([[41]], option b) moves twelve pages to new web addresses (URLs): the ten how-to guides and the two configuration pages. A redirect is one config line that sends a reader from an old URL to its new one.",
+      "tldr": [
+        "The CI build moves twelve pages to new URLs",
+        "Redirect the old URLs, or let them break"
+      ],
+      "why": "Needed before the first CI publish. Blocks nothing else.",
+      "whyask": "Breaking public links is a call about readers, not about the build.",
+      "class": "one-way",
+      "dep": "[[41]] (b)",
+      "rec": "a",
+      "basis": "partial",
+      "reason": "the URL list is observed; the traffic to them is estimated",
+      "evidence": "Observed: the trial CI build lists the twelve pages whose paths change (`build/moved-pages.txt` from that run).",
+      "oneway": true,
+      "open": [
+        "how many external sites link to the old URLs",
+        "whether the redirects work as the site generator's documentation says; the first CI publish would show it"
+      ],
+      "impact": {
+        "wait": "the first CI publish waits for this answer",
+        "reach": "external readers, and every site linking to the old pages",
+        "undo": "(b) none — lost search ranking does not come back"
+      },
+      "options": [
+        {
+          "k": "a",
+          "title": "Redirect the old URLs",
+          "line": "old links keep working",
+          "text": "Add a redirect for each of the twelve URLs.",
+          "effect": "Twelve redirects are added to the site config before the first CI publish.",
+          "reach": "Readers following old links, who land on the new pages.",
+          "cost": "Twelve lines of redirect config to keep.",
+          "detail": [
             [
-              "Keep building on the maintainer's laptop, publishing by hand",
-              "Stale-cache failures stay at about two a month"
+              "Add a redirect for each of the twelve old URLs",
+              "One line per page in the site config, before the first CI publish"
             ],
             [
               {
                 "h": "What happens",
                 "b": [
-                  "Keep building on the maintainer's laptop.",
-                  "Nothing changes: they build, check the preview and publish by hand when they choose."
+                  "Add a redirect for each of the twelve old URLs before the first CI publish, one line per page in the site config.",
+                  "A reader following an old link lands on the new page without noticing."
                 ]
               },
               {
                 "h": "What it leaves",
                 "b": [
-                  "The stale-cache failures stay at about two a month.",
-                  "Each is found when a reader reports a broken page, and fixed by clearing the cache and publishing again."
+                  "The twelve lines stay in the config, and need changing only if those pages move again."
                 ]
               }
             ]
-          ],
-          "b": [
+          ]
+        },
+        {
+          "k": "b",
+          "title": "Let old URLs break",
+          "line": "lost links cannot be restored",
+          "text": "Let the old URLs return not found.",
+          "effect": "The twelve old URLs return not found from the first CI publish.",
+          "reach": "External readers and every site linking to the old pages.",
+          "undo": "Cannot be fully undone: once search engines drop the old URLs, redirects added later do not win the ranking back.",
+          "cost": "Nothing now.",
+          "oneway": true,
+          "detail": [
             [
-              "Build and publish from CI on every merge to `main`",
+              "Let the twelve old URLs return not found",
               {
-                "t": "the laptop build stays for previews",
+                "t": "A reader following an old link sees an error page",
                 "sub": [
-                  "each merge publishes within about 4 minutes"
+                  "search ranking for those pages is lost"
                 ]
               }
             ],
@@ -439,85 +507,28 @@
               {
                 "h": "What happens",
                 "b": [
-                  "Build and publish from CI on every merge to `main`; the laptop build stays for previews only.",
-                  "The first CI publish replaces the live site; each later merge publishes within about 4 minutes."
+                  "Let the twelve old URLs return not found from the first CI publish.",
+                  "A reader following an old link sees an error page and has to search for the new one."
                 ]
               },
               {
-                "h": "What it changes",
+                "h": "What it costs later",
                 "b": [
-                  "Publishing no longer waits for one person.",
-                  "A failed build stops the publish instead of shipping a broken page."
+                  "Search engines drop the old addresses within weeks.",
+                  "Redirects added after that do not win the ranking back."
                 ]
               }
             ]
           ]
-        }
-      }
-    },
-    {
-      "n": 42,
-      "L": "details",
-      "t": "Old URLs after the move",
-      "rev": "2026-01-12T09:30:00Z",
-      "impact": {
-        "effect": "sets what happens to links into the twelve moved pages",
-        "wait": "the first CI publish waits for this answer",
-        "reach": "external readers, and every site linking to the old pages",
-        "undo": "(b) none — lost search ranking does not come back"
-      },
-      "tldr": [
-        "The CI build moves twelve pages to new URLs",
-        "Redirect the old URLs, or let them break"
-      ],
-      "context": "Building in CI ([[41]], option b) moves twelve pages to new web addresses (URLs): the ten how-to guides and the two configuration pages. A redirect is one config line that sends a reader from an old URL to its new one.",
-      "why": "Needed before the first CI publish. Blocks nothing else.",
-      "whyask": "Breaking public links is a call about readers, not about the build.",
-      "class": "one-way",
-      "warn": true,
-      "rec": "a",
-      "o": [
-        [
-          "a",
-          "Add a redirect for each of the twelve URLs.",
-          "Old links keep working; twelve lines of redirect config to maintain.",
-          "Redirect the old URLs",
-          "old links keep working"
-        ],
-        [
-          "b",
-          "Let the old URLs return not found.",
-          "External links break; search ranking for those pages is lost and cannot be won back on demand.",
-          "Let old URLs break",
-          "lost links cannot be restored"
-        ],
-        [
-          "z",
-          "Decide later.",
-          "The first CI publish waits for this answer.",
-          "Decide later",
-          "the first CI publish waits"
-        ]
-      ],
-      "blocks": {
-        "a": {
-          "happens": "Twelve redirects are added to the site config before the first CI publish.",
-          "who": "Readers following old links, who land on the new pages.",
-          "cost": "Twelve lines of redirect config to keep."
         },
-        "b": {
-          "happens": "The twelve old URLs return not found from the first CI publish.",
-          "undo": "Cannot be fully undone: once search engines drop the old URLs, redirects added later do not win the ranking back.",
-          "who": "External readers and every site linking to the old pages.",
-          "cost": "Nothing now.",
-          "oneway": true
+        {
+          "k": "z",
+          "title": "Decide later",
+          "line": "the first CI publish waits",
+          "text": "Decide later.",
+          "effect": "The first CI publish waits for this answer."
         }
-      },
-      "dep": "[[41]] (b)",
-      "basis": "partial",
-      "reason": "the URL list is observed; the traffic to them is estimated",
-      "unknown": "how many external sites link to the old URLs",
-      "evidence": "Observed: the trial CI build lists the twelve pages whose paths change (`build/moved-pages.txt` from that run).",
+      ],
       "detail": {
         "context": [
           [
@@ -563,13 +574,6 @@
         ],
         "impact": [
           {
-            "effect": {
-              "t": "sets what happens to links into the twelve moved pages",
-              "sub": [
-                "(a) old links keep working through twelve redirects",
-                "(b) old links return not found from the first CI publish"
-              ]
-            },
             "wait": {
               "t": "the first CI publish waits for this answer",
               "sub": [
@@ -592,21 +596,6 @@
             }
           },
           {
-            "effect": [
-              "Sets what happens to links into the twelve moved pages.",
-              {
-                "t": "(a) Twelve redirects, one config line each, are added before the first CI publish.",
-                "sub": [
-                  "A reader following an old link lands on the new page without noticing."
-                ]
-              },
-              {
-                "t": "(b) The twelve old URLs return not found from the first CI publish.",
-                "sub": [
-                  "A reader following an old link sees an error page."
-                ]
-              }
-            ],
             "wait": [
               "The first CI publish waits for this answer; nothing else does.",
               "If [[41]] is (a), the pages do not move and this card no longer applies."
@@ -665,7 +654,7 @@
           [
             "the URL list is observed in a trial CI build",
             "the traffic to those pages is estimated from a referrer report",
-            "unknown: how many external sites link to the old URLs"
+            "a lost link cannot be won back later"
           ],
           [
             {
@@ -676,10 +665,10 @@
               ]
             },
             {
-              "h": "Unknown",
+              "h": "Why redirect",
               "b": [
-                "How many external sites link to the old URLs: the report counts visits, not links.",
-                "Whether the redirects work as the site generator's documentation says; the first CI publish would show it."
+                "Twelve config lines keep every old link working.",
+                "A link lost to a not-found page cannot be won back later."
               ]
             }
           ]
@@ -765,122 +754,65 @@
               ]
             }
           ]
-        ],
-        "o": {
-          "a": [
-            [
-              "Add a redirect for each of the twelve old URLs",
-              "One line per page in the site config, before the first CI publish"
-            ],
-            [
-              {
-                "h": "What happens",
-                "b": [
-                  "Add a redirect for each of the twelve old URLs before the first CI publish, one line per page in the site config.",
-                  "A reader following an old link lands on the new page without noticing."
-                ]
-              },
-              {
-                "h": "What it leaves",
-                "b": [
-                  "The twelve lines stay in the config, and need changing only if those pages move again."
-                ]
-              }
-            ]
-          ],
-          "b": [
-            [
-              "Let the twelve old URLs return not found",
-              {
-                "t": "A reader following an old link sees an error page",
-                "sub": [
-                  "search ranking for those pages is lost"
-                ]
-              }
-            ],
-            [
-              {
-                "h": "What happens",
-                "b": [
-                  "Let the twelve old URLs return not found from the first CI publish.",
-                  "A reader following an old link sees an error page and has to search for the new one."
-                ]
-              },
-              {
-                "h": "What it costs later",
-                "b": [
-                  "Search engines drop the old addresses within weeks.",
-                  "Redirects added after that do not win the ranking back."
-                ]
-              }
-            ]
-          ]
-        }
-      }
+        ]
+      },
+      "q": "What happens to the old URLs of the twelve moved pages?"
     },
     {
+      "format": "decision-card/5",
       "n": 43,
+      "rev": "2026-01-12T09:30:00Z",
       "L": "details",
       "t": "Theme colour",
       "label": {
         "id": "D3",
         "name": "site colour off the logo"
       },
-      "rev": "2026-01-12T09:30:00Z",
-      "impact": {
-        "effect": "(a) no visual change; (b) the site matches the logo",
-        "wait": "the site keeps the blue meanwhile",
-        "reach": "readers of the docs site"
-      },
+      "context": "Building in CI ([[41]], option b) applies the site's theme afresh, so the accent colour (the colour of links and headings) can change at no extra cost. The site is blue and the logo green, which the brand check listed as D3 (site colour off the logo); either colour is one line in the theme file.",
       "tldr": [
         "The move to CI can change the accent colour for free",
         "Keep the blue, or switch to the logo's green"
       ],
-      "context": "Building in CI ([[41]], option b) applies the site's theme afresh, so the accent colour (the colour of links and headings) can change at no extra cost. The site is blue and the logo green, which the brand check listed as D3 (site colour off the logo); either colour is one line in the theme file.",
       "why": "Nothing forces it. It is raised because the move to CI rebuilds the theme from its source files, so a change made now costs nothing extra; made later, it is a separate theme build and a check of every page's contrast.",
       "whyask": "A taste call: no fact settles it. The blue has been the site's colour since launch, and readers know it; the green matches the logo and the product's other sites. Both read well in the light and dark themes (checked), so the choice is only how the site should look.",
+      "dep": "[[41]] (b)",
       "rec": null,
       "norec": "your preference — no recommendation",
-      "o": [
-        [
-          "a",
-          "Keep the current blue for links and headings. Nothing changes for readers, and the screenshots in the guides stay accurate. The site stays a different colour from the logo, as it has been since launch.",
-          "No visual change.",
-          "Keep the blue",
-          "no visual change"
-        ],
-        [
-          "b",
-          "Switch links and headings to the logo's green at the first CI publish. The site matches the logo and the product's other sites. The screenshots in the guides still show the blue until they are retaken, which reads as dated to a careful reader.",
-          "The site matches the logo; screenshots in the guides look dated until refreshed.",
-          "Switch to logo green",
-          "matches the logo"
-        ],
-        [
-          "z",
-          "Decide later.",
-          "The site keeps the blue meanwhile.",
-          "Decide later",
-          "the blue stays"
-        ]
-      ],
-      "dep": "[[41]] (b)",
       "basis": "strong",
       "reason": "nothing depends on the choice (checked)",
-      "unknown": "none",
-      "blocks": {
-        "a": {
-          "happens": "No visual change; the site stays blue.",
-          "who": "Readers of the docs site.",
+      "evidence": "Checked: nothing in the site's build or its pages reads the accent colour except the theme file, so a change is one line there (`theme/colors.toml`). Checked: both colours pass the contrast check against the light and the dark background. Observed: the screenshots in the guides show the blue, so a switch to green leaves them dated until they are retaken, about an hour's work. Not checked: what readers prefer; no survey of them exists.",
+      "impact": {
+        "wait": "the site keeps the blue meanwhile",
+        "reach": "readers of the docs site"
+      },
+      "options": [
+        {
+          "k": "a",
+          "title": "Keep the blue",
+          "line": "no visual change",
+          "text": "Keep the current blue for links and headings. Nothing changes for readers, and the screenshots in the guides stay accurate. The site stays a different colour from the logo, as it has been since launch.",
+          "effect": "No visual change; the site stays blue.",
+          "reach": "Readers of the docs site.",
           "cost": "Nothing."
         },
-        "b": {
-          "happens": "Links and headings turn the logo's green from the first CI publish.",
-          "who": "Readers of the docs site, and the guide screenshots.",
+        {
+          "k": "b",
+          "title": "Switch to logo green",
+          "line": "matches the logo",
+          "text": "Switch links and headings to the logo's green at the first CI publish. The site matches the logo and the product's other sites. The screenshots in the guides still show the blue until they are retaken, which reads as dated to a careful reader.",
+          "effect": "Links and headings turn the logo's green from the first CI publish.",
+          "reach": "Readers of the docs site, and the guide screenshots.",
           "cost": "The guide screenshots look dated until they are retaken, about an hour."
+        },
+        {
+          "k": "z",
+          "title": "Decide later",
+          "line": "the blue stays",
+          "text": "Decide later.",
+          "effect": "The site keeps the blue meanwhile."
         }
-      },
-      "evidence": "Checked: nothing in the site's build or its pages reads the accent colour except the theme file, so a change is one line there (`theme/colors.toml`). Checked: both colours pass the contrast check against the light and the dark background. Observed: the screenshots in the guides show the blue, so a switch to green leaves them dated until they are retaken, about an hour's work. Not checked: what readers prefer; no survey of them exists."
+      ],
+      "q": "Which accent colour should the docs site use?"
     }
   ],
   "refs": {

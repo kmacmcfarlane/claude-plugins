@@ -1,0 +1,111 @@
+{
+  "page": {
+    "title": "Nightly Backup Decisions",
+    "lede": "Three invented decisions about a nightly backup, in the working kit's shape, to test the upgrader.",
+    "note": "This page follows the v5 layout."
+  },
+  "layers": [
+    ["store", "Where backups go", "where the nightly backup is written and how long it is kept."]
+  ],
+  "follow": [
+    ["later", "later", "[when]", "When should it come back? Blank means the next report."],
+    ["tell me", "tell me", "[what]", "What should the card add?"],
+    ["expand", "expand", "", "Anything in particular to show in more detail?"],
+    ["dig into", "dig into", "[what]", "What should I look into first?"],
+    ["you decide", "you decide", "", "Anything I should weigh?"],
+    ["drop", "drop", "", "Why drop it? (optional)"]
+  ],
+  "cards": [
+    {
+      "n": 51,
+      "rev": "2026-02-03T08:15:00Z",
+      "L": "store",
+      "t": "Backup target",
+      "label": {"id": "B2", "name": "single backup disk"},
+      "tldr": ["The nightly backup goes to one local disk today", "Add an offsite copy, or keep the one disk"],
+      "context": "The nightly backup writes the whole photo library to one local disk in the same room, which the storage review listed as B2 (single backup disk). An offsite copy is a second copy kept in a rented storage bucket.",
+      "what": "Where the second copy of the nightly backup lives.",
+      "finding": {"what": "The backup job writes to one disk only.", "where": "the backup job's config", "code": {"text": "target = /mnt/backup\ncopies = 1", "lang": "ini"}},
+      "scope": {"k": "shapes the work", "text": "the backup job's target list"},
+      "open": ["whether the storage bucket's region matters for the photo library"],
+      "assume": {"basis": "partial", "reason": "the disk's age is read from its health report",
+        "assumptions": ["the library stays under two terabytes this year", "the upload link is free at night"],
+        "tripwires": ["the library passes two terabytes", "a nightly upload runs past six in the morning"]},
+      "impact": {"effect": "sets how many copies of the backup survive a room fire", "wait": "the one disk stays the only copy", "reach": "the photo library and whoever restores it", "cost": "(b) a small monthly bill"},
+      "rec": "b",
+      "options": [
+        {"k": "a", "text": "Keep one disk", "line": "nothing new to pay for", "pros": "nothing new to pay for", "cons": "a fire or theft loses every copy",
+         "plan": "Keep the nightly job as it is, writing to the one local disk.",
+         "effect": "The nightly job keeps writing its only copy to the local disk.", "reach": "The photo library.",
+         "prosT": ["No new cost"], "consT": ["One copy only", "Same room as the originals"]},
+        {"k": "b", "text": "Add an offsite copy", "line": "a second copy survives the room", "pros": "a second copy outside the house", "cons": "about four dollars a month",
+         "plan": "Add the storage bucket as a second target, uploading after the local copy finishes.",
+         "effect": "Each night the job uploads a second copy to the storage bucket after the local one.", "reach": "The photo library, and the storage bucket's bill.", "cost": "About four dollars a month.",
+         "prosT": ["Survives a room fire", "Restores from anywhere"], "consT": ["A monthly bill"]},
+        {"k": "z", "text": "Decide later", "line": "the one disk stays", "effect": "The one disk stays the only copy."}
+      ],
+      "act": {"b": ["Create the storage bucket in the hosting account and paste its name into the backup job's settings page."]},
+      "background": {"why": "The disk is four years old and its health report shows rising errors.", "whyask": "A monthly bill is the operator's call."},
+      "attached": [
+        {"id": "health", "kind": "evidence", "title": "Health report", "body": ["Observed: the disk logs rising read errors.", "Observed: it is four years old."]},
+        {"id": "eg", "kind": "example", "title": "A restore", "body": ["A restore from the bucket takes about an hour."], "mode": "invented to illustrate"}
+      ],
+      "rejected": [{"bold": "A second local disk", "bullets": ["It burns with the first."]}]
+    },
+    {
+      "n": 52,
+      "rev": "2026-02-03T08:15Z",
+      "L": "store",
+      "t": "Old backup pruning",
+      "oneway": true,
+      "tldr": ["Old nightly backups pile up on the disk", "Prune them after thirty days, or keep them all"],
+      "context": "Every nightly backup is kept forever today, so the disk fills in about three months. Pruning deletes the backups older than thirty days.",
+      "what": {"intro": "The backups the pruning would delete.", "items": [{"name": "the nightly backups", "is": "one per night", "per": {"a": "older than thirty days deleted"}}, "the weekly snapshots"]},
+      "likelihood": {"basis": "estimated", "text": "the disk fills in about three months at today's rate"},
+      "best": "prune before the disk fills",
+      "dep": {"n": 51, "letters": ["a", "b"]},
+      "assume": {"basis": "strong", "reason": "the disk's free space is read nightly", "unknown": ["whether any old backup is needed for an audit"], "assumptions": [], "tripwires": []},
+      "impact": {"effect": "sets how far back a restore can reach", "wait": "the disk keeps filling", "reach": "anyone restoring a photo, and the backup disk", "undo": "(a) none — a pruned backup cannot be restored"},
+      "rec": "a",
+      "options": [
+        {"k": "a", "text": "Prune after thirty days", "line": "the disk never fills", "pros": "the disk never fills", "cons": "older backups are gone",
+         "plan": "Delete each nightly backup once it is thirty days old.",
+         "effect": "Each night the job deletes the backups older than thirty days.", "reach": "Anyone restoring a photo deleted more than thirty days ago.",
+         "undo": "None: a pruned backup cannot be restored.", "oneway": true,
+         "prosT": ["The disk never fills"], "consT": ["No restore past thirty days"]},
+        {"k": "b", "text": "Keep every backup", "line": "every night stays restorable", "pros": "every night stays restorable", "cons": "the disk fills in about three months",
+         "plan": "Keep every nightly backup, and buy a bigger disk when this one fills.",
+         "effect": "Every nightly backup stays on the disk until the disk fills and the job stops.", "reach": "The backup disk.",
+         "prosT": ["Every night restorable"], "consT": ["The job stops when the disk fills"]},
+        {"k": "z", "text": "Decide later", "line": "the disk keeps filling", "effect": "The disk keeps filling."}
+      ],
+      "background": {"why": "The disk is two thirds full.", "whyask": "Pruning cannot be undone."},
+      "attached": [{"id": "space", "kind": "evidence", "title": "Free space", "body": "The disk's free space drops about one percent a night."}]
+    },
+    {
+      "n": 53,
+      "rev": "2026-02-03T08:15:00Z",
+      "L": "store",
+      "t": "Backup report time",
+      "tldr": ["The nightly backup report arrives at midnight", "Move it to the morning, or keep it at midnight"],
+      "context": "The backup sends a one-line report when it finishes, today at midnight.",
+      "what": "When the backup's one-line report is sent.",
+      "likelihood": {"basis": "observed", "text": "the midnight report is read the next morning"},
+      "assume": {"basis": "strong", "reason": "nothing else reads the report", "assumptions": ["the report is read once a day"], "tripwires": ["a second reader of the report"]},
+      "impact": {"effect": "sets when the report arrives", "wait": "the report stays at midnight", "reach": "whoever reads the report"},
+      "rec": null,
+      "norec": "your preference — no recommendation",
+      "options": [
+        {"k": "a", "text": "Keep midnight", "line": "no change", "pros": "no change", "cons": "read hours late",
+         "plan": "Leave the report at midnight.", "effect": "The report keeps arriving at midnight, as soon as the job ends.", "reach": "Whoever reads the report.",
+         "prosT": ["No change"], "consT": ["Read hours late"]},
+        {"k": "b", "text": "Send in the morning", "line": "read when it lands", "pros": "read when it lands", "cons": "a failure waits seven hours to be told",
+         "plan": "Hold the report and send it at seven in the morning.", "effect": "The report waits until seven in the morning, then arrives with the day's first mail.", "reach": "Whoever reads the report.",
+         "prosT": ["Read on arrival"], "consT": ["A failure is told later"]},
+        {"k": "z", "text": "Decide later", "line": "midnight stays", "effect": "The report stays at midnight."}
+      ],
+      "background": {"why": "Raised while the backup job is being changed anyway.", "whyask": "A taste call about the operator's morning."}
+    }
+  ],
+  "refs": {}
+}
