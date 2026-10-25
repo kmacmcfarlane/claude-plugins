@@ -78,10 +78,12 @@ Work
   preference or authority label, read as the `work-items` skill's format reference,
   § Operator questions, lists them — one row per decision, never several folded into one
   row. With the `operator-interaction:decisions` skill loaded, the row ends with an
-  effect at that skill's tag size — `→ <effect>`, under about 10 words — read from the
-  last card stored for N (`decisions.md` § What the store records): the recommended
-  option's own effect from its option line, since the arrow follows the recommendation;
-  with no recommendation, each option's in a few words from the `impact:` line. It is read
+  effect at that skill's tag size, under about 10 words, read from the last card stored
+  for N (`decisions.md` § What the store records): the recommended option's own effect from
+  its option line, since the card has no card-level effect. The row already shows
+  `rec (x)`, so the arrow follows that letter and the letter is not repeated: `— rec (b) →
+  <effect>`. With no recommendation, each option's effect in a few words, `→ (a) …; (b) …`,
+  from the option lines, never from the `impact:` line. It is read
   from the store since `wi needs-input` prints the headline only; a card without one is
   backfilled as that section says before the row is printed. A deferred one also shows its last `wake N:`,
   and stays a Groom row until the wake comes.

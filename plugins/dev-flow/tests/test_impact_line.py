@@ -13,6 +13,13 @@ undo on every option of a ⚠ decision, the read-back keys on the marker, and ol
 plain undos read as written. (The `work-items` format's card-lines paragraph, which
 describes the same `impact:` line, is checked in that plugin's own suite.)
 
+The operator's v5 ruling (2026-10-22) and answer 340 (a) (2026-10-23): no card shows a
+card-level effect, so where a closed view shows one effect, the Report's tag size and the
+Groom row, it is the recommended option's own, read from its option line: at tag size its
+letter first, `46 (→ (a) preview up in about 4 minutes)`; on the Groom row, which already shows
+`rec (x)`, after that letter, not repeated: `— rec (b) → <effect>`. (The stored `impact:` line itself is the store's,
+re-pointed when the store keeps card records.)
+
 Standard library only. Run from plugins/dev-flow:
 
     python3 -m unittest discover -s tests -q
@@ -56,16 +63,55 @@ class ImpactLine(unittest.TestCase):
         text = DECISIONS.read_text()
         self.assertIn("each option line holds that option's own", " ".join(text.split()))
 
-    def test_tag_size_examples_cover_the_options(self):
+    def test_tag_size_examples_show_the_recommended_effect(self):
         for f in (REPORT, CYCLE, DECISIONS):
-            flat = " ".join(f.read_text().split())
-            self.assertNotRegex(flat, r"46 \(→ preview up", f.name)
-            self.assertRegex(flat, r"46 \(→ \(a\) preview up in about 4 minutes; \(b\) ", f.name)
+            self.assertEqual(tag_size_problems(f.name, f.read_text()), [])
+        # mutants: the old example, across the options; the letter dropped
+        old = "`46 (→ (a) preview up in about 4 minutes; (b) yesterday's page)`"
+        self.assertTrue(tag_size_problems("mutant", old))
+        self.assertTrue(tag_size_problems("mutant", "`46 (→ preview up in about 4 minutes)`"))
 
     def test_a_row_showing_the_recommendation_carries_its_own_effect(self):
-        flat = " ".join(IDLE.read_text().split())
-        self.assertIn("read from the last card stored for N", flat)
-        self.assertIn("the recommended option's own effect from its option line", flat)
+        text = IDLE.read_text()
+        self.assertEqual(groom_problems(text), [])
+        # mutant: the row repeats the letter after its rec (x)
+        mutant = " ".join(text.split()).replace("`— rec (b) → <effect>`", "`— rec (b) → (b) <effect>`")
+        self.assertNotEqual(mutant, " ".join(text.split()))
+        self.assertIn("the Groom row repeats the recommended letter", groom_problems(mutant))
+
+
+TAG_EXAMPLE = "46 (→ (a) preview up in about 4 minutes)"
+
+
+def tag_size_problems(where, text):
+    """The tag-size example shows the recommended option's effect, its letter first, and no
+    other option's after it."""
+    flat = " ".join(text.split())
+    out = []
+    if TAG_EXAMPLE not in flat:
+        out.append(f"{where}: no tag-size example with the recommended option's effect")
+    if re.search(r"46 \(→ \(a\) preview up in about 4 minutes; \(b\) ", flat):
+        out.append(f"{where}: the tag size gives every option's effect")
+    if re.search(r"46 \(→ preview up", flat):
+        out.append(f"{where}: the tag size drops the letter")
+    return out
+
+
+def groom_problems(text):
+    """The Groom row's effect: the recommended option's own, from its option line, after the
+    row's `rec (x)` with the letter not repeated; with no recommendation each option's, never
+    the `impact:` line's."""
+    flat = " ".join(text.split())
+    out = []
+    for phrase in ("read from the last card stored for N",
+                   "the recommended option's own effect from its option line",
+                   "the arrow follows that letter and the letter is not repeated",
+                   "`— rec (b) → <effect>`", "never from the `impact:` line"):
+        if phrase not in flat:
+            out.append("missing: " + phrase)
+    if re.search(r"rec \(([a-y])\) → \(\1\)", flat) or "`→ (x) <effect>`" in flat:
+        out.append("the Groom row repeats the recommended letter")
+    return out
 
 
 # rules 259 and 268 in the store (decision-page parity, S6): the two clauses, each with a mutant

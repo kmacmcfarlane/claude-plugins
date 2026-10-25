@@ -45,9 +45,10 @@ from the highest N (`rehydrate.md` § Step 3), else 1.
 ## With the decisions skill
 
 With the `operator-interaction:decisions` skill loaded, the four lines stay, and each
-`decisions needed:` names its decision numbers, each with its effect at that skill's tag
-size, read from the stored card's `impact:` line, across the options: `46 (→ (a) preview up
-in about 4 minutes; (b) yesterday's page)`.
+`decisions needed:` names its decision numbers, each with the recommended option's effect
+at that skill's tag size, its letter first, read from that option's line in the stored card:
+`46 (→ (a) preview up in about 4 minutes)` (with no recommendation, each option's in a few
+words).
 One decisions block, written per that skill, is the **last thing in the turn** — after the
 push outcome, its `incoming:` lines and the team summary below. The stored card, the store
 lines per reply, the default wake (the next Report) and the re-show after Rehydrate are in

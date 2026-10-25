@@ -9,7 +9,9 @@ Two halves:
   carries its own effect, and the closed row shows the recommended option's, its letter first
   (answer 340 (a));
 - the decisions skill's worked examples: every list line carries its effect and its
-  wait, and every card or block shows its impact right after its Context.
+  wait, every tag-size mention the recommended option's effect, its letter first (answer
+  340 (a)), and every card or block shows its impact right after its Context and any fold
+  above the Impact (▸ Open questions).
 
 Run from the plugin dir: python3 -m unittest discover -s tests -q
 """
@@ -325,6 +327,23 @@ def row_problems(v, c):
     return out
 LIST_LINE = re.compile(r"^- \*\*\d+ .+\?\*\* — ")
 CARD_HEAD = re.compile(r"^\*\*\d+ — [^*]+\?\*\*")
+# a tag-size mention, `46 (→ …)`
+TAG_SIZE = re.compile(r"\b\d+ \(→ ")
+TAG_EXAMPLE = "46 (→ (a) preview up in about 4 minutes)"
+OLD_TAG_EXAMPLE = "46 (→ (a) preview up in about 4 minutes; (b) yesterday's page)"
+
+
+def tag_size_problems(where, text):
+    """Each tag-size mention opens on an option's letter, `N (→ (x) …`, and the worked example
+    shows the recommended option's effect alone. Returns the problems, empty when clean."""
+    out = []
+    flat = " ".join(text.split())
+    for m in TAG_SIZE.finditer(flat):
+        if not re.match(r"\(([a-y]|x)\) ", flat[m.end():]):
+            out.append(f"{where}: a tag size without its letter first: {flat[m.start():m.start() + 40]!r}")
+    if OLD_TAG_EXAMPLE in flat:
+        out.append(f"{where}: the tag size gives every option's effect where one is recommended")
+    return out
 
 
 class GalleryShowsImpact(unittest.TestCase):
@@ -347,8 +366,19 @@ class GalleryShowsImpact(unittest.TestCase):
                                         f"{f.name}:{n}: a stakes word on a line")
         self.assertGreater(seen, 20)
 
+    def test_tag_size_shows_the_recommended_options_effect_with_its_letter(self):
+        files = self.files() + [DECISIONS / "SKILL.md"]
+        for f in files:
+            self.assertEqual(tag_size_problems(f.name, f.read_text()), [])
+        for f in self.files():
+            self.assertIn(TAG_EXAMPLE, " ".join(f.read_text().split()), f.name)
+        # mutants: the old example, across the options; a tag size with no letter
+        self.assertTrue(tag_size_problems("mutant", "`decisions needed: " + OLD_TAG_EXAMPLE + "`"))
+        self.assertTrue(tag_size_problems("mutant", "*46 (→ preview up in about 4 minutes)*"))
+
     def test_every_card_and_block_shows_its_impact_right_after_its_context(self):
-        # the answer page's order: the decision line (title, What), Context, then the
+        # the answer page's order: the decision line (title, What), Context, then any fold
+        # above the Impact (▸ Open questions, open as ▾ with its bullets in a block), then the
         # impact; a Context section is a line, or a heading over bullets (a block)
         seen = 0
         for f in self.files():
@@ -363,6 +393,8 @@ class GalleryShowsImpact(unittest.TestCase):
                     x = lines[j]
                     if x.startswith("**Context:**"):
                         in_context = True
+                    elif x.startswith(("▸ ", "▾ ")):
+                        in_context = True  # a fold above the Impact, and an open fold's bullets
                     elif in_context and x.startswith(("- ", "  - ")):
                         pass  # a block's Context bullets
                     elif x.strip() and not x.startswith(("*While it waited", "**What:**")):

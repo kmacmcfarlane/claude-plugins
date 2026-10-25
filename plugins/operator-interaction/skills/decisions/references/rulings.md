@@ -103,7 +103,8 @@ alternative not taken, in case practice argues for it.
   each option's effect lives in its own detail. Not taken: Effect as the recommended option's
   on a page.
 - **Effect across the options in chat, and each option's own impact** (2026-10-14; each
-  option's undo only where it is one-way or costly since 2026-10-20, below; answer
+  option's undo only where it is one-way or costly since 2026-10-20, below; its Effect half
+  reversed 2026-10-22, *No card-level Effect, both surfaces*, below; answer
   206 (a), widened by the operator: "is there a provision for displaying the
   effect/reach/undo/cost in TUI cards/blocks per-option too? That parity seems valuable.
   Make it so"; the italic line under each option, facets that do not apply left out, and
@@ -267,7 +268,10 @@ alternative not taken, in case practice argues for it.
   each option carries its own effect. It reverses *Impact across the options on an answer
   page* (2026-10-09) and the Effect half of *Effect across the options in chat, and each
   option's own impact* (2026-10-14); each option's own impact stands. On the answer page it
-  landed with `decision-page/5`: the page ignores an `impact.effect` an older writer left.
+  landed with `decision-page/5`: the page ignores an `impact.effect` an older writer left. In
+  chat the **Impact:** line starts at `later:`, and what was the Rec line's *unknown* is a
+  folded `▸ Open questions — <summary>` line above the Impact (the fold line, its summary
+  `N open: <the first>` and its slot after Context, designs made in build).
   The facet order kept, Wait, Reach, Undo, Cost (*Impact in every view* less Effect), is a
   reading made in planning: the operator's words list what stays, not an order. Not taken: a
   card-level effect kept beside the options' own.
@@ -275,7 +279,8 @@ alternative not taken, in case practice argues for it.
   closed page row, the chat list line and the Groom row show the recommended option's own
   effect, its letter first (`→ (b) …`). With no recommendation, each real option's effect in a
   few words, `(a) …; (b) …`, and tag size read the same way: readings made in planning, not
-  the operator's. On the answer page it landed with `decision-page/5`. Not taken: (b) no
+  the operator's. On the answer page it landed with `decision-page/5`; in chat, tag size
+  reads `46 (→ (a) …)` and the librarian's Groom row puts the letter first. Not taken: (b) no
   effect, title, recommendation and wait only; (c) every option's effect, one short clause
   each.
 - **The card record** (2026-10-23, answers 341 (a), 342 (a), 343 (a)) — one record for the

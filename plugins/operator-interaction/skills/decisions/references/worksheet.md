@@ -58,6 +58,7 @@ goes on that option, never on the decision.
 | Novelty | seen before (a recurring decision, a template) / new | you |
 | Options diverge | the options lead to materially different outcomes / they converge (any would do) | you |
 | Options exist | yes / not yet — then it is an open question, not a decision | you |
+| Still open | what is not known yet about this decision, one line each, or nothing: the card's ▸ Open questions fold (`references/rendering.md` § Folds) | you |
 
 A thin basis raises the level; so does a new decision, unless its options converge (any would
 do) — converging options stand in for a seen template in the line-only rule (SKILL.md
@@ -156,12 +157,13 @@ later showing — a re-show after a reset included — reads it instead of compo
 
 ## The Impact line — from the groups above
 
-Fill it last, from what the groups produced, in plain words for the operator. The facets and
-how each view shows them are in `references/rendering.md` § Impact.
+Fill it last, from what the groups produced, in plain words for the operator. The line
+carries Wait, Reach, Undo and Cost; Effect is filled per option. The facets and how each view
+shows them are in `references/rendering.md` § Impact.
 
 | Facet | From | Who can supply it |
 |---|---|---|
-| Effect | what the decision changes and settles in the thing the work builds (code, data, users, deploys, downstream consumers) across all its options, favouring none: each option's effect in a few words, `(a) …; (b) …`, where their outcomes differ; written from the options' own impacts (below) | you |
+| Effect | each option's own effect, never the decision's: what that option changes in the thing the work builds (code, data, users, deploys, downstream consumers), by its mechanism; written with the option (below), and not on the Impact line | you |
 | Wait | group D: what waiting costs, what it blocks, what happens at a deadline; every effect on the process (a held review comment, a round, a blocked session) goes here and nowhere else | you; a collector for other sessions |
 | Reach | group B's blast radius, named in the system: users, consumers, deploys, which repos, the public | you, from what the change touches |
 | Undo | group B's reversibility, only where an option is one-way or costly: *⚠ undo: (a) none — why*, *⚠ undo: (b) a hotfix release, after the outage*; left off when every option is reversible at little cost | you — say how you know |
@@ -176,7 +178,8 @@ by its mechanism (how it happens, who meets it and when, before and after), the 
 option alone, its undo when it is one-way or costly, and its cost; a facet that does not
 apply is left out, and so is the undo of an option reversible at little cost. A card shows it
 on an italic line under the option, a block in its table (`references/rendering.md`
-§ Impact). Write these first: the Impact line's Effect is read off them.
+§ Impact). Write these first: the closed views read the recommended option's effect off
+them, and the Impact line's reach, undo and cost are drawn from them.
 
 Write it when the decision is raised, and store it with the card where the caller keeps one,
 so every later view reads it instead of composing it again.
