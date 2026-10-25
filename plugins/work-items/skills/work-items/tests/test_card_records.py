@@ -454,7 +454,7 @@ class TestStrict(CardCase):
             ({"q": "pick one [Recommended]"}, "[recommended]"),
             ({"q": "pick — options: (a) x"}, "options"),
             ({"options": [{"k": "a", "title": "go (b) now"}], "rec": "a"},
-             "option marker"),
+             "options[0].title: holds an option marker"),
             ({"label": {"id": "F7", "name": "x\u2066y"}}, "format character"),
             ({"rec": None, "norec": "no | rec"}, "' | '"),
         ]
@@ -994,6 +994,80 @@ class TestRound2(CardCase):
         rec["x"] = {"notes_2": f"api_key: |\n  {KEYISH}"}
         self.refused(1, "raise", IID, "--record", self.write_rec(rec),
                      why="x.notes_2 line 2")
+
+
+class TestRound3(CardCase):
+    """Review round 3: usage errors never echo a text; bracketed words and
+    tags in titles and questions are text; --revise bounded; full-width
+    label delimiters."""
+
+    def test_usage_errors_never_echo_a_text(self):
+        """Exit 2, the store byte-identical, neither text on stderr, the
+        count and place named. Mutant: the old message joining the
+        leftover texts."""
+        for args, why in ((["--", SECRET, "extra"], "2 texts after --"),
+                          (["-" + SECRET], "unrecognized option"),
+                          (["-" + SECRET, "--", "q?"], "2 texts")):
+            with self.subTest(args=args):
+                r = self.refused(2, "raise", IID, *args, why=why)
+                self.assertNotIn("hunter2", r.stderr)
+                self.assertNotIn("extra", r.stderr)
+
+    def test_bracketed_text_is_not_a_marker(self):
+        """The reviewer's list passes as titles and as questions; `(1)
+        first` passes too (a digit is never an option letter). Mutants:
+        the lookbehind dropped from the marker; a bracket kept as a token
+        that may not open a part."""
+        texts = ["Keep the file(s)", "Fix a[i] bounds", "(Optional) add docs",
+                 "[WIP] ship it", "[Security] rotate the key?",
+                 "(Re)start the job?", "(1) first"]
+        for text in texts:
+            with self.subTest(title=text):
+                rec = record(options=[{"k": "a", "title": text},
+                                      {"k": "z", "title": "later"}], rec="a")
+                self.ok("raise", IID, "--record", self.write_rec(rec),
+                        "--check")
+            with self.subTest(q=text):
+                self.ok("raise", IID, "--record",
+                        self.write_rec(record(q=text)), "--check")
+
+    def test_markers_still_refused_with_their_class_named(self):
+        """A lone bracketed letter not touching a letter, the recommended
+        mark and the separator are refused, each named. Mutant: the marker
+        check removed from the read-back."""
+        def opts(title):
+            return dict(options=[{"k": "a", "title": title},
+                                 {"k": "z", "title": "later"}], rec="a")
+        rows = [(opts("Ship (c)"), "an option marker (x)"),
+                (opts("Ship [c]"), "an option marker (x)"),
+                (opts("Ship \uff08c\uff09"), "an option marker (x)"),
+                (opts("Ship \uff3bRecommended\uff3d"), "the recommended mark"),
+                (opts("Ship \uff5c Hold"), "the options separator"),
+                (dict(q="Ship? —"), "a dash")]
+        for over, why in rows:
+            with self.subTest(why=why, over=over):
+                self.refused(1, "raise", IID, "--record",
+                             self.write_rec(record(**over)), why=why)
+
+    def test_revise_bounded(self):
+        """Ten digits and 5,000 digits: exit 1, no traceback. Mutant: the
+        nine-digit bound removed (a traceback past the int digit limit)."""
+        for n in ("1" * 10, "9" * 5000):
+            with self.subTest(n=len(n)):
+                r = self.refused(1, "raise", IID, "--revise", n, "--why", "x",
+                                 "--", "q?", why="1-9 digits")
+                self.assertNotIn("Traceback", r.stderr)
+        self.refused(1, "raise", IID, "--revise", "9" * 9, "--why", "x", "--",
+                     "q?", why="is not on")
+
+    def test_label_lookalike_delimiters(self):
+        """Mutant: _LABEL_DELIMS back to `()·`."""
+        for lab in ({"id": "F\uff087", "name": "x"}, {"id": "F7", "name": "a\uff09"},
+                    {"id": "F7", "name": "a \u0387 b"}):
+            with self.subTest(lab=lab):
+                self.refused(1, "raise", IID, "--record",
+                             self.write_rec(record(label=lab)),
+                             why="delimiters")
 
 
 @unittest.skipUnless(GIT, "git not available")

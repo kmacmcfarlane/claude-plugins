@@ -3856,7 +3856,7 @@ CARD_ITEM_ID_RE = re.compile(r"[a-z0-9][a-z0-9-]{0,127}")
 # the longest key a record may hold: a list under a key is scanned with
 # its key per item, so a long key over many items costs key x items
 RECORD_KEY_MAX = 256
-DECISION_N_RE = re.compile(r"[1-9][0-9]*")
+DECISION_N_RE = re.compile(r"[1-9][0-9]{0,8}")   # at most 9 digits
 # the machine lines a card carries under its `card:` line, each key's
 # grammar its own plan's: delegation:/terms: (answer changes), act: and
 # grant: (signed grants). raised:, revised: and card: are wi's own.
@@ -3871,6 +3871,13 @@ _CARD_TAIL = (" — the card is this record; read it with the decisions "
 _JSON_KEY = re.compile(r"(?=.{1,32}\Z)[A-Za-z][A-Za-z_-]*[0-9]{0,2}")
 
 
+# the label's delimiters and their lookalikes: full-width parentheses,
+# U+0387 (the Greek ano teleia, NFKC's twin of the middle dot)
+_LABEL_DELIMS = "()·\uff08\uff09\u0387"
+# an option marker as a reader would take it: a bracketed lone a-z letter
+# not touching a letter before it (file(s) and a[i] are text), followed
+# by a space or the end of the text
+_MARKER_RE = re.compile(r"(?<![A-Za-z])[\[(]\s*[a-z]\s*[\])](?= |$)")
 # the head of a headline raised from one labelled item
 _LABEL_SHAPE = re.compile(r"\S+ \([^)]*\) · ")
 # variation selectors: not format characters (Unicode Mn), so NFKC keeps
@@ -4000,7 +4007,7 @@ def _headline_field(what, val, in_q=False, label_name=False,
         no("holds '⚠ one-way', the headline's mark")
     if in_q and val[:1].isspace():
         no("starts with whitespace")
-    if label_name and any(c in val for c in "()·"):
+    if label_name and any(c in val for c in _LABEL_DELIMS):
         no("holds '(', ')' or '·', the label's delimiters")
     if norec_title and " — " in val:
         no("holds ' — ', which with no recommendation marks the norec label")
@@ -4010,8 +4017,8 @@ def _headline_field(what, val, in_q=False, label_name=False,
         no("holds ' | ', which separates the headline's options")
     if "[recommended]" in val.lower():
         no("holds '[recommended]', the headline's mark")
-    if not in_q and re.search(r"\([a-z]\) ", val):
-        no("holds an option marker such as '(b) '")
+    if not in_q and _MARKER_RE.search(val):
+        no("holds an option marker (x)")
 
 
 def _check_record(rec, n):
@@ -4104,8 +4111,10 @@ def _headline_reads_back(line, n, rec):
     one ` — options: `; a head holding `⚠` only as the one-way mark and
     ending in no token character; with `rec` null, ` — ` only as the
     norec boundary, the norec after it exactly; `split(' | ')` giving one
-    `(k) ` part per option in letter order, no other option marker and no
-    part starting or ending in a token character; `[recommended]` only
+    `(k) ` part per option in letter order, no other option marker (a
+    bracketed lone letter that touches no letter before it: file(s) and
+    a[i] are text) and no part starting or ending in a token character (a
+    leading tag such as [WIP] or (Re) is text); `[recommended]` only
     once, closing the rec's option. Never quotes the text."""
     def norm(t):
         return _VARIATION_RE.sub("", unicodedata.normalize("NFKC", t))
@@ -4113,7 +4122,21 @@ def _headline_reads_back(line, n, rec):
     def no(why):
         raise WiError(1, f"record: the built headline would not read back "
                          f"({why}); nothing written")
-    ends = ("—", "|", "·", "⚠", "[", "(")
+    # a part may start with a bracket ([WIP] ship it, (Re)start the job?):
+    # only these may not open a part, and these with an open bracket may
+    # not close one
+    starts = ("—", "|", "·", "⚠")
+    ends = starts + ("[", "(")
+    names = {"—": "a dash, the norec boundary",
+             "|": "the options separator", "·": "the label separator",
+             "⚠": "the one-way mark", "[": "an open bracket",
+             "(": "an open bracket"}
+
+    def edge(text, where):
+        t = text.strip()
+        c = t[:1] if where == "starts" else t[-1:]
+        return names.get(c) if c in (starts if where == "starts" else ends) \
+            else None
     for t, norec in ((line, rec.get("norec")),
                      (norm(line), norm(rec.get("norec") or ""))):
         body = t[len(f"decision {n}: "):]
@@ -4125,22 +4148,24 @@ def _headline_reads_back(line, n, rec):
                 no("the one-way mark is not where it goes")
             head = head[:-len(" ⚠ one-way")]
         if "⚠" in head:
-            no("'⚠' outside the one-way mark")
-        if head.rstrip().endswith(ends) or "[recommended" in head.lower():
-            no("the question ends in, or holds, a headline token")
+            no("the question holds the one-way mark ⚠")
+        if "[recommended" in head.lower():
+            no("the question holds the recommended mark")
+        if edge(head, "ends"):
+            no(f"the question ends in {edge(head, 'ends')}")
         if "label" in rec:
             head = head.split(" · ", 1)[-1]
-        if head.lstrip().startswith(ends):
-            no("the question starts with a headline token")
+        if edge(head, "starts"):
+            no(f"the question starts with {edge(head, 'starts')}")
         if rec.get("rec") is None:
             if " — " not in tail:
                 no("no norec boundary")
             tail, after = tail.split(" — ", 1)
-            if after != norec or after.lstrip().startswith(ends):
-                no("' — ' is not only the norec boundary")
+            if after != norec or edge(after, "starts"):
+                no("a dash ' — ' other than the norec boundary")
         parts = tail.split(" | ")
         if len(parts) != len(rec["options"]):
-            no("' | ' does not separate exactly the options")
+            no("the options separator ' | ' inside a part")
         for part, opt in zip(parts, rec["options"]):
             m = re.fullmatch(r"\(([a-z])\) (.*)", part)
             if not m or m.group(1) != opt["k"]:
@@ -4148,20 +4173,26 @@ def _headline_reads_back(line, n, rec):
             rest = m.group(2)
             if rec.get("rec") == opt["k"]:
                 if not rest.endswith(" [recommended]"):
-                    no("'[recommended]' does not close the rec's option")
+                    no("the recommended mark does not close the rec's "
+                       "option")
                 rest = rest[:-len(" [recommended]")]
-            if "[recommended" in rest.lower() or \
-                    re.search(r"[\[(]\s*[a-z]\s*[\])]", rest) or \
-                    rest.strip().startswith(ends) or \
-                    rest.rstrip().endswith(ends):
-                no(f"option ({opt['k']})'s title holds a headline token")
+            title = f"option ({opt['k']})'s title"
+            if "[recommended" in rest.lower():
+                no(f"{title} holds the recommended mark")
+            if _MARKER_RE.search(rest):
+                no(f"{title} holds an option marker (x)")
+            for where in ("starts", "ends"):
+                if edge(rest, where):
+                    word = "starts with" if where == "starts" else "ends in"
+                    no(f"{title} {word} {edge(rest, where)}")
 
 
 def _json_strings(val, path="", key=None):
     """(JSON path, text) for every string in the record, keys too. An
     item of a list under a key is also given as the line scan sees an
-    object's member, `"<key>": "<item>"` (a number or boolean as a
-    string), so a secret listed under its key (`"api_key": ["…"]`) reads
+    object's member, `"<key>": "<item>"` (a number or boolean re-rendered
+    by json.dumps, `true`/`false` or the number as Python prints it, then
+    quoted as a string), so a secret listed under its key (`"api_key": ["…"]`) reads
     as the assignment it is; a multi-line item is also given as
     `<key>: <item>`, so its continued lines join. A key that does not look
     harmless (_JSON_KEY) is named by its place, never its text."""
@@ -4392,7 +4423,7 @@ def _raise_args(question, record, revise, why, lines, raised):
             no("--lines goes with --record, or with --revise N alone")
         return None
     if not DECISION_N_RE.fullmatch(revise):
-        no("--revise takes a decision number")
+        no("--revise takes a decision number (1-9 digits)")
     if why is None:
         no("--revise needs --why '<why>'")
     if lines is not None and question is not None:
@@ -7336,14 +7367,21 @@ def _raise_question(parser, extra, argv):
     left = list(extra)
     if "--" in left:  # kept or dropped by Python version
         left.remove("--")
+    # a usage error counts and places the leftover texts, never echoes
+    # them: a mistyped question may hold a secret
+    after = argv[argv.index("--") + 1:] if "--" in argv else []
     if len(left) > 1:
-        parser.error("unrecognized arguments: " + " ".join(extra))
+        where = "after --" if len(after) == len(left) else \
+            "outside the options" if not after else "before and after --"
+        parser.error(f"{len(left)} texts {where}; expected one question "
+                     "after --")
     question = left[-1] if left else None
     # a text starting `-` is a question only as the one text after `--`;
     # anything else is a misspelled option (`--chek`), never a question
-    if question is not None and question.startswith("-") and (
-            "--" not in argv or argv[argv.index("--") + 1:] != [question]):
-        parser.error("unrecognized arguments: " + " ".join(extra))
+    if question is not None and question.startswith("-") and \
+            after != [question]:
+        parser.error("an unrecognized option (1 text starting '-' before "
+                     "--); a question starting '-' goes after --")
     return question
 
 

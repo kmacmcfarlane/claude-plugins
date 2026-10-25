@@ -1009,7 +1009,8 @@ The question goes after `--`. It is one physical line, is not exactly `--`, and 
 start with the word `decision`, in any case (`wi` numbers it); it passes `wi note --raw`'s refusals (a line break, an empty
 text, a `## ` line, a fence opener, any line `lint` would flag as a secret), and the
 numbered headline passes them too. A refusal exits 1, writes nothing and never quotes the
-question. `raise` never reads stdin. A store that is its own repo gets one commit holding
+question. A usage error (more than one text, or a text starting `-` that is not the one text
+after `--`) exits 2 and counts and places the texts, never echoing one. `raise` never reads stdin. A store that is its own repo gets one commit holding
 the item and `store.yaml`, through the lock's commit path (§ The store's own repo); in a
 store the repo around it tracks, `$WI commit` commits both. A crash after the item is
 written and before the counter loses nothing: the next reader takes the larger of the two.
@@ -1080,18 +1081,22 @@ the rest under it:
 - `q`, each option's `title`, `label.id`, `label.name` and `norec` are non-empty text on one
   line with no control, format (Unicode Cf: zero-width, bidi, soft hyphen, BOM, tag) or
   line-separator character and none of the headline's own tokens: ` — options: `, ` | `,
-  `[recommended]` (any case) and `⚠ one-way` anywhere, and an option marker (`(b) `)
-  anywhere but in `q`; `q` does not start with whitespace or the word `decision`, nor, with
+  `[recommended]` (any case) and `⚠ one-way` anywhere, and an option marker anywhere but
+  in `q`: a bracketed lone letter a–z (`(b)`, `[b]`) followed by a space or the end, and not
+  touching a letter before it (`file(s)` and `a[i]` are text); a leading tag (`[WIP] …`,
+  `(Optional) …`, `(Re)start …`) is text, and a digit (`(1) first`) is never an option letter; `q` does not start with whitespace or the word `decision`, nor, with
   no `label`, read as one (`<id> (<name>) · `); `label.id` and `label.name` hold no `(`, `)`
-  or `·`; with `rec` null, no title holds ` — ` (the norec label's boundary);
+  or `·`, nor their lookalikes (full-width `（` `）`, U+0387); with `rec` null, no title holds ` — ` (the norec label's boundary);
 - the built headline reads back into the record's parts, as built and again in its NFKC
   form with variation selectors dropped (so a no-break or em space around a dash, a
   full-width bracket or bar, or `⚠` with U+FE0F forges nothing): ` — options: ` exactly
-  once; `⚠` only as the one-way mark; a question that neither starts nor ends in a token
-  character (`—`, `|`, `·`, `⚠`, `[`, `(`); with `rec` null, ` — ` only as the boundary before
-  the norec, which follows it exactly; ` | ` splitting the options into exactly one `(k) `
-  part each, in letter order, with no other option marker and no part starting or ending in
-  a token character; `[recommended]` once, closing the rec's option;
+  once; `⚠` only as the one-way mark; a question that neither starts with `—`, `|`, `·` or
+  `⚠` nor ends in one of those or an open bracket; with `rec` null, ` — ` only as the
+  boundary before the norec, which follows it exactly; ` | ` splitting the options into
+  exactly one `(k) ` part each, in letter order, with no other option marker and no part
+  starting or ending so; `[recommended]` once, closing the rec's option. A refusal names
+  the token's class (an option marker (x), the recommended mark, the options separator, a
+  dash, the label separator, the one-way mark);
 - `options` is a non-empty list, each with a letter `k` (a–z, in order, each once, so (z)
   last) and a `title`; `rec` is any option's letter, (z) included, or `null` with `norec`;
   `label`, when present, is `{id, name}` with `id` one word; `oneway`, when present, is
@@ -1144,7 +1149,7 @@ is indented under, and the last one per N names the current record. The trailing
 for a session on older plugins, whose backfill rule would otherwise write a legacy card over
 this one.
 
-**`--revise N`** needs a `decision N:` headline on the item, and is refused (exit 1,
+**`--revise N`** (N of 1–9 digits) needs a `decision N:` headline on the item, and is refused (exit 1,
 nothing written) when any item in the store, `items/` or `archive/`, holds an `answer N:`
 line outside a fence: an answered card is never rewritten. A follow-up (later, tell me, dig
 into, expand, hold) is never stored as an answer line; one that was is rewritten as a
