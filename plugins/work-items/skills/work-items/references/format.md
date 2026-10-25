@@ -889,9 +889,10 @@ starts `decision N: <one line>`; the reply is a body line
 Report convention). A decision is unanswered while its item has no `answer N:`
 line with the same N. Both must start the line — `- decision 4:` is not a
 marker — and a line inside a fenced code block is text, not a marker. N is
-never reused across the store; a revised question keeps its number: add a
-new `decision N:` line (or edit the old one in place) — when N repeats,
-`needs-input` shows the last line's text. `answer 40:` answers decision 40
+never reused across the store; a revised question keeps its number:
+`$WI raise <id> --revise N`, which appends the restated headline under a
+`revised:` line (§ Card records) — when N repeats, `needs-input` shows the
+last line's text. `answer 40:` answers decision 40
 only, never decision 4. `<reply>` is the operator's reply verbatim, on one
 physical line (an exact `N: letter` reply is stored as its letter; the
 caller's rules give the rest); a caller's form that opens with its own
@@ -955,7 +956,9 @@ cell><TAB>text`: the title cell is fourth, so the free text stays last;
 where the item has no such line. It exits 2 when nothing awaits the
 operator.
 
-**Card lines.** A caller may store the decision's card as indented lines
+**Card lines.** A card stored before v5 (no `card:` line) is read by the
+decisions skill's legacy reference; a v5 card is a record (§ Card records).
+A caller may store the decision's card as indented lines
 under its headline (`raised:`, `what:`, `why now:`, `why ask:`,
 `context:`, `impact:`, …; the librarian-mode convention). Indented, they
 match neither marker, and `wi` reads none of them except the first
@@ -1011,8 +1014,8 @@ the item and `store.yaml`, through the lock's commit path (§ The store's own re
 store the repo around it tracks, `$WI commit` commits both. A crash after the item is
 written and before the counter loses nothing: the next reader takes the larger of the two.
 A headline with only its `raised:` line is a headline-only decision: no card is stored. The
-card-record forms of `raise` (a stored card as its record, a revision of an open decision)
-extend this step, under the same lock, and are described in § Card records once they land.
+card-record forms of `raise` (a stored card as its record, a revision of an open decision,
+machine lines under a card) extend this step, under the same lock (§ Card records).
 
 **`wi counter`** prints the last N given out, the larger of the counter and the items'
 highest N (0 for an empty store), and exits 0. It is read-only and takes no lock. It refuses
@@ -1034,6 +1037,124 @@ resolved. A store rolled back to an older copy can give out again a number alrea
 whose `decision N:` line the restored copy lacks. `wi counter`, which takes no lock, can
 print a lower number while `wi archive` is moving the item that holds the highest N; `raise`
 and the reseed read under the lock and are not affected.
+
+## Card records
+
+A decision's card is kept as **one immutable JSON file per revision**, written by `wi` and
+read by the decisions skill's card-record reference (operator-interaction), which defines its
+fields. `wi` checks only what it needs to write the file safely and build the headline.
+
+```
+$WI raise <id> --record <file|-> [--lines <file|->] [--check]
+$WI raise <id> --revise N --why '<why>' --record <file|-> [--lines <file|->] [--raised <UTC>] [--check]
+$WI raise <id> --revise N --why '<why>' [--raised <UTC>] -- '<question line>'
+$WI raise <id> --revise N --why '<why>' --lines <file|->
+```
+
+Each prints N (`--check` prints a `check: ok` line instead). stdin is read only when
+`--record -` or `--lines -` names it, and at most one of them may. `--record` and a question
+line are exclusive (the headline is built from the record); `--why` and `--raised` go only
+with `--revise`; `--lines` goes with `--record`, or alone with `--revise N`.
+
+**The file.** `cards/<item id>/<N>/<rev, each : written ->.card<k>.json`, relative to the
+store root (the directory holding `items/`), for example
+`cards/decision-card-v5-no-card-level-effect-fi-9168/341/2026-10-23T10-00-00Z.card5.json`.
+Its bytes are `json.dumps(record, ensure_ascii=False, indent=2)` and a newline, UTF-8, LF,
+created exclusively: an existing file is never replaced. A record is never re-serialized
+after it is written, so a hash of the file is a hash of the bytes `wi` wrote. `wi archive`
+never moves `cards/`: an archived item's `card:` lines still resolve.
+
+**What `wi` checks**, all before anything is written, under the store lock:
+
+- the record is at most 256 KB, UTF-8, strict JSON (no `NaN`, `Infinity` or a number that
+  overflows to one, no duplicate key at any depth, not nested past what the parser can
+  read), and one object; an error names a position, never content;
+- `format` is `decision-card/<k>` (k from 1), `rev` is `YYYY-MM-DDTHH:MM:SSZ` with ASCII
+  digits (a minute-form `rev` is refused on write, with the fix: write it to the second,
+  `…:00Z`); each by a full match;
+- a new raise writes N into `n`, over any value; `--revise N` needs `n` equal to N;
+- `q`, each option's `title`, `label.id`, `label.name` and `norec` are non-empty text on one
+  line with no control, bidi or line-separator character and none of the headline's own
+  tokens: ` — options: `, ` | ` and `[recommended]` (any case) anywhere, and an option marker
+  (`(b) `) anywhere but in `q`;
+- `options` is a non-empty list, each with a letter `k` (a–z, in order, each once, so (z)
+  last) and a `title`; `rec` is any option's letter, (z) included, or `null` with `norec`;
+  `label`, when present, is `{id, name}` with `id` one word; `oneway`, when present, is
+  `true` or `false`;
+- the item's id is one path segment (`[a-z0-9][a-z0-9-]*`);
+- every line of the bytes, and every decoded string value of the record (keys too), whole,
+  pass the secret scan (§ Secret rule); a hit is named by the record's line, or by the
+  value's JSON path and the line within it (`options[1].plan line 2`), never by content;
+- the bytes and every item line encode as UTF-8 (a lone surrogate is refused);
+- `cards`, `cards/<id>` and `cards/<id>/<N>` are each a real directory or missing, never a
+  symbolic link, and the record's directory lies under the store's `cards/`; a missing
+  level is made one at a time.
+
+A refusal exits 1 (a bad record or form) or 3 (a file in the way, a symbolic link), names
+the field or the path, and writes nothing. `--check` runs every check, under the lock, and
+writes nothing: it exits 0 when the raise would go through, else as the raise would.
+
+**The headline**, built, never typed, on one physical line, in § Operator questions' form:
+
+```
+decision N: [<label.id> (<label.name>) · ]<q>[ ⚠ one-way] — options: (a) <title> [recommended] | (b) <title> | … | (z) <title>[ — <norec>]
+```
+
+`[recommended]` follows the `rec` option's title; with `rec` null, ` — <norec>` follows the
+last option; `⚠ one-way` follows the question when `oneway` is true.
+
+**The item's lines**, appended at the end of `## Notes` after the file is written, the
+`card:` line last but for the machine lines:
+
+- a new raise: the headline; `  raised: <UTC, to the second>`; the `card:` line; the
+  `--lines`;
+- `--revise N`: the restated headline (from the record, or the question line); the
+  `--raised` line when given; `  revised: <UTC> — <why>`; the `card:` line (with
+  `--record`); the `--lines`.
+
+```
+  card: cards/<item id>/<N>/<file> rev <rev> · decision-card/<k> — the card is this record; read it with the decisions skill's card-record reference; never backfill this card from lines
+```
+
+It is indented, so it matches neither marker and `raised:` is still read past it. `wi`
+reads it as `^[ \t]+card: (cards/<id>/<N>/<file>) rev (<rev>) · (decision-card/<k>)(?: — .*)?$`,
+a full match, under the block rule of `raised:`: it belongs to the `decision N:` headline it
+is indented under, and the last one per N names the current record. The trailing words are
+for a session on older plugins, whose backfill rule would otherwise write a legacy card over
+this one.
+
+**`--revise N`** needs a `decision N:` headline on the item, and is refused (exit 1,
+nothing written) when any item in the store, `items/` or `archive/`, holds an `answer N:`
+line outside a fence: an answered card is never rewritten. A follow-up (later, tell me, dig
+into, expand, hold) is never stored as an answer line; one that was is rewritten as a
+`wake N:` line first. A headline-only revision (a question line) is refused when N has a
+`card:` line: revise it with `--record`. `--why` is one line, not empty, opens no fence and
+holds no secret shape (`wi note --raw`'s refusals). `--raised <UTC>` (the write pattern)
+fills the ask time of a decision with no `raised:` line yet, as when a headline-only
+decision gets its card; it is refused when N has one.
+
+**Machine lines** (`--lines`): each one indented physical line keyed `delegation:`,
+`terms:` (the answer-changes plan), `act:` or `grant:` (the signed-grants plan), secret-clean;
+`wi` checks no more of their grammar. Any other key is refused (a card's content goes in the
+record), and `raised:`, `revised:` and `card:` are `wi`'s own. `--revise N --why '<why>'
+--lines <file>`, with no record and no question line, adds them to an open decision that has
+a `card:` line, with no new record (the `rev` and the file stay, so answers to it keep
+counting): `  revised: <UTC> — <why> (machine lines added; record unchanged)` and the lines
+are inserted directly after the current card's block (its last `card:` line and the indented
+lines under it). It is the one place `wi` writes inside a body rather than at the end of
+`## Notes`. A card lists a grant by such a `grant: <id>` line; lines can be added only while
+N is open.
+
+**A stopped raise.** The file is written before the item's lines. A raise that stopped
+between them leaves a file no `card:` line names: the same raise run again finds a file
+with its exact bytes, named by no `card:` line in `items/` or `archive/`, and adopts it,
+writing only the item's lines. A file named by a `card:` line is immutable (exit 3: give the
+revision a new `rev`); an unnamed one with other bytes, or anything at that path that is not
+a regular file, is refused (exit 3), with the fix: delete the orphan, then run the raise
+again.
+
+**The commit.** A store that is its own repo gets one commit holding the file, the item and
+`store.yaml`; in a store the repo around it tracks, `$WI commit` commits them.
 
 ## Closed: `closed N:`
 
