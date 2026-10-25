@@ -297,6 +297,27 @@ class TestRaiseRecord(CardCase):
                              self.write_rec(record()), "--lines", str(p),
                              why=why)
 
+    def test_empty_grant_refused(self):
+        """Mutant: the empty-grant check removed."""
+        for text in ("  grant:\n", "  grant:   \n"):
+            with self.subTest(text=text):
+                p = self.tmp / "lines"
+                p.write_text(text)
+                self.refused(1, "raise", IID, "--record",
+                             self.write_rec(record()), "--lines", str(p),
+                             why="grant's id")
+
+    def test_misspelled_options_never_reach_the_store(self):
+        """Each exits 2 with the store byte-identical; `-- --q` is the
+        question `--q`. Mutant: the one-leftover check (`len(left) > 1`) removed
+        (`--chek -- q` raises q)."""
+        for args in (["--chek"], [f"--recrod={self.recfile}"],
+                     ["--chek", "--"], ["--chek", "--", "q"]):
+            with self.subTest(args=args):
+                self.refused(2, "raise", IID, *args)
+        self.ok("raise", IID, "--", "--q")
+        self.assertIn("\ndecision 1: --q\n", self.item_text())
+
     def test_record_and_lines_cannot_both_read_stdin(self):
         self.refused(1, "raise", IID, "--record", "-", "--lines", "-",
                      input="{}", why="stdin")
@@ -426,19 +447,84 @@ class TestStrict(CardCase):
         rows = [
             ({"q": "a\u2028b"}, "line break"),
             ({"options": [{"k": "a", "title": "x\ty"}]}, "control"),
-            ({"q": "a\u202eb"}, "bidi"),
+            ({"q": "a\u202eb"}, "format character"),
             ({"options": [{"k": "a", "title": "x | y"}], "rec": "a"}, "' | '"),
             ({"q": "pick one [Recommended]"}, "[recommended]"),
             ({"q": "pick — options: (a) x"}, "options"),
             ({"options": [{"k": "a", "title": "go (b) now"}], "rec": "a"},
              "option marker"),
-            ({"label": {"id": "F7", "name": "x\u2066y"}}, "bidi"),
+            ({"label": {"id": "F7", "name": "x\u2066y"}}, "format character"),
             ({"rec": None, "norec": "no | rec"}, "' | '"),
         ]
         for over, why in rows:
             with self.subTest(over=over):
                 self.refused(1, "raise", IID, "--record",
                              self.write_rec(record(**over)), why=why)
+
+    def test_written_bytes_capped(self):
+        """A record under 256 KB whose indented bytes run past it (indent
+        grows with depth) is refused before any write. Mutant: the cap on
+        the encoded bytes removed (the file is written)."""
+        deep = [0] * 90_000
+        for _ in range(55):
+            deep = [deep]
+        text = json.dumps(record(x=deep), separators=(",", ":"))
+        self.assertLess(len(text.encode()), wi.RECORD_CAP)
+        self.raw(text, "as written over 256 KB")
+
+    def test_depth_limit(self):
+        """65 levels refused, 64 written. Mutant: the depth check removed."""
+        def nested(levels):   # the record is level 1, "x" adds the rest
+            v = 0
+            for _ in range(levels - 1):
+                v = [v]
+            return v
+        self.raw(json.dumps(record(x=nested(65))), "nested more than 64")
+        self.raise_rec(record(x=nested(64)))
+
+    def test_underflow_refused(self):
+        """A non-zero literal that reads as 0. Mutant: the underflow check
+        removed. A literal 0.0e-400 stays a zero."""
+        base = json.dumps(record())[:-1]
+        self.raw(base + ', "x": 1e-400}', "too small")
+        self.recfile.write_text(base + ', "x": 0.0e-400}')
+        self.ok("raise", IID, "--record", str(self.recfile))
+
+    def test_forged_tokens_from_format_characters(self):
+        """Zero-width spaces between a token's parts, a word joiner, a soft
+        hyphen, a BOM and a tag character are each refused. Mutant: the Cf
+        check removed (the forged title is written)."""
+        zw = "\u200b"
+        forged = f"[recom{zw}mended] {zw}| ({zw}c)"
+        for title in (forged, "a\u2060b", "a\u00adb", "\ufeffab",
+                      "ab\U000e0041"):
+            with self.subTest(title=title):
+                rec = record(options=[{"k": "a", "title": title},
+                                      {"k": "z", "title": "later"}], rec="z")
+                self.refused(1, "raise", IID, "--record", self.write_rec(rec),
+                             why="format character")
+
+    def test_headline_nits(self):
+        """⚠ one-way inside q; the label's delimiters in label.name; ` — `
+        in a title with no recommendation; q starting with whitespace.
+        Mutants: each check removed."""
+        norec = record(rec=None, norec="your preference — no recommendation",
+                       options=[{"k": "a", "title": "go — now"},
+                                {"k": "z", "title": "later"}])
+        rows = [
+            (record(q="ship it ⚠ one-way"), "⚠ one-way"),
+            (record(label={"id": "F7", "name": "probe (x"}), "delimiters"),
+            (record(label={"id": "F7", "name": "probe · x"}), "delimiters"),
+            (norec, "norec label"),
+            (record(q=" ship it?"), "starts with whitespace"),
+        ]
+        for rec, why in rows:
+            with self.subTest(why=why):
+                self.refused(1, "raise", IID, "--record", self.write_rec(rec),
+                             why=why)
+        # with a recommendation, ` — ` in a title is fine
+        self.raise_rec(record(options=[{"k": "a", "title": "go — now"},
+                                       {"k": "z", "title": "later"}], rec="a"))
 
     def test_question_may_hold_an_option_marker(self):
         """Mutant: the marker check applied to q."""
@@ -480,6 +566,29 @@ class TestSecrets(CardCase):
                 r = self.refused(1, "raise", IID, "--record",
                                  self.write_rec(rec), why=why)
                 self.assertNotIn(KEYISH, r.stderr)
+
+    def test_list_strings_scanned_with_their_key(self):
+        """A secret listed under its key reads as `<key>: <value>`. Mutant:
+        list strings scanned without their parent key."""
+        for key, val in (("api_key", KEYISH), ("DB_PASSWORD",
+                                                "hunter2hunter2hunterXYZ")):
+            with self.subTest(key=key):
+                rec = record()
+                rec["extra"] = {key: [val]}
+                r = self.refused(1, "raise", IID, "--record",
+                                 self.write_rec(rec),
+                                 why=f"extra.{key}[0] line 1")
+                self.assertNotIn(val, r.stderr)
+
+    def test_long_key_named_by_position(self):
+        """A key past 32 characters is named by its place. Mutant: the
+        32-character bound raised to 64."""
+        key = "k" * 40
+        rec = record()
+        rec[key] = f"api_key: |\n  {KEYISH}"
+        r = self.refused(1, "raise", IID, "--record", self.write_rec(rec),
+                         why="<key ")
+        self.assertNotIn(key, r.stderr)
 
     def test_prose_token_is_clean(self):
         self.raise_rec(record(context="the token count is fine here"))
@@ -571,8 +680,9 @@ class TestOrphans(CardCase):
         d = self.root / "cards" / IID / "1"
         d.mkdir(parents=True)
         os.symlink(target, d / "2026-10-23T10-00-00Z.card5.json")
+        # the lstat names it; O_NOFOLLOW behind it would refuse it too
         self.refused(3, "raise", IID, "--record", self.write_rec(record()),
-                     why="symbolic link")
+                     why="is a symbolic link; a card record")
 
 
 class TestRevise(CardCase):

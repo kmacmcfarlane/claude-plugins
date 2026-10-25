@@ -1066,25 +1066,31 @@ never moves `cards/`: an archived item's `card:` lines still resolve.
 
 **What `wi` checks**, all before anything is written, under the store lock:
 
-- the record is at most 256 KB, UTF-8, strict JSON (no `NaN`, `Infinity` or a number that
-  overflows to one, no duplicate key at any depth, not nested past what the parser can
-  read), and one object; an error names a position, never content;
+- the record is at most 256 KB as read and at most 256 KB as written (the indented bytes,
+  checked before the secret scans), UTF-8, strict JSON (no `NaN`, `Infinity`, a number that
+  overflows to one, or a non-zero number that reads as 0; no duplicate key at any depth),
+  nested at most 64 deep (objects and lists, the record itself the first), and one object;
+  an error names a position, never content;
 - `format` is `decision-card/<k>` (k from 1), `rev` is `YYYY-MM-DDTHH:MM:SSZ` with ASCII
   digits (a minute-form `rev` is refused on write, with the fix: write it to the second,
   `…:00Z`); each by a full match;
 - a new raise writes N into `n`, over any value; `--revise N` needs `n` equal to N;
 - `q`, each option's `title`, `label.id`, `label.name` and `norec` are non-empty text on one
-  line with no control, bidi or line-separator character and none of the headline's own
-  tokens: ` — options: `, ` | ` and `[recommended]` (any case) anywhere, and an option marker
-  (`(b) `) anywhere but in `q`;
+  line with no control, format (Unicode Cf: zero-width, bidi, soft hyphen, BOM, tag) or
+  line-separator character and none of the headline's own tokens: ` — options: `, ` | `,
+  `[recommended]` (any case) and `⚠ one-way` anywhere, and an option marker (`(b) `)
+  anywhere but in `q`; `q` does not start with whitespace; `label.name` holds no `(`, `)` or
+  `·`; with `rec` null, no title holds ` — ` (the norec label's boundary);
 - `options` is a non-empty list, each with a letter `k` (a–z, in order, each once, so (z)
   last) and a `title`; `rec` is any option's letter, (z) included, or `null` with `norec`;
   `label`, when present, is `{id, name}` with `id` one word; `oneway`, when present, is
   `true` or `false`;
 - the item's id is one path segment (`[a-z0-9][a-z0-9-]*`);
 - every line of the bytes, and every decoded string value of the record (keys too), whole,
-  pass the secret scan (§ Secret rule); a hit is named by the record's line, or by the
-  value's JSON path and the line within it (`options[1].plan line 2`), never by content;
+  pass the secret scan (§ Secret rule), a string inside a list also as `<its key>: <value>`
+  (`"api_key": ["…"]`); a hit is named by the record's line, or by the value's JSON path and
+  the line within it (`options[1].plan line 2`), never by content (a key that is not a plain
+  word of at most 32 characters is named by its place);
 - the bytes and every item line encode as UTF-8 (a lone surrogate is refused);
 - `cards`, `cards/<id>` and `cards/<id>/<N>` are each a real directory or missing, never a
   symbolic link, and the record's directory lies under the store's `cards/`; a missing
@@ -1134,8 +1140,8 @@ fills the ask time of a decision with no `raised:` line yet, as when a headline-
 decision gets its card; it is refused when N has one.
 
 **Machine lines** (`--lines`): each one indented physical line keyed `delegation:`,
-`terms:` (the answer-changes plan), `act:` or `grant:` (the signed-grants plan), secret-clean;
-`wi` checks no more of their grammar. Any other key is refused (a card's content goes in the
+`terms:` (the answer-changes plan), `act:` or `grant:` (the signed-grants plan), secret-clean,
+a `grant:` line naming its id; `wi` checks no more of their grammar. Any other key is refused (a card's content goes in the
 record), and `raised:`, `revised:` and `card:` are `wi`'s own. `--revise N --why '<why>'
 --lines <file>`, with no record and no question line, adds them to an open decision that has
 a `card:` line, with no new record (the `rev` and the file stay, so answers to it keep

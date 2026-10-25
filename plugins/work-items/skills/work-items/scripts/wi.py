@@ -3839,6 +3839,10 @@ def _question_refusal(question):
 # file is written before the item's `card:` line, under the one store lock.
 
 RECORD_CAP = 262144          # 256 KiB: a levelled page card runs to ~14 KB
+# deepest nesting of objects and lists a record may have (the record is 1):
+# indent grows with depth, so a deep record's written bytes far outgrow
+# its input; the written bytes are capped at RECORD_CAP too
+RECORD_DEPTH = 64
 # the write pattern for `rev` and `--raised`: to the second, ASCII digits
 REV_WRITE = r"[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z"
 REV_MINUTE = r"[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}Z"
@@ -3850,12 +3854,10 @@ DECISION_N_RE = re.compile(r"[1-9][0-9]*")
 # grant: (signed grants). raised:, revised: and card: are wi's own.
 MACHINE_KEYS = ("delegation", "terms", "act", "grant")
 _MACHINE_RE = re.compile(r"[ \t]+([A-Za-z][A-Za-z0-9 _-]*):(?:[ \t].*)?")
-_BIDI = frozenset("‎‏؜‪‫‬‭‮"
-                  "⁦⁧⁨⁩")
 _CARD_TAIL = (" — the card is this record; read it with the decisions "
               "skill's card-record reference; never backfill this card from "
               "lines")
-_JSON_KEY = re.compile(r"[A-Za-z0-9_-]{1,64}")
+_JSON_KEY = re.compile(r"[A-Za-z0-9_-]{1,32}")
 
 
 class _BadJson(ValueError):
@@ -3870,6 +3872,8 @@ def _finite(text):
     val = float(text)
     if val in (float("inf"), float("-inf")):
         raise _BadJson("holds a number too large for JSON")
+    if val == 0 and re.search("[1-9]", re.split("[eE]", text)[0]):
+        raise _BadJson("holds a number too small for JSON (it reads as 0)")
     return val
 
 
@@ -3922,16 +3926,40 @@ def _parse_record(text):
                          "nothing written") from None
     if not isinstance(rec, dict):
         raise WiError(1, "record is not a JSON object; nothing written")
+    if _depth(rec) > RECORD_DEPTH:
+        raise WiError(1, f"record is nested more than {RECORD_DEPTH} deep; "
+                         "nothing written")
     return rec
 
 
-def _headline_field(what, val, in_q=False):
+def _depth(val):
+    """The deepest nesting of objects and lists in `val` (a scalar is 0),
+    walked without recursion."""
+    best, stack = 0, [(val, 1)]
+    while stack:
+        v, d = stack.pop()
+        kids = v.values() if isinstance(v, dict) else \
+            v if isinstance(v, list) else None
+        if kids is None:
+            continue
+        best = max(best, d)
+        stack.extend((k, d + 1) for k in kids)
+    return best
+
+
+def _headline_field(what, val, in_q=False, label_name=False,
+                    norec_title=False):
     """Refuse a text the headline is built from unless it is non-empty and
-    one line, with no control, bidi or line-separator character and none
-    of the headline's own tokens. Inside q only ` — options: `, ` | ` and
-    `[recommended]` are tokens (readers split at the first ` — options: `,
-    so a question's own `(b) ` never reaches the option list); a title,
-    label or norec also refuses an option marker. Never quotes the text."""
+    one line, with no control or line-separator character and none of the
+    headline's own tokens. Inside q only ` — options: `, ` | `,
+    `[recommended]` and `⚠ one-way` are tokens (readers split at the
+    first ` — options: `, so a question's own `(b) ` never reaches the
+    option list), and q may not start with whitespace; a title, label or
+    norec also refuses an option marker. A format character (Unicode Cf:
+    zero-width, bidi, soft hyphen, BOM, tags) is refused everywhere, so
+    no token is forged from invisible parts. label.name refuses `(`, `)` and `·` (its own
+    delimiters); with no recommendation a title refuses ` — `, the norec
+    boundary. Never quotes the text."""
     def no(why):
         raise WiError(1, f"record {what}: {why}; nothing written")
     if not isinstance(val, str) or not val.strip():
@@ -3942,8 +3970,16 @@ def _headline_field(what, val, in_q=False):
         raise WiError(1, f"{e}; nothing written") from None
     if any(unicodedata.category(c) == "Cc" for c in val):
         no("holds a control character")
-    if any(c in _BIDI for c in val):
-        no("holds a bidi control character")
+    if any(unicodedata.category(c) == "Cf" for c in val):
+        no("holds a format character (zero-width, bidi or similar)")
+    if "⚠ one-way" in val:
+        no("holds '⚠ one-way', the headline's mark")
+    if in_q and val[:1].isspace():
+        no("starts with whitespace")
+    if label_name and any(c in val for c in "()·"):
+        no("holds '(', ')' or '·', the label's delimiters")
+    if norec_title and " — " in val:
+        no("holds ' — ', which with no recommendation marks the norec label")
     if " — options: " in val:
         no("holds ' — options: ', which splits the headline")
     if " | " in val:
@@ -3989,7 +4025,8 @@ def _check_record(rec, n):
         if k <= last:
             no(f"options[{i}].k: letters go in order, each once, (z) last")
         last = k
-        _headline_field(f"options[{i}].title", opt.get("title"))
+        _headline_field(f"options[{i}].title", opt.get("title"),
+                        norec_title=rec.get("rec") is None)
     letters = {opt["k"] for opt in opts}
     r = rec.get("rec")
     if r is None:
@@ -4004,7 +4041,7 @@ def _check_record(rec, n):
         if not isinstance(lid, str) or not re.fullmatch(r"\S+", lid):
             no("label.id: must be one word")
         _headline_field("label.id", lid)
-        _headline_field("label.name", lab.get("name"))
+        _headline_field("label.name", lab.get("name"), label_name=True)
     if "oneway" in rec and not isinstance(rec["oneway"], bool):
         no("oneway: must be true or false")
     return int(m.group(1))
@@ -4031,18 +4068,24 @@ def _record_headline(n, rec):
     return line
 
 
-def _json_strings(val, path=""):
-    """(JSON path, text) for every string in the record, keys too. A key
-    that is not a plain word is named by its place, never its text."""
+def _json_strings(val, path="", key=None):
+    """(JSON path, text) for every string in the record, keys too. A
+    string inside a list is also given as `<parent key>: <text>`, so a
+    secret listed under its key (`"api_key": ["…"]`) reads as the
+    assignment it is. A key that is not a plain word of at most 32
+    characters is named by its place, never its text."""
     if isinstance(val, dict):
         for i, (k, v) in enumerate(val.items()):
             seg = k if _JSON_KEY.fullmatch(k) else f"<key {i}>"
             p = f"{path}.{seg}" if path else seg
             yield f"{p} (its key)", k
-            yield from _json_strings(v, p)
+            yield from _json_strings(v, p, k)
     elif isinstance(val, list):
         for i, v in enumerate(val):
-            yield from _json_strings(v, f"{path}[{i}]")
+            p = f"{path}[{i}]"
+            if isinstance(v, str) and key is not None:
+                yield p, f"{key}: {v}"
+            yield from _json_strings(v, p, key)
     elif isinstance(val, str):
         yield path or "(the record)", val
 
@@ -4083,6 +4126,8 @@ def _machine_lines(text):
         if key not in MACHINE_KEYS:
             no("a card's content goes in the record; lines take only "
                + ", ".join(k + ":" for k in MACHINE_KEYS))
+        if key == "grant" and not line.split(":", 1)[1].strip():
+            no("grant: needs the grant's id")
         why = _line_refusal(line, line, raw=True)
         if why:
             no(why)
@@ -4163,6 +4208,8 @@ def _card_dir(root, iid, n, make):
                              "written")
         if not stat.S_ISDIR(st.st_mode):
             raise WiError(3, f"{level} is not a directory; nothing written")
+    # defence in depth: the lstat walk above already refuses every link,
+    # so this is unreachable today; kept should a later change loosen it
     under = os.path.join(os.path.realpath(root), "cards") + os.sep
     if not os.path.realpath(level).startswith(under):
         raise WiError(3, f"{level} resolves outside the store's cards/; "
@@ -4188,7 +4235,9 @@ def _existing_record(root, rel, path, data):
                          "record is immutable; give the revision a new rev; "
                          "nothing written")
     try:
-        with open(path, "rb") as fh:
+        # O_NOFOLLOW: a link swapped in since the lstat is refused, not read
+        fd = os.open(path, os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0))
+        with open(fd, "rb") as fh:
             same = fh.read(len(data) + 1) == data
     except OSError as e:
         raise WiError(3, f"cannot read {path}: {e.strerror}; "
@@ -4345,6 +4394,9 @@ def raise_decision(root, ref, question, *, record=None, revise=None,
                     raise WiError(1, "record holds a lone surrogate, which "
                                      "UTF-8 cannot carry; nothing written") \
                         from None
+                if len(data) > RECORD_CAP:
+                    raise WiError(1, "record as written over 256 KB; "
+                                     "nothing written")
                 _record_secrets(text, rec)
             except RecursionError:
                 raise WiError(1, "record is nested too deep; nothing written") \
@@ -7166,12 +7218,18 @@ def _raise_question(parser, extra, argv):
     positional: an optional positional after the id is consumed, empty, as
     soon as an option follows the id, and `-- '<question>'` after options
     would then be refused. One text, after `--` when it starts with `-`."""
-    if extra and extra[0] == "--":  # kept or dropped by Python version
-        extra = extra[1:]
-    if len(extra) > 1 or (extra and extra[0].startswith("-")
-                          and "--" not in argv):
+    left = list(extra)
+    if "--" in left:  # kept or dropped by Python version
+        left.remove("--")
+    if len(left) > 1:
         parser.error("unrecognized arguments: " + " ".join(extra))
-    return extra[0] if extra else None
+    question = left[-1] if left else None
+    # a text starting `-` is a question only as the one text after `--`;
+    # anything else is a misspelled option (`--chek`), never a question
+    if question is not None and question.startswith("-") and (
+            "--" not in argv or argv[argv.index("--") + 1:] != [question]):
+        parser.error("unrecognized arguments: " + " ".join(extra))
+    return question
 
 
 def main(argv=None):
