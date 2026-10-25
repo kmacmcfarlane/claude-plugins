@@ -11,6 +11,9 @@ Constraints this file lives under:
   `archive` moves closed items to archive/YYYY/ only when invoked.
 - Mutations take flock(<root>/.lock) and write tmp+rename, so same-machine
   claims are atomic; cross-machine atomicity is git's job.
+- A decision's card record is one immutable JSON file under cards/, written
+  once by `raise --record` before the indented `card:` line that names it;
+  nothing rewrites or moves it (format.md § Card records).
 - Exit codes: 0 ok, 1 usage/validation, 2 not found/empty, 3 file/parser
   error, 4 lock or claim conflict.
 """
@@ -201,6 +204,55 @@ def decision_raised(item):
         if m:
             raised.setdefault(current, m.group(1))
     return raised
+
+
+# A decision's card record (format.md § Card records): one immutable JSON
+# file per revision under cards/, named by an indented `card:` line under
+# its `decision N:` headline. Indented, the line matches neither marker,
+# and decision_raised reads past it. Applied with fullmatch only.
+CARD_RE = re.compile(
+    r"[ \t]+card: (cards/[a-z0-9][a-z0-9-]*/[0-9]+/[0-9]{4}-[0-9]{2}-[0-9]{2}"
+    r"T[0-9]{2}-[0-9]{2}-[0-9]{2}Z\.card[1-9][0-9]{0,3}\.json) rev ([0-9]{4}-"
+    r"[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z) · (decision-card/"
+    r"[1-9][0-9]{0,3})(?: — .*)?")
+
+
+def _card_scan(item):
+    """[(N, line index, (path, rev, format))] for every `card:` line in
+    the block of a `decision N:` headline, in file order. Same fence and
+    block rules as decision_raised: a block ends at the first line that is
+    not indented; a fenced line is text."""
+    lines = item.body.replace("\r\n", "\n").split("\n")
+    fenced = set()
+    for i, j in _fence_spans(lines):
+        fenced.update(range(i, j + 1))
+    out, current = [], None
+    for i, line in enumerate(lines):
+        if i in fenced:
+            current = None
+            continue
+        m = DECISION_RE.match(line)
+        if m:
+            current = int(m.group(1))
+            continue
+        if current is None:
+            continue
+        if not line[:1].isspace():
+            current = None
+            continue
+        m = CARD_RE.fullmatch(line)
+        if m:
+            out.append((current, i, m.groups()))
+    return out
+
+
+def card_lines(item):
+    """{N: [(path, rev, format)]} from the item's `card:` lines, in file
+    order; the last one per N names the current record."""
+    out = {}
+    for n, _, groups in _card_scan(item):
+        out.setdefault(n, []).append(groups)
+    return out
 
 
 # A showing of decision N and the operator's turn that saw it (the format
@@ -3777,45 +3829,772 @@ def _question_refusal(question):
     nothing; the reason never quotes the question."""
     if question is None:
         return "no question line: put it after --"
+    if question.strip() == "--":
+        return "is exactly '--', which reads as the end of options"
     if re.match(r"\s*decision\b", question, re.I):
         return "starts 'decision'; give only the question, wi numbers it"
     return _line_refusal(question, question, raw=True)
 
 
-def raise_decision(root, ref, question):
+# ── Card records: raise --record / --revise / --lines (3b51 W2) ────────────
+# format.md § Card records. Every check runs before the first write, and the
+# file is written before the item's `card:` line, under the one store lock.
+
+RECORD_CAP = 262144          # 256 KiB: a levelled page card runs to ~14 KB
+# deepest nesting of objects and lists a record may have (the record is 1):
+# indent grows with depth, so a deep record's written bytes far outgrow
+# its input; the written bytes are capped at RECORD_CAP too
+RECORD_DEPTH = 64
+# the write pattern for `rev` and `--raised`: to the second, ASCII digits
+REV_WRITE = r"[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z"
+REV_MINUTE = r"[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}Z"
+# k has 1-4 digits and a written item id at most 128 characters, so a
+# record's path stays far below every filesystem's name limit and a raise
+# that passes its checks (and --check) cannot then fail to make its file
+CARD_FORMAT_RE = re.compile(r"decision-card/([1-9][0-9]{0,3})")
+CARD_ITEM_ID_RE = re.compile(r"[a-z0-9][a-z0-9-]{0,127}")
+# the longest key a record may hold: a list under a key is scanned with
+# its key per item, so a long key over many items costs key x items
+RECORD_KEY_MAX = 256
+DECISION_N_RE = re.compile(r"[1-9][0-9]{0,8}")   # at most 9 digits
+# the machine lines a card carries under its `card:` line, each key's
+# grammar its own plan's: delegation:/terms: (answer changes), act: and
+# grant: (signed grants). raised:, revised: and card: are wi's own.
+MACHINE_KEYS = ("delegation", "terms", "act", "grant")
+_MACHINE_RE = re.compile(r"[ \t]+([A-Za-z][A-Za-z0-9 _-]*):(?:[ \t].*)?")
+_CARD_TAIL = (" — the card is this record; read it with the decisions "
+              "skill's card-record reference; never backfill this card from "
+              "lines")
+# a key named in an error: letters, `_` and `-`, at most two trailing
+# digits, at most 32 characters; any other key (a token-shaped one, a
+# long one) is named by its place
+_JSON_KEY = re.compile(r"(?=.{1,32}\Z)[A-Za-z][A-Za-z_-]*[0-9]{0,2}")
+
+
+# the label's delimiters and their lookalikes: full-width parentheses,
+# U+0387 (the Greek ano teleia, NFKC's twin of the middle dot)
+_LABEL_DELIMS = "()·\uff08\uff09\u0387"
+# an option marker as a reader would take it: a bracketed lone a-z letter
+# not touching a letter before it (file(s) and a[i] are text), followed
+# by a space or the end of the text
+_MARKER_RE = re.compile(r"(?<![A-Za-z])[\[(]\s*[a-z]\s*[\])](?= |$)")
+# the head of a headline raised from one labelled item
+_LABEL_SHAPE = re.compile(r"\S+ \([^)]*\) · ")
+# variation selectors: not format characters (Unicode Mn), so NFKC keeps
+# them; dropped before the second token check (`⚠` + U+FE0F)
+_VARIATION_RE = re.compile("[\ufe00-\ufe0f\U000e0100-\U000e01ef]")
+
+
+class _BadJson(ValueError):
+    pass
+
+
+def _no_constant(name):
+    raise _BadJson(f"holds {name}, which is not JSON")
+
+
+def _finite(text):
+    val = float(text)
+    if val in (float("inf"), float("-inf")):
+        raise _BadJson("holds a number too large for JSON")
+    if val == 0 and re.search("[1-9]", re.split("[eE]", text)[0]):
+        raise _BadJson("holds a number too small for JSON (it reads as 0)")
+    return val
+
+
+def _no_dup_keys(pairs):
+    out = {}
+    for k, v in pairs:
+        if k in out:
+            raise _BadJson("holds a duplicate key")
+        out[k] = v
+    return out
+
+
+def _read_input(what, src):
+    """Bytes of --record or --lines: a path, or `-` for stdin (read only
+    when named). At most RECORD_CAP bytes; more is refused."""
+    try:
+        if src == "-":
+            data = sys.stdin.buffer.read(RECORD_CAP + 1)
+        else:
+            with open(src, "rb") as fh:
+                data = fh.read(RECORD_CAP + 1)
+    except OSError as e:
+        raise WiError(1, f"{what}: cannot read {src}: {e.strerror}; "
+                         "nothing written") from None
+    if len(data) > RECORD_CAP:
+        raise WiError(1, f"{what} over 256 KB; nothing written")
+    try:
+        return data.decode("utf-8")
+    except UnicodeDecodeError as e:
+        raise WiError(1, f"{what}: not UTF-8 at byte {e.start}; "
+                         "nothing written") from None
+
+
+def _parse_record(text):
+    """The record as a dict: strict JSON (no NaN or Infinity, no number
+    that overflows to one, no duplicate key at any depth), one object.
+    Errors name a position, never content."""
+    try:
+        rec = json.loads(text, parse_constant=_no_constant,
+                         parse_float=_finite, object_pairs_hook=_no_dup_keys)
+    except _BadJson as e:
+        raise WiError(1, f"record {e}; nothing written") from None
+    except json.JSONDecodeError as e:
+        raise WiError(1, f"record is not valid JSON (line {e.lineno} "
+                         f"column {e.colno}); nothing written") from None
+    except RecursionError:
+        raise WiError(1, "record is nested too deep; nothing written") from None
+    except ValueError:  # e.g. an integer past the digit limit
+        raise WiError(1, "record holds a value JSON here cannot read; "
+                         "nothing written") from None
+    if not isinstance(rec, dict):
+        raise WiError(1, "record is not a JSON object; nothing written")
+    if _depth(rec) > RECORD_DEPTH:
+        raise WiError(1, f"record is nested more than {RECORD_DEPTH} deep; "
+                         "nothing written")
+    return rec
+
+
+def _depth(val):
+    """The deepest nesting of objects and lists in `val` (a scalar is 0),
+    walked without recursion; a key over RECORD_KEY_MAX is refused on
+    the way."""
+    best, stack = 0, [(val, 1)]
+    while stack:
+        v, d = stack.pop()
+        if isinstance(v, dict):
+            if any(len(k) > RECORD_KEY_MAX for k in v):
+                raise WiError(1, f"record holds a key over {RECORD_KEY_MAX} "
+                                 "characters; nothing written")
+            kids = v.values()
+        elif isinstance(v, list):
+            kids = v
+        else:
+            continue
+        best = max(best, d)
+        stack.extend((k, d + 1) for k in kids)
+    return best
+
+
+def _headline_field(what, val, in_q=False, label_name=False,
+                    norec_title=False):
+    """Refuse a text the headline is built from unless it is non-empty and
+    one line, with no control or line-separator character and none of the
+    headline's own tokens. Inside q only ` — options: `, ` | `,
+    `[recommended]` and `⚠ one-way` are tokens (readers split at the
+    first ` — options: `, so a question's own `(b) ` never reaches the
+    option list), and q may not start with whitespace; a title, label or
+    norec also refuses an option marker. A format character (Unicode Cf:
+    zero-width, bidi, soft hyphen, BOM, tags) is refused everywhere, so
+    no token is forged from invisible parts. label.name refuses `(`, `)` and `·` (its own
+    delimiters); with no recommendation a title refuses ` — `, the norec
+    boundary. Never quotes the text."""
+    def no(why):
+        raise WiError(1, f"record {what}: {why}; nothing written")
+    if not isinstance(val, str) or not val.strip():
+        no("must be non-empty text")
+    try:
+        _one_line(f"record {what}", val)
+    except WiError as e:
+        raise WiError(1, f"{e}; nothing written") from None
+    if any(unicodedata.category(c) == "Cc" for c in val):
+        no("holds a control character")
+    if any(unicodedata.category(c) == "Cf" for c in val):
+        no("holds a format character (zero-width, bidi or similar)")
+    if "⚠ one-way" in val:
+        no("holds '⚠ one-way', the headline's mark")
+    if in_q and val[:1].isspace():
+        no("starts with whitespace")
+    if label_name and any(c in val for c in _LABEL_DELIMS):
+        no("holds '(', ')' or '·', the label's delimiters")
+    if norec_title and " — " in val:
+        no("holds ' — ', which with no recommendation marks the norec label")
+    if " — options: " in val:
+        no("holds ' — options: ', which splits the headline")
+    if " | " in val:
+        no("holds ' | ', which separates the headline's options")
+    if "[recommended]" in val.lower():
+        no("holds '[recommended]', the headline's mark")
+    if not in_q and _MARKER_RE.search(val):
+        no("holds an option marker (x)")
+
+
+def _check_record(rec, n):
+    """Check what wi relies on to write the record and build its headline
+    (format, rev, n, q, options, rec/norec, label, oneway); the record's
+    other fields are the card-record reference's. Returns k, the format's
+    number. `n` is N for a revision (the record's n must equal it), None
+    for a new raise (wi writes n)."""
+    def no(why):
+        raise WiError(1, f"record {why}; nothing written")
+    fmt = rec.get("format")
+    m = CARD_FORMAT_RE.fullmatch(fmt) if isinstance(fmt, str) else None
+    if not m:
+        no("format: must be decision-card/<k>")
+    rev = rec.get("rev")
+    if not isinstance(rev, str) or not re.fullmatch(REV_WRITE, rev):
+        if isinstance(rev, str) and re.fullmatch(REV_MINUTE, rev):
+            no("rev: is to the minute; write it to the second, …:00Z")
+        no("rev: must be YYYY-MM-DDTHH:MM:SSZ (UTC, to the second)")
+    if n is not None:
+        got = rec.get("n")
+        if type(got) is not int or got != n:
+            no(f"n: must equal the revised decision's number, {n}")
+    _headline_field("q", rec.get("q"), in_q=True)
+    if re.match(r"decision\b", rec["q"], re.I):
+        no("q: starts 'decision'; give only the question, wi numbers it")
+    if "label" not in rec and _LABEL_SHAPE.match(rec["q"]):
+        no("q: reads as a label (`<id> (<name>) · `); give it as `label`")
+    opts = rec.get("options")
+    if not isinstance(opts, list) or not opts:
+        no("options: must be a non-empty list")
+    last = ""
+    for i, opt in enumerate(opts):
+        if not isinstance(opt, dict):
+            no(f"options[{i}]: must be an object")
+        k = opt.get("k")
+        if not isinstance(k, str) or not re.fullmatch("[a-z]", k):
+            no(f"options[{i}].k: must be one letter a-z")
+        if k <= last:
+            no(f"options[{i}].k: letters go in order, each once, (z) last")
+        last = k
+        _headline_field(f"options[{i}].title", opt.get("title"),
+                        norec_title=rec.get("rec") is None)
+    letters = {opt["k"] for opt in opts}
+    r = rec.get("rec")
+    if r is None:
+        _headline_field("norec", rec.get("norec"))
+    elif not isinstance(r, str) or r not in letters:
+        no("rec: must be one option's letter, or null with norec")
+    if "label" in rec:
+        lab = rec["label"]
+        if not isinstance(lab, dict):
+            no("label: must be an object {id, name}")
+        lid = lab.get("id")
+        if not isinstance(lid, str) or not re.fullmatch(r"\S+", lid):
+            no("label.id: must be one word")
+        _headline_field("label.id", lid, label_name=True)
+        _headline_field("label.name", lab.get("name"), label_name=True)
+    if "oneway" in rec and not isinstance(rec["oneway"], bool):
+        no("oneway: must be true or false")
+    return int(m.group(1))
+
+
+def _record_headline(n, rec):
+    """`decision N: [<id> (<name>) · ]<q>[ ⚠ one-way] — options: (a) <title>
+    [recommended] | … [ — <norec>]`, the form format.md § Operator questions
+    gives, so every headline reader is unchanged."""
+    head = rec["q"]
+    if "label" in rec:
+        head = f"{rec['label']['id']} ({rec['label']['name']}) · {head}"
+    if rec.get("oneway") is True:
+        head += " ⚠ one-way"
+    opts = []
+    for opt in rec["options"]:
+        text = f"({opt['k']}) {opt['title']}"
+        if rec.get("rec") == opt["k"]:
+            text += " [recommended]"
+        opts.append(text)
+    line = f"decision {n}: {head} — options: " + " | ".join(opts)
+    if rec.get("rec") is None:
+        line += f" — {rec['norec']}"
+    return line
+
+
+def _headline_reads_back(line, n, rec):
+    """Refuse (exit 1) a built headline a reader would not split back into
+    the record's parts, on the text as built and again on its NFKC form
+    with variation selectors dropped (lookalikes: a no-break or em space
+    around a dash, full-width brackets and bars, `⚠` + U+FE0F): exactly
+    one ` — options: `; a head holding `⚠` only as the one-way mark and
+    ending in no token character; with `rec` null, ` — ` only as the
+    norec boundary, the norec after it exactly; `split(' | ')` giving one
+    `(k) ` part per option in letter order, no other option marker (a
+    bracketed lone letter that touches no letter before it: file(s) and
+    a[i] are text) and no part starting or ending in a token character (a
+    leading tag such as [WIP] or (Re) is text); `[recommended]` only
+    once, closing the rec's option. Never quotes the text."""
+    def norm(t):
+        return _VARIATION_RE.sub("", unicodedata.normalize("NFKC", t))
+
+    def no(why):
+        raise WiError(1, f"record: the built headline would not read back "
+                         f"({why}); nothing written")
+    # a part may start with a bracket ([WIP] ship it, (Re)start the job?):
+    # only these may not open a part, and these with an open bracket may
+    # not close one
+    starts = ("—", "|", "·", "⚠")
+    ends = starts + ("[", "(")
+    names = {"—": "a dash, the norec boundary",
+             "|": "the options separator", "·": "the label separator",
+             "⚠": "the one-way mark", "[": "an open bracket",
+             "(": "an open bracket"}
+
+    def edge(text, where):
+        t = text.strip()
+        c = t[:1] if where == "starts" else t[-1:]
+        return names.get(c) if c in (starts if where == "starts" else ends) \
+            else None
+    for t, norec in ((line, rec.get("norec")),
+                     (norm(line), norm(rec.get("norec") or ""))):
+        body = t[len(f"decision {n}: "):]
+        if len(re.findall("(?= — options: )", body)) != 1:  # overlaps too
+            no("' — options: ' must appear once")
+        head, tail = body.split(" — options: ")
+        if rec.get("oneway") is True:
+            if not head.endswith(" ⚠ one-way"):
+                no("the one-way mark is not where it goes")
+            head = head[:-len(" ⚠ one-way")]
+        if "⚠" in head:
+            no("the question holds the one-way mark ⚠")
+        if "[recommended" in head.lower():
+            no("the question holds the recommended mark")
+        if edge(head, "ends"):
+            no(f"the question ends in {edge(head, 'ends')}")
+        if "label" in rec:
+            head = head.split(" · ", 1)[-1]
+        if edge(head, "starts"):
+            no(f"the question starts with {edge(head, 'starts')}")
+        if rec.get("rec") is None:
+            if " — " not in tail:
+                no("no norec boundary")
+            tail, after = tail.split(" — ", 1)
+            if after != norec or edge(after, "starts"):
+                no("a dash ' — ' other than the norec boundary")
+        parts = tail.split(" | ")
+        if len(parts) != len(rec["options"]):
+            no("the options separator ' | ' inside a part")
+        for part, opt in zip(parts, rec["options"]):
+            m = re.fullmatch(r"\(([a-z])\) (.*)", part)
+            if not m or m.group(1) != opt["k"]:
+                no(f"option ({opt['k']}) does not open its part")
+            rest = m.group(2)
+            if rec.get("rec") == opt["k"]:
+                if not rest.endswith(" [recommended]"):
+                    no("the recommended mark does not close the rec's "
+                       "option")
+                rest = rest[:-len(" [recommended]")]
+            title = f"option ({opt['k']})'s title"
+            if "[recommended" in rest.lower():
+                no(f"{title} holds the recommended mark")
+            if _MARKER_RE.search(rest):
+                no(f"{title} holds an option marker (x)")
+            for where in ("starts", "ends"):
+                if edge(rest, where):
+                    word = "starts with" if where == "starts" else "ends in"
+                    no(f"{title} {word} {edge(rest, where)}")
+
+
+def _json_strings(val, path="", key=None):
+    """(JSON path, text) for every string in the record, keys too. An
+    item of a list under a key is also given as the line scan sees an
+    object's member, `"<key>": "<item>"` (a number or boolean re-rendered
+    by json.dumps, `true`/`false` or the number as Python prints it, then
+    quoted as a string), so a secret listed under its key (`"api_key": ["…"]`) reads
+    as the assignment it is; a multi-line item is also given as
+    `<key>: <item>`, so its continued lines join. A key that does not look
+    harmless (_JSON_KEY) is named by its place, never its text."""
+    if isinstance(val, dict):
+        for i, (k, v) in enumerate(val.items()):
+            seg = k if _JSON_KEY.fullmatch(k) else f"<key {i}>"
+            p = f"{path}.{seg}" if path else seg
+            yield f"{p} (its key)", k
+            yield from _json_strings(v, p, k)
+    elif isinstance(val, list):
+        for i, v in enumerate(val):
+            p = f"{path}[{i}]"
+            if key is not None and isinstance(v, (str, int, float)):
+                sv = v if isinstance(v, str) else \
+                    json.dumps(v)   # true/false, or the number as written
+                yield p, json.dumps(key, ensure_ascii=False) + ": " + \
+                    json.dumps(sv, ensure_ascii=False)
+                if isinstance(v, str) and "\n" in v:
+                    yield p, f"{key}: {v}"
+            yield from _json_strings(v, p, key)
+    elif isinstance(val, str):
+        yield path or "(the record)", val
+
+
+def _record_bytes(rec):
+    """(text, bytes) the record is written as, refused (exit 1) when it
+    does not encode as UTF-8 or the bytes pass RECORD_CAP."""
+    try:
+        text = json.dumps(rec, ensure_ascii=False, indent=2) + "\n"
+        data = text.encode("utf-8")
+    except RecursionError:
+        raise WiError(1, "record is nested too deep; nothing written") \
+            from None
+    except UnicodeEncodeError:
+        raise WiError(1, "record holds a lone surrogate, which UTF-8 cannot "
+                         "carry; nothing written") from None
+    if len(data) > RECORD_CAP:
+        raise WiError(1, "record as written over 256 KB; nothing written")
+    return text, data
+
+
+def _record_secrets(text, rec):
+    """Two scans, both clean or refused: every line of the bytes to be
+    written, then every decoded string value whole (a secret laid over
+    lines inside one value), reported by JSON path and line within it."""
+    for k, why in secret_findings(text):
+        raise WiError(1, f"record line {k}: {why}; nothing written")
+    for path, val in _json_strings(rec):
+        for k, why in secret_findings(val):
+            raise WiError(1, f"record {path} line {k}: {why}; nothing written")
+
+
+def _machine_lines(text):
+    """The --lines text as lines: each one indented physical line keyed
+    by MACHINE_KEYS, secret-clean. A final newline is allowed."""
+    if text.endswith("\n"):
+        text = text[:-1]
+    out = text.split("\n") if text else []
+    if not out:
+        raise WiError(1, "lines: no line given; nothing written")
+    for i, line in enumerate(out, 1):
+        def no(why):
+            raise WiError(1, f"lines line {i}: {why}; nothing written")
+        try:
+            _one_line("it", line)
+        except WiError as e:
+            no(str(e))
+        m = _MACHINE_RE.fullmatch(line)
+        if not m:
+            no("must be indented and open with its key ("
+               + ", ".join(k + ":" for k in MACHINE_KEYS) + ")")
+        key = m.group(1)
+        if key in ("raised", "revised", "card"):
+            no(f"{key}: is wi's own line")
+        if key not in MACHINE_KEYS:
+            no("a card's content goes in the record; lines take only "
+               + ", ".join(k + ":" for k in MACHINE_KEYS))
+        if key == "grant" and not line.split(":", 1)[1].strip():
+            no("grant: needs the grant's id")
+        why = _line_refusal(line, line, raw=True)
+        if why:
+            no(why)
+    return out
+
+
+def _store_texts(root):
+    """(item file stem, unfenced lines) for every item in items/ and
+    archive/; a file that does not read is skipped (load_all, run first,
+    refuses an undecodable one)."""
+    for path in item_paths(root, archived=True):
+        try:
+            text = read_raw(path)
+        except (WiError, OSError):
+            continue
+        lines = text.replace("\r\n", "\n").split("\n")
+        fenced = set()
+        for i, j in _fence_spans(lines):
+            fenced.update(range(i, j + 1))
+        yield path.stem, [ln for i, ln in enumerate(lines) if i not in fenced]
+
+
+def _answer_holder(root, n):
+    """The item holding an `answer N:` line, store-wide, else None: any
+    answer line is final (a follow-up is never stored as one)."""
+    for stem, lines in _store_texts(root):
+        for line in lines:
+            m = ANSWER_RE.match(line)
+            if m and int(m.group(1)) == n:
+                return stem
+    return None
+
+
+def _named_records(root):
+    """Every record path a `card:` line names, store-wide."""
+    out = set()
+    for _, lines in _store_texts(root):
+        for line in lines:
+            m = CARD_RE.fullmatch(line)
+            if m:
+                out.add(m.group(1))
+    return out
+
+
+def _item_has_decision(item, n):
+    lines = item.body.replace("\r\n", "\n").split("\n")
+    fenced = set()
+    for i, j in _fence_spans(lines):
+        fenced.update(range(i, j + 1))
+    return any(i not in fenced and (m := DECISION_RE.match(line))
+               and int(m.group(1)) == n for i, line in enumerate(lines))
+
+
+def _card_dir(root, iid, n, make):
+    """cards/<id>/<N> walked level by level: each level lstat-ed, a
+    symlink or non-directory refused (exit 3), a missing level made with
+    os.mkdir (never makedirs, which follows a link) when `make`; then the
+    real path must lie under the store's cards/."""
+    level = Path(root)
+    for seg in ("cards", iid, str(n)):
+        level = level / seg
+        try:
+            st = os.lstat(level)
+        except FileNotFoundError:
+            if not make:
+                continue
+            try:
+                os.mkdir(level)
+            except FileExistsError:
+                pass
+            except OSError as e:
+                raise WiError(3, f"cannot create {level}: {e.strerror}; "
+                                 "nothing written") from None
+            st = os.lstat(level)
+        if stat.S_ISLNK(st.st_mode):
+            raise WiError(3, f"{level} is a symbolic link; a card record is "
+                             "never written or read through one; nothing "
+                             "written")
+        if not stat.S_ISDIR(st.st_mode):
+            raise WiError(3, f"{level} is not a directory; nothing written")
+    # defence in depth: the lstat walk above already refuses every link,
+    # so this is unreachable today; kept should a later change loosen it
+    under = os.path.join(os.path.realpath(root), "cards") + os.sep
+    if not os.path.realpath(level).startswith(under):
+        raise WiError(3, f"{level} resolves outside the store's cards/; "
+                         "nothing written")
+    return level
+
+
+def _existing_record(root, rel, path, data):
+    """None when nothing is at the record's path; "adopt" for an orphan
+    with these exact bytes (a raise that stopped between the file and its
+    line); otherwise WiError(3)."""
+    try:
+        st = os.lstat(path)
+    except FileNotFoundError:
+        return None
+    if not stat.S_ISREG(st.st_mode):
+        kind = "a symbolic link" if stat.S_ISLNK(st.st_mode) else \
+            "not a regular file"
+        raise WiError(3, f"{path} is {kind}; a card record is never written "
+                         "or read through one; nothing written")
+    if rel in _named_records(root):
+        raise WiError(3, f"refusing to overwrite existing {path}: a card "
+                         "record is immutable; give the revision a new rev; "
+                         "nothing written")
+    try:
+        # O_NOFOLLOW: a link swapped in since the lstat is refused, not read
+        fd = os.open(path, os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0))
+        with open(fd, "rb") as fh:
+            same = fh.read(len(data) + 1) == data
+    except OSError as e:
+        raise WiError(3, f"cannot read {path}: {e.strerror}; "
+                         "nothing written") from None
+    if not same:
+        raise WiError(3, f"the file at {path} is named by no card: line and "
+                         "differs from this record: delete it (an orphan "
+                         "from a stopped write), then run the raise again; "
+                         "nothing written")
+    return "adopt"
+
+
+def _encodable(what, line):
+    try:
+        line.encode("utf-8")
+    except UnicodeEncodeError:
+        raise WiError(1, f"{what}: holds a lone surrogate, which UTF-8 cannot "
+                         "carry; nothing written") from None
+
+
+def _raise_args(question, record, revise, why, lines, raised):
+    """Refuse a combination of raise's forms (exit 1), before anything is
+    read: the record and a question line are exclusive; --why goes with
+    --revise, as --raised does; --lines goes with --record, or alone with
+    --revise N (machine lines under the current card)."""
+    def no(text):
+        raise WiError(1, f"{text}; nothing written")
+    if record is not None and question is not None:
+        no("--record and a question line are exclusive: the headline is "
+           "built from the record")
+    if record == "-" and lines == "-":
+        no("--record - and --lines - cannot both read stdin")
+    if revise is None:
+        if why is not None:
+            no("--why goes with --revise")
+        if raised is not None:
+            no("--raised goes with --revise")
+        if lines is not None and record is None:
+            no("--lines goes with --record, or with --revise N alone")
+        return None
+    if not DECISION_N_RE.fullmatch(revise):
+        no("--revise takes a decision number (1-9 digits)")
+    if why is None:
+        no("--revise needs --why '<why>'")
+    if lines is not None and question is not None:
+        no("--lines goes under a card record, never with a question line")
+    if record is None and question is None and lines is None:
+        no("--revise needs --record, a question line, or --lines")
+    if raised is not None and record is None and question is None:
+        no("--raised goes with a restated headline (--record or a question "
+           "line)")
+    if raised is not None and not re.fullmatch(REV_WRITE, raised):
+        no("--raised must be YYYY-MM-DDTHH:MM:SSZ (UTC, to the second)")
+    return int(revise)
+
+
+def _insert_after_card_block(item, n, new_lines):
+    """Insert `new_lines` directly after decision N's current card block:
+    its last `card:` line and the indented lines already under it, so the
+    block stays one block. The one place wi writes inside a body rather
+    than at the end of `## Notes`."""
+    idx = [i for m, i, _ in _card_scan(item) if m == n][-1]
+    raw = _raw_lines(item.body)
+    end = idx + 1
+    while end < len(raw) and _content(raw[end])[:1].isspace():
+        end += 1
+    if not raw[end - 1].endswith("\n"):
+        raw[end - 1] += item.eol
+    raw[end:end] = [line + item.eol for line in new_lines]
+    item.body = "".join(raw)
+
+
+def raise_decision(root, ref, question, *, record=None, revise=None,
+                   why=None, lines=None, raised=None, check=False):
     """Give out the next decision number and write its headline, all under
     one Lock (03ab F8): allocate N, build the lines, append them to item
     `ref`'s Notes, save, then advance the counter. Returns (N, item).
 
     One step under the lock: a crash after the item is saved and before
     the counter is written loses nothing, since the next reader takes the
-    larger of the counter and the items. The card-record forms extend this
-    function (format.md § Allocating a decision number): N is validated or
-    allocated here, the lines built here, any record file written before
-    the append, still under this one lock."""
-    why = _question_refusal(question)
-    if why:
-        raise WiError(1, f"question: {why}; nothing written")
+    larger of the counter and the items.
+
+    The card-record forms (3b51 W2, format.md § Card records): `record`
+    (the record's text) writes cards/<id>/<N>/<rev>.card<k>.json, created
+    exclusively, before the item's lines, its `card:` line last; `revise`
+    (N) restates an open decision's headline under a `revised:` line, from
+    the record or `question`; `lines` (text) adds machine lines, after the
+    `card:` line, or alone under N's current card with no new record.
+    Every check runs first; `check` runs them all and writes nothing."""
+    n_rev = _raise_args(question, record, revise, why, lines, raised)
+    form = ("record" if record is not None else
+            "question" if question is not None or n_rev is None else "lines")
+    if form == "question":
+        why_q = _question_refusal(question)
+        if why_q:
+            raise WiError(1, f"question: {why_q}; nothing written")
+    if why is not None:
+        why_w = _line_refusal(why, why, raw=True)
+        if why_w:
+            raise WiError(1, f"--why: {why_w}; nothing written")
+    rec = None
+    if record is not None:
+        rec = _parse_record(record)
+        k = _check_record(rec, n_rev)
+        # every check that reads the record runs here, before the lock: a
+        # new raise's n is not known yet, so 0 stands in; the n wi writes
+        # under the lock is a number it chose, and only the size is checked
+        # again there
+        if n_rev is None:
+            rec["n"] = 0
+        _headline_reads_back(_record_headline(rec["n"], rec), rec["n"], rec)
+        text, _ = _record_bytes(rec)
+        try:
+            _record_secrets(text, rec)
+        except RecursionError:
+            raise WiError(1, "record is nested too deep; nothing written") \
+                from None
+    machine = _machine_lines(lines) if lines is not None else []
     with Lock(root):
         problem = counter_problem(root)
         if problem:
             raise WiError(1, f"{problem}; nothing written")
         item = load_item_anywhere(root, ref)
-        n = _decision_floor(root) + 1
-        lines = [f"decision {n}: {question}", f"  raised: {now_second()}"]
-        for line in lines:
-            # defensive: the question already passed these refusals, and
-            # no question that did is known to fail them once numbered or
-            # beside its raised: line; kept so a later line form cannot
-            # slip past them
-            why = _line_refusal(line, line, raw=True)
-            if why:
-                raise WiError(1, f"question: {why}; nothing written")
-        for line in lines:
-            item.append_note(line)
+        now = now_second()
+        if n_rev is None:
+            n = _decision_floor(root) + 1
+        else:
+            n = n_rev
+            if not _item_has_decision(item, n):
+                raise WiError(1, f"decision {n} is not on {item.id}; "
+                                 "nothing written")
+            holder = _answer_holder(root, n)
+            if holder:
+                raise WiError(1, f"decision {n} is answered (`answer {n}:` "
+                                 f"on {holder}); an answered card is never "
+                                 "rewritten. A follow-up (later, tell me, dig "
+                                 "into, expand, hold) is never an answer "
+                                 "line: if that line is one, rewrite it as a "
+                                 f"`wake {n}:` line first (format.md "
+                                 "§ Operator questions); nothing written")
+            carded = n in card_lines(item)
+            if form == "question" and carded:
+                raise WiError(1, f"decision {n} has a card record; revise it "
+                                 "with `--record`; nothing written")
+            if form == "lines" and not carded:
+                raise WiError(1, f"decision {n} has no card record on "
+                                 f"{item.id}: machine lines go under a card "
+                                 "record; nothing written")
+            if raised is not None and n in decision_raised(item):
+                raise WiError(1, f"decision {n} already has a raised: line; "
+                                 "--raised only fills a missing one; nothing "
+                                 "written")
+        path = data = None
+        out = []
+        if form == "record":
+            if not CARD_ITEM_ID_RE.fullmatch(item.id):
+                raise WiError(1, f"{item.id}: not a card record path segment "
+                                 "([a-z0-9][a-z0-9-]*, at most 128 "
+                                 "characters); nothing written")
+            if n_rev is None:
+                rec["n"] = n
+            headline = _record_headline(n, rec)
+            _, data = _record_bytes(rec)
+            name = rec["rev"].replace(":", "-") + f".card{k}.json"
+            rel = f"cards/{item.id}/{n}/{name}"
+            card = f"  card: {rel} rev {rec['rev']} · decision-card/{k}" \
+                + _CARD_TAIL
+            if not CARD_RE.fullmatch(card):
+                raise WiError(1, f"{item.id}: the card: line would not read "
+                                 "back; nothing written")
+            _card_dir(root, item.id, n, make=False)
+            path = Path(root) / "cards" / item.id / str(n) / name
+            adopt = _existing_record(root, rel, path, data) == "adopt"
+            out.append(headline)
+            if n_rev is None:
+                out.append(f"  raised: {now}")
+        elif form == "question":
+            out.append(f"decision {n}: {question}")
+            if n_rev is None:
+                out.append(f"  raised: {now}")
+        if n_rev is not None and form != "lines":
+            if raised is not None:
+                out.append(f"  raised: {raised}")
+            out.append(f"  revised: {now} — {why}")
+        if form == "record":
+            out.append(card)
+        if form == "lines":
+            out.append(f"  revised: {now} — {why} (machine lines added; "
+                       "record unchanged)")
+        out += machine
+        for line in out:
+            why_l = _line_refusal(line, line, raw=True)
+            if why_l:
+                what = "question" if form == "question" else "line"
+                raise WiError(1, f"{what}: {why_l}; nothing written")
+            _encodable("line", line)
+        if check:
+            return n, item
+        if form == "record":
+            _card_dir(root, item.id, n, make=True)
+            if adopt:
+                _journal_write(path)
+            else:
+                atomic_write_bytes(path, data, create=True)
+        if form == "lines":
+            _insert_after_card_block(item, n, out)
+        else:
+            for line in out:
+                item.append_note(line)
         item.touch()
         save_item(root, item)
-        write_counter(root, n)
+        if n_rev is None:
+            write_counter(root, n)
     return n, item
 
 
@@ -3826,9 +4605,23 @@ def _decision_floor(root):
 
 
 def cmd_raise(args):
+    # the forms are checked before stdin or any file is read
+    _raise_args(args.question, args.record, args.revise, args.why,
+                args.lines_file, args.raised)
+    record = (_read_input("record", args.record)
+              if args.record is not None else None)
+    lines = (_read_input("lines", args.lines_file)
+             if args.lines_file is not None else None)
     root = resolve_root(args.root)
-    n, _ = raise_decision(root, args.id, args.question)
-    print(n)
+    n, item = raise_decision(root, args.id, args.question, record=record,
+                             revise=args.revise, why=args.why, lines=lines,
+                             raised=args.raised, check=args.check)
+    if args.check:
+        verb = "raise" if args.revise is None else "revise"
+        print(f"check: ok, would {verb} decision {n} on {item.id}; "
+              "nothing written")
+    else:
+        print(n)
     return 0
 
 
@@ -6479,8 +7272,15 @@ def build_parser():
             ("--raw",)],
         ("raise", cmd_raise, "give out the next decision number under the "
          "lock and append its `decision N:` headline and `raised:` line to "
-         "an item; the question goes after --; prints N"): [
-            ("id", {}), ("question", dict(nargs="?"))],
+         "an item; the question goes after --, or --record FILE|- writes "
+         "the card record (cards/<id>/<N>/<rev>.card<k>.json, immutable) "
+         "and builds the headline from it; --revise N --why restates an "
+         "open decision; --lines adds machine lines; prints N"): [
+            ("id", {}),
+            ("--record", dict(metavar="FILE|-")),
+            ("--revise", dict(metavar="N")), ("--why", {}),
+            ("--lines", dict(metavar="FILE|-", dest="lines_file")),
+            ("--raised", dict(metavar="UTC")), ("--check",)],
         ("counter", cmd_counter, "print the last decision number given out "
          "(the larger of store.yaml's counter and the items' highest N); "
          "read-only"): [],
@@ -6557,9 +7357,42 @@ def build_parser():
     return p
 
 
+def _raise_question(parser, extra, argv):
+    """raise's question line, from what argparse left over. It is not a
+    positional: an optional positional after the id is consumed, empty, as
+    soon as an option follows the id, and `-- '<question>'` after options
+    would then be refused. One text, after `--` when it starts with `-`."""
+    if "--" in argv and argv[argv.index("--") + 1:] == ["--"]:
+        return "--"  # `-- --`: a question _question_refusal refuses
+    left = list(extra)
+    if "--" in left:  # kept or dropped by Python version
+        left.remove("--")
+    # a usage error counts and places the leftover texts, never echoes
+    # them: a mistyped question may hold a secret
+    after = argv[argv.index("--") + 1:] if "--" in argv else []
+    if len(left) > 1:
+        where = "after --" if len(after) == len(left) else \
+            "outside the options" if not after else "before and after --"
+        parser.error(f"{len(left)} texts {where}; expected one question "
+                     "after --")
+    question = left[-1] if left else None
+    # a text starting `-` is a question only as the one text after `--`;
+    # anything else is a misspelled option (`--chek`), never a question
+    if question is not None and question.startswith("-") and \
+            after != [question]:
+        parser.error("an unrecognized option (1 text starting '-' before "
+                     "--); a question starting '-' goes after --")
+    return question
+
+
 def main(argv=None):
-    args = build_parser().parse_args(argv)
+    parser = build_parser()
+    args, extra = parser.parse_known_args(argv)
     args.argv = list(sys.argv[1:] if argv is None else argv)
+    if args.command == "raise":
+        args.question = _raise_question(parser, extra, args.argv)
+    elif extra:
+        parser.error("unrecognized arguments: " + " ".join(extra))
     _COMMAND[0] = args.command
     try:
         return args.func(args) or 0
