@@ -130,8 +130,10 @@ counters:
   decision: 309
 ```
 
-`counters:` sits on a line of its own; the indented lines under it, up to the first line
-that is not indented, are `<key>: <whole number>`. Only `decision` is defined. A missing
+`counters:` sits on a line of its own; the indented lines under it, blank lines between them
+included, up to the first line that is neither indented nor blank, are `<key>: <whole
+number>` (digits 0-9). Only `decision` is defined; a key written twice is a `wi lint` problem
+(the first line counts, and the next write keeps one). A missing
 file, block or key reads as 0. `wi raise` and `wi lint` write it, keeping every other line
 of the file; `wi init` carries the block over unchanged when it rewrites the file. A store
 with no `store.yaml` gets none from a raise (a file without `tracking:` would be a lint
@@ -1001,7 +1003,7 @@ that one locked step:
 6. prints N alone on stdout.
 
 The question goes after `--`. It is one physical line and does not start with the word
-`decision` (`wi` numbers it); it passes `wi note --raw`'s refusals (a line break, an empty
+`decision`, in any case (`wi` numbers it); it passes `wi note --raw`'s refusals (a line break, an empty
 text, a `## ` line, a fence opener, any line `lint` would flag as a secret), and the
 numbered headline passes them too. A refusal exits 1, writes nothing and never quotes the
 question. `raise` never reads stdin. A store that is its own repo gets one commit holding
@@ -1024,12 +1026,14 @@ items under the lock, and writes only when the larger of the two is above the co
 re-read. It prints `counter: decision reseeded <old> → <new>` on stderr, a notice, and the
 exit code is unchanged. A counter ahead of the items is a gap: numbers are never reused, so
 a gap is valid, never lowered, and `lint` says nothing. An existing store seeds itself at
-its first `raise` or `lint`; until then it behaves exactly as the old grep did.
+its first `raise` or `lint`; until then it behaves as the old grep did, except fenced lines.
 
 **Accepted limits.** Two branches of a host-tracked store can each give out the same N, as
 they could before the counter; the merge shows it as a `store.yaml` conflict, refused until
 resolved. A store rolled back to an older copy can give out again a number already shown
-whose `decision N:` line the restored copy lacks.
+whose `decision N:` line the restored copy lacks. `wi counter`, which takes no lock, can
+print a lower number while `wi archive` is moving the item that holds the highest N; `raise`
+and the reseed read under the lock and are not affected.
 
 ## Closed: `closed N:`
 

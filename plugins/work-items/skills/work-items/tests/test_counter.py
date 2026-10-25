@@ -257,6 +257,35 @@ class TestRaise(CounterCase):
         self.assertEqual(r.returncode, 1, r.stdout + r.stderr)
         self.assertIn("put it after --", r.stderr)
 
+    def test_a_headline_in_any_case_is_refused(self):
+        """Mutant: the case-insensitive match made case-sensitive."""
+        before = self.snapshot()
+        for question in ("Decision 9: x", "DECISION 9: x"):
+            with self.subTest(question):
+                r = self.wi("raise", IID, "--", question)
+                self.assertEqual(r.returncode, 1, r.stdout + r.stderr)
+                self.assertIn("starts 'decision'", r.stderr)
+                self.assertEqual(self.snapshot(), before)
+
+    def test_blank_line_inside_the_block(self):
+        """`counters:`, a blank line, then the key: the block reads 50 and
+        the write keeps one decision line. Mutant: the block ending at the
+        first line that is not indented (reads 0, writes a second
+        block)."""
+        self.yaml("tracking: tracked\ncounters:\n\n  decision: 50\n")
+        self.assertEqual(self.ok("counter").stdout, "50\n")
+        self.assertEqual(self.ok("raise", IID, "--", "q?").stdout, "51\n")
+        text = self.yaml_text()
+        self.assertEqual(text.count("decision:"), 1, text)
+        self.assertEqual(text.count("counters:"), 1, text)
+        self.assertEqual(self.counter_value(), "51")
+
+    def test_a_trailing_blank_line_stays_outside_the_block(self):
+        self.yaml("tracking: tracked\ncounters:\n  decision: 4\n\n# end\n")
+        self.ok("raise", IID, "--", "q?")
+        self.assertTrue(self.yaml_text().endswith(
+            "counters:\n  decision: 5\n\n# end\n"), self.yaml_text())
+
     def test_a_word_starting_decision_is_a_question(self):
         self.assertEqual(self.ok("raise", IID, "--", "decisions: which?")
                          .stdout, "1\n")
@@ -408,6 +437,22 @@ class TestLint(CounterCase):
         self.assertEqual(r.returncode, 3, r.stdout + r.stderr)
         self.assertIn("counters: decision must be a whole number", r.stdout)
         self.assertEqual(self.counter_value(), "x")
+
+    def test_a_duplicated_key_is_a_problem(self):
+        """Mutant: lint's duplicate check removed."""
+        self.yaml("tracking: tracked\ncounters:\n  decision: 5\n"
+                  "  decision: 7\n")
+        r = self.wi("lint")
+        self.assertEqual(r.returncode, 3, r.stdout + r.stderr)
+        self.assertIn("counters: decision appears more than once", r.stdout)
+
+    def test_digits_are_ascii(self):
+        """A counter in another script's digits is not a whole number.
+        Mutant: COUNTER_VALUE_RE back to \\d."""
+        self.yaml("tracking: tracked\ncounters:\n  decision: ٣\n")
+        r = self.wi("lint")
+        self.assertEqual(r.returncode, 3, r.stdout + r.stderr)
+        self.assertIn("must be a whole number", r.stdout)
 
     def test_conflict_markers_a_problem_and_no_reseed(self):
         body = ("tracking: tracked\ncounters:\n<<<<<<< HEAD\n"

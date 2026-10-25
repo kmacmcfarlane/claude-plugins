@@ -1246,21 +1246,42 @@ def write_tracking(root, choice, repo=None):
 # § Allocating a decision number).
 COUNTERS_RE = re.compile(r"^counters:\s*$")
 COUNTER_LINE_RE = re.compile(r"^\s+([a-z-]+):\s*(.*?)\s*$")
-COUNTER_VALUE_RE = re.compile(r"^\d+$")
+# [0-9], not \d: \d also takes other scripts' digits, which int() accepts
+COUNTER_VALUE_RE = re.compile(r"^[0-9]+$")
 CONFLICT_RE = re.compile(r"^(<{7}|={7}|>{7})", re.M)
 
 
 def _counters_span(lines):
     """(start, end) of the first `counters:` block in store.yaml's lines:
-    its header line and the indented lines under it, up to the first line
-    that is not indented; None when there is no block."""
+    its header line and the indented lines under it, blank lines between
+    them included, up to the first line that is neither indented nor blank
+    (trailing blank lines are left outside); None when there is no
+    block."""
     for i, line in enumerate(lines):
         if COUNTERS_RE.match(line.rstrip("\r\n")):
-            j = i + 1
-            while j < len(lines) and lines[j][:1] in (" ", "\t"):
+            end = j = i + 1
+            while j < len(lines):
+                if lines[j][:1] in (" ", "\t"):
+                    end = j + 1
+                elif lines[j].strip():
+                    break
                 j += 1
-            return i, j
+            return i, end
     return None
+
+
+def _counter_entries(text):
+    """[(key, raw value)] for every indented key line of text's `counters:`
+    block, in order, repeats included."""
+    lines = text.splitlines(keepends=True)
+    span = _counters_span(lines)
+    out = []
+    if span is not None:
+        for line in lines[span[0] + 1:span[1]]:
+            m = COUNTER_LINE_RE.match(line.rstrip("\r\n"))
+            if m:
+                out.append((m.group(1), m.group(2)))
+    return out
 
 
 def _store_counters(root):
@@ -1271,15 +1292,23 @@ def _store_counters(root):
         text = (root / STORE_FILE).read_text(encoding="utf-8")
     except (OSError, UnicodeDecodeError):
         return None, {}
-    lines = text.splitlines(keepends=True)
-    span = _counters_span(lines)
     values = {}
-    if span is not None:
-        for line in lines[span[0] + 1:span[1]]:
-            m = COUNTER_LINE_RE.match(line.rstrip("\r\n"))
-            if m:
-                values.setdefault(m.group(1), m.group(2))
+    for key, raw in _counter_entries(text):
+        values.setdefault(key, raw)
     return text, values
+
+
+def counter_duplicates(root):
+    """The lint problems for a key written more than once in store.yaml's
+    `counters:` block (the first line counts; the next write keeps one)."""
+    try:
+        text = (root / STORE_FILE).read_text(encoding="utf-8")
+    except (OSError, UnicodeDecodeError):
+        return []
+    keys = [k for k, _ in _counter_entries(text)]
+    return [f"{root / STORE_FILE}: counters: {k} appears more than once; "
+            "keep one line, the last number given out"
+            for k in dict.fromkeys(keys) if keys.count(k) > 1]
 
 
 def counter_problem(root, key="decision"):
@@ -3748,7 +3777,7 @@ def _question_refusal(question):
     nothing; the reason never quotes the question."""
     if question is None:
         return "no question line: put it after --"
-    if re.match(r"\s*decision\b", question):
+    if re.match(r"\s*decision\b", question, re.I):
         return "starts 'decision'; give only the question, wi numbers it"
     return _line_refusal(question, question, raw=True)
 
@@ -3775,7 +3804,10 @@ def raise_decision(root, ref, question):
         n = _decision_floor(root) + 1
         lines = [f"decision {n}: {question}", f"  raised: {now_second()}"]
         for line in lines:
-            # the full line, numbered, passes the same refusals
+            # defensive: the question already passed these refusals, and
+            # no question that did is known to fail them once numbered or
+            # beside its raised: line; kept so a later line form cannot
+            # slip past them
             why = _line_refusal(line, line, raw=True)
             if why:
                 raise WiError(1, f"question: {why}; nothing written")
@@ -6161,6 +6193,7 @@ def cmd_lint(args):
     # 03ab F8: the decision counter. A problem (conflict markers, a value
     # that is not a whole number) is never reseeded over; a counter behind
     # the items is reseeded, a notice on stderr, the exit unchanged
+    problems.extend(counter_duplicates(root))
     problem = counter_problem(root)
     if problem:
         problems.append(problem)
