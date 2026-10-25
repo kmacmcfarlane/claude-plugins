@@ -122,10 +122,9 @@ rules.
 
 - **Older stored lines read as written**, all but the effect. A stored `impact:` line's
   effect, the `→ …` before its `later:`, is not shown in any era: the card's **Impact:** line
-  starts at its wait, and the options' own lines say what each does. An Impact line stored
-  before Effect covered the options (2026-10-14) gave the recommended option's effect alone;
-  a line stored before that rule is read the same way, its effect not shown. A revision
-  writes the line with no effect.
+  starts at its wait, and the options' own lines say what each does. That holds for an
+  Impact line stored before Effect covered the options (2026-10-14), which gave the
+  recommended option's effect alone. A revision writes the line with no effect.
 - **An option stored on one line**, its impact after a dash (a caller's store form included),
   renders in the current form: its facets on the line under the option.
 - **A card stored in the older form** may carry a plain `undo:` on every option and on its

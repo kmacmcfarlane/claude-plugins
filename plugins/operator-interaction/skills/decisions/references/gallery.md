@@ -410,7 +410,8 @@ each card with its raised-at time, so each is rendered from the stored card, plu
 while it waited — not composed again. Each stored card holds the Context written when it
 was raised, so under *while it waited* each card runs its What, that Context and its Impact
 line, and 62's block its What, its Context as bullets (the stored card-size Context first),
-its Impact line and its table; *while it waited* says whether the impact changed.*
+its open question as an open ▾ Open questions fold, its Impact line and its table; *while it
+waited* says whether the impact changed.*
 
 **Decisions** — *3 open · shown again after a context reset*
 

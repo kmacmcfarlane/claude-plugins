@@ -324,7 +324,7 @@ def system_slots(body):
     out = []
     for line in body:
         if line.startswith("**Impact:**"):
-            m = re.search(r" · reach: (.*?)( · ⚠ undo: |$)", line)
+            m = re.search(r" · reach: (.*?)( · ⚠ undo: | · cost: |$)", line)
             out.append(m.group(1) if m else "")
         fs = facets(line)
         if fs:
@@ -388,6 +388,8 @@ class SystemMechanismLabels(unittest.TestCase):
         with self.assertRaises(AssertionError):
             check_no_process(self, "mutant", ["**41 — X?**", "- (a) X", "  *→ it ships · reach: the design review*"])
         check_no_process(self, "round ask", card + ["**If left:** *one finding*"])
+        # the Impact line's reach ends at its cost: a process word in the cost is not read as reach
+        check_no_process(self, "cost", ["**41 — X?**", "**Impact:** later: w · reach: the upload service · cost: one review round"])
         for bad in ("*Read as: F7 → (b).*", "*Read as: 52 — F7 → (b).*",
                     "*Read as: F7 (retry storm) → (b).*"):
             with self.assertRaises(AssertionError):

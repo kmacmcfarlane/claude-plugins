@@ -111,8 +111,8 @@ after a dash on the option's own line, a plain `undo:` — is read by
 Every card and block carries a **Context** section, shaped like the answer page's `context`
 field (the `decision-page` skill's `references/cards-schema.md`), in the page's order: the
 decision line first — the title and **What:**, which do the page TLDR's work — then
-**Context:**, then the Impact and the options. A list line and a tag-size mention carry no
-Context: a line stays a line.
+**Context:**, then any fold above the Impact (▸ Open questions, § Folds), then the Impact and
+the options. A list line and a tag-size mention carry no Context: a line stays a line.
 
 What it holds, in this order:
 
@@ -172,9 +172,10 @@ A part a reader may not need opens folded, on one line:
 
 **▸ Open questions** — what is still open about the decision (SKILL.md § The floor, item 9;
 the card record's `open`): each open question one line, said as what is not known yet. Its
-summary is `N open: <the first, cut at about 12 words>`, as on the answer page. It sits
-after **Context:** and before **Impact:** on a card and a block, after any other part the
-card has above the Impact. It is not the message's **Open questions** section, which lists
+summary is `N open: <the first, cut at about 12 words>`, as on the answer page. On a card
+and a block it sits after **Context:** (and after Finding, Scope and Likelihood when the card
+has them), before ▸ Assumptions and the **Impact:**. It is not the message's **Open
+questions** section, which lists
 questions that are not decisions yet (SKILL.md § The floor).
 
 ## Tag size
@@ -539,8 +540,8 @@ new numbered decision that names the line it reopens.
 
 When a decision comes back (a wake fired, a context reset, `tell me`, `dig into`), open it
 with what changed since the operator last saw it, then the card or block as usual — its
-**What:**, its stored **Context:** and its Impact line (and a block's table), right after
-the *while it waited* line:
+**What:**, its stored **Context:**, any ▸ Open questions line and its Impact line (and a
+block's table), right after the *while it waited* line:
 
 **62 — back, as you asked ("until the load test finishes"):** move the job queue to the new
 message broker?
@@ -548,6 +549,7 @@ message broker?
 Options and recommendation unchanged; impact unchanged.*
 **What:** switch every worker service from the old job queue to the new message broker.
 **Context:** the new broker has carried the email worker alone for two weeks as a trial, and the load test was the last check before the rest move. You left it at that trial · you decide whether every worker moves now or one goes first.
+▸ Open questions — 1 open: whether the two workers not read rely on the old queue's ordering
 **Impact:** later: the worker rollout stays paused · reach: every worker service and its on-call · ⚠ undo: (a) switch each config back within the week; after that the old queue is gone
 
 *While it waited* always says whether the impact changed: *impact unchanged*, or what changed

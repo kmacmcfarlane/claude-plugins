@@ -58,7 +58,7 @@ CHAT_HELD = ["**Older stored lines read as written**", "**Older stored cards ren
              "renders as it did before Context existed", "keeps the older order",
              "before Effect covered the options", "from before the cue existed",
              "**A card stored in the older form**", "before undo was shown only where it bites",
-             "a line stored before that rule", "**A stored unknown**"]
+             "**A stored unknown**"]
 
 # the map's rows, by their first cell
 MAP_ROWS = ["`o[i] = [k, full, impact, title, oneLine]`", "`blocks.k.who`", "`act.k`", "`detail.o.k`", "`warn`",

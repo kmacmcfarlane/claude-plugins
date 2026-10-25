@@ -188,6 +188,21 @@ def open_question_problems(where, body, block=False):
     return out
 
 
+def empty_fold_problems(where, body):
+    """A fold with nothing in it is left out, line and all: no fold line whose summary says
+    none or a count of zero, and no open fold with no bullet under it."""
+    out = []
+    for k, line in enumerate(body):
+        m = FOLD.match(line)
+        if not m:
+            continue
+        if re.match(r"(?i)^(0 open\b|none\b|nothing\b|—|-)", m.group(3).strip()):
+            out.append(f"{where}: an empty {m.group(2)} fold is shown")
+        if m.group(1) == "▾" and not (k + 1 < len(body) and body[k + 1].startswith("- ")):
+            out.append(f"{where}: an open {m.group(2)} fold with nothing under it")
+    return out
+
+
 def check_why_line(test, where, body):
     """A card's one **Why you, why now:** line: after its options (and any To act on, If left
     or If unanswered part), the line just above its Rec line, about 25 words at most; no
@@ -318,6 +333,21 @@ class GalleryContexts(unittest.TestCase):
             self.assertEqual(open_question_problems(f"gallery.md:{n}", body, kind == "block"), [])
             folds += sum(1 for x in body if FOLD.match(x))
         self.assertGreaterEqual(folds, 6)
+
+    def test_an_empty_fold_is_left_out(self):
+        flat = " ".join(RENDERING.read_text().split())
+        self.assertIn("**Empty.** A fold with nothing in it is left out, line and all", flat)
+        for n, kind, body in views(GALLERY):
+            self.assertEqual(empty_fold_problems(f"gallery.md:{n}", body), [])
+        # mutants: a fold shown with nothing open, closed and open
+        card = ["**41 — X?**", "**Context:** y · z", "▸ Open questions — 0 open", "**Impact:** later: w"]
+        self.assertTrue(empty_fold_problems("mutant", card))
+        card[2] = "▸ Open questions — none"
+        self.assertTrue(empty_fold_problems("mutant", card))
+        card[2] = "▾ Open questions — 1 open: x"
+        self.assertTrue(empty_fold_problems("mutant", card))
+        card[2:3] = ["▸ Open questions — 1 open: x"]
+        self.assertEqual(empty_fold_problems("good", card), [])
 
     def test_the_stored_card_keeps_its_context_before_its_impact(self):
         lines = GALLERY.read_text().splitlines()
