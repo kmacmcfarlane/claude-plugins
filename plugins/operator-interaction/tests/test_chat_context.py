@@ -8,8 +8,11 @@ Impact line stands above its table. A list line
 carries none. A card's why now and why ask share one **Why you, why now:** line just above
 its Rec line (answer 261, 2026-10-20); a block keeps them as two lines under its table. A
 bundle whose items need different answers is a group: a heading, then one whole card per
-item (answer 263). Checked against the templates in `references/rendering.md` and every card
-and block in `references/gallery.md`.
+item (answer 263). What is still open about a decision is a folded `▸ Open questions —
+<summary>` line after Context and before the Impact (open as `▾` in a block), and the Rec line
+says no *unknown* (the v5 layout, 2026-10-22). Checked against the templates in
+`references/rendering.md` and every card and block in `references/gallery.md`; a card stored
+in an earlier form is read by `references/legacy-cards.md`.
 
 Run from the plugin dir: python3 -m unittest discover -s tests -q
 """
@@ -34,6 +37,10 @@ GROUP_OR_FINDING = re.compile(r"^\*\*(Group|Finding): ")
 GROUP_HEAD = re.compile(r"^\*\*Group: [^*]+\*\* — \*(\d+) decisions, [^*]+\*$")
 WHY_LINE = "**Why you, why now:**"
 REC_LINE = re.compile(r"^(Rec \*\*\(|\*No recommendation)")
+LEGACY = REFS / "legacy-cards.md"
+# a fold line: closed on a card, open (its items under it) in a block
+FOLD = re.compile(r"^([▸▾]) ([A-Z][^—]+) — (.+)$")
+OPEN_SUMMARY = re.compile(r"^(\d+) open: \S")
 
 
 def fenced(text, opener):
@@ -128,9 +135,57 @@ class Templates(unittest.TestCase):
             self.assertNotIn("Context you may have lost", f.read_text(), f.name)
 
     def test_older_stored_cards_render_as_before(self):
-        text = RENDERING.read_text()
+        # the dated clause moved to the legacy reference; rendering.md points there
+        text = LEGACY.read_text()
         self.assertIn("**Older stored cards render as before.**", text)
         self.assertIn("renders as it did before Context existed", text)
+        self.assertIn("`references/legacy-cards.md`", RENDERING.read_text())
+
+    def test_the_templates_fold_open_questions_above_the_impact(self):
+        text = RENDERING.read_text()
+        card = fenced(text, "**N — Title as a question?**\n**What:**")
+        self.assertEqual(open_question_problems("rendering.md card", card), [])
+        self.assertTrue(any(x.startswith("▸ Open questions — ") for x in card))
+        block = fenced(text, "**N — Title as a question?** ⚠ one-way")
+        self.assertEqual(open_question_problems("rendering.md block", block, block=True), [])
+        self.assertTrue(any(x.startswith("▾ Open questions — ") for x in block))
+        flat = " ".join(text.split())
+        self.assertIn("## Folds", text)
+        self.assertIn("`▾ <name> — <summary>`", flat)
+        self.assertIn("`N open: <the first, cut at about 12 words>`", flat)
+
+
+def open_question_problems(where, body, block=False):
+    """A view's ▸ Open questions line: after Context and before the Impact, its summary
+    `N open: …`, closed on a card and open in a block with N bullets under it; and no Rec line
+    that says *unknown*. Returns the problems, empty when clean."""
+    out = []
+    for k, line in enumerate(body):
+        if REC_LINE.match(line) and "unknown" in line:
+            out.append(f"{where}: the Rec line says unknown")
+        m = FOLD.match(line)
+        if not m:
+            continue
+        if m.group(2) != "Open questions":
+            continue
+        ctx = next((i for i, x in enumerate(body) if x.startswith("**Context:**")), None)
+        imp = next((i for i, x in enumerate(body) if x.startswith("**Impact:**")), None)
+        if ctx is None or imp is None or not ctx < k < imp:
+            out.append(f"{where}: the Open questions line is not between Context and Impact")
+        s = OPEN_SUMMARY.match(m.group(3))
+        if not s:
+            out.append(f"{where}: the Open questions summary is not 'N open: …'")
+        if m.group(1) != ("▾" if block else "▸"):
+            out.append(f"{where}: the fold is {'closed in a block' if block else 'open on a card'}")
+        if block and s:
+            items = 0
+            for x in body[k + 1:]:
+                if not x.startswith("- "):
+                    break
+                items += 1
+            if items != int(s.group(1)):
+                out.append(f"{where}: the open fold lists {items}, its summary says {s.group(1)}")
+    return out
 
 
 def check_why_line(test, where, body):
@@ -257,6 +312,13 @@ class GalleryContexts(unittest.TestCase):
                 self.assertLess(hs.index("table"), hs.index("Why now"), f"gallery.md:{n}")
                 self.assertEqual(hs.index("Why now") + 1, hs.index("Why ask"), f"gallery.md:{n}")
 
+    def test_open_questions_fold_above_the_impact_and_no_rec_line_says_unknown(self):
+        folds = 0
+        for n, kind, body in views(GALLERY):
+            self.assertEqual(open_question_problems(f"gallery.md:{n}", body, kind == "block"), [])
+            folds += sum(1 for x in body if FOLD.match(x))
+        self.assertGreaterEqual(folds, 6)
+
     def test_the_stored_card_keeps_its_context_before_its_impact(self):
         lines = GALLERY.read_text().splitlines()
         k = next(i for i, x in enumerate(lines) if x.startswith("decision 85:"))
@@ -315,6 +377,29 @@ class Checks(unittest.TestCase):
         card[8] = "**Why you, why now:** " + "word " * 31
         with self.assertRaises(AssertionError):
             check_why_line(self, "mutant", card)
+
+    def test_an_open_questions_line_out_of_place_or_an_unknown_is_caught(self):
+        card = ["**41 — Resume the backup?**", "**What:** x", "**Context:** y · z",
+                "▸ Open questions — 1 open: whether the lease can be extended",
+                "**Impact:** later: w · reach: r", "- **(a) Resume**", "  *→ it finishes*",
+                "Rec **(a)** · basis **strong** — *quota checked*"]
+        self.assertEqual(open_question_problems("good", card), [])
+        # the line under the Impact
+        under = list(card)
+        under.insert(4, under.pop(3))
+        self.assertTrue(open_question_problems("mutant", under))
+        # the Rec line's unknown restored
+        rec = list(card)
+        rec[-1] += " · unknown: none"
+        self.assertIn("mutant: the Rec line says unknown", open_question_problems("mutant", rec))
+        # a summary that is not a count
+        bad = list(card)
+        bad[3] = "▸ Open questions — whether the lease can be extended"
+        self.assertTrue(open_question_problems("mutant", bad))
+        # a block's fold left closed, or counting what it does not list
+        block = card[:3] + ["▾ Open questions — 2 open: a", "- a", ""] + card[4:]
+        self.assertTrue(open_question_problems("mutant", block, block=True))
+        self.assertTrue(open_question_problems("mutant", card, block=True))
 
     def test_a_group_that_miscounts_or_shares_a_rec_line_is_caught(self):
         a = ["**51 — A?**", "Rec **(a)**"]

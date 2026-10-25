@@ -25,8 +25,9 @@ out → read it cold (`references/worksheet.md` § The cold read) before it goes
 
 - **Every decision meets the floor before it is raised** (below). Without options it is not
   a decision: it is an open question, labelled as one.
-- **Every view shows the decision's impact**, at its size (§ Levels): the effect on the
-  smallest, more facets as space grows. No list line, card, block or caller's row without it.
+- **Every view shows the decision's impact**, at its size (§ Levels): the recommended
+  option's effect on the smallest (with no recommendation, each option's), more facets as
+  space grows. No list line, card, block or caller's row without it.
 - **⚠ one-way decisions** — one-way *and* high impact — are never ratified inside a batch and
   never defaulted. Shown as a block the first time and whenever the reader is cold. On a ⚠
   decision, an answer that picks a **one-way option** is repeated back and acted on only once
@@ -67,12 +68,12 @@ Every decision carries, at any level:
    short name, *F7 (oversize upload)* (`references/rendering.md` § Source labels). Name
    items in plain words, the id at most a trailing tag: load the `plain-names` skill (same
    plugin) and follow it.
-2. **Its impact**, in five facets in this order: **Effect**, **Wait**, **Reach**, **Undo**,
-   **Cost** (`references/rendering.md` § Impact), Effect and Reach about the thing the work
-   builds, never the process (that is Wait), Undo only where an option is one-way or costly.
-   Written when it is raised, as the Impact line, its Effect across all the options,
-   favouring none, and stored with the card where the caller keeps one; each option's own
-   impact is stored with the option.
+2. **Its impact**, in facets: **Wait**, **Reach**, **Undo**, **Cost** for the decision, and
+   each option's own **Effect** (with its reach, undo and cost) (`references/rendering.md`
+   § Impact). Effect and Reach are about the thing the work builds, never the process (that
+   is Wait); Undo only where an option is one-way or costly. Written when it is raised, as
+   the Impact line, which carries no effect: each option says its own. Stored with the card
+   where the caller keeps one; each option's own impact is stored with the option.
 3. **Why now**, and what it blocks (the Wait facet). When nothing forces it, say so —
    *why now: nothing forces it; raised because the audit turned it up* — and *blocks:
    nothing* is an honest answer.
@@ -90,7 +91,8 @@ Every decision carries, at any level:
    waiting costs, and when there is a deadline, what happens at the deadline.
 7. **The recommendation**, or the labelled reason there is none.
 8. **The basis** — what the claims rest on (§ Evidence).
-9. **What is unknown.**
+9. **What is still open**: the open questions, one line each, shown in the card's
+   ▸ Open questions fold (`references/rendering.md` § Folds); with none open, no fold.
 10. **What it takes to act**: when an option asks the operator to do something beyond
     answering, the card carries everything they need to do it now, as its **To act on (x):**
     part (`references/rendering.md` § Card).
@@ -162,24 +164,27 @@ group; an objection reopens or undoes it (`references/rendering.md` § FYI after
 Smallest to largest, each showing more of the impact in facet order (templates in
 `references/rendering.md`):
 
-- **Tag size** — `46 (→ effect)`, for a caller's tightest views (a row of open items, a
-  report line naming numbers, a page's summary list); never in place of a level.
+- **Tag size** — `46 (→ (a) effect)`, the recommended option's effect, its letter first, for
+  a caller's tightest views (a row of open items, a report line naming numbers, a page's
+  summary list); never in place of a level.
 - **List line** — every decision gets one, with no Context: **bold number and title**,
-  recommendation, `→` that option's effect (with no recommendation, the Effect), `later:`
+  recommendation, `→` that option's effect (with no recommendation, each option's), `later:`
   Wait, its class when the caller names classes, ⚠ one-way when it is, basis, its age and
   any deadline; a round ask, its justification; a line-only decision, its
   why ask.
 - **Card** — in the answer page's order: the decision line (the title, then **What:**, what
-  is decided), then **Context:**, then an **Impact:** line; then the options, each with its
+  is decided), then **Context:**, then the ▸ Open questions fold line when anything is open,
+  then an **Impact:** line, with no effect of its own; then the options, each with its
   own impact (effect, reach, a one-way or costly option's `⚠ undo:`, cost) on an italic line
   under it, decide later, any **To act on (x):** part, a round ask's justification, the
-  **Why you, why now:** line, then `Rec · basis — reason · unknown`. Its **Context:** is one or
+  **Why you, why now:** line, then `Rec · basis — reason`. Its **Context:** is one or
   two sentences, the page's summary size: the terms the card uses, then the resume cue
   (where you left it · what you decide now). It is written for every decision when it is
   raised, stored with the card where the caller keeps one, and shown every time the card is
   shown, warm reader or cold (`references/rendering.md` § Context).
 - **Block** — a card whose Context is fuller, a bullet list at the page's medium
-  size that adds the context the reader may have lost, and whose Impact line is followed by
+  size that adds the context the reader may have lost, whose folds are shown open (▾), and
+  whose Impact line is followed by
   a table (a row per option, its effect, reach, undo and cost, plus a Wait row) in place of
   the options' impact lines, then why now and why ask on two lines; plus the basis
   drill-down with evidence links.

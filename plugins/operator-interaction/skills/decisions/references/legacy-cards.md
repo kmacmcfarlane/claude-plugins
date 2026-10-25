@@ -3,8 +3,9 @@
 The frozen reference for every card written before `decision-card/5` (answer 343 (a)): a page
 card in a `cards.json` with no `decision-page/5` stamp, and the older working shape of the
 answer page (the kit). It holds the reader rules, the map from each older shape to the record
-(`card-record.md`), and the dated reader clauses that left the page's skill when the record
-came in. Writers never write these shapes; they read them, and upgrade on a touch.
+(`card-record.md`), and the dated reader clauses that left the skills when the record came
+in: the page's, and the chat card's (§ Older stored cards, in chat). Writers never write these
+shapes; they read them, and upgrade on a touch.
 
 *Frozen:* nothing here changes for a new card format. A rule that changes what a current card
 holds goes in `card-record.md`; a ruling stays in `rulings.md`, the record of what was decided.
@@ -22,7 +23,8 @@ holds goes in `card-record.md`; a ruling stays in `rulings.md`, the record of wh
    record leaves out; the runner's lints for a new card are left knowingly on it.
 
 What v5 removed from every view stays removed on a legacy card: its card-level effect (the
-page's `impact.effect`) is not shown; its options' own effects are.
+page's `impact.effect`, a stored `impact:` line's `→ …`) is not shown; its options' own
+effects are.
 
 ## The upgrader
 
@@ -110,6 +112,39 @@ A card the operator has answered stays as it is, its lints left knowingly.
 - **A stored Effect** was copied into a page card's `impact.effect` only when it named each
   option's outcome or the card was stored or revised on or after 2026-10-14; otherwise it was
   written from the option effects. The record has no card-level effect: it is dropped.
+
+## Older stored cards, in chat
+
+What a caller's stored card held in earlier forms, and how the decisions skill's chat card and
+block show it (`rendering.md`). Each renders as stored, never recomposed at render time, apart
+from what v5 removed from every view; a revision for any other reason writes it to the current
+rules.
+
+- **Older stored lines read as written**, all but the effect. A stored `impact:` line's
+  effect, the `→ …` before its `later:`, is not shown in any era: the card's **Impact:** line
+  starts at its wait, and the options' own lines say what each does. An Impact line stored
+  before Effect covered the options (2026-10-14) gave the recommended option's effect alone;
+  a line stored before that rule is read the same way, its effect not shown. A revision
+  writes the line with no effect.
+- **An option stored on one line**, its impact after a dash (a caller's store form included),
+  renders in the current form: its facets on the line under the option.
+- **A card stored in the older form** may carry a plain `undo:` on every option and on its
+  Impact line, from before undo was shown only where it bites (answer 260, 2026-10-20). It
+  renders as stored, and an undo there that says the option cannot be undone, or only at real
+  cost, is read as the marker, the read-back included (`replies.md`). A revision rewrites its
+  undos to the rule (`rendering.md` § Impact).
+- **Older stored cards render as before.** A stored Context holding the cue alone, from before
+  Context took the terms, is the card's **Context:** line as it stands. A stored card with no
+  Context at all renders as it did before Context existed: the **Impact:** line directly
+  under the title, then **What:**, **Why now:**, **Why ask:** and the options, with no Context
+  section; a block stored with no Context keeps the older order the same way. A cold re-show
+  still backfills the cue (`rendering.md` § Re-show with what changed): a stored card from
+  before the cue existed is revised, its cue backfilled from the record, *not recorded* when
+  no record holds it, and stored as its Context, and renders in the current order from then
+  on.
+- **A stored unknown** (a Rec line's `· unknown: …`, or an `unknown` field) shows as the
+  card's ▸ Open questions line (`rendering.md` § Folds), one open question; `unknown: none`
+  shows no fold.
 
 ## A headline with no card
 

@@ -1,6 +1,6 @@
 # Rendering decisions
 
-The impact every view carries, the Context every card and block carries, the templates
+The impact every view carries, the Context every card and block carries, the folds, the templates
 for each view (tag size, list line, card, block), how several decisions share one message, the order, and the labels. Markdown only:
 **bold** titles and the recommended option, *italic* impacts and hint, `code` for reply words.
 Terminals give no colour control; italics and code spans are the quiet tools.
@@ -20,19 +20,20 @@ order:
 
 | Facet | What it says | Written |
 |---|---|---|
-| **Effect** | what the decision changes and settles in the thing the work builds — its code, data, users, deploys, downstream consumers — across all its options, favouring none | `→ effect` |
+| **Effect** | what an option changes in the thing the work builds — its code, data, users, deploys, downstream consumers — by its mechanism; an option's facet, never the decision's | `→ effect` |
 | **Wait** | what waiting costs, and what it blocks; the only facet for effects on the process (a review comment held, a round, a session blocked) | `later: …` |
 | **Reach** | who or what in and around that system is affected: users, consumers, deploys, which repos, the public | `reach: …` |
 | **Undo** | shown only for an option that is one-way or costly to undo: how it is reversed and at what cost, or that it cannot be and why | `⚠ undo: …` |
 | **Cost** | build time, money, quota; the operator's time where an option asks them to act; their attention only on a round ask | `cost: …` |
 
-The smallest view shows Effect; each larger view adds facets in that order:
+The smallest view shows the recommended option's effect; each larger view adds facets in
+that order:
 
 | View | Impact shown |
 |---|---|
-| Tag size | Effect |
-| List line | the recommended option's effect (with no recommendation, the Effect) · Wait |
-| Card | an **Impact:** line, Effect · Wait · Reach, then Undo when an option is one-way or costly; under each option, its own impact line: effect · reach · undo (one-way or costly only) · cost |
+| Tag size | the recommended option's effect, its letter first (with no recommendation, each option's in a few words) |
+| List line | the recommended option's effect (with no recommendation, each option's in a few words) · Wait |
+| Card | an **Impact:** line, Wait · Reach, then Undo when an option is one-way or costly, then Cost when it is what the operator weighs, and no effect; under each option, its own impact line: effect · reach · undo (one-way or costly only) · cost |
 | Block | the card's **Impact:** line, then the Impact table: a row per option, then a Wait row; columns Effect, Reach, Undo (`—` on a reversible row), Cost |
 
 - **Impact names the system, not the process.** Effect and Reach describe the thing the
@@ -46,15 +47,16 @@ The smallest view shows Effect; each larger view adds facets in that order:
   who meets it and when, and the before and after: not *exposes an archived library in its
   public API*, but *every app that imports the client must install the archived library,
   and never gets its security fixes; after the switch, the client takes the standard type*.
-- Plain words, about the world, for the operator. **Effect covers the decision across all
-  its options, favouring none**, as the answer page's does (the `decision-page` skill's
-  `references/cards-schema.md`, `impact`): what the decision changes and settles whichever
-  option is taken — *sets which units the dashboard shows* — or, where the options' outcomes
-  differ, each in a few words: `→ *(a) sizes match the OS tools; (b) sizes match the bill*`.
-  Write it from the options' own effects (each option's impact line), never from the
-  recommendation alone; the recommendation is marked by the bold option and the Rec line,
-  not by the Effect. At tag size it stands alone in under about 10 words. With no
-  recommendation it reads the same way.
+- **No card-level effect.** Effect is an option's: each option says its own, by its
+  mechanism, on its impact line (a card) or its row (a block's table). The **Impact:** line
+  carries none, since it would only repeat the options' (the operator's v5 ruling,
+  2026-10-22), as the answer page's Impact carries none (`references/card-record.md`,
+  `impact`). Where a closed view shows one effect — tag size, the list line, a caller's row
+  — it is the
+  **recommended option's own**, marked with its letter: `→ (a) …`, or the list line's rec
+  slot just before the arrow (answer 340 (a)). With no recommendation, each real option's
+  effect in a few words, `→ *(a) sizes match the OS tools; (b) sizes match the bill*`. Plain
+  words, about the world, for the operator; at tag size, under about 10 words.
 - **Each option's impact** is its own: on a card, an italic line under the option, in facet
   order, `*→ effect · reach: … · ⚠ undo: … · cost: …*`, each facet after the first labelled
   so Reach is never read as more Effect. A facet that is empty or does not apply to that
@@ -84,30 +86,25 @@ The smallest view shows Effect; each larger view adds facets in that order:
   impact line, one that does not apply is left out and `not recorded` stays. Never invent
   one at render time.
 
-**The Impact line** is written when the decision is raised, one line:
+**The Impact line** is written when the decision is raised, one line, with no effect:
 
 ```
-→ <effect> · later: <wait> · reach: <reach> · ⚠ undo: <the one-way or costly option's undo>
+later: <wait> · reach: <reach> · ⚠ undo: <the one-way or costly option's undo> · cost: <cost>
 ```
 
-The last facet is there only when an option is one-way or costly to undo.
+The undo is there only when an option is one-way or costly to undo, and the cost only when it
+is what the operator weighs.
 
 When the caller keeps the card in a store, the line is stored with it, and every view reads
-it from there, a caller's tag-size views included, so the report line never has to open the
-options. A stored card without one is revised before it renders (§ Re-show with what
+it from there. A stored card without one is revised before it renders (§ Re-show with what
 changed, From the store). Each option's impact is stored with its option, so the card's
-option lines read from there too.
+option lines read from there too, and so do the closed views that show the recommended
+option's effect (tag size, the list line, a caller's row), so the report line never has to
+open the card.
 
-**Older stored lines read as written.** An Impact line stored before Effect covered the
-options (2026-10-14) may give the recommended option's effect alone. It renders as stored —
-never recomposed at render time — and the option lines under it show what each option does.
-When such a card is revised for any other reason, its Effect is rewritten across the options
-and stored with the revision. An option stored on one line, its impact after a dash (a
-caller's store form included), renders in the new one: its facets on the line under the
-option. A card stored in the older form may carry a plain `undo:` on every option and on its
-Impact line; it renders as stored, and an undo there that says the option cannot be undone,
-or only at real cost, is read as the marker. When such a card is revised for any other
-reason, its undos are rewritten to the rule above.
+A card stored in an earlier form — an Impact line that carries an effect, an option's impact
+after a dash on the option's own line, a plain `undo:` — is read by
+`references/legacy-cards.md`.
 
 ## Context
 
@@ -156,28 +153,45 @@ is the card's **Context:** line, and a block shows it as its first bullet and ea
 after the separator as a bullet of its own. A re-show renders the stored Context; it never
 composes it again (§ Re-show with what changed, From the store).
 
-**Older stored cards render as before.** A stored Context holding the cue alone, from before
-Context took the terms, is the card's **Context:** line as it stands. A stored card with no
-Context at all renders as it did before Context existed: the **Impact:** line directly under
-the title, then **What:**, **Why now:**, **Why ask:** and the options, with no Context
-section; a cold re-show still backfills its cue from the record (§ Re-show with what changed),
-and the revised card, stored with the cue as its Context, renders in the order above from
-then on.
+A stored card with a cue-only Context, or none, is read by `references/legacy-cards.md`.
+
+## Folds
+
+A part a reader may not need opens folded, on one line:
+
+```
+▸ <name> — <summary>
+```
+
+- **The summary** says what is inside in a few words, so the line alone tells whether to
+  open it.
+- **Open.** `tell me <name>` (`tell me open questions`) answers with the fold open, and
+  `expand` and a block show it open: the line as `▾ <name> — <summary>`, its content under
+  it, one bullet an item.
+- **Empty.** A fold with nothing in it is left out, line and all (none is not shown).
+
+**▸ Open questions** — what is still open about the decision (SKILL.md § The floor, item 9;
+the card record's `open`): each open question one line, said as what is not known yet. Its
+summary is `N open: <the first, cut at about 12 words>`, as on the answer page. It sits
+after **Context:** and before **Impact:** on a card and a block, after any other part the
+card has above the Impact. It is not the message's **Open questions** section, which lists
+questions that are not decisions yet (SKILL.md § The floor).
 
 ## Tag size
 
-The number and the Effect alone, after an arrow, for a caller's tightest views: a table row
-of open items, a report line that names decision numbers, a page's summary list.
+The number and the recommended option's own effect, after an arrow, its letter first, for a
+caller's tightest views: a table row of open items, a report line that names decision numbers,
+a page's summary list.
 
 ```
-N (→ effect)
+N (→ (x) <its effect>)
 ```
 
-*46 (→ (a) preview up in about 4 minutes; (b) yesterday's page)* · *45 (→ (a) OS units;
-(b) bill units)*. Where the caller's row already shows the question and the recommendation,
-the arrow follows the recommendation, so it carries that option's effect, read from its
-stored impact: *decision 46: Retry the failed preview deploy? — rec (a) → preview up in about
-4 minutes*.
+*46 (→ (a) preview up in about 4 minutes)*. With no recommendation, each real option's effect
+in a few words: *45 (→ (a) OS units; (b) bill units)*. Read from the option's stored impact
+where the caller keeps one. Where the caller's row already shows the question and the
+recommended letter, the arrow follows that letter and carries that option's effect: *decision
+46: Retry the failed preview deploy? — rec (a) → preview up in about 4 minutes*.
 
 ## List line
 
@@ -186,10 +200,10 @@ stored impact: *decision 46: Retry the failed preview deploy? — rec (a) → pr
 ```
 
 The arrow follows the rec label, so the effect slot carries the recommended option's own
-effect, in a few words, read from its option's impact; the Effect across the options is on
-the card. For a decision with no recommendation, the label takes the rec slot and the Effect,
-each option's in a few words, the effect slot; the wait and basis slots stay, since the floor
-needs them:
+effect, in a few words, read from its option's impact (a card carries no card-level effect).
+For a decision with no recommendation, the label takes the rec slot and each option's own
+effect, in a few words, the effect slot; the wait and basis slots stay, since the floor needs
+them:
 
 ```
 - **N Title as a question?** — *your preference, no rec* → *(a) effect; (b) effect* · *later: wait* · *class* · basis **word** · *age*
@@ -239,7 +253,8 @@ Example:
 **N — Title as a question?**
 **What:** what is decided, in plain words; items by plain name, the id as a trailing tag; other ids glossed.
 **Context:** the terms, items and counts the card uses, each in plain words; then where you left it · what you decide now.
-**Impact:** → (a) effect; (b) effect, or what the decision settles · later: wait · reach: who or what · ⚠ undo: (a) how, at what cost, or why not
+▸ Open questions — 2 open: what is not known yet, cut at about 12 words
+**Impact:** later: wait · reach: who or what · ⚠ undo: (a) how, at what cost, or why not
 - (a) Option
   *→ effect · reach: … · ⚠ undo: … · cost: …*
 - **(b) Option**
@@ -251,15 +266,14 @@ Example:
 2. …
 
 **Why you, why now:** *class* — what would go wrong if I took the recommendation alone; why it is up now.
-Rec **(b)** · basis **word** — *one-clause reason* · unknown: what isn't known, or none
+Rec **(b)** · basis **word** — *one-clause reason*
 ```
 
 - **The order is the page's**: the decision line (the title, then **What:**), then
-  **Context:**, then **Impact:** — and under them the options, any **To act on (x):** part,
-  a round ask's **If left:** and **A round costs:**, any **If unanswered:**, then
-  **Why you, why now:** just above the Rec line (§ Context). A stored card with no Context
-  keeps the older order, its **Impact:** line directly under the title (§ Context, Older
-  stored cards).
+  **Context:**, then the ▸ Open questions line when anything is open (§ Folds), then
+  **Impact:** — and under them the options, any **To act on (x):** part, a round ask's
+  **If left:** and **A round costs:**, any **If unanswered:**, then **Why you, why now:**
+  just above the Rec line (§ Context).
 - **Title:** the question. A decision raised from one labelled item of a source opens its
   title on the label and its short name: **41 — F7 (oversize upload) · Cap the upload
   size?** (§ Source labels).
@@ -267,9 +281,9 @@ Rec **(b)** · basis **word** — *one-clause reason* · unknown: what isn't kno
 - **Context:** one or two sentences at the page's summary size, on every card each time it
   is shown: the terms the card uses, then the resume cue (§ Context). Read from the store
   when the caller keeps one.
-- **Impact:** right after **Context:**, on every card: the Impact line (§ Impact), read from
-  the store when the caller keeps one. Its arrow carries the Effect across all the options,
-  favouring none: each option's in a few words where their outcomes differ.
+- **Impact:** after **Context:** and any ▸ Open questions line, on every card: the Impact
+  line (§ Impact), read from the store when the caller keeps one. It carries no effect: each
+  option's is on its own line under it.
 - One option a bullet, in letter order, and under each but (z) its own impact on an italic
   line, indented to sit under it: `*→ effect · reach: … · ⚠ undo: … · cost: …*`, in facet
   order, each facet after the first labelled (`reach:`, `⚠ undo:`, `cost:`) so Reach is
@@ -291,7 +305,7 @@ Rec **(b)** · basis **word** — *one-clause reason* · unknown: what isn't kno
   there when the reader has gone cold. When the caller's store keeps the card, it is stored
   with it (§ Context). With no store, keep it with your notes on the decision; with nowhere
   to keep it, a re-show copies it from the message that first showed it.
-  On an answer page the card's Impact covers all its options and Background is folded (the
+  On an answer page the card's Impact carries no effect either, and Background is folded (the
   `decision-page` skill's `references/cards-schema.md`); its Context has the same shape.
 - **To act on (x):** after the options and before **Why you, why now:**, on a card where an
   option asks the operator to act (SKILL.md § The floor, what it takes to act). This bullet is
@@ -314,6 +328,8 @@ Rec **(b)** · basis **word** — *one-clause reason* · unknown: what isn't kno
   breaks written ` / ` (as a store's answer lines write a reply's), or as the `/…` path of
   a file that holds it — the file form whenever the text itself holds ` / `, since nothing
   in a stored line is escaped. A re-show renders it back as a fenced block.
+- **The Rec line**: the recommendation, the basis word and its one-clause reason. What is
+  not known yet is in the ▸ Open questions fold (§ Folds), not on this line.
 - An ask for another round adds two lines after the options and any **To act on** part,
   before **Why you, why now:** —
   **If left:** *each leftover finding, and what it would break* and **A round costs:** *the
@@ -337,7 +353,10 @@ Rec **(b)** · basis **word** — *one-clause reason* · unknown: what isn't kno
   - a sub-bullet, two at most
 - …
 
-**Impact:** → (a) effect; (b) effect, or what the decision settles · later: wait · reach: who or what · ⚠ undo: (a) none, because …
+▾ Open questions — 1 open: what is not known yet
+- what is not known yet, one line
+
+**Impact:** later: wait · reach: who or what · ⚠ undo: (a) none, because …
 
 | Impact | Effect | Reach | Undo | Cost |
 |---|---|---|---|---|
@@ -361,8 +380,8 @@ Rec **(b)** · basis **partial** — *reason*
   **Context:** as a bullet list at the page's medium size, its first bullet the card's
   Context and the rest the context the reader may have lost (§ Context). It is shown on
   every block, warm reader or cold.
-- The card's **Impact:** line comes right after Context, the Effect across all the options
-  as on a card, and the **Impact table** right under it: one row per option, in letter
+- Any fold above the Impact comes next, open (`▾`, § Folds). Then the card's **Impact:**
+  line, with no effect, as on a card, and the **Impact table** right under it: one row per option, in letter
   order, each option's own effect, reach, undo and cost, then the **Wait row** — decide
   later's, labelled `(z) Wait` — with the columns Effect, Reach, Undo and Cost. An Undo cell
   holds `—` on a row that is reversible at little cost and starts with ⚠ on a row that is
@@ -372,8 +391,6 @@ Rec **(b)** · basis **partial** — *reason*
 - The lines under the table run **Why now:**, **Why ask:** — a block keeps them as two
   lines, unlike a card — then a round ask's **If left:**
   and **A round costs:**, then any **To act on (x):** part, before the Rec line (§ Card).
-  A block stored with no Context keeps the older order: its impact directly under the title,
-  then **What:**, **Why now:**, **Why ask:** (§ Context, Older stored cards).
 - A block **includes** the basis drill-down (the tags and links). `expand` on a block is
   answered: *already at full detail — `tell me [what]` for something specific?*
 - The read-back line (⚠ blocks only) names the one-way option(s). A block for a wide
@@ -443,8 +460,8 @@ does not say what is decided (SKILL.md § The floor, item 1).
   Each card has its own list line, and `ok 51-53` takes every recommendation in it, ⚠ cards
   skipped as in any batch.
 - **One answer fits every item** (*fix all three now*): one card. Its Context names every
-  item — a count is always listed, never left bare — and its Effect says what the answer
-  does to them.
+  item — a count is always listed, never left bare — and each option's effect says what that
+  answer does to them.
 
 A group is never one card holding a pick per item (`41: F3 a, F7 z`): its picks would be
 lettered sub-decisions (SKILL.md § Critical, plain integers), and their recommendations
@@ -531,7 +548,7 @@ message broker?
 Options and recommendation unchanged; impact unchanged.*
 **What:** switch every worker service from the old job queue to the new message broker.
 **Context:** the new broker has carried the email worker alone for two weeks as a trial, and the load test was the last check before the rest move. You left it at that trial · you decide whether every worker moves now or one goes first.
-**Impact:** → (a) every worker reads from the new broker today; (b) the email worker moves first, the rest in two days · later: the worker rollout stays paused · reach: every worker service and its on-call · ⚠ undo: (a) switch each config back within the week; after that the old queue is gone
+**Impact:** later: the worker rollout stays paused · reach: every worker service and its on-call · ⚠ undo: (a) switch each config back within the week; after that the old queue is gone
 
 *While it waited* always says whether the impact changed: *impact unchanged*, or what changed
 in it — *impact changed: waiting now also holds the release*. When the options or
@@ -539,7 +556,9 @@ recommendation changed, say which and why: *Recommendation changed from (a) vend
 to (b) fetch it, because the CDN outage ended.*
 
 **From the store.** When the caller's store keeps the card (the floor's fields under the
-decision's record, with its raised-at time), a re-show renders that stored card and adds
+decision's record, with its raised-at time), a re-show renders that stored card — a card
+record (`decision-card/5`) by `references/card-record.md`, a card with no format by
+`references/legacy-cards.md` — and adds
 only the *while it waited* line — read from the caller's record, never from memory — and a
 plain name (the `plain-names` skill) for any item, and a gloss for any other id, that the
 stored text left bare. *While it waited*, its window and its duration, counts from the last
@@ -551,10 +570,10 @@ from memory can shift the letters or the recommendation, and the operator would 
 (a) that is not the (a) they read. Before rendering, check the stored card against now: a floor field it lacks, or
 one events have made false — a *why now* that no longer holds, an Impact facet that no
 longer holds, an input path that no longer resolves, a basis word the rule (`references/evidence-basis.md`) no longer gives — is a
-revision. **A stored card without an Impact line** is backfilled the same way, from its
-options' impacts, across them all, and its (z) line (and any older stakes words, for reach
-and undo), each facet no record holds written *not recorded*, and stored as a revised card
-before it renders in any view. The caller stores the
+revision. **A stored card without an Impact line** is backfilled the same way, its wait from
+its (z) line and its reach, undo and cost from its options' impacts, never an effect, each
+facet no record holds written *not recorded*, and stored as a revised card before it renders
+in any view. The caller stores the
 revised card (a missing field no record holds reads *not recorded*), and *while it waited*
 says what changed. When the options or recommendation really changed, say which and why, and
 the caller stores the new card.
@@ -564,10 +583,10 @@ open decision the reader is cold on at card level or above, never as a line only
 paged (SKILL.md § Levels, the line-only rule), each opening with what changed while it
 waited (*nothing changed* is worth saying, and so is *impact unchanged*). Under it the card
 runs **What:**, **Context:** (its stored Context, ending on where the operator left it),
-**Impact:**, the options, then **Why you, why now:** from its stored *why now* and *why
+any ▸ Open questions line, **Impact:**, the options, then **Why you, why now:** from its stored *why now* and *why
 ask*; a block's **Context:** bullets open with the same
-Context. A stored card from before the cue existed is revised as above: its cue backfilled
-from the record, *not recorded* when no record holds it, and stored as its Context. A deferred decision whose
+Context. A stored card in an earlier form is read, and revised where it lacks a floor field,
+by `references/legacy-cards.md`. A deferred decision whose
 wake has not come is a card too, opening with its wake: *deferred until the release; no
 answer needed before then*; it leaves its group and goes last, in the cards and the list
 alike, so paging reaches it last. Open

@@ -70,9 +70,8 @@ its Undo cell in the block's Impact table) saying it cannot be undone, or only a
 — first repeat the choice back and act only once the operator confirms. An option with no
 undo shown is reversible at little cost: it is echoed and acted on at once. A one-way
 decision with a narrow reach (no ⚠ label, its one-way option carrying `⚠ undo:`) is answered
-like any card: its narrow reach is why it is not ⚠. A card stored before undo was shown only
-where it bites may carry a plain `undo:`; one that says the option cannot be undone counts as
-the marker.
+like any card: its narrow reach is why it is not ⚠. A card stored in an earlier form, with a
+plain `undo:`, is read by `references/legacy-cards.md`.
 
 *Read as: 43 → (a) remove `/v1/export` on Thursday. That can't be undone for the partners who
 break — confirm and I'll go ahead, or change it.*

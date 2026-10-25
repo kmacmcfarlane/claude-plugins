@@ -158,11 +158,13 @@ renders what the operator read instead of composing it again.
   `⚠ undo:` names the one-way or costly option and its undo, not only the recommended
   option's; with every option reversible at little cost, the line carries no undo. What the decision blocks is its `later:`, so `why now:` drops `blocks:` when the `impact:` line's `later:`
   carries it. It replaces the `stakes:` line, which a card stored
-  before it keeps as written. Every view reads it: the Report's `decisions needed:` takes
-  its effect at tag size, the list line its wait, the card the whole line, so the report
-  line never has to open the options. Where a view shows the recommendation beside the
-  arrow — the list line, the Groom row (`idle-turn.md`) — the arrow carries the recommended option's own
-  effect, read from its option line (with no recommendation, the `impact:` line's effect).
+  before it keeps as written. Every view reads it: the list line its wait, the card the
+  whole line but its effect, which a card no longer shows (the decisions skill has no
+  card-level effect).
+  Where a view shows an effect — the Report's `decisions needed:` at tag size, the list
+  line, the Groom row (`idle-turn.md`) — it is the recommended option's own, its letter
+  first, read from its option line (with no recommendation, each option's from its option
+  line), so the report line never has to open the card.
   A card stored without it is backfilled under the rule below, from its option lines and
   its `(z)` line (and an older `stakes:` line, for reach and undo), and written as a revised
   card `revised: <time> — backfilled impact` before it renders anywhere, the Groom row
@@ -322,9 +324,9 @@ renders what the operator read instead of composing it again.
 The four lines per landed change stay exactly as SKILL.md § Report gives them. With the
 skill, the decisions come **last in the turn**, where the operator's eye is when you stop:
 
-1. Each change's `decisions needed:` names that change's decision numbers, each with its
-   effect at tag size from its stored `impact:` line — `46 (→ (a) preview up in about 4
-   minutes; (b) yesterday's page)` — or `none`. An
+1. Each change's `decisions needed:` names that change's decision numbers, each with the
+   recommended option's effect at tag size, its letter first, from its stored option line —
+   `46 (→ (a) preview up in about 4 minutes)` — or `none`. An
    item blocked or declined since the last Report — `report.md` § Batching's "goes under
    `decisions needed` of the next" (a forward excepted, as there) — is raised as its own
    decision and carried in the block, not on another change's line.

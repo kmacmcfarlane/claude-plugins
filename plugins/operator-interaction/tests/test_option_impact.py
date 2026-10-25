@@ -1,8 +1,8 @@
-"""Chat cards and blocks show the Effect across all options, and each option's own impact.
+"""Chat cards and blocks show no card-level Effect, and each option's own impact.
 
-The decisions skill follows the answer page: a card's or block's Impact line gives the
-Effect across all the decision's options, favouring none (`(a) …; (b) …` where their outcomes
-differ); each option on a card carries its own effect, reach, undo and cost on an italic line
+The decisions skill follows the answer page: a card's or block's Impact line carries no effect
+(the operator's v5 ruling, 2026-10-22): it starts at `later:` (Wait), then Reach, Undo and
+Cost; each option on a card carries its own effect, reach, undo and cost on an italic line
 under it, in facet order, a facet that does not apply left out; a block carries the same
 facets in its Impact table, under the card's Impact line; a list line carries none of an
 option's facets. Since answer 260 (2026-10-20), undo is shown only on an option that is
@@ -10,7 +10,8 @@ one-way or costly to undo, marked `⚠ undo:`: on its line, in its block's Undo 
 reversible row), and on the Impact line, which carries it only then. No program can tell a
 one-way option written without its marker; what is checked is that every undo shown is
 marked, and the cold read checks the rest. Checked against the templates in `references/rendering.md`, every card and
-block in `references/gallery.md`, and the stored card in the gallery.
+block in `references/gallery.md`, and the stored card in the gallery (the store's own line
+form, which keeps an `impact: →` effect until the store keeps card records).
 
 Run from the plugin dir: python3 -m unittest discover -s tests -q
 """
@@ -23,6 +24,7 @@ from test_impact import LIST_LINE
 
 REFS = RENDERING.parent
 WORKSHEET = REFS / "worksheet.md"
+LEGACY = REFS / "legacy-cards.md"
 
 OPTION = re.compile(r"^- (\*\*)?\(([a-y])\) ")
 DECIDE_LATER = re.compile(r"^- \(z\) ")
@@ -47,10 +49,15 @@ def facets(line):
     return out
 
 
-def impact_effect(line):
-    """The Effect on an **Impact:** line: the text after the arrow, up to `· later:`."""
-    m = re.match(r"^\*\*Impact:\*\* → (.*?) · later: ", line)
-    return m and m.group(1)
+def impact_line_problems(where, line):
+    """An **Impact:** line that carries a card-level effect: it opens on anything but `later:`,
+    or holds an arrow. Returns the problems, empty when clean."""
+    out = []
+    if not line.startswith("**Impact:** later: "):
+        out.append(f"{where}: the Impact line does not open on later:")
+    if "→" in line:
+        out.append(f"{where}: the Impact line carries an effect (→)")
+    return out
 
 
 def check_options(test, where, body):
@@ -81,13 +88,6 @@ def check_options(test, where, body):
             test.assertIsNone(EMPTY.match(text.strip()),
                               f"{where}: ({m.group(2)}) an empty {lab} facet is left out")
     return seen
-
-
-def favours_one(effect):
-    """True when an Impact Effect names exactly one option's outcome, `(a) …` alone: it reads
-    as that option's. Two or more letters is the across-the-options form; none is the single
-    sentence of what the decision settles, which rendering.md § Impact also permits."""
-    return len(set(re.findall(r"\(([a-y])\) ", effect))) == 1
 
 
 def check_undo_marked(test, where, body):
@@ -122,13 +122,16 @@ class Templates(unittest.TestCase):
         # and a reversible option with none
         self.assertNotIn("⚠ undo", [lab for lab, _ in lines[1]])
 
-    def test_the_card_and_block_templates_give_the_effect_across_the_options(self):
+    def test_the_card_and_block_templates_carry_no_card_level_effect(self):
         text = RENDERING.read_text()
         for opener in ("**N — Title as a question?**\n**What:**",
                        "**N — Title as a question?** ⚠ one-way"):
             body = fenced(text, opener)
             imp = next(x for x in body if x.startswith("**Impact:**"))
-            self.assertRegex(impact_effect(imp), r"^\(a\) .+; \(b\) ", opener[:30])
+            self.assertEqual(impact_line_problems(opener[:30], imp), [])
+        # the Impact line's own template, cost optional at its end
+        self.assertIn("later: <wait> · reach: <reach> · ⚠ undo: <the one-way or costly option's undo> · cost: <cost>",
+                      text)
 
     def test_the_block_template_has_the_impact_line_above_its_table(self):
         block = fenced(RENDERING.read_text(), "**N — Title as a question?** ⚠ one-way")
@@ -136,18 +139,25 @@ class Templates(unittest.TestCase):
         rest = [x for x in block[k + 1:] if x.strip()]
         self.assertTrue(rest[0].startswith("| Impact | Effect | Reach | Undo | Cost |"))
 
-    def test_effect_is_no_longer_the_recommendations(self):
+    def test_effect_is_an_options_never_the_decisions(self):
         for f in (RENDERING, WORKSHEET, SKILL_MD):
-            text = f.read_text()
+            text = " ".join(f.read_text().split())
             self.assertNotIn("what changes if the recommendation is taken", text, f.name)
             self.assertNotIn("Effect is the recommended option's", text, f.name)
             self.assertNotIn("what the recommended option does to the world", text, f.name)
-        self.assertIn("across all its options, favouring none", RENDERING.read_text())
+            # the Effect across the options went with the v5 ruling
+            self.assertNotIn("across all its options, favouring none", text, f.name)
+            self.assertNotIn("Effect across all the options", text, f.name)
+        self.assertIn("**No card-level effect.**", RENDERING.read_text())
+        self.assertIn("each option's own effect, never the decision's", WORKSHEET.read_text())
+        self.assertIn("each option's own **Effect**", " ".join(SKILL_MD.read_text().split()))
 
     def test_older_stored_lines_read_as_written(self):
-        text = RENDERING.read_text()
-        self.assertIn("**Older stored lines read as written.**", text)
+        # the dated clause moved to the legacy reference: all but the effect, which no view shows
+        text = LEGACY.read_text()
+        self.assertIn("**Older stored lines read as written**, all but the effect.", text)
         self.assertIn("renders as stored", text)
+        self.assertIn("`references/legacy-cards.md`", RENDERING.read_text())
 
 
 class Checks(unittest.TestCase):
@@ -177,17 +187,17 @@ class Checks(unittest.TestCase):
             "- (b) Y", "  *→ nothing happens*",
             "- (z) Decide later — *it waits*"]), 2)
 
-    def test_an_effect_favouring_one_option_is_caught(self):
-        one = impact_effect("**Impact:** → (a) the backup finishes · later: x")
-        self.assertTrue(favours_one(one))
-        both = impact_effect("**Impact:** → (a) the backup finishes; (b) no backup · later: x")
-        self.assertFalse(favours_one(both))
-        settles = impact_effect("**Impact:** → sets which units the dashboard shows · later: x")
-        self.assertFalse(favours_one(settles))
+    def test_a_card_level_effect_is_caught(self):
+        self.assertEqual(impact_line_problems("good", "**Impact:** later: x · reach: y"), [])
+        # an Impact line with its → restored, across the options or as one sentence
+        for bad in ("**Impact:** → (a) the backup finishes; (b) no backup · later: x · reach: y",
+                    "**Impact:** → sets which units the dashboard shows · later: x",
+                    "**Impact:** later: x · reach: y → (a) z"):
+            self.assertTrue(impact_line_problems("mutant", bad), bad)
 
     def test_an_unmarked_undo_anywhere_is_caught(self):
         good = ["**43 — Remove the old endpoint?**",
-                "**Impact:** → (a) x; (b) y · later: w · reach: r · ⚠ undo: (a) a hotfix, after the outage",
+                "**Impact:** later: w · reach: r · ⚠ undo: (a) a hotfix, after the outage",
                 "- (a) Remove it", "  *→ partners break · ⚠ undo: a hotfix, after the outage*",
                 "- **(b) Keep it**", "  *→ nothing breaks*",
                 "| (a) Remove it | x | r | ⚠ a hotfix, after the outage | an hour |",
@@ -211,13 +221,14 @@ class Gallery(unittest.TestCase):
                 seen += check_options(self, f"gallery.md:{n}", body)
         self.assertGreaterEqual(seen, 25)
 
-    def test_every_card_and_block_gives_the_effect_across_the_options(self):
+    def test_no_card_or_block_impact_line_carries_an_effect(self):
+        seen = 0
         for n, kind, body in views(GALLERY):
             imp = next((x for x in body if x.startswith("**Impact:**")), None)
             self.assertIsNotNone(imp, f"gallery.md:{n}: no Impact line")
-            effect = impact_effect(imp)
-            self.assertTrue(effect, f"gallery.md:{n}: no effect before later:")
-            self.assertFalse(favours_one(effect), f"gallery.md:{n}: the effect favours one option")
+            self.assertEqual(impact_line_problems(f"gallery.md:{n}", imp), [])
+            seen += 1
+        self.assertGreaterEqual(seen, 20)
 
     def test_every_undo_shown_is_marked(self):
         # undo only where it bites (answer 260): every undo the gallery shows is marked, and
@@ -308,12 +319,11 @@ def check_system_rules(test, where, rendering, worksheet):
 
 
 def system_slots(body):
-    """A card's or block's Effect and Reach text: the Impact line's effect and reach, each
-    option's effect and reach, a block row's Effect and Reach cells."""
+    """A card's or block's Effect and Reach text: the Impact line's reach, each option's
+    effect and reach, a block row's Effect and Reach cells."""
     out = []
     for line in body:
         if line.startswith("**Impact:**"):
-            out.append(impact_effect(line) or "")
             m = re.search(r" · reach: (.*?)( · ⚠ undo: |$)", line)
             out.append(m.group(1) if m else "")
         fs = facets(line)
@@ -372,7 +382,7 @@ class SystemMechanismLabels(unittest.TestCase):
         for cut in ("goes here and nowhere else", "said by its mechanism"):
             with self.assertRaises(AssertionError):
                 check_system_rules(self, "mutant", r, " ".join(w.split()).replace(cut, ""))
-        card = ["**41 — X?**", "**Impact:** → (a) the comment to the developer waits; (b) y · later: w · reach: r"]
+        card = ["**41 — X?**", "**Impact:** later: w · reach: the comment to the developer"]
         with self.assertRaises(AssertionError):
             check_no_process(self, "mutant", card)
         with self.assertRaises(AssertionError):
