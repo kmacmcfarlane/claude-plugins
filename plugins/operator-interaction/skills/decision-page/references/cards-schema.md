@@ -6,7 +6,7 @@ envelope, a page card, an excerpt and the answers collection. **Each card is a c
 `decision-card/5`, whose fields are the `decisions` skill's `references/card-record.md`; a
 page card adds its layer `L` and its dependency line `dep`. `assets/cards.example.json` is a
 complete, invented example: three decisions, each opening on its TLDR, then its Context, then
-its Open questions fold, then its Impact. Its levels scale with the decision: a wide card with
+its Open questions fold, then its Assumptions fold, then its Impact. Its levels scale with the decision: a wide card with
 every part a click from more detail, a ⚠ one-way card (every option with its reach, its
 one-way option flagged) levelled too, and a small call raised from a source's labelled item
 with no recommendation and no levels. One option carries the steps the operator takes to act
@@ -29,6 +29,7 @@ followed by a colon, a dash (a hyphen only with a space after it), a full stop, 
 nothing, unless *by* follows; or one that says `rec (b)`, I or we recommend, my or our
 recommendation, `(recommended)`, or `(b) is recommended`); an `impact` without its wait and
 reach as text, or with an undo or cost that is not text; an `open` that is not a list of text;
+an `assume` that is not a list of `{rests, tw}`, each non-empty text;
 an option but (z) with no effect; on a ⚠ card, an option but (z) with no reach; an option
 field that is not text; a `oneway` that is not true or false; an option flagged `oneway: true`
 without its undo; an `act` on (z), or one that is not a non-empty list of steps as text, a step
@@ -94,7 +95,12 @@ Each record field maps to a part of the `decisions` skill's card (its `reference
 
 - `t`, then `label` after it, muted, in every view: `t` · **F7** (oversize upload); a slug shows `t` alone;
 - `tldr` first on the open card; then `context`; then `open` in a closed **Open questions**
-  fold, its summary the count and the first question; then the Impact, one facet a line
+  fold, its summary the count and the first question; then the closed **Assumptions** fold,
+  on every card: its summary *basis:* and the `basis` word, then the count of `assume`
+  (*basis: partial · 2 assumptions with tripwires*; *basis: strong* alone with none), and
+  inside, the Basis line (the word in a box, then `reason`, its levels in `detail.rec`), the
+  `evidence` (its levels in `detail.evidence`), then each assumption in bold with its
+  *tripwire:* under it; then the Impact, one facet a line
   (*later:*, *reach:*, *undo:* marked *⚠ undo:* when an option is flagged one-way, *cost:*);
   then `ifleft`, `roundcosts` and `ifunanswered`;
 - the options, each its letter and `title`, the recommended one bold with a *recommended*
@@ -102,18 +108,19 @@ Each record field maps to a part of the `decisions` skill's card (its `reference
   **More**: its `text` at its fullest level, then its Effect, Reach, Undo and Cost ((z)'s
   effect is its Wait). On a ⚠ card the facets come first and every option's **More** but (z)'s
   starts open;
-- the Recommendation part (`rec`, `basis`, `reason`, its levels in `detail.rec`);
+- the recommendation is marked on its option (bold, the *recommended* pill and *because:*)
+  and in the row's rec pill; there is no Recommendation part and no Rec line;
 - the folds: **Background** (`why`, then `whyask` with `class` first; the first of the bottom
   folds; closed, its summary is *why now:* and the first sentence of `why`, a slug as its
-  number, which the runner's `bgsum` lint keeps to about 25 words), **Dependencies** (`dep`),
-  **Evidence** (the basis word and `reason`, then `evidence`).
+  number, which the runner's `bgsum` lint keeps to about 25 words), then **Dependencies**
+  (`dep`). The evidence is in the Assumptions fold, above.
 
 **The closed row's effect** (answer 340 (a)): the recommended option's own `effect`, its letter
 first, `→ (b) …`; with no recommendation, each option's in a few words, `(a) …; (b) …`.
 
 **Context introduces every specific thing the card names.** Every label, number, acronym,
 term of art or item that the flat part (`t`, the Impact, `tldr`, the option titles and one
-lines, the rec line) uses is introduced in `context`, as the `decisions` floor requires: the
+lines) uses is introduced in `context`, as the `decisions` floor requires: the
 flat part is what the operator reads, and an option's `text` sits in its **More**. Two shapes
 need it most:
 
@@ -132,7 +139,7 @@ review, plan or document, an item or a label. For each one, point to its gloss i
 `context`. A phrase with no gloss gets one before the page goes out. The pre-publish runner
 (SKILL.md step 2) lints counts and named things missing from `context`, and ids wherever they
 are; those lints are proxies, and plain-word terms stay the cold read's. The same holds for
-the medium and high renditions of the Impact, the TLDR and the rec line, checked against
+the medium and high renditions of the Impact and the TLDR, checked against
 Context's **summary** only: each part steps alone, so the Context beside a TLDR at full
 detail may be at its summary. A term a level introduces needs its gloss in Context's summary,
 or in the level itself.
@@ -146,8 +153,9 @@ tooltip or a slug. Context's high holds the further facts the decisions block ca
 the card's Context (what was tried, what was answered before, where a list or number came
 from). The page ignores a `detail` key it does not know; the runner lints it.
 
-**Size.** The flat part of a card (title, Impact, TLDR, option titles and one-liners, rec
-line) stays near 150 words; the folds carry the rest. `context` and an option's `act` are
+**Size.** The flat part of a card (title, Impact, TLDR, option titles and one-liners) stays
+near 150 words; the basis reason sits in the closed Assumptions fold, so it is a fold part,
+counted in the card in all at its top level and not in the flat part; the folds carry the rest. `context` and an option's `act` are
 outside that budget: what the operator needs to read the card, and to act on it, is never
 folded away. Context's summary is one or two sentences, typically 30–60 words (the runner
 lints past ~60); a term that needs a paragraph has its detail in its levels or a fold, with
@@ -199,13 +207,13 @@ its title, a count of its decisions and *What they share:* its note; a bundle ad
 is its Wait: the lede says so, and the runner's `process` lint catches a process phrase in an
 option's effect or reach, or the Impact's reach. A card with a `label` shows it after its title,
 muted, with its short name, in every view. It opens every card on its TLDR, then its Context,
-then its Open questions, then its Impact: a page is read away from the conversation, so its
+then its Open questions, then its Assumptions, then its Impact: a page is read away from the conversation, so its
 reader is treated as cold. Any part with `detail` toggles its level on a click, on its button
 or on its text (never on a link or a control, nor while text is selected, so it can be
-copied); the folds (Background, Dependencies, Evidence) keep their order and stay
-closed; each option has a **More** button at its right, outside its label, which shows the
+copied); the folds (Open questions and Assumptions above the Impact, Background and
+Dependencies after the answer) keep their order and stay closed; each option has a **More** button at its right, outside its label, which shows the
 option in full. There is no Options in full fold: it repeated each option's **More** (the
-operator, 2026-10-14). The Basis line, the titles, the one lines, `act`, and the round and
+operator, 2026-10-14). The basis word, the titles, the one lines, `act`, and the round and
 default lines are static. A `⚠ one-way` card is the decisions skill's block: the card's
 essentials plus each option's facets, unfolded, so its options' **More** open from the start.
 It gets no special control: the read-back of a one-way pick happens in chat, when the answers
@@ -220,7 +228,9 @@ questions fold), an Impact `cost`, at every level, an option's effect, reach or 
 leave such a field out; the optional ones were always optional. Shown whatever they say,
 because their none is a statement: the required Impact facets (`wait`, `reach`) and an `undo`
 when given (*undo: none* says an option is one-way), each option's Undo when given, and the
-`basis` word. The check still requires the two facets. A missing undo is not a none: it says
+`basis` word (so every card has its Assumptions fold). An `assume` list that is empty,
+or whose assumptions are none, shows none, and its summary reads *basis:* and the word alone.
+The check still requires the two facets. A missing undo is not a none: it says
 every option, or that option, is reversible at little cost.
 
 ## Republishing older data

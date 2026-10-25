@@ -5,12 +5,14 @@
    the progress bar, with Expand all and Collapse all, then each group's cards, each closed to a
    one-line row (number, title, ⚠, the rec pill and the recommended option's effect with its letter, the
    answer) with Use recommendation and Later beside it. An open card opens on its TLDR, then its Context
-   (the terms it uses), then a closed Open questions fold, then its Impact, one facet a line (wait, reach,
-   undo, cost: there is no card-level effect). Every view shows impact: a card's row the recommended
+   (the terms it uses), then a closed Open questions fold, then a closed Assumptions fold (the basis word and
+   its reason, the evidence, each assumption with its tripwire), then its Impact, one facet a line (wait,
+   reach, undo, cost: there is no card-level effect). Every view shows impact: a card's row the recommended
    option's effect, an open card its Impact lines, each option's More its own effect, reach, undo
    (only where it is one-way or costly; ⚠ on an option flagged one-way) and cost. A decision raised from
    one labelled item of a source shows its title, then the label and its short name, muted. Inside a card the essentials are flat (TLDR, Context, Impact, options, follow-ups,
-   words, recommendation); background, dependencies and evidence sit in folds. The data is
+   words); open questions, the assumptions with the basis and evidence, background and dependencies sit in
+   folds. The data is
    decision-page/5: each card a decision-card/5 record (options as objects) plus L and dep. A part with a
    more-detail button, above or inside a fold, steps to more detail on a click (terse bullets)
    and again to full detail (headed sections); each level replaces the part's text, and the next
@@ -204,15 +206,23 @@ details.pane>summary>.fsum{font-family:var(--f-body);text-transform:none;letter-
 details.pane[open]>summary>.fsum{display:none}
 details.pane>div{padding:6px 0 2px;font-size:.92rem;max-width:70ch;display:flex;flex-direction:column;gap:6px}
 .cardfoot{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
-.recline{font-size:.88rem}
-.recline strong{color:var(--rec);font-family:var(--f-mono)}
-.recline em{color:var(--muted)}
 .eff{color:var(--muted)}
 .eff b{font-family:var(--f-mono);font-weight:600;color:var(--ink);margin-right:.25em}
 /* the row's effect is the recommended option's: its letter first, in the rec colour (answer 340 (a)) */
 .eff .rl{font-family:var(--f-mono);font-weight:600;color:var(--rec);margin-right:.3em}
 /* Open questions: a closed fold above the Impact, its summary the count and the first question */
 details.ofold>div ul{margin:0;padding-left:1.2em;display:flex;flex-direction:column;gap:3px}
+/* Assumptions: a closed fold after Open questions, above the Impact. Its Basis line (the word in a box, then
+   its reason), the evidence, then each assumption in bold with its tripwire under it */
+details.afold>div{display:flex;flex-direction:column;gap:8px;max-width:70ch;min-width:0}
+.basisl{min-width:0;overflow-wrap:anywhere}
+.basisl .bw{display:inline-block;font-family:var(--f-mono);font-size:.8rem;font-weight:600;color:var(--rec);border:1px solid var(--line);background:var(--rec-soft);border-radius:4px;padding:0 .45em;margin-right:.45em}
+.basisl ul.lvl{margin-top:3px}
+ul.asm{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:6px}
+ul.asm>li{border-left:2px solid var(--line);padding-left:10px;min-width:0;overflow-wrap:anywhere}
+ul.asm .rests{font-weight:600}
+ul.asm .tw{color:var(--muted);font-size:.9em}
+ul.asm .tw em{font-family:var(--f-mono);font-style:normal;font-size:.85em;color:var(--warn);margin-right:.3em}
 /* the Impact: one facet a line, at every level */
 .impline{font-size:.92rem;max-width:70ch;border-left:3px solid var(--accent);padding:6px 12px;background:var(--sunk);border-radius:0 6px 6px 0;display:flex;flex-direction:column;gap:2px;min-width:0}
 .impline .lbl{display:block;margin-bottom:1px}
@@ -250,7 +260,7 @@ footer{color:var(--muted);font-size:.85rem;max-width:70ch}
   <header>
     <h1 id="title">Decision answers</h1>
     <p class="lede" id="lede"></p>
-    <p class="lede">For each decision, pick one option or one follow-up (the radio buttons allow only one), and add your words if you like. Each click saves at once; there is no submit button. Tell Claude in chat when you're done. The map under the progress bar lists the groups; each decision is one line in its group, and a click on the line opens its card (<b>Expand all</b> and <b>Collapse all</b> open or close every card). <b>Use recommendation</b> and <b>Later</b> beside a line answer without opening the card. A <span class="slug-t">number · name</span> is a decision: hover over it or focus it to see it, and click it to open its card; on one not on this page, a tap or click pins what it shows, and a second tap, a tap elsewhere or Escape closes it. Each line shows, after an arrow (→) and its letter, what the recommended option changes in the system the work builds (with no recommendation, each option's, in a few words); each card opens on a TLDR, then its Context (the terms it uses), then its impact, one facet a line, then one line per option; the folds under it go from compressed to full detail. A part with a <i>more detail</i> button, above or inside a fold, shows more detail as short bullets when you click it or its text, and full detail in headed sections on a second click; <b>More</b> beside an option shows it in full, with its own effect, reach, undo and cost. A part with nothing to say (none) is left out. An Impact describes the system the work builds, never the review or the process; its <i>later:</i> line says what waiting holds up. <b>Open questions</b>, folded above the Impact, lists what is not known yet.<span id="doclink"></span></p>
+    <p class="lede">For each decision, pick one option or one follow-up (the radio buttons allow only one), and add your words if you like. Each click saves at once; there is no submit button. Tell Claude in chat when you're done. The map under the progress bar lists the groups; each decision is one line in its group, and a click on the line opens its card (<b>Expand all</b> and <b>Collapse all</b> open or close every card). <b>Use recommendation</b> and <b>Later</b> beside a line answer without opening the card. A <span class="slug-t">number · name</span> is a decision: hover over it or focus it to see it, and click it to open its card; on one not on this page, a tap or click pins what it shows, and a second tap, a tap elsewhere or Escape closes it. Each line shows, after an arrow (→) and its letter, what the recommended option changes in the system the work builds (with no recommendation, each option's, in a few words); each card opens on a TLDR, then its Context (the terms it uses), then its impact, one facet a line, then one line per option; the folds under it go from compressed to full detail. A part with a <i>more detail</i> button, above or inside a fold, shows more detail as short bullets when you click it or its text, and full detail in headed sections on a second click; <b>More</b> beside an option shows it in full, with its own effect, reach, undo and cost. A part with nothing to say (none) is left out. An Impact describes the system the work builds, never the review or the process; its <i>later:</i> line says what waiting holds up. <b>Open questions</b>, folded above the Impact, lists what is not known yet; <b>Assumptions</b>, folded under it, gives the basis of the call, its evidence, and each assumption it rests on with its tripwire, the sign that would change it.<span id="doclink"></span></p>
     <div class="banner" id="nodb" hidden>This view can't save answers. Nothing you pick here is kept; answer in chat instead (<code id="nodbex">N: a</code>).</div>
     <div class="banner" id="viewonly" hidden>You are viewing these answers. Only the page's owner can answer here.</div>
     <div class="banner" id="nodata" hidden>The decisions didn't load. Reload the page; if it keeps failing, ask Claude for them in chat.</div>
@@ -329,6 +339,19 @@ const openFold=c=>{const qs=Array.isArray(c.open)?c.open.filter(shown):[];if(!qs
   const w=String(qs[0]).trim().split(/\s+/),first=w.length>OPEN_CUT?w.slice(0,OPEN_CUT).join(" ")+" …":w.join(" ");
   return '<details class="gfold ofold"><summary><span class="lbl">Open questions</span><span class="gsum">'+qs.length+' open: '+fmtPlain(first)+'</span></summary>'
     +'<div><ul>'+qs.map(q=>'<li>'+fmtD(q)+'</li>').join("")+'</ul></div></details>'};
+/* Assumptions (the v5 layout, 9168): a closed fold after Open questions and before the Impact, on every card
+   (its basis word is always shown). Inside, the basis line (P.rec, its levels), the evidence (P.ev, its levels),
+   then each assumption in bold with its tripwire under it. Its summary: "basis: <word>", then the count of
+   assumptions with their tripwires; none is not shown, so a card with none reads "basis: <word>" alone. What
+   is not known is never here: it is Open questions */
+const assumeOf=c=>Array.isArray(c.assume)?c.assume.filter(a=>isObj(a)&&shown(a.rests)):[];
+const assumeSum=c=>{const n=assumeOf(c).length;
+  return 'basis: '+esc(c.basis)+(n?' · '+n+(n===1?' assumption with its tripwire':' assumptions with tripwires'):'')};
+const assumeFold=(c,P)=>{const as=assumeOf(c);
+  return '<details class="gfold afold"><summary><span class="lbl">Assumptions</span><span class="gsum">'+assumeSum(c)+'</span></summary><div>'
+    +secHtml(c,"rec","Basis",P.rec)+secHtml(c,"ev","Evidence",P.ev)
+    +(as.length?'<ul class="asm">'+as.map(a=>'<li><p class="rests">'+fmtD(a.rests)+'</p>'+(shown(a.tw)?'<p class="tw"><em>tripwire:</em>'+fmtD(a.tw)+'</p>':'')+'</li>').join("")+'</ul>':'')
+    +'</div></details>'};
 
 /* what it takes to act on option k (the decisions skill's To act on part): its numbered steps, flat
    under the option, never folded; empty when the option asks nothing of the operator */
@@ -416,6 +439,7 @@ function cardProblems(c,w,keys){
   if(!Array.isArray(c.tldr)||!c.tldr.every(isStr))bad.push(w+": tldr must be a list of text");
   else{const i=c.tldr.findIndex(recBullet);if(i>=0)bad.push(w+": tldr bullet "+(i+1)+" carries the recommendation: the options mark it; say what is decided instead")}
   if(c.open!=null&&!(Array.isArray(c.open)&&c.open.every(isStr)))bad.push(w+": open must be a list of text, one open question each");
+  if(c.assume!=null&&!(Array.isArray(c.assume)&&c.assume.every(a=>isObj(a)&&isTxt(a.rests)&&isTxt(a.tw))))bad.push(w+": assume must be a list of {rests, tw}: each assumption the call rests on and its tripwire, both text");
   /* undo and cost are optional; an effect an older writer left is ignored, never shown */
   if(!isObj(c.impact)||!["wait","reach"].every(k=>isTxt(c.impact[k]))||["undo","cost"].some(k=>k in c.impact&&!isStr(c.impact[k])))
     bad.push(w+": impact needs wait and reach as text (undo and cost optional, as text; there is no card-level effect)");
@@ -601,13 +625,13 @@ const impactHigh=(i,ow)=>'<div class="impline"><span class="lbl">Impact</span>'
 const impactLevel=(i,m,ow)=>m===0?impactMedium(i,ow):impactHigh(i,ow);
 const tldrHtml=(bs,f)=>'<div><span class="lbl">TLDR</span><ul class="tldr">'+bs.map(b=>'<li>'+f(b)+'</li>').join("")+'</ul></div>';
 const tldrLevel=x=>'<div><span class="lbl">TLDR</span>'+rend(x,fmtD)+'</div>';
-/* the rec line: its head (the rec, the basis word) and its reason; a level replaces the reason. What is not known
-   is the card's Open questions, never this line */
-const recHeadHtml=c=>(c.rec?'Rec <strong>('+esc(c.rec)+')</strong>':'<em>'+esc(c.norec||"no recommendation")+'</em>')+' · basis <strong>'+esc(c.basis)+'</strong>';
-const recLine=(c,x)=>x==null
-  ?'<p class="recline">'+recHeadHtml(c)+(shown(c.reason)?' — <em>'+fmt(c.reason)+'</em>':'')+'</p>'
-  :(Array.isArray(x)?'<div class="recline">'+recHeadHtml(c)+' —'+rend(x,fmtD)+'</div>'
-    :'<p class="recline">'+recHeadHtml(c)+' — <em>'+fmtD(x)+'</em></p>');
+/* the basis line, first in the Assumptions fold: the Basis label, the basis word in a box (always: its word is a
+   statement, none included), then its reason; a level (detail.rec) replaces the reason. The recommendation is
+   marked on its option; what is not known is the card's Open questions, never this line */
+const basisHead=c=>'<span class="lbl">Basis</span><span class="bw">'+esc(c.basis)+'</span>';
+const basisLine=(c,x)=>x==null
+  ?'<div class="basisl">'+basisHead(c)+(shown(c.reason)?' '+fmtD(c.reason):'')+'</div>'
+  :'<div class="basisl">'+basisHead(c)+(Array.isArray(x)?rend(x,fmtD):' '+fmtD(x))+'</div>';
 const optPara=(k,x)=>Array.isArray(x)?'<div><span class="mono ol">('+esc(k)+')</span>'+rend(x,fmtD)+'</div>':'<p><span class="mono ol">('+esc(k)+')</span> '+fmtD(x)+'</p>';
 /* every part's renditions as HTML, summary first: {key: [summary, medium?, high?]}. Context's levels keep
    its labelled wrapper, so its label shows at every level; the visible summaries never link */
@@ -621,7 +645,7 @@ function parts(c){
     ctx:[contextBlock(c)].concat(detOf(c,"context").map(x=>'<div class="ctx"><span class="lbl">Context</span>'+rend(x,fmtD)+'</div>')),
     imp:[impactLine(c)].concat(detOf(c,"impact").map((x,m)=>impactLevel(x,m,oneWay(c)))),
     tldr:[tldrHtml(c.tldr,fmt)].concat(detOf(c,"tldr").map(tldrLevel)),
-    rec:[recLine(c,null)].concat(detOf(c,"rec").map(x=>recLine(c,x))),
+    rec:[basisLine(c,null)].concat(detOf(c,"rec").map(x=>basisLine(c,x))),
     why:opt(c.why,detOf(c,"why"),"Not summarised: more detail shows why now.",x=>labelled("Why now",x)),
     whyask:opt(c.whyask,detOf(c,"whyask"),"Not summarised: more detail shows why it is asked.",x=>labelled("Why ask",x,cls)),
     dep:opt(c.dep,dl,"Not summarised: more detail shows what it depends on.",x=>labelled("Depends on",x)),
@@ -678,7 +702,7 @@ const quickHtml=c=>{const n=esc(c.n);
 function cardHtml(c){
   const n=esc(c.n),g="d"+n,P=parts(c);
   let h='<div class="cardw '+(c.rec?'q2':'q1')+'"><details class="card" id="card-'+n+'"><summary>'+rowHtml(c)+'</summary>'
-    +'<div class="body">'+secHtml(c,"tldr","TLDR",P.tldr)+secHtml(c,"ctx","Context",P.ctx)+openFold(c)+secHtml(c,"imp","Impact",P.imp)
+    +'<div class="body">'+secHtml(c,"tldr","TLDR",P.tldr)+secHtml(c,"ctx","Context",P.ctx)+openFold(c)+assumeFold(c,P)+secHtml(c,"imp","Impact",P.imp)
     +line("If left:",c.ifleft)+line("A round costs:",c.roundcosts)+line("If unanswered:",c.ifunanswered)
     +'<fieldset><legend>Your answer: one option or one follow-up</legend><div class="opts">';
   for(const o of optsOf(c)){const k=o.k;
@@ -700,13 +724,10 @@ function cardHtml(c){
   const bg=secHtml(c,"why","Why now",P.why)+secHtml(c,"whyask","Why ask",P.whyask);
   return h+'</div></div><div><label class="lbl" for="'+g+'-words">Your words</label>'
     +'<textarea id="'+g+'-words" data-n="'+n+'"></textarea></div></div></fieldset>'
-    +secHtml(c,"rec","Recommendation",P.rec)
     +'<div class="cardfoot"><span class="lbl">Details, most compressed first</span><button class="btn" type="button" data-clear="'+n+'">Clear answer</button></div>'
     +'<div class="panes">'
     +(bg?'<details class="pane"><summary>Background'+bgSum(c)+'</summary><div>'+bg+'</div></details>':'')
     +(P.dep[0]?'<details class="pane"><summary>Dependencies</summary><div>'+secHtml(c,"dep","Depends on",P.dep)+'</div></details>':'')
-    /* Basis always (its word is a statement, none included) */
-    +'<details class="pane"><summary>Evidence</summary><div><p><span class="lbl">Basis</span>'+esc(c.basis)+(shown(c.reason)?' — '+fmt(c.reason):'')+'</p>'+secHtml(c,"ev","Evidence",P.ev)+'</div></details>'
     +'</div></div></details>'+quickHtml(c)+'</div>';
 }
 /* a group's heading (rule 263 on the page): a band with the Group label, its title, a count pill and what its

@@ -138,13 +138,19 @@ The rules below are what the digest condenses:
   flagged option without one, and the runner lints a ⚠ card with no flagged option. A round
   ask carries `ifleft` and `roundcosts`; a status-quo default, `ifunanswered`.
 - What is not known yet goes in `open`, one question each, folded above the Impact.
+- What the recommendation rests on goes in `assume`, each `{rests, tw}`: the assumption and
+  its tripwire, the sign that would change the call. The page shows it in the closed
+  Assumptions fold, after Open questions and before the Impact, with the basis word, its
+  `reason` and the `evidence`; the fold's summary is *basis:* and the word, then the count.
+  The runner lints a card with a recommendation and none (a small call may leave it
+  knowingly). An unknown is never an assumption: it goes in `open`.
 - Every card carries the depth the decisions skill's block holds, scaled to the decision, up to
   the soft sizes (`references/writer-digest.md` § Levels and their shapes): Why now and Why ask
   in full, an effect, a reach and a full text for every option but (z), and the basis
   drill-down in `evidence` with its paths and links. **Levels scale with the decision** and are
   optional on every part: a small call may carry none; a wide or one-way decision carries the
   most, a medium and a high in `detail` for its visible parts (Context, the Impact line, the
-  TLDR, the rec line), in each option's own `detail`, and for the fold items with depth to
+  TLDR, the basis line), in each option's own `detail`, and for the fold items with depth to
   give. **Each level has its shape**, each
   clearly sparser than the next (`references/writer-digest.md` § Levels and their shapes): a
   summary is one or two sentences (the TLDR one or two bullets, the Impact one facet a line);

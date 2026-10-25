@@ -111,8 +111,9 @@ after a dash on the option's own line, a plain `undo:` — is read by
 Every card and block carries a **Context** section, shaped like the answer page's `context`
 field (the `decision-page` skill's `references/cards-schema.md`), in the page's order: the
 decision line first — the title and **What:**, which do the page TLDR's work — then
-**Context:**, then any fold above the Impact (▸ Open questions, § Folds), then the Impact and
-the options. A list line and a tag-size mention carry no Context: a line stays a line.
+**Context:**, then the folds above the Impact (▸ Open questions when anything is open, then
+▸ Assumptions, § Folds), then the Impact and the options. A list line and a tag-size mention
+carry no Context: a line stays a line.
 
 What it holds, in this order:
 
@@ -167,7 +168,8 @@ A part a reader may not need opens folded, on one line:
   open it.
 - **Open.** `tell me <name>` (`tell me open questions`) answers with the fold open, and
   `expand` and a block show it open: the line as `▾ <name> — <summary>`, its content under
-  it, one bullet an item (Background's two labelled lines, below).
+  it, one bullet an item (Assumptions' Basis line first, and Background's two labelled lines,
+  below).
 - **Empty.** A fold with nothing in it is left out, line and all (none is not shown).
 
 **▸ Open questions** — what is still open about the decision (SKILL.md § The floor, item 9;
@@ -178,10 +180,34 @@ has them), before ▸ Assumptions and the **Impact:**. It is not the message's *
 questions** section, which lists
 questions that are not decisions yet (SKILL.md § The floor).
 
+**▸ Assumptions** — the basis of the call and what it rests on (SKILL.md § The floor, item 8;
+the card record's `basis`, `reason`, `evidence` and `assume`), on every card and block, since
+the basis word is always shown. It sits after ▸ Open questions (after **Context:** when
+nothing is open) and before the **Impact:**. Its summary is the basis line, `basis: **word**`,
+then the count of assumptions with their tripwires: `basis: **partial** · 2 assumptions with
+tripwires`, `1 assumption with its tripwire`, or `basis: **strong**` alone when the card names
+none (none is not shown). `tell me assumptions`, `expand` and a block show it open:
+
+```
+▾ Assumptions — basis: **partial** · 2 assumptions with tripwires
+**Basis:** partial — *the one-clause reason*
+*Evidence:* observed — … (link) · inferred — …
+- **what the call rests on**
+  *tripwire:* the sign that would change it
+- **another thing it rests on**
+  *tripwire:* its own sign
+```
+
+Under the open line, the **Basis:** line (the word and its reason), then the basis drill-down
+as an *Evidence:* line when there is one, then one bullet per assumption, in bold, its
+*tripwire:* on the indented line under it. What is not known yet is never an assumption: it is
+▸ Open questions. There is no Rec line: the recommended option is the bold one, and the basis
+and its reason are in this fold.
+
 **▸ Background** — why now and why ask (SKILL.md § The floor, items 3 and 4; the card
 record's `why` and `whyask`): the first of the folds under the options, after the options and
 their parts (any **To act on (x):**, **If left:**, **A round costs:** and **If
-unanswered:**), and, while the card keeps a Rec line, just above it. Its summary is `why now:
+unanswered:**). Its summary is `why now:
 <the first sentence of why now>`, about 25 words at most: a longer first sentence is
 rewritten where the caller stores *why now*, never cut, and the summary is composed from
 *why now* each time, never stored. `tell me background` (or `tell me why`) answers with it
@@ -266,6 +292,7 @@ Example:
 **What:** what is decided, in plain words; items by plain name, the id as a trailing tag; other ids glossed.
 **Context:** the terms, items and counts the card uses, each in plain words; then where you left it · what you decide now.
 ▸ Open questions — 2 open: what is not known yet, cut at about 12 words
+▸ Assumptions — basis: **partial** · 2 assumptions with tripwires
 **Impact:** later: wait · reach: who or what · ⚠ undo: (a) how, at what cost, or why not
 - (a) Option
   *→ effect · reach: … · ⚠ undo: … · cost: …*
@@ -278,14 +305,13 @@ Example:
 2. …
 
 ▸ Background — why now: the first sentence of why it is up now, about 25 words at most
-Rec **(b)** · basis **word** — *one-clause reason*
 ```
 
 - **The order is the page's**: the decision line (the title, then **What:**), then
-  **Context:**, then the ▸ Open questions line when anything is open (§ Folds), then
-  **Impact:** — and under them the options, any **To act on (x):** part, a round ask's
-  **If left:** and **A round costs:**, any **If unanswered:**, then the ▸ Background line
-  just above the Rec line (§ Context, § Folds).
+  **Context:**, then the ▸ Open questions line when anything is open, then the
+  ▸ Assumptions line (§ Folds), then **Impact:** — and under them the options, any **To act
+  on (x):** part, a round ask's **If left:** and **A round costs:**, any **If unanswered:**,
+  then the ▸ Background line (§ Context, § Folds). There is no Rec line.
 - **Title:** the question. A decision raised from one labelled item of a source opens its
   title on the label and its short name: **41 — F7 (oversize upload) · Cap the upload
   size?** (§ Source labels).
@@ -293,8 +319,11 @@ Rec **(b)** · basis **word** — *one-clause reason*
 - **Context:** one or two sentences at the page's summary size, on every card each time it
   is shown: the terms the card uses, then the resume cue (§ Context). Read from the store
   when the caller keeps one.
-- **Impact:** after **Context:** and any ▸ Open questions line, on every card: the Impact
-  line (§ Impact), read from the store when the caller keeps one. It carries no effect: each
+- **▸ Assumptions:** the basis word, and the count of what the recommendation rests on, each
+  with its tripwire (§ Folds), closed, just above the Impact; the basis's one-clause reason
+  and its drill-down are inside it.
+- **Impact:** after **Context:**, any ▸ Open questions line and the ▸ Assumptions line, on
+  every card: the Impact line (§ Impact), read from the store when the caller keeps one. It carries no effect: each
   option's is on its own line under it.
 - One option a bullet, in letter order, and under each but (z) its own impact on an italic
   line, indented to sit under it: `*→ effect · reach: … · ⚠ undo: … · cost: …*`, in facet
@@ -305,7 +334,7 @@ Rec **(b)** · basis **word** — *one-clause reason*
   the consequence is on the impact line. (z) stays one line, what waiting costs after the
   dash. Only the recommended option is bold — (b) above, in its own place, not moved first
   (SKILL.md § Critical). With no recommendation, none is.
-- **▸ Background:** why now and why ask, in a closed fold just above the Rec line, its
+- **▸ Background:** why now and why ask, in a closed fold, the first under the options, its
   summary `why now:` and the first sentence of why now (§ Folds). Inside it, **Why now:** says
   why it is up now, *nothing forces it* when nothing does (SKILL.md § The floor, item 3), and
   **Why ask:** why it comes to the operator (what would go wrong if you took the
@@ -341,8 +370,9 @@ Rec **(b)** · basis **word** — *one-clause reason*
   breaks written ` / ` (as a store's answer lines write a reply's), or as the `/…` path of
   a file that holds it — the file form whenever the text itself holds ` / `, since nothing
   in a stored line is escaped. A re-show renders it back as a fenced block.
-- **The Rec line**: the recommendation, the basis word and its one-clause reason. What is
-  not known yet is in the ▸ Open questions fold (§ Folds), not on this line.
+- **No Rec line.** The recommendation is the bold option; the basis word is the
+  ▸ Assumptions summary, and its one-clause reason is inside that fold. What is not known yet
+  is in the ▸ Open questions fold (§ Folds).
 - An ask for another round adds two lines after the options and any **To act on** part,
   before the ▸ Background line —
   **If left:** *each leftover finding, and what it would break* and **A round costs:** *the
@@ -369,6 +399,12 @@ Rec **(b)** · basis **word** — *one-clause reason*
 ▾ Open questions — 1 open: what is not known yet
 - what is not known yet, one line
 
+▾ Assumptions — basis: **partial** · 1 assumption with its tripwire
+**Basis:** partial — *reason*
+*Evidence:* observed — … (link) · inferred — …
+- **what the call rests on**
+  *tripwire:* the sign that would change it
+
 **Impact:** later: wait · reach: who or what · ⚠ undo: (a) none, because …
 
 | Impact | Effect | Reach | Undo | Cost |
@@ -385,8 +421,6 @@ Rec **(b)** · basis **word** — *one-clause reason*
 **Why now:** …
 **Why ask:** *class* — …
 
-Rec **(b)** · basis **partial** — *reason*
-*Basis:* observed — … (link) · inferred — … · unknown — …
 *If you pick (a), I'll repeat it back and act only once you confirm: it can't be undone.*
 ```
 
@@ -394,7 +428,9 @@ Rec **(b)** · basis **partial** — *reason*
   **Context:** as a bullet list at the page's medium size, its first bullet the card's
   Context and the rest the context the reader may have lost (§ Context). It is shown on
   every block, warm reader or cold.
-- Any fold above the Impact comes next, open (`▾`, § Folds). Then the card's **Impact:**
+- The folds above the Impact come next, open (`▾`, § Folds): ▸ Open questions when anything
+  is open, then ▸ Assumptions with its **Basis:** line, the basis drill-down and each
+  assumption with its tripwire. Then the card's **Impact:**
   line, with no effect, as on a card, and the **Impact table** right under it: one row per option, in letter
   order, each option's own effect, reach, undo and cost, then the **Wait row** — decide
   later's, labelled `(z) Wait` — with the columns Effect, Reach, Undo and Cost. An Undo cell
@@ -405,8 +441,9 @@ Rec **(b)** · basis **partial** — *reason*
 - Under the table run a round ask's **If left:** and **A round costs:**, then any **To act
   on (x):** part; then the Background fold stands open, as § Folds places it, first after
   the options and their parts: `▾ Background — why now: …` with its **Why now:** and **Why
-  ask:** lines under it, just before the Rec line (§ Card).
-- A block **includes** the basis drill-down (the tags and links). `expand` on a block is
+  ask:** lines under it; only the read-back line, on a ⚠ block, follows it.
+- A block **includes** the basis drill-down (the tags and links), in its open Assumptions
+  fold. `expand` on a block is
   answered: *already at full detail — `tell me [what]` for something specific?*
 - The read-back line (⚠ blocks only) names the one-way option(s). A block for a wide
   decision that is not ⚠ drops it.
@@ -460,7 +497,7 @@ endpoints. A card that names only their category (*housekeeping*, *the review's 
 does not say what is decided (SKILL.md § The floor, item 1).
 
 - **The items need different answers: a group.** One card per item, each whole: its own
-  number, What, Context, Impact, options, ▸ Background line and Rec line, as any card
+  number, What, Context, ▸ Assumptions line, Impact, options and ▸ Background line, as any card
   (SKILL.md § Critical, each one whole). An item card's Context may be short and lean on
   the heading for shared terms; it still ends on its cue. The cards sit under one heading:
 
@@ -554,8 +591,8 @@ new numbered decision that names the line it reopens.
 
 When a decision comes back (a wake fired, a context reset, `tell me`, `dig into`), open it
 with what changed since the operator last saw it, then the card or block as usual — its
-**What:**, its stored **Context:**, any ▸ Open questions line and its Impact line (and a
-block's table), right after the *while it waited* line:
+**What:**, its stored **Context:**, any ▸ Open questions line, its ▸ Assumptions line and its
+Impact line (and a block's table), right after the *while it waited* line:
 
 **62 — back, as you asked ("until the load test finishes"):** move the job queue to the new
 message broker?
@@ -564,6 +601,7 @@ Options and recommendation unchanged; impact unchanged.*
 **What:** switch every worker service from the old job queue to the new message broker.
 **Context:** the new broker has carried the email worker alone for two weeks as a trial, and the load test was the last check before the rest move. You left it at that trial · you decide whether every worker moves now or one goes first.
 ▸ Open questions — 1 open: whether the two workers not read rely on the old queue's ordering
+▸ Assumptions — basis: **partial** · 1 assumption with its tripwire
 **Impact:** later: the worker rollout stays paused · reach: every worker service and its on-call · ⚠ undo: (a) switch each config back within the week; after that the old queue is gone
 
 *While it waited* always says whether the impact changed: *impact unchanged*, or what changed
@@ -599,7 +637,7 @@ open decision the reader is cold on at card level or above, never as a line only
 paged (SKILL.md § Levels, the line-only rule), each opening with what changed while it
 waited (*nothing changed* is worth saying, and so is *impact unchanged*). Under it the card
 runs **What:**, **Context:** (its stored Context, ending on where the operator left it),
-any ▸ Open questions line, **Impact:**, the options, then the ▸ Background line from its
+any ▸ Open questions line, the ▸ Assumptions line, **Impact:**, the options, then the ▸ Background line from its
 stored *why now* (the fold holding its stored *why now* and *why ask*); a block's **Context:** bullets open with the same
 Context. A stored card in an earlier form is read, and revised where it lacks a floor field,
 by `references/legacy-cards.md`. A deferred decision whose

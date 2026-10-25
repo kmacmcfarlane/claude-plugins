@@ -26,6 +26,16 @@ from test_depth import run_page
 from test_context import runner, SKILL
 from test_record import run_record
 
+# an older card never held assumptions: the upgrade invents none, so a recommended card is linted for
+# them, which a writer leaves knowingly on an upgraded card (the Assumptions fold, A1)
+ASSUME_LINT = "depth: no assumptions: "
+
+
+def unassumed(code, out):
+    """The runner's (code, output) less the assume lint, which an upgraded older card may carry."""
+    rest = [x for x in out.splitlines() if ASSUME_LINT not in x]
+    return (0 if code == 2 and not rest else code), "".join(x + "\n" for x in rest)
+
 UPGRADER = SKILL / "scripts" / "upgrade_cards.js"
 FIXTURES = pathlib.Path(__file__).resolve().parent / "fixtures"
 LEGACY = FIXTURES / "cards.legacy.json"
@@ -111,7 +121,10 @@ class Upgrade(unittest.TestCase):
         self.assertEqual(code, 0, out)
         self.assertEqual(d["format"], "decision-page/5")
         self.assertEqual(run_page(d)["bad"], [])
-        self.assertEqual(runner(d)[:2], (0, ""))
+        self.assertEqual(unassumed(*runner(d)[:2]), (0, ""))
+        # the legacy cards with a recommendation are the ones linted for it
+        self.assertEqual(sorted(x.split(":")[1].strip() for x in runner(d)[1].splitlines()),
+                         ["card 41", "card 42"])
         # every rev kept, every card reported
         old = {c["n"]: c["rev"] for c in load(LEGACY)["cards"]}
         self.assertEqual({c["n"]: c["rev"] for c in d["cards"]}, old)
@@ -182,9 +195,10 @@ class Upgrade(unittest.TestCase):
         self.assertEqual(code, 0, out)
         self.assertEqual(run_page(d)["bad"], [])
         rcode, rout, _ = runner(d)
-        # no refusal; the only lints are the kit's what, which a later feature shows as its own part
+        # no refusal; the only lints are the kit's what, which a later feature shows as its own part, and
+        # the assume lint on a recommended card the kit gave no assumptions
         self.assertIn(rcode, (0, 2), rout)
-        self.assertTrue(all("what present" in x for x in rout.splitlines()), rout)
+        self.assertTrue(all("what present" in x or ASSUME_LINT in x for x in rout.splitlines()), rout)
         self.assertIn("card 51: kit, rev kept", out)
         self.assertIn("card 52: kit (v4), rev kept;", out)
         self.assertEqual(by_n(d)[52]["rev"], "2026-02-03T08:15Z")
@@ -298,7 +312,7 @@ class Upgrade(unittest.TestCase):
             self.assertNotIn("L", r, name)
             self.assertNotIn("dep", r, name)
             self.assertEqual(r["format"], "decision-card/5")
-            self.assertEqual(run_record(r), (0, ""), name)
+            self.assertEqual(unassumed(*run_record(r)), (0, ""), name)
         self.assertEqual(by_n(res)[42]["dep"], "[[41]] (b)")
 
     def test_a_v5_file_passes_through(self):

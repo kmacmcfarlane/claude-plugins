@@ -91,7 +91,10 @@ Every decision carries, at any level:
 6. **Decide later**, always, as its own option (`(z)`), distinct from "do nothing": it says what
    waiting costs, and when there is a deadline, what happens at the deadline.
 7. **The recommendation**, or the labelled reason there is none.
-8. **The basis** — what the claims rest on (§ Evidence).
+8. **The basis** — what the claims rest on (§ Evidence) — and the **assumptions** the
+   recommendation rests on, each with its **tripwire**, the sign that would change the call;
+   shown in the card's ▸ Assumptions fold, closed, its summary the basis word and their count
+   (`references/rendering.md` § Folds).
 9. **What is still open**: the open questions, one line each, shown in the card's
    ▸ Open questions fold (`references/rendering.md` § Folds); with none open, no fold.
 10. **What it takes to act**: when an option asks the operator to do something beyond
@@ -175,10 +178,12 @@ Smallest to largest, each showing more of the impact in facet order (templates i
   why ask.
 - **Card** — in the answer page's order: the decision line (the title, then **What:**, what
   is decided), then **Context:**, then the ▸ Open questions fold line when anything is open,
-  then an **Impact:** line, with no effect of its own; then the options, each with its
+  then the ▸ Assumptions fold line (the basis word and the assumptions with their
+  tripwires), then an **Impact:** line, with no effect of its own; then the options, each with its
   own impact (effect, reach, a one-way or costly option's `⚠ undo:`, cost) on an italic line
   under it, decide later, any **To act on (x):** part, a round ask's justification, the
-  ▸ Background fold line (why now and why ask), then `Rec · basis — reason`. Its **Context:** is one or
+  ▸ Background fold line (why now and why ask); there is no Rec line, the recommended option
+  being the bold one. Its **Context:** is one or
   two sentences, the page's summary size: the terms the card uses, then the resume cue
   (where you left it · what you decide now). It is written for every decision when it is
   raised, stored with the card where the caller keeps one, and shown every time the card is
@@ -188,8 +193,7 @@ Smallest to largest, each showing more of the impact in facet order (templates i
   whose Impact line is followed by
   a table (a row per option, its effect, reach, undo and cost, plus a Wait row) in place of
   the options' impact lines, then the Background fold open, why now and why ask on two
-  lines; plus the basis
-  drill-down with evidence links.
+  lines; its Assumptions fold, open, carries the basis drill-down with evidence links.
 
 **The line-only rule.** A decision may stay a list line only when all of these hold: the
 reader is warm; the stakes are low (two-way and narrow); the basis is strong (for a

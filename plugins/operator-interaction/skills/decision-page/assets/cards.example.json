@@ -72,6 +72,16 @@
       "rec": "b",
       "basis": "strong",
       "reason": "both failures were read in the build logs",
+      "assume": [
+        {
+          "rests": "The stale cache is what broke both publishes, not the laptop's tools.",
+          "tw": "a publish from CI, which starts every build clean, breaks the same way"
+        },
+        {
+          "rests": "Nobody needs to publish between merges to `main`.",
+          "tw": "someone asks to publish a fix without merging it first"
+        }
+      ],
       "evidence": "Build logs for both failed publishes show the same stale cache directory.",
       "ifunanswered": "I leave the build on the laptop and carry on with other work.",
       "open": [
@@ -441,6 +451,20 @@
       "rec": "a",
       "basis": "partial",
       "reason": "the URL list is observed; the traffic to them is estimated",
+      "assume": [
+        {
+          "rests": "Search engines carry a page's ranking across a redirect to its new URL.",
+          "tw": "the guides drop in search results in the weeks after the first CI publish"
+        },
+        {
+          "rests": "The trial build's list of moved pages is complete.",
+          "tw": "a page missing from the list returns not found after the first CI publish"
+        },
+        {
+          "rests": "The redirects work as the site generator's documentation says; they were not tried here.",
+          "tw": "the first CI publish serves an old URL as not found instead of sending the reader on"
+        }
+      ],
       "evidence": "Observed: the trial CI build lists the twelve pages whose paths change (`build/moved-pages.txt` from that run).",
       "oneway": true,
       "open": [
@@ -737,20 +761,14 @@
               "h": "Observed",
               "b": [
                 "The trial CI build lists the twelve pages whose paths change (`build/moved-pages.txt` from that run).",
-                "The site generator reads redirects from its config file, one line each (`https://docs.example.com/generator/redirects`)."
+                "The site generator reads redirects from its config file, one line each (`https://docs.example.com/generator/redirects`).",
+                "The trial build's list holds only the ten how-to guides and the two configuration pages; no other page's path changes."
               ]
             },
             {
               "h": "Estimated",
               "b": [
                 "About a fifth of the visits to those pages arrive from other sites, read from last month's referrer report (`https://analytics.example.com/docs-site/referrers`)."
-              ]
-            },
-            {
-              "h": "Unknown and assumed",
-              "b": [
-                "Unknown: how many sites link to them; the report counts visits, not links.",
-                "Assumed: the redirects work as the generator's documentation says; not tried here, and the first CI publish would show it."
               ]
             }
           ]

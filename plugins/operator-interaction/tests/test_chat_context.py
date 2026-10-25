@@ -6,13 +6,15 @@ one or two sentences at the page's summary size, ending on the resume cue; a blo
 bullet list at the page's medium size, its first bullet the card's Context, and a block's
 Impact line stands above its table. A list line
 carries none. A card's why now and why ask sit in a closed `▸ Background — why now: <the
-first sentence of why now>` line, the first fold under its options, just above its Rec line
-(answer 338, 2026-10-22, which retired answer 261's one **Why you, why now:** line); a block
-shows it open, `▾ Background`, with **Why now:** and **Why ask:** under it, below its table. A
-bundle whose items need different answers is a group: a heading, then one whole card per
-item (answer 263). What is still open about a decision is a folded `▸ Open questions —
-<summary>` line after Context and before the Impact (open as `▾` in a block), and the Rec line
-says no *unknown* (the v5 layout, 2026-10-22). Checked against the templates in
+first sentence of why now>` line, the first fold under its options (answer 338, 2026-10-22,
+which retired answer 261's one **Why you, why now:** line); a block shows it open,
+`▾ Background`, with **Why now:** and **Why ask:** under it, below its table. A bundle whose
+items need different answers is a group: a heading, then one whole card per item (answer
+263). What is still open about a decision is a folded `▸ Open questions — <summary>` line
+after Context and before the Impact (open as `▾` in a block); then, on every card and block,
+the `▸ Assumptions — basis: **word** · N assumptions with tripwires` line, before the Impact,
+open in a block as its **Basis:** line, its evidence and each assumption with its *tripwire:*;
+no unknown sits in it, and no card carries a Rec line (the v5 layout, 2026-10-22). Checked against the templates in
 `references/rendering.md` and every card and block in `references/gallery.md`; a card stored
 in an earlier form is read by `references/legacy-cards.md`.
 
@@ -40,7 +42,11 @@ GROUP_HEAD = re.compile(r"^\*\*Group: [^*]+\*\* — \*(\d+) decisions, [^*]+\*$"
 WHY_LINE = "**Why you, why now:**"  # retired by answer 338: no card carries it
 BG_LINE = "▸ Background — why now: "
 BG_OPEN = "▾ Background — why now: "
-REC_LINE = re.compile(r"^(Rec \*\*\(|\*No recommendation)")
+REC_LINE = re.compile(r"^(Rec \*\*\(|\*No recommendation)")  # retired with A1: no card carries one
+AS_SUMMARY = re.compile(r"^basis: \*\*(strong|partial|thin|none)\*\*"
+                        r"(?: · (?:(1) assumption with its tripwire|([2-9]|[1-9]\d+) assumptions with tripwires))?$")
+TRIPWIRE = "  *tripwire:* "
+READ_BACK = "*If you pick "
 LEGACY = REFS / "legacy-cards.md"
 # a fold line: closed on a card, open (its items under it) in a block
 FOLD = re.compile(r"^([▸▾]) ([A-Z][^—]+) — (.+)$")
@@ -121,14 +127,14 @@ class Templates(unittest.TestCase):
         self.assertNotIn("Why ask", heads(card))
         self.assertNotIn("cold reader only", "\n".join(card))
 
-    def test_the_card_template_folds_background_above_the_rec_line(self):
+    def test_the_card_template_folds_background_under_the_options(self):
         card = fenced(RENDERING.read_text(), "**N — Title as a question?**\n**What:**")
         check_bg_line(self, "rendering.md card", card)
 
     def test_the_block_template_runs_what_context_bullets_table(self):
         block = fenced(RENDERING.read_text(), "**N — Title as a question?** ⚠ one-way")
-        self.assertEqual(heads(block)[:6],
-                         ["What", "Context", "Impact", "table", "Why now", "Why ask"])
+        self.assertEqual(heads(block)[:7],
+                         ["What", "Context", "Basis", "Impact", "table", "Why now", "Why ask"])
         check_bg_block(self, "rendering.md block", block)
         k = next(i for i, x in enumerate(block) if x.startswith("**Context:**"))
         self.assertTrue(block[k + 1].startswith("- the card's Context"), block[k + 1])
@@ -159,15 +165,31 @@ class Templates(unittest.TestCase):
         self.assertIn("`▾ <name> — <summary>`", flat)
         self.assertIn("`N open: <the first, cut at about 12 words>`", flat)
 
+    def test_the_templates_fold_assumptions_above_the_impact(self):
+        text = RENDERING.read_text()
+        card = fenced(text, "**N — Title as a question?**\n**What:**")
+        self.assertEqual(assume_problems("rendering.md card", card), [])
+        block = fenced(text, "**N — Title as a question?** ⚠ one-way")
+        self.assertEqual(assume_problems("rendering.md block", block, block=True), [])
+        fold = fenced(text, "▾ Assumptions — ")
+        self.assertEqual(assume_problems("rendering.md fold", ["**Context:** x · y"] + fold + ["**Impact:** w"],
+                                         block=True), [])
+        flat = " ".join(text.split())
+        self.assertIn("**▸ Assumptions** — the basis of the call and what it rests on", flat)
+        self.assertIn("`tell me assumptions`, `expand` and a block show it open", flat)
+        self.assertIn("What is not known yet is never an assumption", flat)
+        self.assertIn("**No Rec line.**", flat)
+        skill = " ".join(SKILL_MD.read_text().split())
+        self.assertIn("each with its **tripwire**", skill)
+        self.assertNotIn("`Rec · basis — reason`", skill)
+
 
 def open_question_problems(where, body, block=False):
     """A view's ▸ Open questions line: after Context and before the Impact, its summary
-    `N open: …`, closed on a card and open in a block with N bullets under it; and no Rec line
-    that says *unknown*. Returns the problems, empty when clean."""
+    `N open: …`, closed on a card and open in a block with N bullets under it. Returns the
+    problems, empty when clean."""
     out = []
     for k, line in enumerate(body):
-        if REC_LINE.match(line) and "unknown" in line:
-            out.append(f"{where}: the Rec line says unknown")
         m = FOLD.match(line)
         if not m:
             continue
@@ -193,6 +215,78 @@ def open_question_problems(where, body, block=False):
     return out
 
 
+def assume_problems(where, body, block=False):
+    """A view's Assumptions fold: one line, after Context and any Open questions line and before
+    the Impact; its summary the basis line, `basis: **word**` and the count of assumptions with
+    their tripwires (none when there are none, never a zero), with no unknown; closed on a card,
+    open in a block, where the **Basis:** line (the same word) comes first, then an optional
+    *Evidence:* line, then one bold bullet per assumption, each with its *tripwire:* under it,
+    as many as the summary counts. No view carries a Rec line. Returns the problems."""
+    out = []
+    if any(REC_LINE.match(x) for x in body):
+        out.append(f"{where}: a Rec line")
+    ks = [k for k, x in enumerate(body) if (m := FOLD.match(x)) and m.group(2) == "Assumptions"]
+    if len(ks) != 1:
+        return out + [f"{where}: {len(ks)} Assumptions lines, not one"]
+    k = ks[0]
+    m = FOLD.match(body[k])
+    ctx = next((i for i, x in enumerate(body) if x.startswith("**Context:**")), None)
+    imp = next((i for i, x in enumerate(body) if x.startswith("**Impact:**")), None)
+    oq = next((i for i, x in enumerate(body) if (f := FOLD.match(x)) and f.group(2) == "Open questions"), None)
+    if ctx is None or imp is None or not ctx < k < imp:
+        out.append(f"{where}: the Assumptions line is not between Context and Impact")
+    if oq is not None and oq > k:
+        out.append(f"{where}: the Assumptions line comes before Open questions")
+    if re.search(r"(?i)unknown|not known", m.group(3)):
+        out.append(f"{where}: the Assumptions summary holds an unknown")
+    s = AS_SUMMARY.match(m.group(3))
+    if not s:
+        out.append(f"{where}: the Assumptions summary is not 'basis: **word** · N assumptions with tripwires'")
+    if m.group(1) != ("▾" if block else "▸"):
+        out.append(f"{where}: the fold is {'closed in a block' if block else 'open on a card'}")
+    if block and s:
+        rest = body[k + 1:]
+        if not (rest and rest[0].startswith("**Basis:** %s" % s.group(1))):
+            out.append(f"{where}: the open fold does not start on its Basis line")
+            return out
+        j = 1
+        if j < len(rest) and rest[j].startswith("*Evidence:* "):
+            j += 1
+        items = 0
+        while j < len(rest) and rest[j].startswith("- "):
+            if not re.match(r"^- \*\*.+\*\*$", rest[j]):
+                out.append(f"{where}: an assumption is not in bold: {rest[j][:40]}")
+            if not (j + 1 < len(rest) and rest[j + 1].startswith(TRIPWIRE) and rest[j + 1][len(TRIPWIRE):].strip()):
+                out.append(f"{where}: an assumption has no tripwire under it: {rest[j][:40]}")
+            items += 1
+            j += 2
+        for x in rest[1:j]:
+            if re.search(r"(?i)\bunknown\b|not known", x):
+                out.append(f"{where}: the open fold holds an unknown")
+        want = int(s.group(2) or s.group(3) or 0)
+        if items != want:
+            out.append(f"{where}: the open fold lists {items} assumptions, its summary says {want}")
+    return out
+
+
+NOREC_LABELS = ("*your preference — no recommendation*", "*no recommendation — outside my authority*")
+BOLD_OPTION = re.compile(r"^- \*\*\([a-y]\) ")
+
+
+def norec_problems(where, body):
+    """A card or block with no bold option carries its no-recommendation label after its title, now
+    that no Rec line says so (A1); one with a bold option carries none."""
+    bold = sum(1 for x in body if BOLD_OPTION.match(x))
+    rows = [x for x in body if re.match(r"^\| \*\*\([a-y]\) ", x)]  # a block's bold table row
+    bold += len(rows)
+    label = any(f"· {lab}" in body[0] for lab in NOREC_LABELS)
+    if not bold and not label:
+        return [f"{where}: no recommended option and no no-recommendation label after its title"]
+    if bold and label:
+        return [f"{where}: a recommended option and a no-recommendation label"]
+    return []
+
+
 def empty_fold_problems(where, body):
     """A fold with nothing in it is left out, line and all: no fold line whose summary says
     none or a count of zero, and no open fold with no bullet under it."""
@@ -204,7 +298,7 @@ def empty_fold_problems(where, body):
         if re.match(r"(?i)^(0 open\b|none\b|nothing\b|—|-)", m.group(3).strip()):
             out.append(f"{where}: an empty {m.group(2)} fold is shown")
         # an open fold's items are bullets; Background's are its two labelled lines
-        item = ("**Why now:**", "**Why ask:**") if m.group(2) == "Background" else ("- ",)
+        item = {"Background": ("**Why now:**", "**Why ask:**"), "Assumptions": ("**Basis:**",)}.get(m.group(2), ("- ",))
         if m.group(1) == "▾" and not (k + 1 < len(body) and body[k + 1].startswith(item)):
             out.append(f"{where}: an open {m.group(2)} fold with nothing under it")
     return out
@@ -212,9 +306,9 @@ def empty_fold_problems(where, body):
 
 def check_bg_line(test, where, body):
     """A card's why now and why ask: one closed `▸ Background — why now: …` line, the first fold
-    line after its options (and any To act on, If left or If unanswered part), just above its
-    Rec line, its summary 30 words at most; no flat why line and no separate Why now or Why ask
-    line (answer 338)."""
+    line after its options (and any To act on, If left or If unanswered part), its summary 30
+    words at most; no flat why line, no separate Why now or Why ask line (answer 338), and no
+    Rec line after it (A1)."""
     hs = heads(body)
     test.assertNotIn("Why you, why now", hs, f"{where}: the flat why line")
     test.assertNotIn("Why now", hs, f"{where}: a separate Why now line")
@@ -226,8 +320,7 @@ def check_bg_line(test, where, body):
     test.assertLess(z, k, f"{where}: the Background line is above the options")
     first = next(i for i, x in enumerate(body) if i > z and FOLD.match(x))
     test.assertEqual(first, k, f"{where}: Background is not the first fold under the options")
-    test.assertTrue(k + 1 < len(body) and REC_LINE.match(body[k + 1]),
-                    f"{where}: the Background line is not just above the Rec line")
+    test.assertFalse(any(REC_LINE.match(x) for x in body), f"{where}: a Rec line")
     words = body[k][len(BG_LINE):].split()
     test.assertTrue(words, f"{where}: the Background line has no summary")
     test.assertLessEqual(len(words), 30, f"{where}: the Background summary runs {len(words)} words")
@@ -241,9 +334,9 @@ BLOCK_BEFORE_BG = ("**If left:**", "**A round costs:**", "**To act on (")
 
 def check_bg_block(test, where, body):
     """A block's Background fold stands open below its table, after any If left, A round costs
-    and To act on (x) part and just before its Rec line: `▾ Background — why now: …` (one
-    sentence), then **Why now:** and **Why ask:** on the two lines under it; no flat why
-    line."""
+    and To act on (x) part: `▾ Background — why now: …` (one sentence), then **Why now:** and
+    **Why ask:** on the two lines under it, with nothing after them but a ⚠ block's read-back
+    line; no flat why line and no Rec line."""
     test.assertNotIn("Why you, why now", heads(body), f"{where}: the flat why line")
     bg = [i for i, x in enumerate(body) if x.startswith(BG_OPEN)]
     test.assertEqual(len(bg), 1, f"{where}: one open Background fold")
@@ -259,8 +352,9 @@ def check_bg_block(test, where, body):
     after = [x for x in body[k + 3:] if x.strip()]
     test.assertFalse(any(x.startswith(BLOCK_BEFORE_BG) for x in after),
                      f"{where}: If left, A round costs or To act on comes after Background")
-    test.assertTrue(after and REC_LINE.match(after[0]),
-                    f"{where}: the Background fold is not just before the Rec line")
+    test.assertFalse(any(REC_LINE.match(x) for x in body), f"{where}: a Rec line")
+    test.assertTrue(all(x.startswith(READ_BACK) for x in after),
+                    f"{where}: something but the read-back line follows the Background fold")
 
 
 def groups(path):
@@ -284,14 +378,16 @@ def groups(path):
 
 def check_group(test, where, n, cards, after, bodies):
     """A group heading counts its cards, carries its shared context on the next line, and
-    each card under it is whole: its own number and its own Rec line."""
+    each card under it is whole: its own number and its own recommended option, bold, and no
+    Rec line."""
     test.assertTrue(after.startswith("**Shared context:**"), f"{where}: no shared context")
     test.assertEqual(len(cards), n, f"{where}: the heading counts {n}, {len(cards)} follow")
     nums = [re.match(r"^\*\*(\d+) — ", c).group(1) for c in cards]
     test.assertEqual(len(set(nums)), len(nums), f"{where}: a number shared")
     for body in bodies:
-        test.assertEqual(sum(1 for x in body if REC_LINE.match(x)), 1,
-                         f"{where}: {body[0][:30]} has no Rec line of its own")
+        test.assertEqual(sum(1 for x in body if re.match(r"^- \*\*\([a-y]\) ", x)), 1,
+                         f"{where}: {body[0][:30]} has no recommended option of its own")
+        test.assertFalse(any(REC_LINE.match(x) for x in body), f"{where}: {body[0][:30]} has a Rec line")
 
 
 class GalleryContexts(unittest.TestCase):
@@ -304,7 +400,7 @@ class GalleryContexts(unittest.TestCase):
 
     def test_every_card_and_block_runs_what_context_impact(self):
         for n, kind, body in views(GALLERY):
-            want = ["What", "Context", "Impact"] + (["table"] if kind == "block" else [])
+            want = ["What", "Context"] + (["Basis", "Impact", "table"] if kind == "block" else ["Impact"])
             self.assertEqual(heads(body)[:len(want)], want, f"gallery.md:{n} ({kind})")
 
     def test_a_cards_context_is_one_or_two_sentences_ending_on_the_cue(self):
@@ -354,7 +450,7 @@ class GalleryContexts(unittest.TestCase):
                 if LIST_LINE.match(line):
                     self.assertNotIn("Context", line, f"{path.name}:{n}")
 
-    def test_every_card_folds_background_above_its_rec_line(self):
+    def test_every_card_folds_background_under_its_options(self):
         seen = 0
         for n, kind, body in views(GALLERY):
             if kind == "card":
@@ -382,12 +478,34 @@ class GalleryContexts(unittest.TestCase):
         for f in [SKILL_MD, RENDERING, REFS / "worksheet.md", GALLERY]:
             self.assertNotIn(WHY_LINE, f.read_text(), f.name)
 
-    def test_open_questions_fold_above_the_impact_and_no_rec_line_says_unknown(self):
+    def test_open_questions_fold_above_the_impact(self):
         folds = 0
         for n, kind, body in views(GALLERY):
             self.assertEqual(open_question_problems(f"gallery.md:{n}", body, kind == "block"), [])
             folds += sum(1 for x in body if FOLD.match(x))
         self.assertGreaterEqual(folds, 6)
+
+    def test_every_card_and_block_folds_assumptions_above_the_impact(self):
+        seen = {"card": 0, "block": 0}
+        for n, kind, body in views(GALLERY):
+            seen[kind] += 1
+            self.assertEqual(assume_problems(f"gallery.md:{n}", body, kind == "block"), [])
+        self.assertGreaterEqual(seen["card"], 15)
+        self.assertGreaterEqual(seen["block"], 2)
+        for f in (GALLERY, RENDERING):
+            self.assertFalse([x for x in f.read_text().splitlines() if REC_LINE.match(x)], f.name)
+
+    def test_a_card_with_no_recommendation_carries_its_label_after_its_title(self):
+        seen = 0
+        for n, kind, body in views(GALLERY):
+            self.assertEqual(norec_problems(f"gallery.md:{n}", body), [])
+            seen += any(lab in body[0] for lab in NOREC_LABELS)
+        self.assertGreaterEqual(seen, 2)
+        # mutant: gallery 45's label removed
+        v45 = next(body for _, _, body in views(GALLERY) if body[0].startswith("**45 — "))
+        cut = [v45[0].replace(" · *your preference — no recommendation*", "")] + v45[1:]
+        self.assertNotEqual(cut[0], v45[0])
+        self.assertTrue(norec_problems("mutant", cut))
 
     def test_an_empty_fold_is_left_out(self):
         flat = " ".join(RENDERING.read_text().split())
@@ -440,15 +558,22 @@ class Groups(unittest.TestCase):
 class Checks(unittest.TestCase):
     """Each check fails on the form it exists to catch, so a clean run means something."""
 
-    CARD = ["**41 — Resume the backup?**", "**What:** x", "**Context:** y · z", "**Impact:** → a",
+    CARD = ["**41 — Resume the backup?**", "**What:** x", "**Context:** y · z",
+            "▸ Assumptions — basis: **strong** · 1 assumption with its tripwire", "**Impact:** → a",
             "- **(a) Resume**", "  *→ it finishes*", "- (z) Decide later — *it waits*", "",
-            "▸ Background — why now: the lease lapses at five.", "Rec **(a)** · basis **strong**"]
-    BLOCK = ["**43 — Remove it?** ⚠ one-way", "**Impact:** later: w · reach: r", "",
+            "▸ Background — why now: the lease lapses at five."]
+    BLOCK = ["**43 — Remove it?** ⚠ one-way", "**Context:**", "- y · z", "",
+             "▾ Open questions — 1 open: whether the partners switch", "- whether the partners switch", "",
+             "▾ Assumptions — basis: **partial** · 2 assumptions with tripwires",
+             "**Basis:** partial — *the log*", "*Evidence:* observed — the log (link)",
+             "- **No internal caller.**", "  *tripwire:* an internal call in the log",
+             "- **The partners can move.**", "  *tripwire:* a partner says no", "",
+             "**Impact:** later: w · reach: r", "",
              "| Impact | Effect | Reach | Undo | Cost |", "|---|---|---|---|---|", "",
              "**To act on (b):**", "1. step", "",
              "▾ Background — why now: the release is cut on Thursday.",
              "**Why now:** the release is cut on Thursday.", "**Why ask:** it is yours.", "",
-             "Rec **(b)** · basis **partial**"]
+             "*If you pick (a), I'll repeat it back and act only once you confirm: it can't be undone.*"]
 
     def test_a_good_background_line_passes(self):
         check_bg_line(self, "good", list(self.CARD))
@@ -457,80 +582,87 @@ class Checks(unittest.TestCase):
 
     def test_the_flat_why_line_or_the_old_two_lines_on_a_card_are_caught(self):
         card = list(self.CARD)
-        card[8] = "**Why you, why now:** the lease lapses at five."
+        card[9] = "**Why you, why now:** the lease lapses at five."
         with self.assertRaises(AssertionError):
             check_bg_line(self, "mutant", card)
         card = list(self.CARD)
-        card[8:9] = ["**Why now:** the lease lapses.", "**Why ask:** it is yours."]
+        card[9:10] = ["**Why now:** the lease lapses.", "**Why ask:** it is yours."]
         with self.assertRaises(AssertionError):
             check_bg_line(self, "mutant", card)
         card = list(self.CARD)
-        card.insert(8, "**Why now:** the lease lapses.")
+        card.insert(9, "**Why now:** the lease lapses.")
         with self.assertRaises(AssertionError):
             check_bg_line(self, "mutant", card)
 
     def test_a_background_line_above_the_options_or_too_long_is_caught(self):
         card = list(self.CARD)
-        card.insert(4, card.pop(8))
+        card.insert(5, card.pop(9))
         with self.assertRaises(AssertionError):
             check_bg_line(self, "mutant", card)
         card = list(self.CARD)
-        card[8] = "▸ Background — why now: " + "word " * 31
+        card[9] = "▸ Background — why now: " + "word " * 31
         with self.assertRaises(AssertionError):
             check_bg_line(self, "mutant", card)
         # a summary of two sentences
         card = list(self.CARD)
-        card[8] = "▸ Background — why now: the lease lapses at five. Then it is gone."
+        card[9] = "▸ Background — why now: the lease lapses at five. Then it is gone."
         with self.assertRaises(AssertionError):
             check_bg_line(self, "mutant", card)
         # another fold before it under the options
         card = list(self.CARD)
-        card.insert(8, "▸ Attached — 1: a log")
+        card.insert(9, "▸ Attached — 1: a log")
+        with self.assertRaises(AssertionError):
+            check_bg_line(self, "mutant", card)
+        # the Rec line restored under it
+        card = list(self.CARD) + ["Rec **(a)** · basis **strong**"]
         with self.assertRaises(AssertionError):
             check_bg_line(self, "mutant", card)
 
     def test_a_block_whose_background_is_closed_or_empty_is_caught(self):
+        k = self.BLOCK.index("▾ Background — why now: the release is cut on Thursday.")
         block = list(self.BLOCK)
-        block[9] = "▸ Background — why now: the release is cut on Thursday."
+        block[k] = "▸ Background — why now: the release is cut on Thursday."
         with self.assertRaises(AssertionError):
             check_bg_block(self, "mutant", block)
         block = list(self.BLOCK)
-        del block[10:12]
+        del block[k + 1:k + 3]
         with self.assertRaises(AssertionError):
             check_bg_block(self, "mutant", block)
         self.assertTrue(empty_fold_problems("mutant", block))
+        # the Rec line restored after it
+        block = list(self.BLOCK)
+        block.insert(k + 4, "Rec **(b)** · basis **partial**")
+        with self.assertRaises(AssertionError):
+            check_bg_block(self, "mutant", block)
         # a two-sentence summary
         block = list(self.BLOCK)
-        block[9] = "▾ Background — why now: the release is cut on Thursday. It is soon."
+        block[k] = "▾ Background — why now: the release is cut on Thursday. It is soon."
         with self.assertRaises(AssertionError):
             check_bg_block(self, "mutant", block)
 
     def test_a_block_whose_background_comes_before_its_act_or_round_lines_is_caught(self):
         # the old order: the fold under the table, To act on after it
+        a = self.BLOCK.index("**To act on (b):**")
+        k = self.BLOCK.index("▾ Background — why now: the release is cut on Thursday.")
         block = list(self.BLOCK)
-        block[6:13] = block[9:13] + block[6:9]
-        self.assertEqual(block[6], "▾ Background — why now: the release is cut on Thursday.")
+        block[a:k + 4] = block[k:k + 4] + block[a:k]
+        self.assertEqual(block[a], "▾ Background — why now: the release is cut on Thursday.")
         with self.assertRaises(AssertionError):
             check_bg_block(self, "mutant", block)
         block = list(self.BLOCK)
-        block.insert(13, "**If left:** *one finding*")
+        block.insert(k + 4, "**If left:** *one finding*")
         with self.assertRaises(AssertionError):
             check_bg_block(self, "mutant", block)
 
     def test_an_open_questions_line_out_of_place_or_an_unknown_is_caught(self):
         card = ["**41 — Resume the backup?**", "**What:** x", "**Context:** y · z",
                 "▸ Open questions — 1 open: whether the lease can be extended",
-                "**Impact:** later: w · reach: r", "- **(a) Resume**", "  *→ it finishes*",
-                "Rec **(a)** · basis **strong** — *quota checked*"]
+                "**Impact:** later: w · reach: r", "- **(a) Resume**", "  *→ it finishes*"]
         self.assertEqual(open_question_problems("good", card), [])
         # the line under the Impact
         under = list(card)
         under.insert(4, under.pop(3))
         self.assertTrue(open_question_problems("mutant", under))
-        # the Rec line's unknown restored
-        rec = list(card)
-        rec[-1] += " · unknown: none"
-        self.assertIn("mutant: the Rec line says unknown", open_question_problems("mutant", rec))
         # a summary that is not a count
         bad = list(card)
         bad[3] = "▸ Open questions — whether the lease can be extended"
@@ -540,9 +672,43 @@ class Checks(unittest.TestCase):
         self.assertTrue(open_question_problems("mutant", block, block=True))
         self.assertTrue(open_question_problems("mutant", card, block=True))
 
+    def test_an_assumptions_line_out_of_place_or_off_its_form_is_caught(self):
+        self.assertEqual(assume_problems("good", list(self.CARD)), [])
+        self.assertEqual(assume_problems("good", list(self.BLOCK), block=True), [])
+        card = list(self.CARD)
+        none = list(card)
+        none[3] = "▸ Assumptions — basis: **strong**"
+        self.assertEqual(assume_problems("good", none), [])
+        mutants = {
+            "after the Impact": card[:3] + [card[4], card[3]] + card[5:],
+            "missing": card[:3] + card[4:],
+            "a zero count": card[:3] + ["▸ Assumptions — basis: **strong** · 0 assumptions with tripwires"] + card[4:],
+            "an unknowns clause": card[:3] + ["▸ Assumptions — basis: **strong** · 1 assumption with its tripwire · no unknowns"] + card[4:],
+            "the old label": card[:3] + ["▸ Assumptions, tripwires and unknowns — basis: **strong**"] + card[4:],
+            "no basis word": card[:3] + ["▸ Assumptions — 1 assumption with its tripwire"] + card[4:],
+            "open on a card": card[:3] + ["▾ Assumptions — basis: **strong**"] + card[4:],
+            "a Rec line": card + ["Rec **(a)** · basis **strong** — *quota checked*"],
+        }
+        for name, m in mutants.items():
+            self.assertTrue(assume_problems("mutant", m), name)
+        block = list(self.BLOCK)
+        k = block.index("▾ Assumptions — basis: **partial** · 2 assumptions with tripwires")
+        o = block.index("▾ Open questions — 1 open: whether the partners switch")
+        bmut = {
+            "before Open questions": block[:o] + block[k:k + 8] + block[o:k] + block[k + 8:],
+            "closed in a block": block[:k] + ["▸" + block[k][1:]] + block[k + 1:],
+            "a tripwire dropped": block[:k + 4] + block[k + 5:],
+            "the count off": block[:k] + [block[k].replace("2 assumptions", "3 assumptions")] + block[k + 1:],
+            "no Basis line": block[:k + 1] + block[k + 2:],
+            "an unknown kept": block[:k + 3] + ["- **unknown — whether the partners switch**", TRIPWIRE + "x"]
+                                + block[k + 3:],
+        }
+        for name, m in bmut.items():
+            self.assertTrue(assume_problems("mutant", m, block=True), name)
+
     def test_a_group_that_miscounts_or_shares_a_rec_line_is_caught(self):
-        a = ["**51 — A?**", "Rec **(a)**"]
-        b = ["**52 — B?**", "Rec **(a)**"]
+        a = ["**51 — A?**", "- **(a) Do it**"]
+        b = ["**52 — B?**", "- **(a) Do it**"]
         check_group(self, "good", 2, [a[0], b[0]], "**Shared context:** x", [a, b])
         with self.assertRaises(AssertionError):
             check_group(self, "mutant", 3, [a[0], b[0]], "**Shared context:** x", [a, b])
@@ -550,6 +716,9 @@ class Checks(unittest.TestCase):
             check_group(self, "mutant", 2, [a[0], b[0]], "**Shared context:** x", [a, b[:1]])
         with self.assertRaises(AssertionError):
             check_group(self, "mutant", 2, [a[0], b[0]], "", [a, b])
+        # a card with a Rec line in place of its bold option
+        with self.assertRaises(AssertionError):
+            check_group(self, "mutant", 2, [a[0], b[0]], "**Shared context:** x", [a, [b[0], "Rec **(a)**"]])
 
 
 if __name__ == "__main__":

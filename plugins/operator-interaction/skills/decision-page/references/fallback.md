@@ -24,19 +24,22 @@ first); this file sets only the layout.
   **Impact:**, across all the options, describing the system the work builds, never the review or
   the process (what waiting holds up is its `later:` line), one facet a line (`later: …`, `reach: …`,
   `⚠ undo: …` only when an option is one-way or costly, `cost: …` where given, each on its own
-  line; there is no card-level effect), and the rec line `Rec (b) · basis strong — reason`.
+  line; there is no card-level effect). There is no Rec line: the recommended option is the
+  bold one.
   Each card also gets its options' table: a row per option, then the Wait row; Effect, Reach,
   Undo, Cost, each option's own.
 - A doc cannot toggle a level, so each part shows one rendition. **Context** is at its top
   level, its high in `detail` when it has one: that high holds the facts a cold reader has
   lost (the `decisions` skill's `references/card-record.md` § Levels), and a doc reader has no
-  click to reach it. The Impact line, the TLDR and the rec line are at their summary. After
-  the rec line, a **More detail** sub-heading carries the fold parts at their top level, in
-  the card's v5 order: the **Open questions** as a list (the fold above the Impact), each
-  option in full with its Effect, Reach, Undo and Cost, then **Background**, the first fold
+  click to reach it. The Impact line and the TLDR are at their summary. After the Impact and
+  the options' table, a **More detail** sub-heading carries the fold parts at their top level,
+  in the card's v5 order: the **Open questions** as a list (the fold above the Impact), then
+  **Assumptions** (the fold under it): a **Basis:** line with the basis word and `reason`, the
+  Evidence with its paths and links, then each assumption in bold with its *tripwire:* under
+  it; then each option in full with its Effect, Reach, Undo and Cost, then **Background**, the first fold
   after the options, a bold line with **Why now:** and **Why ask:** (class first) under it (a
   doc cannot fold, so the fold's content sits there, where the page keeps it closed), then
-  Depends on, and the Evidence with its paths and links. That is the card-in-all measure of
+  Depends on. That is the card-in-all measure of
   `references/cards-schema.md` § Size, with Context at its high. A level in sections shows
   each heading as a bold line, its bullets under it.
 - No ids: items, commits and series by their short names or titles, as on the page

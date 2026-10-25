@@ -19,8 +19,8 @@ glossed; its Impact (wait, reach, cost, and undo only where an option is one-way
 undo), its Reach about the system the work builds, never the process (that is its Wait); Why
 now and what it blocks; Why ask; the options, each with its consequence by its mechanism: how
 it happens, who meets it and when, and the before and after, in its own `effect`; decide later
-as `(z)`; the recommendation, or the labelled reason there is none; what is still open, in
-`open`. There is no card-level effect: each option carries its own. Keep the caller's numbers.
+as `(z)`; the recommendation, or the labelled reason there is none; its basis, and the
+assumptions it rests on, each with its tripwire, in `assume`; what is still open, in `open`. There is no card-level effect: each option carries its own. Keep the caller's numbers.
 No ids anywhere on the page: a decision by its slug `[[N]]`, an item, series, branch or commit
 by its short name; a fact only an id carries goes in backticks in an option's `act` or in
 `evidence`. A decision raised from one labelled item of a source carries `label`, and that
@@ -87,9 +87,10 @@ it knowingly only on a card upgraded from an older format.
 | `options` | to render | the options, below, `a`… in order, ending `z` (decide later) |
 | `rec` | to render | an option letter, or `null` |
 | `norec` | to render when `rec` is null | `your preference — no recommendation`, or `no recommendation — outside my authority` and why |
-| `basis` | to render | `strong`, `partial`, `thin` or `none` |
-| `reason` | of a new card | one clause: the rec's reason, or, with no rec, the reason for the basis word |
-| `evidence` | optional | text, or a list of tagged claims (*Observed: …*) with the paths and links behind each |
+| `basis` | to render | `strong`, `partial`, `thin` or `none`: the Assumptions fold's summary opens on it, `basis: partial · 2 assumptions with tripwires` |
+| `reason` | of a new card | one clause: the rec's reason, or, with no rec, the reason for the basis word; shown after the basis word in the Assumptions fold |
+| `evidence` | optional | text, or a list of tagged claims (*Observed: …*) with the paths and links behind each; shown in the Assumptions fold, after the Basis line |
+| `assume` | optional; a card with a recommendation and none is linted | `[{rests, tw}, …]`: each thing the recommendation rests on and its tripwire, the sign that would change the call, both text; shown in the closed Assumptions fold above the Impact, after Open questions, with the basis word, `reason` and `evidence`. Never an unknown: that is `open` |
 | `why` | of a new card | Why now, and what it blocks: shown in the Background fold, the first of the bottom folds; closed, its summary is *why now:* and the first sentence of `why`, about 25 words at most (rewrite a longer one, never cut it) |
 | `whyask` | of a new card | what goes wrong if the recommendation were taken alone: shown in the Background fold, after Why now |
 | `ifleft` | optional | **If left:** on an ask for another round |
@@ -225,6 +226,7 @@ page-wide one prints `lint: page:`.
 | `bg` | `depth:` | `why` or `whyask` missing (owed by a new card); Background thin (where levelled) or long |
 | `bgsum` | `shape:` | the Background fold's summary (the first sentence of why) past its words |
 | `reason` | `depth:` | `reason` missing (owed by a new card) |
+| `assume` | `depth:` | a card with a recommendation and no `assume` (a small call may leave it knowingly; an upgraded older card holds none) |
 | `row` | `depth:` | an option but `z` with no reach |
 | `opt` | `depth:` | an option's detail thin (where levelled) or long |
 | `ev` | `depth:` | evidence thin (where levelled) or long |
