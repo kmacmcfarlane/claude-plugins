@@ -236,7 +236,7 @@ class DecisionPageContext(unittest.TestCase):
             # Context's summary rendition, once; its levels repeat the labelled wrapper only
             self.assertEqual(card.count(blk["open"]), 1, blk["n"])
             # under decision 197 (a) the Background fold holds Why now and Why ask only
-            bg = card[card.index("<summary>Background</summary>"):card.index("<summary>Evidence</summary>")]
+            bg = card[card.index('<summary>Background <span class="fsum">why now: '):card.index("<summary>Evidence</summary>")]
             self.assertIn(blk["why"], bg, blk["n"])
             if blk["n"] == 42:
                 self.assertNotIn(blk["what"], bg)

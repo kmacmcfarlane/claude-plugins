@@ -175,7 +175,9 @@ alternative not taken, in case practice argues for it.
   Background, and a store keeps them as two fields. *Every ask justifies itself*
   (2026-09-30) stands: every card still says why it is asked. Not taken: one short line
   each, where they were (261 (b)); dropping them unless the reason is not obvious (261 (c)),
-  which would have reversed it.
+  which would have reversed it. The flat line retired 2026-10-22 (answer 338): why now and
+  why ask sit in a Background fold, first of the bottom folds, on both surfaces (*The
+  Background fold, both surfaces*, below).
 - **Bundles as groups of whole item cards** (2026-10-20, answer 263 (a), from the operator's
   words on a card that bundled four findings: "I'd expect impact for each of these findings
   in the impact section ... Without more info on what I'm actually deciding on, I can't
@@ -262,6 +264,16 @@ alternative not taken, in case practice argues for it.
   the operator's. Not taken: the "At a glance" map beside open cards (as built); every card
   open by default; the click popup, as built; the prototype's name-only tooltip for a
   decision not on the page; on-page references with no tooltip.
+- **The Background fold, both surfaces** (2026-10-22, answer 338: "actually, just move it into
+  the Background fold") — why now and why ask sit in a Background fold, closed, its summary
+  *why now:* and the first sentence of why now, kept to about 25 words (a longer sentence is
+  rewritten, never cut); a block shows it open. Under the v5 layout (9168) it is the first of
+  the bottom folds, after the options, with Open questions and Assumptions above the Impact.
+  This reverses 261 (a)'s chat line, the one **Why you, why now:** line above the Rec line.
+  The summary's form, its cap (the page runner's `bgsum` lint) and the chat ▸ line are designs
+  from the kit and from planning, not the operator's. *Every ask justifies itself*
+  (2026-09-30) stands. Not taken (the card answered): gone from every view; kept only in the
+  block and list line; gone everywhere.
 - **No card-level Effect, both surfaces** (2026-10-22, the operator's v5 feedback: "drop the
   card-level Impact Effect (effects by option are awkward and repeated in each option);
   Wait/Reach/Cost/Undo stay at card level") — a card's Impact is Wait, Reach, Undo and Cost;

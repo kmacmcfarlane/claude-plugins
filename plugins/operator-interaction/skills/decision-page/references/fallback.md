@@ -24,16 +24,17 @@ first); this file sets only the layout.
   **Impact:**, across all the options, describing the system the work builds, never the review or
   the process (what waiting holds up is its `later:` line), one facet a line (`later: …`, `reach: …`,
   `⚠ undo: …` only when an option is one-way or costly, `cost: …` where given, each on its own
-  line; there is no card-level effect), **Why now:**, **Why ask:** (class first), and the rec
-  line `Rec (b) · basis strong — reason`. Each card also gets its options' table: a row per
-  option, then the Wait row; Effect, Reach, Undo, Cost, each option's own.
+  line; there is no card-level effect), and the rec line `Rec (b) · basis strong — reason`.
+  Each card also gets its options' table: a row per option, then the Wait row; Effect, Reach,
+  Undo, Cost, each option's own.
 - A doc cannot toggle a level, so each part shows one rendition. **Context** is at its top
   level, its high in `detail` when it has one: that high holds the facts a cold reader has
   lost (the `decisions` skill's `references/card-record.md` § Levels), and a doc reader has no
-  click to reach it. The Impact line, the TLDR and the rec line are at their summary; Why now
-  and Why ask at their top level. After the rec line, a **More detail** sub-heading carries the
-  other fold parts at their top level: the **Open questions** as a list, each option in full
-  with its Effect, Reach, Undo and Cost, Depends on, and the Evidence with its paths and links.
+  click to reach it. The Impact line, the TLDR and the rec line are at their summary. After
+  the rec line, a **More detail** sub-heading carries the fold parts at their top level:
+  **Background** first, a bold line with **Why now:** and **Why ask:** (class first) under it
+  (a doc cannot fold, so the Background fold's content sits there, where the page keeps it
+  closed), then the **Open questions** as a list, each option in full with its Effect, Reach, Undo and Cost, Depends on, and the Evidence with its paths and links.
   That is the card-in-all measure of
   `references/cards-schema.md` § Size, with Context at its high. A level in sections shows
   each heading as a bold line, its bullets under it.

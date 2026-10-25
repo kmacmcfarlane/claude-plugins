@@ -167,7 +167,7 @@ A part a reader may not need opens folded, on one line:
   open it.
 - **Open.** `tell me <name>` (`tell me open questions`) answers with the fold open, and
   `expand` and a block show it open: the line as `▾ <name> — <summary>`, its content under
-  it, one bullet an item.
+  it, one bullet an item (Background's two labelled lines, below).
 - **Empty.** A fold with nothing in it is left out, line and all (none is not shown).
 
 **▸ Open questions** — what is still open about the decision (SKILL.md § The floor, item 9;
@@ -177,6 +177,17 @@ and a block it sits after **Context:** (and after Finding, Scope and Likelihood 
 has them), before ▸ Assumptions and the **Impact:**. It is not the message's **Open
 questions** section, which lists
 questions that are not decisions yet (SKILL.md § The floor).
+
+**▸ Background** — why now and why ask (SKILL.md § The floor, items 3 and 4; the card
+record's `why` and `whyask`): the first of the folds under the options, after the options and
+their parts (any **To act on (x):**, **If left:**, **A round costs:** and **If
+unanswered:**), and, while the card keeps a Rec line, just above it. Its summary is `why now:
+<the first sentence of why now>`, about 25 words at most: a longer first sentence is
+rewritten where the caller stores *why now*, never cut, and the summary is composed from
+*why now* each time, never stored. `tell me background` (or `tell me why`) answers with it
+open, and `expand` and a block show it open: `▾ Background — why now: …`, then **Why now:**
+and **Why ask:** (the class first) on two lines under it. The answer page folds it the same
+way, first of its bottom folds (the `decision-page` skill's `references/cards-schema.md`).
 
 ## Tag size
 
@@ -266,15 +277,15 @@ Example:
 1. step, with its `/…` path or whole command in `code`
 2. …
 
-**Why you, why now:** *class* — what would go wrong if I took the recommendation alone; why it is up now.
+▸ Background — why now: the first sentence of why it is up now, about 25 words at most
 Rec **(b)** · basis **word** — *one-clause reason*
 ```
 
 - **The order is the page's**: the decision line (the title, then **What:**), then
   **Context:**, then the ▸ Open questions line when anything is open (§ Folds), then
   **Impact:** — and under them the options, any **To act on (x):** part, a round ask's
-  **If left:** and **A round costs:**, any **If unanswered:**, then **Why you, why now:**
-  just above the Rec line (§ Context).
+  **If left:** and **A round costs:**, any **If unanswered:**, then the ▸ Background line
+  just above the Rec line (§ Context, § Folds).
 - **Title:** the question. A decision raised from one labelled item of a source opens its
   title on the label and its short name: **41 — F7 (oversize upload) · Cap the upload
   size?** (§ Source labels).
@@ -294,21 +305,22 @@ Rec **(b)** · basis **word** — *one-clause reason*
   the consequence is on the impact line. (z) stays one line, what waiting costs after the
   dash. Only the recommended option is bold — (b) above, in its own place, not moved first
   (SKILL.md § Critical). With no recommendation, none is.
-- **Why you, why now:** one line, about 25 words at most, just above the Rec line: why it
-  comes to the operator (what would go wrong if you took the recommendation alone), then why
-  it is up now. It opens with the class in italics when the caller names classes; with no
-  recommendation it says why the call is not yours. What the decision blocks is the Impact
-  line's *later:*, so it is not said again; when nothing forces it, the line says so in a
-  clause, *nothing forces it* (SKILL.md § The floor, item 3). On an ask for another round it may point at the lines above it:
-  *cap — the finding under If left*. The caller's store keeps *why now* and *why ask* as
-  its own fields; only the card merges them.
+- **▸ Background:** why now and why ask, in a closed fold just above the Rec line, its
+  summary `why now:` and the first sentence of why now (§ Folds). Inside it, **Why now:** says
+  why it is up now, *nothing forces it* when nothing does (SKILL.md § The floor, item 3), and
+  **Why ask:** why it comes to the operator (what would go wrong if you took the
+  recommendation alone), opening with the class in italics when the caller names classes;
+  with no recommendation it says why the call is not yours. On an ask for another round Why
+  ask may point at the lines above it: *cap — the finding under If left*. The caller's store
+  keeps *why now* and *why ask* as its own fields, as written; the fold shows them, and the
+  card carries no separate why line.
 - **Context, kept.** Write it when the decision is raised, not at the re-show, so it is
   there when the reader has gone cold. When the caller's store keeps the card, it is stored
   with it (§ Context). With no store, keep it with your notes on the decision; with nowhere
   to keep it, a re-show copies it from the message that first showed it.
   On an answer page the card's Impact carries no effect either, and Background is folded (the
   `decision-page` skill's `references/cards-schema.md`); its Context has the same shape.
-- **To act on (x):** after the options and before **Why you, why now:**, on a card where an
+- **To act on (x):** after the options and before the ▸ Background line, on a card where an
   option asks the operator to act (SKILL.md § The floor, what it takes to act). This bullet is
   where its specifics live:
   - one part per option that asks the operator to act, headed with its letter; numbered
@@ -332,12 +344,12 @@ Rec **(b)** · basis **word** — *one-clause reason*
 - **The Rec line**: the recommendation, the basis word and its one-clause reason. What is
   not known yet is in the ▸ Open questions fold (§ Folds), not on this line.
 - An ask for another round adds two lines after the options and any **To act on** part,
-  before **Why you, why now:** —
+  before the ▸ Background line —
   **If left:** *each leftover finding, and what it would break* and **A round costs:** *the
   time, the quota, and your attention: this answer, and another if the round does not settle
   it* (SKILL.md § The floor).
 - When a status-quo default applies, add **If unanswered:** *I leave X as it is and carry on
-  with other work.*, before **Why you, why now:**.
+  with other work.*, before the ▸ Background line.
 - When investigating could change the choice, add a priced option: (c) Investigate first —
   *about 15 minutes: read the access logs for other callers; could change the answer if …*
 - A small call gets a short card. Do not pad a two-way, narrow decision with sections it does
@@ -366,6 +378,7 @@ Rec **(b)** · basis **word** — *one-clause reason*
 | (c) Investigate first | what it would settle | — | — | time and spend |
 | (z) Wait | what waiting costs; what it blocks; at the deadline, what happens | who waits | — (or: ⚠ what a deadline loses for good) | … |
 
+▾ Background — why now: the first sentence of why now
 **Why now:** …
 **Why ask:** *class* — …
 
@@ -389,8 +402,8 @@ Rec **(b)** · basis **partial** — *reason*
   one-way or costly; with no such row, the Undo column is dropped. Only the recommended
   option's row label is bold. The table takes the place of a section per option and of the
   options' impact lines.
-- The lines under the table run **Why now:**, **Why ask:** — a block keeps them as two
-  lines, unlike a card — then a round ask's **If left:**
+- Under the table the Background fold stands open, `▾ Background — why now: …` with its
+  **Why now:** and **Why ask:** lines under it (§ Folds) — then a round ask's **If left:**
   and **A round costs:**, then any **To act on (x):** part, before the Rec line (§ Card).
 - A block **includes** the basis drill-down (the tags and links). `expand` on a block is
   answered: *already at full detail — `tell me [what]` for something specific?*
@@ -446,7 +459,7 @@ endpoints. A card that names only their category (*housekeeping*, *the review's 
 does not say what is decided (SKILL.md § The floor, item 1).
 
 - **The items need different answers: a group.** One card per item, each whole: its own
-  number, What, Context, Impact, options, **Why you, why now:** and Rec line, as any card
+  number, What, Context, Impact, options, ▸ Background line and Rec line, as any card
   (SKILL.md § Critical, each one whole). An item card's Context may be short and lean on
   the heading for shared terms; it still ends on its cue. The cards sit under one heading:
 
@@ -482,7 +495,7 @@ sooner — both get answered — while one placed low can lose the lease.
 | One-way and high impact | ⚠ one-way | the ⚠ slot on the list line (§ List line); after the title on a card or block |
 | An option one-way or costly to undo | `⚠ undo:` on that option, never a label on the decision; a decision with such an option and a narrow reach has no ⚠ label | the option's own impact line, its block's Undo cell, and the Impact line's *⚠ undo:* |
 | No fact settles it | *your preference — no recommendation* | the rec slot (*your preference, no rec*); after the title on a card |
-| Not the agent's call | *no recommendation — outside my authority*, and a clause saying why | the rec slot; after the title on a card, the why in its **Why you, why now:** line |
+| Not the agent's call | *no recommendation — outside my authority*, and a clause saying why | the rec slot; after the title on a card, the why in its Background fold's **Why ask:** |
 | A decision raised from one labelled item of a source | the label and its short name, *F7 (oversize upload)* | first in the title, on the card, block and list line (§ Source labels) |
 | A recurring decision with fixed options | *template: name* — shown as a card the first time the operator meets it | its own slot (§ List line) |
 | Time-critical, options not ready (not a decision yet) | **Alert:** in bold, bare; *options follow* | its own line, in place of a card |
@@ -585,8 +598,8 @@ open decision the reader is cold on at card level or above, never as a line only
 paged (SKILL.md § Levels, the line-only rule), each opening with what changed while it
 waited (*nothing changed* is worth saying, and so is *impact unchanged*). Under it the card
 runs **What:**, **Context:** (its stored Context, ending on where the operator left it),
-any ▸ Open questions line, **Impact:**, the options, then **Why you, why now:** from its stored *why now* and *why
-ask*; a block's **Context:** bullets open with the same
+any ▸ Open questions line, **Impact:**, the options, then the ▸ Background line from its
+stored *why now* (the fold holding its stored *why now* and *why ask*); a block's **Context:** bullets open with the same
 Context. A stored card in an earlier form is read, and revised where it lacks a floor field,
 by `references/legacy-cards.md`. A deferred decision whose
 wake has not come is a card too, opening with its wake: *deferred until the release; no

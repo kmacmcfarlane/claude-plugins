@@ -90,8 +90,8 @@ it knowingly only on a card upgraded from an older format.
 | `basis` | to render | `strong`, `partial`, `thin` or `none` |
 | `reason` | of a new card | one clause: the rec's reason, or, with no rec, the reason for the basis word |
 | `evidence` | optional | text, or a list of tagged claims (*Observed: …*) with the paths and links behind each |
-| `why` | of a new card | Why now, and what it blocks |
-| `whyask` | of a new card | what goes wrong if the recommendation were taken alone |
+| `why` | of a new card | Why now, and what it blocks: shown in the Background fold, the first of the bottom folds; closed, its summary is *why now:* and the first sentence of `why`, about 25 words at most (rewrite a longer one, never cut it) |
+| `whyask` | of a new card | what goes wrong if the recommendation were taken alone: shown in the Background fold, after Why now |
 | `ifleft` | optional | **If left:** on an ask for another round |
 | `roundcosts` | optional | **A round costs:** on an ask for another round |
 | `ifunanswered` | optional | **If unanswered:** a status-quo default |
@@ -174,6 +174,7 @@ The lints fire past these values, except `mech`, which fires at or under its val
 | words in a summary Impact facet | 16 |
 | words in the card in all | 1350 |
 | words in an option's effect, at or under which mech fires | 4 |
+| words in the Background fold's summary | 25 |
 
 ## The checks
 
@@ -222,6 +223,7 @@ page-wide one prints `lint: page:`.
 | `process` | `impact:` | a process phrase (a review comment, another round, your time, a blocked session) in an option's effect or reach but `z`'s, or the Impact's reach at any level; never the wait, never a round ask |
 | `grow` | `depth:` | a level not longer than the one below it |
 | `bg` | `depth:` | `why` or `whyask` missing (owed by a new card); Background thin (where levelled) or long |
+| `bgsum` | `shape:` | the Background fold's summary (the first sentence of why) past its words |
 | `reason` | `depth:` | `reason` missing (owed by a new card) |
 | `row` | `depth:` | an option but `z` with no reach |
 | `opt` | `depth:` | an option's detail thin (where levelled) or long |

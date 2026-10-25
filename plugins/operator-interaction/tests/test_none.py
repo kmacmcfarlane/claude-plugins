@@ -34,7 +34,7 @@ process.stdout.write(JSON.stringify(xs.map(isNone)));
 
 
 def panes(html):
-    return re.findall(r'<details class="pane"(?: open)?><summary>([^<]+)</summary>', html)
+    return re.findall(r'<details class="pane"(?: open)?><summary>([^<]+?)(?: <span class="fsum">.*?</span>)?</summary>', html)
 
 
 @unittest.skipUnless(NODE, "node is not installed")

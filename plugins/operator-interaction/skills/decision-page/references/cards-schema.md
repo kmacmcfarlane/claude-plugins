@@ -103,8 +103,10 @@ Each record field maps to a part of the `decisions` skill's card (its `reference
   effect is its Wait). On a ⚠ card the facets come first and every option's **More** but (z)'s
   starts open;
 - the Recommendation part (`rec`, `basis`, `reason`, its levels in `detail.rec`);
-- the folds: **Background** (`why`, then `whyask` with `class` first), **Dependencies**
-  (`dep`), **Evidence** (the basis word and `reason`, then `evidence`).
+- the folds: **Background** (`why`, then `whyask` with `class` first; the first of the bottom
+  folds; closed, its summary is *why now:* and the first sentence of `why`, a slug as its
+  number, which the runner's `bgsum` lint keeps to about 25 words), **Dependencies** (`dep`),
+  **Evidence** (the basis word and `reason`, then `evidence`).
 
 **The closed row's effect** (answer 340 (a)): the recommended option's own `effect`, its letter
 first, `→ (b) …`; with no recommendation, each option's in a few words, `(a) …; (b) …`.
