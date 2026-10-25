@@ -72,6 +72,16 @@
       "rec": "b",
       "basis": "strong",
       "reason": "both failures were read in the build logs",
+      "assume": [
+        {
+          "rests": "The stale cache is what broke both publishes, not the laptop's tools.",
+          "tw": "a publish from CI, which starts every build clean, breaks the same way"
+        },
+        {
+          "rests": "Nobody needs to publish between merges to `main`.",
+          "tw": "someone asks to publish a fix without merging it first"
+        }
+      ],
       "evidence": "Build logs for both failed publishes show the same stale cache directory.",
       "ifunanswered": "I leave the build on the laptop and carry on with other work.",
       "open": [
@@ -441,6 +451,16 @@
       "rec": "a",
       "basis": "partial",
       "reason": "the URL list is observed; the traffic to them is estimated",
+      "assume": [
+        {
+          "rests": "Search engines carry a page's ranking across a redirect to its new URL.",
+          "tw": "the guides drop in search results in the weeks after the first CI publish"
+        },
+        {
+          "rests": "The trial build's list of moved pages is complete.",
+          "tw": "a page missing from the list returns not found after the first CI publish"
+        }
+      ],
       "evidence": "Observed: the trial CI build lists the twelve pages whose paths change (`build/moved-pages.txt` from that run).",
       "oneway": true,
       "open": [
@@ -747,9 +767,8 @@
               ]
             },
             {
-              "h": "Unknown and assumed",
+              "h": "Assumed",
               "b": [
-                "Unknown: how many sites link to them; the report counts visits, not links.",
                 "Assumed: the redirects work as the generator's documentation says; not tried here, and the first CI publish would show it."
               ]
             }

@@ -176,6 +176,10 @@ class WriterDigest(unittest.TestCase):
         self.assertEqual(card.get("format"), "to render")
         self.assertEqual(card.get("open"), "optional")
         self.assertEqual(card.get("label"), "optional")
+        # the Assumptions fold's field (A1): optional, linted on a card with a recommendation
+        self.assertEqual(card.get("assume"), "optional; a card with a recommendation and none is linted")
+        gone = self.digest.replace("| `assume` | optional;", "| assume | optional;")
+        self.assertIn("A card: `assume` missing", required_problems(self.record, gone, "A card"))
         self.assertNotIn("o", card)
         self.assertNotIn("blocks", card)
         self.assertNotIn("warn", card)
@@ -246,6 +250,12 @@ class WriterDigest(unittest.TestCase):
         gone = self.digest.replace("| `bgsum` | `shape:` |", "| bgsum | `shape:` |")
         self.assertIn("lint `bgsum` missing", lint_problems(self.js, gone))
         moved = self.digest.replace("| `bgsum` | `shape:` |", "| `bgsum` | `depth:` |")
+        self.assertTrue(lint_problems(self.js, moved))
+        # the Assumptions fold's lint (A1): its row, and its start
+        self.assertEqual(runner_lints(self.js)["assume"], {"depth:"})
+        gone = self.digest.replace("| `assume` | `depth:` |", "| assume | `depth:` |")
+        self.assertIn("lint `assume` missing", lint_problems(self.js, gone))
+        moved = self.digest.replace("| `assume` | `depth:` |", "| `assume` | `shape:` |")
         self.assertTrue(lint_problems(self.js, moved))
 
     def test_thresholds(self):

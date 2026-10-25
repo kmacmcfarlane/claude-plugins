@@ -136,7 +136,10 @@ alternative not taken, in case practice argues for it.
   **More**, and a one-way card's options shown open, designs made in build, not the
   operator's) — each option's **More** carries what the fold did (its text at every level,
   its impact and its row); a part, facet or field that is empty or none is left off the page.
-  Not taken: the fold kept beside **More** (198, as built); *none* written out.
+  Not taken: the fold kept beside **More** (198, as built); *none* written out. The rec line
+  and its *unknown: none* retired 2026-10-22 (*The Assumptions fold above the Impact; no Rec
+  line*, below): what is not known is Open questions, and the basis word, still shown
+  whatever it says, opens the Assumptions fold's summary.
 - **Impact names the system** (2026-10-20, answer 259 (a), from the operator's review
   feedback: "why [is] the impact of this decision scoped to the impact to my code review,
   not the system we are building? that's silly", and "the decision skill has described the
@@ -287,6 +290,22 @@ alternative not taken, in case practice argues for it.
   The facet order kept, Wait, Reach, Undo, Cost (*Impact in every view* less Effect), is a
   reading made in planning: the operator's words list what stays, not an order. Not taken: a
   card-level effect kept beside the options' own.
+- **The Assumptions fold above the Impact; no Rec line, both surfaces** (2026-10-22, the
+  operator's feedback on prototype v4: "drop the last line, it's content is redundant", of the
+  card's trailing Rec line, and "What's 'unknown none' mean anyway?"; then the v5 layout, item
+  9168: Assumptions, tripwires and unknowns move up between Open questions and the Impact,
+  "relabelled 'Assumptions'; unknowns leave it, absorbed by Open questions") — every card
+  carries a closed **Assumptions** fold after Open questions and before the Impact: the basis
+  word and its reason, the basis drill-down, then each assumption the recommendation rests on
+  paired with its tripwire, the sign that would change the call. Its summary is the basis
+  line, *basis:* and the word, then the count (*basis: partial · 2 assumptions with
+  tripwires*). The chat card's trailing Rec line, the block's *Basis:* line, and the answer
+  page's Recommendation part and Evidence fold go into it; the recommendation stays marked on
+  its option. It amends the v4 layout's fold order, which had the fold first among the bottom
+  folds and holding the unknowns. The summary's form, the record's `assume` field
+  (`[{rests, tw}]`, answer 341 (a)) and the page runner's `assume` lint on a recommended card
+  with none are designs made in planning and build, not the operator's. Not taken: the fold
+  under the options (v4); the unknowns kept in it.
 - **The closed views show the recommended option's effect** (2026-10-23, answer 340 (a)) — a
   closed page row, the chat list line and the Groom row show the recommended option's own
   effect, its letter first (`→ (b) …`). With no recommendation, each real option's effect in a

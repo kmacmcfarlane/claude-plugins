@@ -377,9 +377,9 @@ class GalleryShowsImpact(unittest.TestCase):
         self.assertTrue(tag_size_problems("mutant", "*46 (→ preview up in about 4 minutes)*"))
 
     def test_every_card_and_block_shows_its_impact_right_after_its_context(self):
-        # the answer page's order: the decision line (title, What), Context, then any fold
-        # above the Impact (▸ Open questions, open as ▾ with its bullets in a block), then the
-        # impact; a Context section is a line, or a heading over bullets (a block)
+        # the answer page's order: the decision line (title, What), Context, then the folds
+        # above the Impact (▸ Open questions, then ▸ Assumptions, open as ▾ with their contents in
+        # a block), then the impact; a Context section is a line, or a heading over bullets (a block)
         seen = 0
         for f in self.files():
             lines = f.read_text().splitlines()
@@ -397,6 +397,8 @@ class GalleryShowsImpact(unittest.TestCase):
                         in_context = True  # a fold above the Impact, and an open fold's bullets
                     elif in_context and x.startswith(("- ", "  - ")):
                         pass  # a block's Context bullets
+                    elif in_context and x.startswith(("**Basis:**", "*Evidence:*", "  *tripwire:*")):
+                        pass  # an open Assumptions fold: its Basis line, evidence and tripwires
                     elif x.strip() and not x.startswith(("*While it waited", "**What:**")):
                         break
                     else:

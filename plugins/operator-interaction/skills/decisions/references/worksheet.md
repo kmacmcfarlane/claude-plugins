@@ -58,6 +58,7 @@ goes on that option, never on the decision.
 | Novelty | seen before (a recurring decision, a template) / new | you |
 | Options diverge | the options lead to materially different outcomes / they converge (any would do) | you |
 | Options exist | yes / not yet — then it is an open question, not a decision | you |
+| Assumptions | what the recommendation rests on that you did not check, each with its tripwire, the sign that would change the call; none for a call with no recommendation: the card's ▸ Assumptions fold, with the basis (`references/rendering.md` § Folds) | you |
 | Still open | what is not known yet about this decision, one line each, or nothing: the card's ▸ Open questions fold (`references/rendering.md` § Folds) | you |
 
 A thin basis raises the level; so does a new decision, unless its options converge (any would

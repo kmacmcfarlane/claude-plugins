@@ -124,6 +124,12 @@ def renditions(html, n, key):
 WORDS200 = " ".join(["word"] * 200)
 
 
+def upper_folds(html):
+    """The labels of a card's folds above its Impact (Open questions, Assumptions), in order."""
+    head = html[:html.index('class="impline"')]
+    return re.findall(r'<details class="gfold [a-z]+fold"><summary><span class="lbl">([^<]+)</span>', head)
+
+
 @unittest.skipUnless(NODE, "node is not installed")
 class DecisionPageDepth(unittest.TestCase):
 
@@ -305,19 +311,26 @@ class DecisionPageDepth(unittest.TestCase):
         self.assertIn('<p><i class="owu">⚠ undo:</i> (b) none', imp[0])
         self.assertIn('<li><i class="owu">⚠ undo:</i> (b) one-way', imp[1])
         self.assertIn('<h4 class="lvh">⚠ Undo</h4>', imp[2])
-        # the rec line keeps its head, then its bullets
-        rec = c["parts"]["rec"][1]
-        self.assertTrue(rec.startswith('<div class="recline">Rec <strong>(b)</strong> · basis '
-                                       '<strong>strong</strong> —<ul class="lvl">'), rec[:120])
-        self.assertNotIn("unknown", rec)
+        # the basis line, in the Assumptions fold: its label and word in a box at every level, then the
+        # reason, which a level replaces (its bullets)
+        rec = c["parts"]["rec"]
+        for r in rec:
+            self.assertTrue(r.startswith('<div class="basisl"><span class="lbl">Basis</span>'
+                                         '<span class="bw">strong</span>'), r[:120])
+        self.assertTrue(rec[1].startswith('<div class="basisl"><span class="lbl">Basis</span><span class="bw">'
+                                          'strong</span><ul class="lvl">'), rec[1][:120])
+        self.assertIn("both failures were read in the build logs", rec[0])
+        self.assertNotIn("unknown", rec[1])
+        # no Rec head: the recommendation is marked on its option, never on the basis line
+        self.assertNotIn("Rec <strong>", c["html"])
         # a rec level as one string shows as the reason does
         d = example()
         d["cards"][0]["detail"]["rec"] = ["both failures read in the build logs",
                                           "both failures read in the build logs, the same cache both times"]
         old = card(run_page(d), 41)["parts"]["rec"]
-        self.assertEqual(old[1], '<p class="recline">Rec <strong>(b)</strong> · basis <strong>strong'
-                                 '</strong> — <em>both failures read in the build logs</em></p>')
-        # the summary rec line holds no unknown: what is not known is the Open questions fold
+        self.assertEqual(old[1], '<div class="basisl"><span class="lbl">Basis</span><span class="bw">strong'
+                                 '</span>both failures read in the build logs</div>')
+        # the summary basis line holds no unknown: what is not known is the Open questions fold
         self.assertNotIn("unknown", c["parts"]["rec"][0])
         # Why ask keeps its class first at every level
         for r in c["parts"]["whyask"]:
@@ -328,26 +341,36 @@ class DecisionPageDepth(unittest.TestCase):
     def test_the_folds_stay_in_order_and_closed_with_no_options_in_full(self):
         # the operator (2026-10-14): Options in full repeated each option's More, so it is gone;
         # Dependencies shows only on a card that depends on something (card 41 does not)
+        # the v5 layout: the upper folds (Open questions where there is one, Assumptions on every card) above
+        # the Impact; the bottom folds (Background, then Dependencies until the dependency line lands) after
+        # the answer. The Evidence pane is gone into the Assumptions fold
         res = run_page(example())
         for c in res["cards"]:
             panes = re.findall(r'<details class="pane"( open)?><summary>([^<]+?)(?: <span class="fsum">.*?</span>)?</summary>', c["html"])
-            want = ["Background"] + (["Dependencies"] if c["n"] != 41 else []) + ["Evidence"]
+            want = ["Background"] + (["Dependencies"] if c["n"] != 41 else [])
             self.assertEqual([p[1] for p in panes], want, c["n"])
             self.assertEqual([p[0] for p in panes], [""] * len(want), c["n"])
+            self.assertEqual(upper_folds(c["html"]), (["Open questions"] if c["n"] != 43 else []) + ["Assumptions"],
+                             c["n"])
+            self.assertNotIn('<details class="gfold afold" open', c["html"])
+            self.assertLess(c["html"].index('<details class="gfold afold">'), c["html"].index('class="impline"'), c["n"])
             self.assertNotIn("Options in full", c["html"])
             self.assertNotIn("<table", c["html"])
 
     def test_the_rendered_order_of_a_card(self):
         res = run_page(example())
         h = card(res, 41)["html"]
-        marks = ['data-sec="tldr"', 'data-sec="ctx"', '<details class="gfold ofold">', 'data-sec="imp"',
+        marks = ['data-sec="tldr"', 'data-sec="ctx"', '<details class="gfold ofold">',
+                 '<details class="gfold afold">', '<span class="gsum">basis: strong · 2 assumptions with tripwires',
+                 'data-sec="rec"', '<span class="lbl">Basis</span>', 'data-sec="ev"', '<ul class="asm">',
+                 'data-sec="imp"',
                  "If unanswered:", "<fieldset>",
                  'id="d41-a"', 'data-omore="a"', 'id="d41-a-more"', 'data-sec="opt-a"', 'id="d41-b"',
                  'data-omore="b"', 'class="act"', 'id="d41-b-more"', 'data-sec="opt-b"', 'id="d41-z"',
-                 'id="d41-z-more"', 'class="follow"', 'data-sec="rec"',
-                 '<summary>Background <span class="fsum">why now: ', 'data-sec="why"', 'data-sec="whyask"',
-                 "<summary>Evidence</summary>",
-                 '<span class="lbl">Basis</span>', 'data-sec="ev"']
+                 'id="d41-z-more"', 'class="follow"',
+                 '<summary>Background <span class="fsum">why now: ', 'data-sec="why"', 'data-sec="whyask"']
+        self.assertNotIn("<summary>Evidence</summary>", h)
+        self.assertNotIn("Recommendation", h)
         pos = [h.index(m) for m in marks]
         self.assertEqual(pos, sorted(pos), [m for m, p in zip(marks, pos)])
 
@@ -682,7 +705,7 @@ class DepthRunner(unittest.TestCase):
         d["cards"][0]["detail"]["impact"][0]["reach"]["t"] += ", and three reviewers"
         d["cards"][0]["detail"]["rec"][0].append("the content mode is off")
         self.lint(d, '"three" (the Impact line, more detail) counts things its context does not name',
-                  '"content mode" (the rec line, more detail) is not glossed in its context')
+                  '"content mode" (the basis line, more detail) is not glossed in its context')
 
     def test_the_broad_tldr_lint_reaches_the_tldr_levels(self):
         d = example()
@@ -789,6 +812,146 @@ class BackgroundSummary(unittest.TestCase):
             self.assertNotIn(BGSUM_LINE, runner(long_first, script=script)[1])
             script.write_text(whole)
             self.assertIn(BGSUM_LINE, runner(short_first, script=script)[1])
+
+
+def afold(html):
+    """A card's Assumptions fold: (its summary text, its body html)."""
+    start = html.index('<details class="gfold afold">')
+    rest = html[start:]
+    m = re.match(r'<details class="gfold afold"><summary><span class="lbl">Assumptions</span>'
+                 r'<span class="gsum">([^<]*)</span></summary>', rest)
+    assert m, rest[:200]
+    # the fold holds no nested details, so its first </details> closes it
+    return m.group(1), rest[m.end():rest.index("</details>")]
+
+
+@unittest.skipUnless(NODE, "node is not installed")
+class AssumptionsFold(unittest.TestCase):
+    """The Assumptions fold (A1, the v5 layout, 9168): closed, after Open questions and before the
+    Impact, on every card; its summary the basis line, `basis: <word>`, then the count of assumptions
+    with their tripwires; inside, the Basis line (the word in a box, then the reason and its levels),
+    the evidence, then each assumption in bold with its tripwire. The Recommendation part and the
+    Evidence fold are gone into it; `assume` is refused in another shape; the runner lints a card with
+    a recommendation and none."""
+
+    def test_the_fold_holds_the_basis_the_evidence_and_each_assumption_with_its_tripwire(self):
+        res = run_page(example())
+        d = example()
+        for c in res["cards"]:
+            src = next(x for x in d["cards"] if x["n"] == c["n"])
+            summ, body = afold(c["html"])
+            n = len(src.get("assume", []))
+            want = "basis: " + src["basis"] + ("" if not n else " · %d assumptions with tripwires" % n)
+            self.assertEqual(summ, want, c["n"])
+            self.assertIn('<span class="lbl">Basis</span><span class="bw">%s</span>' % src["basis"], body)
+            self.assertLess(body.index('class="basisl"'), body.index("Observed" if c["n"] == 42 else src["evidence"][:20]))
+            self.assertEqual(body.count('<p class="rests">'), n, c["n"])
+            self.assertEqual(body.count('<p class="tw"><em>tripwire:</em>'), n, c["n"])
+            for a in src.get("assume", []):
+                esc = lambda t: t.replace("&", "&amp;").replace("'", "&#39;")
+                self.assertLess(body.index(esc(a["rests"].split("`")[0])), body.index(esc(a["tw"])), c["n"])
+            # the evidence, then the assumptions
+            if n:
+                self.assertLess(body.index('data-sec="ev"') if 'data-sec="ev"' in body else 0,
+                                body.index('<ul class="asm">'))
+        # card 43 has no recommendation and names no assumption: its basis alone, no list
+        summ, body = afold(card(res, 43)["html"])
+        self.assertEqual(summ, "basis: strong")
+        self.assertNotIn('<ul class="asm">', body)
+
+    def test_one_assumption_reads_with_its_tripwire(self):
+        d = example()
+        d["cards"][0]["assume"] = d["cards"][0]["assume"][:1]
+        self.assertEqual(afold(card(run_page(d), 41)["html"])[0],
+                         "basis: strong · 1 assumption with its tripwire")
+
+    def test_none_is_not_shown_and_no_zero_count_or_unknown(self):
+        for v in (None, [], [{"rests": "none", "tw": "n/a"}]):
+            d = example()
+            if v is None:
+                d["cards"][0].pop("assume")
+            else:
+                d["cards"][0]["assume"] = v
+            res = run_page(d)
+            self.assertEqual(res["bad"], [], v)
+            summ, body = afold(card(res, 41)["html"])
+            self.assertEqual(summ, "basis: strong", v)
+            self.assertNotIn('<ul class="asm">', body, v)
+        # an open question never reaches the fold
+        for c in run_page(example())["cards"]:
+            summ, body = afold(c["html"])
+            self.assertNotRegex(summ + body, r"(?i)unknown|not known|open:")
+        # mutants: a template that renders a zero count, or an unknowns clause
+        src = page_free_script()
+        zero = src.replace("+(n?' · '+n+", "+(true?' · '+n+", 1)
+        unk = src.replace("'basis: '+esc(c.basis)+", "'basis: '+esc(c.basis)+' · no unknowns'+", 1)
+        for m in (zero, unk):
+            self.assertNotEqual(m, src)
+            d = example()
+            d["cards"][0].pop("assume")
+            out = subprocess.run([NODE, "-e", m + HARNESS], input=json.dumps([d]), capture_output=True,
+                                 text=True, timeout=60)
+            html = json.loads(out.stdout)["out"][0]["cards"][0]["html"]
+            self.assertNotEqual(afold(html)[0], "basis: strong")
+
+    def test_assume_in_another_shape_is_refused(self):
+        msg = "card 41: assume must be a list of {rests, tw}"
+        for bad in ("rests on the cache", {"rests": "x", "tw": "y"}, [{"rests": "x"}], [{"rests": "x", "tw": ""}],
+                    [{"rests": 3, "tw": "y"}], ["x"], [["x", "y"]]):
+            d = example()
+            d["cards"][0]["assume"] = bad
+            self.assertTrue(any(msg in b for b in run_page(d)["bad"]), bad)
+        d = example()
+        d["cards"][0]["assume"] = []
+        self.assertEqual(run_page(d)["bad"], [])
+
+    def test_rests_and_tripwires_are_escaped(self):
+        d = example()
+        d["cards"][0]["assume"] = [{"rests": "<script>alert(1)</script> holds", "tw": "<img src=x onerror=alert(1)>"}]
+        _, body = afold(card(run_page(d), 41)["html"])
+        self.assertNotIn("<script>", body)
+        self.assertNotIn("<img", body)
+        self.assertIn("&lt;script&gt;", body)
+        self.assertIn("&lt;img src=x onerror=alert(1)&gt;", body)
+
+    def test_the_recommendation_part_and_the_evidence_fold_are_gone(self):
+        html = PAGE.read_text()
+        for gone in ("recLine", "recHeadHtml", "class=\"recline\"", "<summary>Evidence</summary>",
+                     '"Recommendation"'):
+            self.assertNotIn(gone, html)
+        for c in run_page(example())["cards"]:
+            self.assertEqual(c["html"].count('data-sec="rec"'), c["html"].count('<div class="sec" data-n="%d" data-sec="rec"' % c["n"]))
+            # the basis line sits inside the fold, never after the answer
+            if 'data-sec="rec"' in c["html"]:
+                self.assertLess(c["html"].index('data-sec="rec"'), c["html"].index("<fieldset>"))
+
+    def test_the_runner_lints_a_recommended_card_with_no_assumptions(self):
+        d = example()
+        d["cards"][0].pop("assume")
+        code, out, err = runner(d)
+        self.assertEqual(code, 2, out + err)
+        self.assertIn("lint: card 41: depth: no assumptions: a card with a recommendation names", out)
+        # card 43 has no recommendation: never linted; the example, with its assumptions, is clean
+        self.assertNotIn("card 43: depth: no assumptions", out)
+        self.assertEqual(runner(example())[:2], (0, ""))
+        # an id in an assumption is linted like any card text
+        d = example()
+        d["cards"][1]["assume"][0]["tw"] = "the guides drop, as KAPPA-3570 warned"
+        self.assertIn("lint: card 42: KAPPA-3570 looks like an id (assume)", runner(d)[1])
+        # mutant: the lint removed
+        js = RUNNER.read_text()
+        removed = js.replace('if (c.rec && !as.length)', 'if (false)', 1)
+        self.assertNotEqual(removed, js)
+        with tempfile.TemporaryDirectory() as tmp:
+            root = pathlib.Path(tmp)
+            (root / "scripts").mkdir()
+            (root / "assets").mkdir()
+            shutil.copy(PAGE, root / "assets" / "index.html")
+            script = root / "scripts" / "check_cards.js"
+            script.write_text(removed)
+            d = example()
+            d["cards"][0].pop("assume")
+            self.assertNotIn("no assumptions", runner(d, script=script)[1])
 
 
 if __name__ == "__main__":

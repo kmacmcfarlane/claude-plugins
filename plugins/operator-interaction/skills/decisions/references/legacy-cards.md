@@ -144,6 +144,10 @@ rules.
 - **A stored unknown** (a Rec line's `· unknown: …`, or an `unknown` field) shows as the
   card's ▸ Open questions line (`rendering.md` § Folds), one open question; `unknown: none`
   shows no fold.
+- **A stored Rec line** (`Rec (x) · basis word — reason`, or a `rec:` line with its basis and
+  reason) shows as the card's ▸ Assumptions line (`rendering.md` § Folds): its basis word the
+  summary, its reason inside the fold, and no assumption invented; the recommendation is the
+  bold option. A card stored with none of its assumptions shows the basis alone.
 
 ## A headline with no card
 

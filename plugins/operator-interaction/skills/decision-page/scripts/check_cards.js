@@ -15,7 +15,7 @@
         the page title, the lede, the layer titles and notes, refs), whatever Context says; the
         page is the reader's only context. Backtick spans, https links and slugs are not ids;
       - terms: a count or a named thing in the flat part, or in the medium and high levels of the
-        Impact, the TLDR and the rec line, that Context's summary (with its bundle's shared context)
+        Impact, the TLDR and the basis line, that Context's summary (with its bundle's shared context)
         does not introduce;
       - groups: a bundle (a layer with shared context) holding fewer than two cards;
       - the TLDR: a bullet that may carry the recommendation, at every level, headings, bullets
@@ -33,7 +33,8 @@
         top level; levels are optional on every part, decision 201): a level not longer than the
         one below it; Background, an option's detail or the evidence thin where it carries
         levels, or long; an option but (z) with no reach; a card long in all; a detail key the
-        page does not show; what a new card owes (why, whyask, reason) missing;
+        page does not show; what a new card owes (why, whyask, reason) missing; a card with a
+        recommendation and no assumptions (assume);
       - one-way options: a ⚠ card with no option flagged oneway; a flagged option while the
         Impact carries no undo.
       Lints are proxies.
@@ -160,7 +161,7 @@ const TERSE = 14, SUB_CAP = 2, MEDIUM_CAP = 6;
 const BGSUM_CAP = 25;
 const LEVEL = ["summary", "medium", "high"], DETAIL_NAME = ["more detail", "full detail"];
 /* the parts a card shows, by their detail key; the first four are always visible */
-const PART = {context: "Context", impact: "the Impact line", tldr: "the TLDR", rec: "the rec line",
+const PART = {context: "Context", impact: "the Impact line", tldr: "the TLDR", rec: "the basis line",
   why: "Why now", whyask: "Why ask", dep: "Depends on", evidence: "the Evidence"};
 const levelsOf = (c, k) => c.detail && typeof c.detail === "object" && Array.isArray(c.detail[k]) ? c.detail[k] : [];
 const optLevels = o => Array.isArray(o.detail) ? o.detail : [];
@@ -279,6 +280,10 @@ function depth(c, say) {
   if (missing.length) say("bg", "depth: " + missing.join(" and ") + " missing: a new card says why now and why it is asked (the Background fold); leave it knowingly only on an upgraded older card");
   if (!(typeof c.reason === "string" && c.reason.trim()))
     say("reason", "depth: reason missing: a new card gives the one-clause reason for its rec (or for its basis word, with no rec); leave it knowingly only on an upgraded older card");
+  /* the Assumptions fold (the v5 layout): a recommendation names what it rests on, each with its tripwire */
+  const as = Array.isArray(c.assume) ? c.assume : [];
+  if (c.rec && !as.length)
+    say("assume", "depth: no assumptions: a card with a recommendation names what the call rests on, each with its tripwire, the sign that would change it (assume: [{rests, tw}], shown in the Assumptions fold); a small call may leave it knowingly");
   /* the 198 sizes, at the top level: Background ~150, each option ~60-120, Evidence ~150, a card ~600-900.
      Levels scale with the decision (201): a part with none may stay short, so thin is linted only where
      the writer gave levels; long is linted everywhere */
@@ -301,7 +306,7 @@ function depth(c, say) {
   if (levelsOf(c, "evidence").length && c.basis !== "none" && ev < 60) say("ev", "depth: evidence is " + ev + " words at its fullest: give the basis drill-down near 150, what was observed, inferred and assumed, with the paths and links behind each; or leave it knowingly");
   else if (ev > 225) say("ev", "depth: evidence is " + ev + " words at its fullest: keep it near 150");
   /* the card in all: the flat part and Context at their summary, the fold parts at their top level, each option's detail; not act */
-  const all = words(flat(c)) + words(c.context) + bg + ev + optWords;
+  const all = words(flat(c)) + words(c.context) + bg + ev + words(as) + optWords;
   if (all > 1350) say("all", "depth: the card is " + all + " words in all: keep it near 600–900; a small call gets a short card");
   if (c.detail && typeof c.detail === "object")
     for (const k of Object.keys(c.detail)) if (!(k in PART))
@@ -337,6 +342,7 @@ function cardTexts(c) {
   for (const k of ["t", "context", "what", "class", "why", "whyask", "dep", "ifleft", "roundcosts", "ifunanswered", "reason", "norec", "evidence", "open"]) put(k, c[k]);
   for (const k of IMP) put("impact", c.impact[k]);
   put("tldr", c.tldr);
+  if (Array.isArray(c.assume)) for (const a of c.assume) if (a && typeof a === "object") put("assume", [a.rests, a.tw]);
   for (const o of opts(c)) {
     for (const k of ["title", "line", "text", "effect", "reach", "undo", "cost"]) put("(" + o.k + ")", o[k]);
     if (Array.isArray(o.act)) put("act (" + o.k + ")", o.act);

@@ -54,7 +54,7 @@ class DecisionPageNone(unittest.TestCase):
         self.assertEqual(html.count("const isNone="), 1)
         free = html[html.index("<script>"):html.index("/* ---- end of the page-free part")]
         for fn in ("const facetShown=", "function line(", "function parts(", "function optionDetail(",
-                   "function cardHtml(", "const openFold="):
+                   "function cardHtml(", "const openFold=", "const assumeOf=", "const assumeFold="):
             body = free[free.index(fn):]
             body = body[:body.index("\n}") if fn.startswith("function") else body.index("};\n")]
             self.assertTrue(any(x in body for x in ("shown(", "(shown)", "isNone(", "facetShown(")), fn)
@@ -75,11 +75,11 @@ class DecisionPageNone(unittest.TestCase):
             else:
                 c["dep"] = dep
             h = card(run_page(d), 42)["html"]
-            self.assertEqual(panes(h), ["Background", "Evidence"], dep)
+            self.assertEqual(panes(h), ["Background"], dep)
             self.assertNotIn("depends on:", h, dep)
             self.assertNotIn("Depends on", h, dep)
             self.assertNotIn("nothing on this page", h, dep)
-        # with levels but no summary, a placeholder holds its place, as the Evidence's does
+        # with levels but no summary, a placeholder holds its place, as the evidence's does
         d = example()
         d["cards"][1]["dep"] = "none"
         d["cards"][1]["detail"]["dep"] = ["Waits on the CI publish decision.",

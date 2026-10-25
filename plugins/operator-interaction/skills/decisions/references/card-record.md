@@ -43,9 +43,10 @@ Two kinds of required:
 | `options` | list of options | to render | the options in letter order, (z) decide later last, each letter once (§ An option) |
 | `rec` | a letter, or `null` | to render | the recommended option's letter |
 | `norec` | text | to render when `rec` is null | the labelled exception: `your preference — no recommendation`, or `no recommendation — outside my authority` and why |
-| `basis` | `strong`, `partial`, `thin` or `none` | to render | the basis word (`evidence-basis.md`) |
-| `reason` | text | of a new card | one clause: the rec's reason, or the basis word's with no rec |
-| `evidence` | text, or a list of text | optional | the basis drill-down: what was observed, inferred and assumed, with the paths and `https://` links behind each claim |
+| `basis` | `strong`, `partial`, `thin` or `none` | to render | the basis word (`evidence-basis.md`): the **Assumptions** fold's summary opens on it, `basis: partial`, and its Basis line shows it, every card |
+| `reason` | text | of a new card | one clause: the rec's reason, or the basis word's with no rec; shown after the basis word, inside the Assumptions fold |
+| `evidence` | text, or a list of text | optional | the basis drill-down: what was observed, inferred and assumed, with the paths and `https://` links behind each claim; inside the Assumptions fold, after the Basis line |
+| `assume` | list of `{rests, tw}` | optional; a card with a recommendation and none is linted | **Assumptions**: each thing the call rests on (`rests`) with its tripwire (`tw`), the sign that would change it; both non-empty text. Shown in the closed Assumptions fold after Open questions and before the Impact, each assumption in bold with its *tripwire:* under it; the fold's summary counts them, `basis: partial · 2 assumptions with tripwires`. What is not known yet is never an assumption: it is `open` |
 | `why` | text | of a new card | **Why now:** and what it blocks. Its first sentence must stand alone, about 25 words at most: it is the Background fold's summary on every surface (rewrite a longer one, never cut it) |
 | `whyask` | text | of a new card | **Why ask:** what would go wrong if the recommendation were taken alone |
 | `ifleft` | text | optional | **If left:** on an ask for another round: each leftover finding and what it would break |
@@ -76,7 +77,7 @@ The option's own levels, steps and facets live in it, never in letter-keyed maps
 
 `detail` holds the fuller renditions of a card's parts, `[medium, high]` each: `context`,
 `tldr`, `impact` (each level `{wait, reach, undo, cost}`, a facet text, a bullet or a list of
-bullets), `rec` (the reason), `why`, `whyask`, `evidence`. An option's own levels are its
+bullets), `rec` (the basis line's reason), `why`, `whyask`, `evidence`. An option's own levels are its
 `detail`. A bullet is `"text"` or `{"t": "text", "sub": ["text"]}`; a section is
 `{"h": "heading", "b": [bullets]}`; a rendition is text, a list of bullets, or a list of
 sections. Levels scale with the decision: a small call may carry none; a wide or one-way
@@ -89,7 +90,7 @@ shapes.
 ## Fields an upgraded card may already carry
 
 The upgrader maps the answer page's working kit into the record, and some of the kit's parts
-have no row above yet: `assume` (`[{rests, tw}]`), `what` as the What part with its `items`
+have no row above yet: `what` as the What part with its `items`
 (`[{name, where?, about?, per?}]`), `finding` (`{label?, title?, where?, mechanism, excerpt?}`),
 `scope` (`{level, says}`), `likelihood` (`{kind, seen}`) and `best`, `attached`, `rejected`
 (`[{t, why}]`), and on an option `pro`, `con`, `pros`, `cons` and `plan`. A reader keeps them as
