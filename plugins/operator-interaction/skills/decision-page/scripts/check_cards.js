@@ -20,6 +20,7 @@
       - groups: a bundle (a layer with shared context) holding fewer than two cards;
       - the TLDR: a bullet that may carry the recommendation, at every level, headings, bullets
         and sub-bullets in reading order; a leftover what;
+      - the Background fold's summary: the first sentence of why past BGSUM_CAP words;
       - shapes: summaries a sentence or two (the TLDR one or two bullets, an Impact facet a line),
         medium terse bullets with a sub-bullet or two, high headed sections; the Impact's medium
         one bullet per facet;
@@ -54,8 +55,8 @@ function loadPage() {
   const start = html.indexOf("<script>"), end = html.indexOf(END_MARK);
   if (start < 0 || end < start) fail("the template has no page-free part (its script or the end-of-page-free-part marker is missing): " + tpl);
   try {
-    const page = vm.runInNewContext(html.slice(start + "<script>".length, end) + "\n;({check, recordProblems})", {});
-    if (typeof page.check !== "function" || typeof page.recordProblems !== "function") throw new Error("no check() or recordProblems()");
+    const page = vm.runInNewContext(html.slice(start + "<script>".length, end) + "\n;({check, recordProblems, bgFirst})", {});
+    if (typeof page.check !== "function" || typeof page.recordProblems !== "function" || typeof page.bgFirst !== "function") throw new Error("no check(), recordProblems() or bgFirst()");
     return page;
   } catch (e) { fail("the template's page-free part does not load: " + why(e)); }
 }
@@ -154,6 +155,9 @@ const sentences = s => String(s).replace(/`[^`]*`/g, "x").replace(/https:\/\/\S+
   .split(/(?<=[.!?])\s+(?=[A-Z0-9`\[(])/).filter(x => x.trim()).length;
 const isSecs = v => Array.isArray(v) && v.length > 0 && v.every(x => x && typeof x === "object" && !Array.isArray(x) && "h" in x);
 const TERSE = 14, SUB_CAP = 2, MEDIUM_CAP = 6;
+/* the Background fold's summary (answer 338): the first sentence of why, read by the page's own bgFirst, so the
+   lint and the closed fold measure the same text */
+const BGSUM_CAP = 25;
 const LEVEL = ["summary", "medium", "high"], DETAIL_NAME = ["more detail", "full detail"];
 /* the parts a card shows, by their detail key; the first four are always visible */
 const PART = {context: "Context", impact: "the Impact line", tldr: "the TLDR", rec: "the rec line",
@@ -172,6 +176,8 @@ function shapes(c, say) {
   c.tldr.forEach((b, i) => terse("TLDR bullet " + (i + 1), b));
   for (const k of IMP) if (typeof c.impact[k] === "string" && words(c.impact[k]) > 16)
     sh("imp " + k, "Impact " + k + " is " + words(c.impact[k]) + " words: keep each facet on its line to about 16; its detail goes in the Impact's levels");
+  const bgs = words(page.bgFirst(c));
+  if (bgs > BGSUM_CAP) say("bgsum", "shape: the Background fold's summary, the first sentence of why, is " + bgs + " words: keep it to about " + BGSUM_CAP + "; rewrite the sentence shorter, never cut it, or leave it knowingly");
   /* a fold part's summary, where the part carries levels (a part with none is a small call's whole text) */
   const fold = (name, key, sum, ls) => { if (ls.length && sum != null && sentences(textsOf(sum).join(" ")) > 2)
     sh("sum " + key, name + "'s summary is " + sentences(textsOf(sum).join(" ")) + " sentences: keep it to one or two; its levels carry the rest"); };

@@ -46,7 +46,7 @@ Two kinds of required:
 | `basis` | `strong`, `partial`, `thin` or `none` | to render | the basis word (`evidence-basis.md`) |
 | `reason` | text | of a new card | one clause: the rec's reason, or the basis word's with no rec |
 | `evidence` | text, or a list of text | optional | the basis drill-down: what was observed, inferred and assumed, with the paths and `https://` links behind each claim |
-| `why` | text | of a new card | **Why now:** and what it blocks |
+| `why` | text | of a new card | **Why now:** and what it blocks. Its first sentence must stand alone, about 25 words at most: it is the Background fold's summary on every surface (rewrite a longer one, never cut it) |
 | `whyask` | text | of a new card | **Why ask:** what would go wrong if the recommendation were taken alone |
 | `ifleft` | text | optional | **If left:** on an ask for another round: each leftover finding and what it would break |
 | `roundcosts` | text | optional | **A round costs:** on an ask for another round |

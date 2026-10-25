@@ -200,6 +200,8 @@ textarea{width:100%;min-height:4.6rem;resize:vertical;font:inherit;font-size:.92
 .panes{display:flex;flex-direction:column;border-top:1px solid var(--line)}
 details.pane{border-bottom:1px solid var(--line);padding:7px 0}
 details.pane>summary{font-family:var(--f-mono);text-transform:uppercase;letter-spacing:.05em;font-size:.74rem}
+details.pane>summary>.fsum{font-family:var(--f-body);text-transform:none;letter-spacing:0;font-size:.86rem;color:var(--muted)}
+details.pane[open]>summary>.fsum{display:none}
 details.pane>div{padding:6px 0 2px;font-size:.92rem;max-width:70ch;display:flex;flex-direction:column;gap:6px}
 .cardfoot{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
 .recline{font-size:.88rem}
@@ -701,7 +703,7 @@ function cardHtml(c){
     +secHtml(c,"rec","Recommendation",P.rec)
     +'<div class="cardfoot"><span class="lbl">Details, most compressed first</span><button class="btn" type="button" data-clear="'+n+'">Clear answer</button></div>'
     +'<div class="panes">'
-    +(bg?'<details class="pane"><summary>Background</summary><div>'+bg+'</div></details>':'')
+    +(bg?'<details class="pane"><summary>Background'+bgSum(c)+'</summary><div>'+bg+'</div></details>':'')
     +(P.dep[0]?'<details class="pane"><summary>Dependencies</summary><div>'+secHtml(c,"dep","Depends on",P.dep)+'</div></details>':'')
     /* Basis always (its word is a statement, none included) */
     +'<details class="pane"><summary>Evidence</summary><div><p><span class="lbl">Basis</span>'+esc(c.basis)+(shown(c.reason)?' — '+fmt(c.reason):'')+'</p>'+secHtml(c,"ev","Evidence",P.ev)+'</div></details>'
@@ -711,6 +713,11 @@ function cardHtml(c){
    cards share (its note); a bundle, a layer whose fourth element is its shared context, adds a closed Shared
    context fold whose summary is that context's first sentence. Its cards follow, inset under a rail */
 const firstSentence=s=>{const m=String(s).match(/^[\s\S]*?[.!?](?=\s|$)/);return m?m[0]:String(s)};
+/* the Background fold's summary (answer 338): "why now: " and the first sentence of why at its summary level,
+   a slug as its bare number, cut at the first . ? or ! before a space or the end. The runner's bgsum lint
+   measures the same text (bgFirst). None when why is none; the summary hides while the fold is open */
+const bgFirst=c=>isTxt(c.why)&&shown(c.why)?firstSentence(c.why.trim().replace(/\[\[([0-9]+)\]\]/g,"$1")):"";
+const bgSum=c=>{const s=bgFirst(c);return s?' <span class="fsum">why now: '+code(esc(s))+'</span>':""};
 function layerHtml(l,cs){
   const [key,title,note,shared]=l,id="layer-"+fid(key),n=cs.length;
   return '<section class="layer" id="'+id+'" aria-labelledby="'+id+'-h"><div class="ghead"><div class="gtop"><span class="lbl">Group</span>'

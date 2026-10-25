@@ -81,8 +81,9 @@ Every decision carries, at any level:
    would go wrong if you took your recommendation alone (with no recommendation, why the call
    is not yours). It opens with the decision's **class** when the caller names classes of
    decision. A question that cannot fill it is decided alone when the FYI rule (§ Before you
-   write) allows; otherwise it is asked. On a card, why now and why ask share one
-   **Why you, why now:** line of about 25 words at most, just above the Rec line.
+   write) allows; otherwise it is asked. On a card, why now and why ask sit in its
+   Background fold, closed, its summary the first sentence of why now; a block shows it open
+   (`references/rendering.md` § Folds).
 5. **The options**, each with its consequence — what happens to the world if it is chosen,
    by what mechanism, to whom, before and after — and its own reach, undo and cost where
    they apply.
@@ -177,7 +178,7 @@ Smallest to largest, each showing more of the impact in facet order (templates i
   then an **Impact:** line, with no effect of its own; then the options, each with its
   own impact (effect, reach, a one-way or costly option's `⚠ undo:`, cost) on an italic line
   under it, decide later, any **To act on (x):** part, a round ask's justification, the
-  **Why you, why now:** line, then `Rec · basis — reason`. Its **Context:** is one or
+  ▸ Background fold line (why now and why ask), then `Rec · basis — reason`. Its **Context:** is one or
   two sentences, the page's summary size: the terms the card uses, then the resume cue
   (where you left it · what you decide now). It is written for every decision when it is
   raised, stored with the card where the caller keeps one, and shown every time the card is
@@ -186,7 +187,8 @@ Smallest to largest, each showing more of the impact in facet order (templates i
   size that adds the context the reader may have lost, whose folds are shown open (▾), and
   whose Impact line is followed by
   a table (a row per option, its effect, reach, undo and cost, plus a Wait row) in place of
-  the options' impact lines, then why now and why ask on two lines; plus the basis
+  the options' impact lines, then the Background fold open, why now and why ask on two
+  lines; plus the basis
   drill-down with evidence links.
 
 **The line-only rule.** A decision may stay a list line only when all of these hold: the

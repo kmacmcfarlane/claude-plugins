@@ -146,8 +146,11 @@ feedback, relayed from that session and confirmed as answers 259–270, shaped t
   one that matters; the ⚠ on the one that matters makes it seen, and the read-back still
   turns on it.
 - **One why line.** "Background (why ask and why now?) are more metacognitive than
-  necessary." Both stay on every card, since every ask must justify itself, but in one short
-  line below the options, so the card reads what, context, impact and the choices first.
+  necessary." Both stay on every card, since every ask must justify itself, but below the
+  options, so the card reads what, context, impact and the choices first. Since answer 338
+  ("actually, just move it into the Background fold") the one line is a closed Background
+  fold whose summary is why now's first sentence: the card stays short, and the reasons are
+  one `tell me background` away.
 - **Bundles as groups.** On a card that bundled four findings: "I'd expect impact for each of
   these findings in the impact section ... Without more info on what I'm actually deciding
   on, I can't decide." A card per item gives each its own impact and its own pick without

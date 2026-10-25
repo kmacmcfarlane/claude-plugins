@@ -109,9 +109,10 @@ ask, and it waits. When in doubt, ask.
 
 **Why ask, and the class.** Every kind above but the FYI, the alert and the open question
 carries *why ask* (SKILL.md § The floor): what would go wrong if you took your recommendation
-alone. Fill it before you write the card. On a card it shares one **Why you, why now:** line
-with *why now*, about 25 words at most for the two: the class, the reason, then what forces
-it now, leaving out what it blocks (the Wait facet says that); a block keeps two lines. When the caller names classes of decision, pick
+alone. Fill it before you write the card. On a card it sits with *why now* in the closed
+▸ Background fold, whose summary is *why now:* and the first sentence of *why now*: write
+that sentence to stand alone, about 25 words at most (`references/rendering.md` § Folds); a
+block shows the fold open, the two on their own lines. When the caller names classes of decision, pick
 the one this ask belongs to at birth and open *why ask* with it; one that fits no class says
 so in the caller's word for that. An ask whose *why ask* comes out empty — nothing goes wrong
 if you take the recommendation — is decided alone when the FYI rule above allows, and shown

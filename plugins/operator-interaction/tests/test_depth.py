@@ -17,13 +17,16 @@ Run from the plugin dir: python3 -m unittest discover -s tests -q
 
 import copy
 import json
+import pathlib
 import re
+import shutil
 import subprocess
 import sys
+import tempfile
 import unittest
 
 from test_impact import NODE, PAGE, example, page_free_script
-from test_context import runner
+from test_context import RUNNER, runner
 
 
 def setUpModule():
@@ -327,7 +330,7 @@ class DecisionPageDepth(unittest.TestCase):
         # Dependencies shows only on a card that depends on something (card 41 does not)
         res = run_page(example())
         for c in res["cards"]:
-            panes = re.findall(r'<details class="pane"( open)?><summary>([^<]+)</summary>', c["html"])
+            panes = re.findall(r'<details class="pane"( open)?><summary>([^<]+?)(?: <span class="fsum">.*?</span>)?</summary>', c["html"])
             want = ["Background"] + (["Dependencies"] if c["n"] != 41 else []) + ["Evidence"]
             self.assertEqual([p[1] for p in panes], want, c["n"])
             self.assertEqual([p[0] for p in panes], [""] * len(want), c["n"])
@@ -342,7 +345,7 @@ class DecisionPageDepth(unittest.TestCase):
                  'id="d41-a"', 'data-omore="a"', 'id="d41-a-more"', 'data-sec="opt-a"', 'id="d41-b"',
                  'data-omore="b"', 'class="act"', 'id="d41-b-more"', 'data-sec="opt-b"', 'id="d41-z"',
                  'id="d41-z-more"', 'class="follow"', 'data-sec="rec"',
-                 "<summary>Background</summary>", 'data-sec="why"', 'data-sec="whyask"',
+                 '<summary>Background <span class="fsum">why now: ', 'data-sec="why"', 'data-sec="whyask"',
                  "<summary>Evidence</summary>",
                  '<span class="lbl">Basis</span>', 'data-sec="ev"']
         pos = [h.index(m) for m in marks]
@@ -686,6 +689,106 @@ class DepthRunner(unittest.TestCase):
         d["cards"][0]["detail"]["tldr"][0][1] = "Suggest moving to CI on every merge"
         # numbered in reading order: the first bullet, its sub-bullet, then this one
         self.lint(d, "lint: card 41: tldr bullet 3 (more detail) may carry the recommendation")
+
+
+BG_HARNESS = r"""
+const cs = JSON.parse(require("fs").readFileSync(0, "utf8"));
+process.stdout.write(JSON.stringify(cs.map(c => ({first: bgFirst(c), sum: bgSum(c)}))));
+"""
+
+BGSUM_LINE = "shape: the Background fold's summary, the first sentence of why, is "
+
+
+@unittest.skipUnless(NODE, "node is not installed")
+class BackgroundSummary(unittest.TestCase):
+    """The Background fold (answer 338): first of the bottom folds, closed, its summary *why now:* and
+    the first sentence of `why`; the runner's `bgsum` lint measures the same sentence."""
+
+    def test_the_summary_is_the_first_sentence_of_why_now(self):
+        cs = [{"why": "Two broken publishes came from a cache. Blocks [[42]] and [[43]]."},
+              {"why": "Is it [[42]] first? Then the rest."},
+              {"why": "No stop at all"},
+              {"why": "<img src=x onerror=alert(1)> moves now. Later."},
+              {"why": "none"}, {}, {"why": "  "},
+              {"why": "The `cards.json` file moves now. Later."}]
+        got = node(BG_HARNESS, cs)
+        self.assertEqual(got[0]["first"], "Two broken publishes came from a cache.")
+        self.assertEqual(got[0]["sum"],
+                         ' <span class="fsum">why now: Two broken publishes came from a cache.</span>')
+        # a slug is its bare number; the cut is at ? too
+        self.assertEqual(got[1]["first"], "Is it 42 first?")
+        self.assertEqual(got[2]["first"], "No stop at all")
+        # escaped, never markup
+        self.assertNotIn("<img", got[3]["sum"])
+        self.assertIn("&lt;img", got[3]["sum"])
+        # none is not shown: no summary span
+        for g in got[4:7]:
+            self.assertEqual(g, {"first": "", "sum": ""})
+        # a backtick span renders as code, as everywhere on the page
+        self.assertEqual(got[7]["sum"],
+                         ' <span class="fsum">why now: The <code>cards.json</code> file moves now.</span>')
+
+    def test_backticks_in_the_summary_cannot_pass_as_text(self):
+        # mutant: the summary escaped but not given its code spans
+        src = page_free_script()
+        mutant = src.replace("code(esc(s))+'</span>'", "esc(s)+'</span>'", 1)
+        self.assertNotEqual(mutant, src)
+        out = subprocess.run([NODE, "-e", mutant + BG_HARNESS],
+                             input=json.dumps([{"why": "The `cards.json` file moves now."}]),
+                             capture_output=True, text=True, timeout=60)
+        self.assertEqual(out.returncode, 0, out.stderr)
+        self.assertNotIn("<code>cards.json</code>", json.loads(out.stdout)[0]["sum"])
+
+    def test_the_fold_is_first_of_the_bottom_folds_closed_with_its_summary(self):
+        res = run_page(example())
+        for c in res["cards"]:
+            h = c["html"]
+            m = re.search(r'<details class="pane"><summary>Background <span class="fsum">why now: '
+                          r'([^<]*)</span></summary>', h)
+            self.assertTrue(m, c["n"])
+            self.assertTrue(m.group(1).strip(), c["n"])
+            # first of the panes, after the answer fieldset
+            self.assertEqual(h.index('<details class="pane">'), m.start(), c["n"])
+            self.assertLess(h.index("</fieldset>"), m.start(), c["n"])
+        self.assertIn("why now: Two broken publishes this month came from a local cache.</span>",
+                      card(res, 41)["html"])
+        # the summary hides while the fold is open
+        self.assertIn("details.pane[open]>summary>.fsum{display:none}", PAGE.read_text())
+
+    def test_a_long_first_sentence_lints_and_a_long_why_does_not(self):
+        d = example()
+        d["cards"][0]["why"] = " ".join(["word"] * 25) + " ends. Short second."
+        code, out, err = runner(d)
+        self.assertEqual(code, 2, out + err)
+        self.assertIn("lint: card 41: " + BGSUM_LINE + "26 words", out)
+        # 25 words is at the cap; a long why whose first sentence is short is not linted
+        d = example()
+        d["cards"][0]["why"] = " ".join(["word"] * 24) + " ends. " + " ".join(["more"] * 30) + "."
+        code, out, err = runner(d)
+        self.assertNotIn(BGSUM_LINE, out)
+
+    def test_the_lint_cannot_pass_for_one(self):
+        # mutants: the lint removed; the lint taking all of why rather than its first sentence
+        src = RUNNER.read_text()
+        removed = src.replace('if (bgs > BGSUM_CAP) say("bgsum"', 'if (false) say("bgsum"', 1)
+        whole = src.replace("words(page.bgFirst(c))", "words(c.why)", 1)
+        self.assertNotEqual(removed, src)
+        self.assertNotEqual(whole, src)
+        long_first = example()
+        long_first["cards"][0]["why"] = " ".join(["word"] * 25) + " ends. Short second."
+        short_first = example()
+        short_first["cards"][0]["why"] = (" ".join(["word"] * 24) + " ends. "
+                                          + " ".join(["more"] * 30) + ".")
+        with tempfile.TemporaryDirectory() as tmp:
+            root = pathlib.Path(tmp)
+            (root / "scripts").mkdir()
+            (root / "assets").mkdir()
+            shutil.copy(PAGE, root / "assets" / "index.html")
+            script = root / "scripts" / "check_cards.js"
+            script.write_text(removed)
+            self.assertNotIn(BGSUM_LINE, runner(long_first, script=script)[1])
+            script.write_text(whole)
+            self.assertIn(BGSUM_LINE, runner(short_first, script=script)[1])
 
 
 if __name__ == "__main__":

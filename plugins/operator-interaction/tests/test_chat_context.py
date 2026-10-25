@@ -5,8 +5,10 @@ The decisions skill's cards and blocks follow the page's `context` field: the de
 one or two sentences at the page's summary size, ending on the resume cue; a block's is a
 bullet list at the page's medium size, its first bullet the card's Context, and a block's
 Impact line stands above its table. A list line
-carries none. A card's why now and why ask share one **Why you, why now:** line just above
-its Rec line (answer 261, 2026-10-20); a block keeps them as two lines under its table. A
+carries none. A card's why now and why ask sit in a closed `▸ Background — why now: <the
+first sentence of why now>` line, the first fold under its options, just above its Rec line
+(answer 338, 2026-10-22, which retired answer 261's one **Why you, why now:** line); a block
+shows it open, `▾ Background`, with **Why now:** and **Why ask:** under it, below its table. A
 bundle whose items need different answers is a group: a heading, then one whole card per
 item (answer 263). What is still open about a decision is a folded `▸ Open questions —
 <summary>` line after Context and before the Impact (open as `▾` in a block), and the Rec line
@@ -35,7 +37,9 @@ RESHOW_HEAD = re.compile(r"^\*\*\d+ — back[^*]*:\*\* .+\?")
 # stops at either, so neither is read as the tail of the card above it
 GROUP_OR_FINDING = re.compile(r"^\*\*(Group|Finding): ")
 GROUP_HEAD = re.compile(r"^\*\*Group: [^*]+\*\* — \*(\d+) decisions, [^*]+\*$")
-WHY_LINE = "**Why you, why now:**"
+WHY_LINE = "**Why you, why now:**"  # retired by answer 338: no card carries it
+BG_LINE = "▸ Background — why now: "
+BG_OPEN = "▾ Background — why now: "
 REC_LINE = re.compile(r"^(Rec \*\*\(|\*No recommendation)")
 LEGACY = REFS / "legacy-cards.md"
 # a fold line: closed on a card, open (its items under it) in a block
@@ -117,14 +121,15 @@ class Templates(unittest.TestCase):
         self.assertNotIn("Why ask", heads(card))
         self.assertNotIn("cold reader only", "\n".join(card))
 
-    def test_the_card_template_puts_the_why_line_above_the_rec_line(self):
+    def test_the_card_template_folds_background_above_the_rec_line(self):
         card = fenced(RENDERING.read_text(), "**N — Title as a question?**\n**What:**")
-        check_why_line(self, "rendering.md card", card)
+        check_bg_line(self, "rendering.md card", card)
 
     def test_the_block_template_runs_what_context_bullets_table(self):
         block = fenced(RENDERING.read_text(), "**N — Title as a question?** ⚠ one-way")
         self.assertEqual(heads(block)[:6],
                          ["What", "Context", "Impact", "table", "Why now", "Why ask"])
+        check_bg_block(self, "rendering.md block", block)
         k = next(i for i, x in enumerate(block) if x.startswith("**Context:**"))
         self.assertTrue(block[k + 1].startswith("- the card's Context"), block[k + 1])
 
@@ -198,26 +203,64 @@ def empty_fold_problems(where, body):
             continue
         if re.match(r"(?i)^(0 open\b|none\b|nothing\b|—|-)", m.group(3).strip()):
             out.append(f"{where}: an empty {m.group(2)} fold is shown")
-        if m.group(1) == "▾" and not (k + 1 < len(body) and body[k + 1].startswith("- ")):
+        # an open fold's items are bullets; Background's are its two labelled lines
+        item = ("**Why now:**", "**Why ask:**") if m.group(2) == "Background" else ("- ",)
+        if m.group(1) == "▾" and not (k + 1 < len(body) and body[k + 1].startswith(item)):
             out.append(f"{where}: an open {m.group(2)} fold with nothing under it")
     return out
 
 
-def check_why_line(test, where, body):
-    """A card's one **Why you, why now:** line: after its options (and any To act on, If left
-    or If unanswered part), the line just above its Rec line, about 25 words at most; no
-    separate Why now or Why ask line."""
+def check_bg_line(test, where, body):
+    """A card's why now and why ask: one closed `▸ Background — why now: …` line, the first fold
+    line after its options (and any To act on, If left or If unanswered part), just above its
+    Rec line, its summary 30 words at most; no flat why line and no separate Why now or Why ask
+    line (answer 338)."""
     hs = heads(body)
+    test.assertNotIn("Why you, why now", hs, f"{where}: the flat why line")
     test.assertNotIn("Why now", hs, f"{where}: a separate Why now line")
     test.assertNotIn("Why ask", hs, f"{where}: a separate Why ask line")
-    test.assertEqual(hs.count("Why you, why now"), 1, f"{where}: one why line")
-    k = next(i for i, x in enumerate(body) if x.startswith(WHY_LINE))
+    bg = [i for i, x in enumerate(body) if x.startswith(BG_LINE)]
+    test.assertEqual(len(bg), 1, f"{where}: one Background line")
+    k = bg[0]
     z = max(i for i, x in enumerate(body) if x.startswith("- (z) "))
-    test.assertLess(z, k, f"{where}: the why line is above the options")
+    test.assertLess(z, k, f"{where}: the Background line is above the options")
+    first = next(i for i, x in enumerate(body) if i > z and FOLD.match(x))
+    test.assertEqual(first, k, f"{where}: Background is not the first fold under the options")
     test.assertTrue(k + 1 < len(body) and REC_LINE.match(body[k + 1]),
-                    f"{where}: the why line is not just above the Rec line")
-    words = body[k][len(WHY_LINE):].split()
-    test.assertLessEqual(len(words), 30, f"{where}: the why line runs {len(words)} words")
+                    f"{where}: the Background line is not just above the Rec line")
+    words = body[k][len(BG_LINE):].split()
+    test.assertTrue(words, f"{where}: the Background line has no summary")
+    test.assertLessEqual(len(words), 30, f"{where}: the Background summary runs {len(words)} words")
+    test.assertFalse(SENTENCE_END.search(body[k][len(BG_LINE):]),
+                     f"{where}: the Background summary is more than one sentence")
+
+
+# a block's parts under its table that come before its Background fold (§ Folds)
+BLOCK_BEFORE_BG = ("**If left:**", "**A round costs:**", "**To act on (")
+
+
+def check_bg_block(test, where, body):
+    """A block's Background fold stands open below its table, after any If left, A round costs
+    and To act on (x) part and just before its Rec line: `▾ Background — why now: …` (one
+    sentence), then **Why now:** and **Why ask:** on the two lines under it; no flat why
+    line."""
+    test.assertNotIn("Why you, why now", heads(body), f"{where}: the flat why line")
+    bg = [i for i, x in enumerate(body) if x.startswith(BG_OPEN)]
+    test.assertEqual(len(bg), 1, f"{where}: one open Background fold")
+    k = bg[0]
+    t = next(i for i, x in enumerate(body) if x.startswith("| Impact |"))
+    test.assertLess(t, k, f"{where}: the Background fold is above the table")
+    test.assertTrue(k + 2 < len(body) and body[k + 1].startswith("**Why now:**")
+                    and body[k + 2].startswith("**Why ask:**"),
+                    f"{where}: Why now and Why ask are not under the open fold")
+    test.assertLessEqual(len(body[k][len(BG_OPEN):].split()), 30, f"{where}: a long summary")
+    test.assertFalse(SENTENCE_END.search(body[k][len(BG_OPEN):]),
+                     f"{where}: the Background summary is more than one sentence")
+    after = [x for x in body[k + 3:] if x.strip()]
+    test.assertFalse(any(x.startswith(BLOCK_BEFORE_BG) for x in after),
+                     f"{where}: If left, A round costs or To act on comes after Background")
+    test.assertTrue(after and REC_LINE.match(after[0]),
+                    f"{where}: the Background fold is not just before the Rec line")
 
 
 def groups(path):
@@ -311,21 +354,33 @@ class GalleryContexts(unittest.TestCase):
                 if LIST_LINE.match(line):
                     self.assertNotIn("Context", line, f"{path.name}:{n}")
 
-    def test_every_card_has_one_why_line_above_its_rec_line(self):
+    def test_every_card_folds_background_above_its_rec_line(self):
         seen = 0
         for n, kind, body in views(GALLERY):
             if kind == "card":
                 seen += 1
-                check_why_line(self, f"gallery.md:{n}", body)
+                check_bg_line(self, f"gallery.md:{n}", body)
         self.assertGreaterEqual(seen, 15)
+        self.assertNotIn(WHY_LINE, GALLERY.read_text())
 
-    def test_a_block_keeps_why_now_and_why_ask_under_its_table(self):
+    def test_a_block_keeps_why_now_and_why_ask_under_its_table_below_background(self):
+        blocks = 0
         for n, kind, body in views(GALLERY):
             if kind == "block":
+                blocks += 1
                 hs = heads(body)
-                self.assertNotIn("Why you, why now", hs, f"gallery.md:{n}")
                 self.assertLess(hs.index("table"), hs.index("Why now"), f"gallery.md:{n}")
                 self.assertEqual(hs.index("Why now") + 1, hs.index("Why ask"), f"gallery.md:{n}")
+                check_bg_block(self, f"gallery.md:{n}", body)
+        self.assertGreaterEqual(blocks, 2)
+
+    def test_the_skill_names_the_background_fold_and_retires_the_why_line(self):
+        flat = " ".join(RENDERING.read_text().split())
+        self.assertIn("**▸ Background** — why now and why ask", flat)
+        self.assertIn("`tell me background` (or `tell me why`)", flat)
+        self.assertIn("composed from *why now* each time, never stored", flat)
+        for f in [SKILL_MD, RENDERING, REFS / "worksheet.md", GALLERY]:
+            self.assertNotIn(WHY_LINE, f.read_text(), f.name)
 
     def test_open_questions_fold_above_the_impact_and_no_rec_line_says_unknown(self):
         folds = 0
@@ -387,26 +442,80 @@ class Checks(unittest.TestCase):
 
     CARD = ["**41 — Resume the backup?**", "**What:** x", "**Context:** y · z", "**Impact:** → a",
             "- **(a) Resume**", "  *→ it finishes*", "- (z) Decide later — *it waits*", "",
-            "**Why you, why now:** the lease lapses at five.", "Rec **(a)** · basis **strong**"]
+            "▸ Background — why now: the lease lapses at five.", "Rec **(a)** · basis **strong**"]
+    BLOCK = ["**43 — Remove it?** ⚠ one-way", "**Impact:** later: w · reach: r", "",
+             "| Impact | Effect | Reach | Undo | Cost |", "|---|---|---|---|---|", "",
+             "**To act on (b):**", "1. step", "",
+             "▾ Background — why now: the release is cut on Thursday.",
+             "**Why now:** the release is cut on Thursday.", "**Why ask:** it is yours.", "",
+             "Rec **(b)** · basis **partial**"]
 
-    def test_a_good_why_line_passes(self):
-        check_why_line(self, "good", list(self.CARD))
+    def test_a_good_background_line_passes(self):
+        check_bg_line(self, "good", list(self.CARD))
+        check_bg_block(self, "good", list(self.BLOCK))
+        self.assertEqual(empty_fold_problems("good", list(self.BLOCK)), [])
 
-    def test_the_old_two_lines_on_a_card_are_caught(self):
+    def test_the_flat_why_line_or_the_old_two_lines_on_a_card_are_caught(self):
+        card = list(self.CARD)
+        card[8] = "**Why you, why now:** the lease lapses at five."
+        with self.assertRaises(AssertionError):
+            check_bg_line(self, "mutant", card)
         card = list(self.CARD)
         card[8:9] = ["**Why now:** the lease lapses.", "**Why ask:** it is yours."]
         with self.assertRaises(AssertionError):
-            check_why_line(self, "mutant", card)
+            check_bg_line(self, "mutant", card)
+        card = list(self.CARD)
+        card.insert(8, "**Why now:** the lease lapses.")
+        with self.assertRaises(AssertionError):
+            check_bg_line(self, "mutant", card)
 
-    def test_a_why_line_above_the_options_or_too_long_is_caught(self):
+    def test_a_background_line_above_the_options_or_too_long_is_caught(self):
         card = list(self.CARD)
         card.insert(4, card.pop(8))
         with self.assertRaises(AssertionError):
-            check_why_line(self, "mutant", card)
+            check_bg_line(self, "mutant", card)
         card = list(self.CARD)
-        card[8] = "**Why you, why now:** " + "word " * 31
+        card[8] = "▸ Background — why now: " + "word " * 31
         with self.assertRaises(AssertionError):
-            check_why_line(self, "mutant", card)
+            check_bg_line(self, "mutant", card)
+        # a summary of two sentences
+        card = list(self.CARD)
+        card[8] = "▸ Background — why now: the lease lapses at five. Then it is gone."
+        with self.assertRaises(AssertionError):
+            check_bg_line(self, "mutant", card)
+        # another fold before it under the options
+        card = list(self.CARD)
+        card.insert(8, "▸ Attached — 1: a log")
+        with self.assertRaises(AssertionError):
+            check_bg_line(self, "mutant", card)
+
+    def test_a_block_whose_background_is_closed_or_empty_is_caught(self):
+        block = list(self.BLOCK)
+        block[9] = "▸ Background — why now: the release is cut on Thursday."
+        with self.assertRaises(AssertionError):
+            check_bg_block(self, "mutant", block)
+        block = list(self.BLOCK)
+        del block[10:12]
+        with self.assertRaises(AssertionError):
+            check_bg_block(self, "mutant", block)
+        self.assertTrue(empty_fold_problems("mutant", block))
+        # a two-sentence summary
+        block = list(self.BLOCK)
+        block[9] = "▾ Background — why now: the release is cut on Thursday. It is soon."
+        with self.assertRaises(AssertionError):
+            check_bg_block(self, "mutant", block)
+
+    def test_a_block_whose_background_comes_before_its_act_or_round_lines_is_caught(self):
+        # the old order: the fold under the table, To act on after it
+        block = list(self.BLOCK)
+        block[6:13] = block[9:13] + block[6:9]
+        self.assertEqual(block[6], "▾ Background — why now: the release is cut on Thursday.")
+        with self.assertRaises(AssertionError):
+            check_bg_block(self, "mutant", block)
+        block = list(self.BLOCK)
+        block.insert(13, "**If left:** *one finding*")
+        with self.assertRaises(AssertionError):
+            check_bg_block(self, "mutant", block)
 
     def test_an_open_questions_line_out_of_place_or_an_unknown_is_caught(self):
         card = ["**41 — Resume the backup?**", "**What:** x", "**Context:** y · z",

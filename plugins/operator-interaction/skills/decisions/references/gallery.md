@@ -25,7 +25,7 @@ today.*
   *→ releases the lease; no backup tonight unless it is started again · reach: tonight's backup only · ⚠ undo: start it again, about 3 hours*
 - (z) Decide later — *it waits; at 17:45 the lease lapses and the snapshot is lost*
 
-**Why you, why now:** whether tonight's backup outranks the reporting team's jobs on shared storage is yours to weigh; the lease lapses at ~17:45 (90 min from 16:15).
+▸ Background — why now: the storage lease lapses at ~17:45 (90 min from 16:15), and the snapshot is lost with it.
 Rec **(a)** · basis **strong** — *checked the storage quota: 40% free, enough to finish*
 
 **43 — Remove the deprecated `/v1/export` endpoint?** ⚠ one-way
@@ -48,6 +48,7 @@ Rec **(a)** · basis **strong** — *checked the storage quota: 40% free, enough
 | (c) Investigate first | reads this month's access logs for other callers; could change the answer if both partners have already switched | — | — | about 15 minutes |
 | (z) Wait | the endpoint stays as it is, and the cleanup release goes out without this change | the API cleanup release | — | nothing now |
 
+▾ Background — why now: the API cleanup release is cut on Thursday; this change goes out in it, or waits for the next one.
 **Why now:** the API cleanup release is cut on Thursday; this change goes out in it, or waits for the next one.
 **Why ask:** removing it breaks two partners and cannot be quietly undone; that call is not mine to take alone.
 
@@ -65,10 +66,10 @@ Rec **(b)** · basis **partial** — *observed: this week's access log shows 2 p
   *→ sizes match the storage provider's bill*
 - (z) Decide later — *it waits; the dashboard keeps its placeholder units until you choose (one config line)*
 
-**Why you, why now:** no fact settles which readers the units should suit, so it is yours to say; the new dashboard needs one.
+▸ Background — why now: the new dashboard needs one unit before it ships.
 *No recommendation: no fact settles this.* · basis **strong** — *checked: nothing reads the dashboard's units programmatically*
 
-*Gallery note — layout and order: the cards and the block come first, each opening on its decision line (the title and What), then its Context, then its impact (a line on a card; on the block, the line and then a table), the compact list and the hint last, so the list is what is on screen when the agent stops. Why this order: 41 breaks before you are back; the API cleanup group comes next because it holds a ⚠, with 44 kept beside 43; then 42, which blocks the docs build, before 45, which blocks nothing. 44 and 42 stay list lines: you are warm on both, both are two-way and narrow on a strong basis, 44's options converge and 42 is a template you have seen. 41, 43 and 45 are cold, so each is at least a card; 43 is a block because this is its first showing. Each card and the block carries its Context — the terms it uses, then where you left it — and would carry it for a warm reader too; the block's runs to bullets, its first the card-size Context and the rest what a reader coming back may have lost. The list lines carry none. In each card and the block the options keep their letter order and only the recommended one is bold: 43's (b) stays second, and 45, with no recommendation, bolds none. No Impact line carries an effect: each starts at what waiting costs, and on a card each option carries its own effect, reach and cost on the italic line under it, a facet that does not apply left out; on the block the table's rows carry them. 43's block shows what is still open, whether the partners plan to switch, as an open ▾ Open questions fold above its Impact; 41 and 45 have nothing open, so they have no fold, and no Rec line says *unknown*. Undo shows only where it bites: 41's (b), whose restart costs about 3 hours, and 43's (a), which no hotfix fully takes back, each marked ⚠ on its option and on the Impact line; 45's options, each one config line from the other, carry none, and on the block 43's reversible rows read `—`. On each card, why it is yours and why now share one line just above the Rec line; the block keeps them as two lines under its table. Every list line carries an effect and what waiting costs, the line-only ones too: the recommended option's after its label, and 45's each option's, since it has no recommendation; no list line carries an option's reach, undo or cost; only 43 has a ⚠ slot, and no line has a stakes word.*
+*Gallery note — layout and order: the cards and the block come first, each opening on its decision line (the title and What), then its Context, then its impact (a line on a card; on the block, the line and then a table), the compact list and the hint last, so the list is what is on screen when the agent stops. Why this order: 41 breaks before you are back; the API cleanup group comes next because it holds a ⚠, with 44 kept beside 43; then 42, which blocks the docs build, before 45, which blocks nothing. 44 and 42 stay list lines: you are warm on both, both are two-way and narrow on a strong basis, 44's options converge and 42 is a template you have seen. 41, 43 and 45 are cold, so each is at least a card; 43 is a block because this is its first showing. Each card and the block carries its Context — the terms it uses, then where you left it — and would carry it for a warm reader too; the block's runs to bullets, its first the card-size Context and the rest what a reader coming back may have lost. The list lines carry none. In each card and the block the options keep their letter order and only the recommended one is bold: 43's (b) stays second, and 45, with no recommendation, bolds none. No Impact line carries an effect: each starts at what waiting costs, and on a card each option carries its own effect, reach and cost on the italic line under it, a facet that does not apply left out; on the block the table's rows carry them. 43's block shows what is still open, whether the partners plan to switch, as an open ▾ Open questions fold above its Impact; 41 and 45 have nothing open, so they have no fold, and no Rec line says *unknown*. Undo shows only where it bites: 41's (b), whose restart costs about 3 hours, and 43's (a), which no hotfix fully takes back, each marked ⚠ on its option and on the Impact line; 45's options, each one config line from the other, carry none, and on the block 43's reversible rows read `—`. On each card, why now and why ask sit in a closed ▸ Background fold just above the Rec line, its summary the first sentence of why now, so the card reads the choices first; the block shows the fold open (▾), its two lines under its table. Every list line carries an effect and what waiting costs, the line-only ones too: the recommended option's after its label, and 45's each option's, since it has no recommendation; no list line carries an option's reach, undo or cost; only 43 has a ⚠ slot, and no line has a stakes word.*
 
 - **41 Resume the paused nightly backup?** — rec **(a) resume** → *the snapshot finishes in about 15 minutes* · *later: the snapshot is lost at 17:45 and the backup starts over* · basis **strong** · *25 min old, storage lease lapses ~17:45 (90 min from 16:15)*
 - **43 Remove the deprecated `/v1/export` endpoint?** — rec **(b) keep it, with a sunset date** → *nothing breaks; every response announces removal in 90 days* · *later: misses Thursday's API cleanup release* · ⚠ one-way · basis **partial** · *6 h old*
@@ -94,7 +95,7 @@ Rec **(b)** · basis **partial** — *observed: this week's access log shows 2 p
   *→ the preview shows the old page, without the search-page change*
 - (z) Decide later — *it waits; no preview until someone deploys*
 
-**Why you, why now:** if the retry fails too, the review starts with no preview; you may prefer yesterday's build as the sure thing, and the review is this afternoon.
+▸ Background — why now: the design review is this afternoon, and it needs a preview.
 Rec **(a)** · basis **strong** — *the deploy log shows a registry timeout, not a build error*
 
 ---
@@ -111,7 +112,7 @@ Rec **(a)** · basis **strong** — *the deploy log shows a registry timeout, no
   *→ storage stays at 85%; a later snapshot may fail when it fills*
 - (z) Decide later — *it waits; storage keeps filling by about 2% a day*
 
-**Why you, why now:** the snapshot cannot be recovered once it is deleted; staging storage is at 85% of its quota.
+▸ Background — why now: staging storage is at 85% of its quota and fills about 2% a day.
 Rec **(a)** · basis **strong** — *listed the restore jobs: none reference it*
 
 *No ⚠ label on the decision: (a)'s `⚠ undo:` and the Impact line's say it is one-way, and the narrow reach says why the decision is not ⚠ one-way. The marker is on the option, never the decision. (b), which deleting later undoes, carries no undo at all: an option shown without one is reversible at little cost.*
@@ -161,7 +162,7 @@ costs change every time. The first time in a session, a card:*
 
 **If left:** *one medium finding: after a restart the retry counter starts again from zero, so a job that fails on every run is retried forever instead of stopping after five tries. The review names the cause but not the fix: the count has to be saved with the job.*
 **A round costs:** *spent $21 of $20, about 4% of a week's quota; the weekly quota is 62% used, not below the reserve. The next round costs about $4 and 20 minutes; open findings ran 5 → 2 → 1 over the last three reviews. One more answer from you if that round does not clear it.*
-**Why you, why now:** another round spends past the budget you set, and the finding under *If left* is what it buys; the change is blocked until you answer.
+▸ Background — why now: the change is blocked until you answer.
 Rec **(a)** · basis **strong** — *the open findings are falling, 5 → 2 → 1; an endless retry costs more than two rounds*
 
 *Later in the session the operator is warm and has seen the template, so a new ask on it,
@@ -198,8 +199,8 @@ line (no effect), options, their impacts, the label, and no recommendation.
   *→ users get a shorter report · reach: every user of the report · cost: about an hour's work*
 - (z) Decide later — *it waits; the release slips past Friday if undecided by Thursday noon*
 
-**Why you, why now:** whether users may see output a reviewer waived is a product call, not mine, and nothing I can check settles it; the release is Friday.
-*No recommendation: see why above.* · basis **partial** — *observed: the waived check's output; inferred: the fix estimate*
+▸ Background — why now: the release is Friday, and it slips if this is undecided by Thursday noon.
+*No recommendation: a product call, not mine.* · basis **partial** — *observed: the waived check's output; inferred: the fix estimate*
 
 ---
 
@@ -239,7 +240,7 @@ line (no effect), options, their impacts, the label, and no recommendation.
   *→ repeat reads are fast this week; the first read of each listing, and every read after a change, still takes about 2 seconds*
 - (z) Decide later — *it waits; reads stay slow*
 
-**Why you, why now:** it turns what you asked for, a cache, into a query fix; the page loads in about 2 seconds, and the performance review is next week.
+▸ Background — why now: the listing page loads in about 2 seconds, and the performance review is next week.
 Rec **(a)** · basis **partial** — *observed: the query takes 1.8 s in the profile; inferred: an index would fix it*
 
 *Not this: numbering it 79b, which reads as option (b) of 79. A new decision takes the next
@@ -278,7 +279,7 @@ the list: 41, 43 and 45 are unchanged, so they are not rendered again and their 
   *→ says more plainly that it will go; the only notice worded this way*
 - (z) Decide later — *it waits; no notice is published until you choose*
 
-**Why you, why now:** partners read the notice, and (b) warns them more plainly than the three before it; it goes out with the API cleanup release.
+▸ Background — why now: the notice goes out with the API cleanup release on Thursday.
 Rec **(a)** · basis **strong** — *read the three earlier notices*
 
 - **41 Resume the paused nightly backup?** — rec **(a) resume** → *the snapshot finishes in about 15 minutes* · *later: the snapshot is lost at 17:45 and the backup starts over* · basis **strong** · *35 min old, storage lease lapses ~17:45 (80 min from 16:25)* *(shown before)*
@@ -393,7 +394,7 @@ status page (a preference). The operator replies "ok 51-55".*
 - (z) Decide later — *it waits*
 
 **If unanswered:** *I leave the branch as it is, unopened, and carry on with the next task. Nothing is lost.*
-**Why you, why now:** opening now lets approval run ahead of the benchmark, against your wish to have the change today; nothing else forces it.
+▸ Background — why now: nothing forces it; the benchmark finishes in about 25 minutes.
 Rec **(b)** · basis **strong** — *the benchmark is running now*
 
 ---
@@ -435,6 +436,7 @@ waited* says whether the impact changed.*
 | (b) Move one service first | the email worker moves today; the rest follow in two days if it stays quiet | the email worker only, for now | — | two more days before the rollout finishes |
 | (z) Wait | the rollout stays paused and the old queue keeps running | the worker rollout | — | the old queue's upkeep |
 
+▾ Background — why now: the worker rollout waits on it.
 **Why now:** the worker rollout waits on it.
 **Why ask:** every worker service moves at once; how fast the rollout goes is yours to set.
 
@@ -452,7 +454,7 @@ Rec **(a)** · basis **partial** — *observed: the load test report; inferred: 
   *→ no growth in the repo; when the CDN is down, pages fall back to a system font · reach: the docs site's readers, whenever the CDN is down*
 - (z) Decide later — *it waits; the build stays on hold*
 
-**Why you, why now:** 400 KB in the repo against a font that fails when the CDN does, with no fact to settle it for you.
+▸ Background — why now: the docs site build is on hold until the font's source is settled.
 Rec **(b)** · basis **strong** — *checked the CDN's status history and loaded the font from it*
 
 **61 — Turn on strict type checking across the repo?**
@@ -466,7 +468,7 @@ Rec **(b)** · basis **strong** — *checked the CDN's status history and loaded
   *→ no work now; the loosely typed code keeps growing*
 - (z) Decide later — *it waits; the setting stays off*
 
-**Why you, why now:** it changes how everyone writes new code in the repo, not just this task; each week on the loose setting adds more to fix.
+▸ Background — why now: each week on the loose setting adds more loosely typed code to fix.
 Rec **(a)** · basis **strong** — *ran strict mode locally: 31 warnings, all in two packages*
 
 - **62 Move the job queue to the new message broker?** — rec **(a) move all workers** → *every worker reads from the new broker today* · *later: the worker rollout stays paused* · basis **partial** · *1 day old*
@@ -545,7 +547,7 @@ those records. The decisions block stays last.*
   *→ users install it with the package manager, and updates come with it · reach: users who have the package manager · cost: about a day to publish*
 - (z) Decide later — *it waits; the install section says "coming soon"*
 
-**Why you, why now:** *trade-off* — one file never updates itself, a package needs the package manager; which your users would rather have is not a fact I have.
+▸ Background — why now: the command-line guide's install section waits on it.
 Rec **(a)** · basis **partial** — *observed: the other four tools ship one file; inferred: users are used to that*
 
 *What the caller's store holds, one physical line each — a record line for each thing decided alone, and the ask's card line, indented under its headline, that carries its class. The exact lines are the caller's format; these are this invented caller's:*
@@ -570,8 +572,9 @@ physical line each, so every view of 85 reads them from there — the card its C
 Impact line — and each option's line holds its own effect, reach and cost, which the card
 shows under the option, and its `⚠ undo:` when it is one-way or costly (neither of 85's is);
 a caller's row of open items reads the recommended option's effect from its option line. The
-store keeps *why now* and *why ask* as two lines; the card shows them as its one **Why you,
-why now:** line. This caller's `impact:` line still opens on an effect, `→ …`; the card does
+store keeps *why now* and *why ask* as two lines; the card shows them in its ▸ Background
+fold, whose summary, *why now:* and that line's first sentence, is composed when the card is
+shown, never stored. This caller's `impact:` line still opens on an effect, `→ …`; the card does
 not show it, and its **Impact:** line starts at `later:` (`references/legacy-cards.md`). The `context:`
 line's text before ` — then: ` is the card's Context; after it, what a block would add
 (`none`: 85 was raised as a card).*
@@ -670,7 +673,7 @@ card, in its **To act on (a):** part.*
 
 4. Tell me the last line it prints: `3 of 3 pages signed in`, or which pages failed.
 
-**Why you, why now:** only you can run it, from your own browser, and it takes about 5 minutes of your time.
+▸ Background — why now: the sign-in fix stays unreleased until the check runs.
 Rec **(a)** · basis **strong** — *the automated tests' account skips the real sign-in path*
 
 *Not this: "(a) run it — from the check folder, paste the prompt, tell me; I'll give you the
@@ -695,7 +698,7 @@ the operator opens the plan.*
   *→ those 12 pages point readers at the current guide instead of steps that no longer work · reach: three teams' pages · cost: about a day*
 - (z) Decide later — *it waits; the docs build keeps failing on the broken links*
 
-**Why you, why now:** (b) rewrites pages three other teams own; whether that goes in this week is yours to weigh.
+▸ Background — why now: the link checker fails the docs build until the cleanup lands.
 Rec **(a)** · basis **strong** — *ran the link checker: every failure is a broken link or a missing image*
 
 *Not this: What: "L2, the cleanup scope", with options "(a) level 1 only" and "(b) level 1
@@ -728,7 +731,7 @@ since the operator answers by the review's labels; the number stays the handle.*
   *→ the change merges reading first and checking after; an oversize upload still stalls the server until the follow-up lands*
 - (z) Decide later — *it waits; the merge waits on this finding*
 
-**Why you, why now:** (a) changes the error a client sees for an oversize file, from a late failure to an early refusal, which clients may notice.
+▸ Background — why now: the merge waits on this finding.
 Rec **(a)** · basis **strong** — *reproduced: one 2 GB upload took the test server's memory to its limit*
 
 **52 — F7 (retry storm) · Add a backoff to failed disk writes?**
@@ -742,7 +745,7 @@ Rec **(a)** · basis **strong** — *reproduced: one 2 GB upload took the test s
   *→ the storm stops after five tries in a few milliseconds, and the upload fails · reach: clients whose upload meets a briefly busy disk*
 - (z) Decide later — *it waits; the merge waits on this finding*
 
-**Why you, why now:** (b) fails uploads that a backoff would save; which failure clients should meet is yours to weigh.
+▸ Background — why now: the merge waits on this finding, and a failing disk still draws a retry storm until then.
 Rec **(a)** · basis **partial** — *observed: last night's log, five retries in 3 ms; inferred: 30 seconds covers a busy disk*
 
 **53 — F9 (stale temp files) · Remove an aborted upload's temp file?**
@@ -755,7 +758,7 @@ Rec **(a)** · basis **partial** — *observed: last night's log, five retries i
   *→ the directory still grows through each day, by at most a day's aborted uploads · cost: about an hour*
 - (z) Decide later — *it waits; the temp directory keeps growing until the disk fills*
 
-**Why you, why now:** both stop the growth; whether a day's leftovers on disk is acceptable is yours to say.
+▸ Background — why now: the merge waits on this finding, and the temp directory grows about 40 GB a week.
 Rec **(a)** · basis **strong** — *read the handler: nothing deletes the file on abort*
 
 - **51 F3 (oversize upload) · Check an upload's size before reading it?** — rec **(a) check the declared size first** → *an oversize upload is refused before any of it is read* · *later: the merge waits* · basis **strong** · *10 min old*
@@ -764,7 +767,7 @@ Rec **(a)** · basis **strong** — *read the handler: nothing deletes the file 
 
 *Reply with a letter (`51: a`) or in your own words · `later [when]` · `tell me [what]` · `expand` · `dig into [what]` · `you decide` · `drop`*
 
-*Each card is whole — its own What, Context, Impact, options, why line and Rec line — so each finding gets its own impact and its own answer, and `ok 51-53` still takes all three recommendations. The heading adds what the three share and replaces nothing on them. Each effect says how the failure happens and what changes after the fix, not just its name: F3's says a 2 GB upload fills the server's memory first.*
+*Each card is whole — its own What, Context, Impact, options, Background fold line and Rec line — so each finding gets its own impact and its own answer, and `ok 51-53` still takes all three recommendations. The heading adds what the three share and replaces nothing on them. Each effect says how the failure happens and what changes after the fix, not just its name: F3's says a 2 GB upload fills the server's memory first.*
 
 *Not this: one card, "Fix the upload-service housekeeping before the merge?", with options "(a) fix all", "(b) fix some" and "(z) later". It names a category, not the three findings, gives no impact for any one of them, and has no way to answer F3 differently from F7: the operator cannot decide it without asking what the findings are. Nor one card with a pick per finding (`51: F3 a, F7 b`): its picks would be lettered sub-decisions under one number.*
 
@@ -802,7 +805,7 @@ Impact names, with the mechanism spelled out and the term glossed.*
   *→ every app keeps installing the archived library at the client's pinned version; a security fix for it never comes, and an app that needs another version of it cannot build · reach: every partner app*
 - (z) Decide later — *it waits; the next major release keeps the archived types*
 
-**Why you, why now:** (a) makes every partner app change a line at upgrade, which only a major release allows; the next one is being planned.
+▸ Background — why now: the next major release is being planned, and only a major release allows this change.
 Rec **(a)** · basis **partial** — *observed: the library's last release is 14 months old; inferred: one line per app, from the two apps read*
 
 *Not this: option effects of "→ the audit finding closes" for (a) and "→ the finding stays open for the next review" for (b), which say what happens to the audit, not to the apps. Nor an option line of "exposes an archived library in its public API" alone: it names the problem and not how an importing app breaks (it must install the library, at our version only, and never gets its fixes), or what is different after the switch. Nor a Context that leaves "archived" unglossed for a reader who has not met the term.*

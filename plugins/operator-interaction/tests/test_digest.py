@@ -45,6 +45,7 @@ THRESHOLDS = {
     "words in a summary Impact facet": r"words\(c\.impact\[k\]\) > (\d+)",
     "words in the card in all": r"\ball > (\d+)",
     "words in an option's effect, at or under which mech fires": r"\bMECH_MIN = (\d+)",
+    "words in the Background fold's summary": r"\bBGSUM_CAP = (\d+)",
 }
 
 
@@ -240,6 +241,12 @@ class WriterDigest(unittest.TestCase):
         self.assertIn("lint `oneway` missing", lint_problems(self.js, gone))
         moved = self.digest.replace("| `oneway` | `oneway:` |", "| `oneway` | `depth:` |")
         self.assertTrue(lint_problems(self.js, moved))
+        # the Background fold's summary lint (answer 338): its row, and its start
+        self.assertEqual(runner_lints(self.js)["bgsum"], {"shape:"})
+        gone = self.digest.replace("| `bgsum` | `shape:` |", "| bgsum | `shape:` |")
+        self.assertIn("lint `bgsum` missing", lint_problems(self.js, gone))
+        moved = self.digest.replace("| `bgsum` | `shape:` |", "| `bgsum` | `depth:` |")
+        self.assertTrue(lint_problems(self.js, moved))
 
     def test_thresholds(self):
         self.assertEqual(threshold_problems(self.js, self.digest), [])
@@ -248,7 +255,7 @@ class WriterDigest(unittest.TestCase):
         for old, new in [("TERSE = 14", "TERSE = 15"), ("MEDIUM_CAP = 6", "MEDIUM_CAP = 7"),
                          ("cw > 60", "cw > 61"), ("all > 1350", "all > 1400"),
                          ("cs > 2", "cs > 3"), ("c.tldr.length > 2", "c.tldr.length > 3"),
-                         ("MECH_MIN = 4", "MECH_MIN = 5")]:
+                         ("MECH_MIN = 4", "MECH_MIN = 5"), ("BGSUM_CAP = 25", "BGSUM_CAP = 26")]:
             with self.subTest(old=old):
                 self.assertIn(old, self.js)
                 self.assertTrue(threshold_problems(self.js.replace(old, new), self.digest))

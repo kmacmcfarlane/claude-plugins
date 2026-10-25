@@ -138,7 +138,7 @@ class RecordCheck(unittest.TestCase):
             del d["cards"][2][k]
         res = run_page(d)
         self.assertEqual(res["bad"], [])
-        self.assertNotIn("<summary>Background</summary>", card(res, 43)["html"])
+        self.assertNotIn("<summary>Background", card(res, 43)["html"])
 
     def test_an_impact_effect_is_ignored_not_shown(self):
         d = example()
