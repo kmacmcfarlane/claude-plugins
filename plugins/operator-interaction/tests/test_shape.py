@@ -290,6 +290,13 @@ class ShapeRunner(unittest.TestCase):
         d = example()
         c43(d)["impact"]["reach"] = "the guide screenshots"
         self.assertNotIn("impact: the reach", runner(d)[1])
+        # the threshold: 2 of 5 words shared with the recommended option (40%) fires; 3 of 8 (37.5%) does not
+        d = example()
+        c41(d)["impact"]["reach"] = "docs contributor zebra yak quilt"
+        self.lint(d, "lint: card 41: impact: the reach reads as the recommended option's")
+        d = example()
+        c41(d)["impact"]["reach"] = "docs contributor merge zebra yak quilt violin walrus"
+        self.assertNotIn("impact: the reach", runner(d)[1])
         # an effect an older writer left on the Impact is ignored, never linted
         d = example()
         c41(d)["impact"]["effect"] = "publishing no longer depends on one laptop"

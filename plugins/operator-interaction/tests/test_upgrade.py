@@ -96,6 +96,7 @@ def name_trap_problems(o):
 
 REV_KEPT = '{ note.rev = "rev kept"; return rev; }'
 REV_NORMALISED = '{ note.rev = "rev kept"; return rev.replace(/T([0-9][0-9]:[0-9][0-9])Z$/, "T$1:00Z"); }'
+PROTO_SAFE = "const y = Object.create(null);\n      for (const k of Object.keys(x)) y[k] = x[k];"
 TRAP = ('if ("pros" in o) x.pro = o.pros;\n    if ("cons" in o) x.con = o.cons;\n'
         '    if ("prosT" in o) x.pros = o.prosT;\n    if ("consT" in o) x.cons = o.consT;')
 TRAP_STRAIGHT = ('if ("pros" in o) x.pros = o.pros;\n    if ("cons" in o) x.cons = o.cons;\n'
@@ -385,6 +386,74 @@ class Upgrade(unittest.TestCase):
         code, out, res, _, _ = upgrade(d)
         self.assertEqual(code, 1, out)
         self.assertIn('card 51: a link names evidence attachment "health"', out)
+
+    def test_the_evidence_link_refusal_matches_the_id_exactly(self):
+        # ids health and healthcheck: a link to healthcheck never refuses the dropped health
+        for link, refused in (("[[att:healthcheck|the check]]", False), ("[[att:health|the report]]", True),
+                              ("[[att:health]]", True), ("[[att:healthy|x]]", False)):
+            with self.subTest(link=link):
+                d = load(KIT)
+                d["cards"][0]["context"] += " See " + link + "."
+                code, out, _, _, _ = upgrade(d)
+                self.assertEqual(code, 1 if refused else 0, out)
+                self.assertEqual('a link names evidence attachment "health"' in out, refused, out)
+
+    def test_a_kit_option_with_no_text_is_a_listed_problem(self):
+        for v in (None, "", "  "):
+            with self.subTest(text=v):
+                d = load(KIT)
+                if v is None:
+                    del d["cards"][0]["options"][1]["text"]
+                else:
+                    d["cards"][0]["options"][1]["text"] = v
+                code, out, res, _, _ = upgrade(d)
+                self.assertEqual(code, 1, out)
+                self.assertIn("card 51: (b) has no text", out)
+                self.assertIsNone(res)
+
+    def test_an_attachment_key_named_proto_stays_a_plain_key(self):
+        raw = KIT.read_text().replace('"mode": "invented to illustrate"',
+                                      '"mode": "invented to illustrate", "__proto__": {"polluted": true}')
+        self.assertNotEqual(raw, KIT.read_text())
+        code, out, res, _, _ = upgrade(raw)
+        self.assertEqual(code, 0, out)
+        att = by_n(res)[51]["attached"][0]
+        self.assertEqual(att.get("__proto__"), {"polluted": True})
+        self.assertNotIn("polluted", att)
+        # mutant: an Object.assign copy turns the key into a prototype, and it is lost
+        js = UPGRADER.read_text()
+        self.assertEqual(js.count(PROTO_SAFE), 1)
+        with tempfile.TemporaryDirectory() as tmp:
+            m = pathlib.Path(tmp) / "upgrade_cards.js"
+            m.write_text(js.replace(PROTO_SAFE, "const y = Object.assign({}, x);"))
+            att = by_n(upgrade(raw, script=m)[2])[51]["attached"][0]
+        self.assertNotIn("__proto__", att)
+
+    def test_writes_make_out_dir_and_fail_cleanly(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            t = pathlib.Path(tmp)
+            (t / "in.json").write_text(KIT.read_text())
+            (t / "q.json").write_text(json.dumps(QMAP))
+            base = [NODE, str(UPGRADER), str(t / "in.json")]
+            # OUT in a directory that does not exist yet
+            out = subprocess.run(base + [str(t / "new" / "deeper" / "out.json"), "--questions", str(t / "q.json")],
+                                 capture_output=True, text=True, timeout=60)
+            self.assertEqual(out.returncode, 0, out.stdout)
+            self.assertEqual(load(t / "new" / "deeper" / "out.json")["format"], "decision-page/5")
+            # a record file that exists is named before it is replaced; a directory at DIR/52.json fails the write
+            recs = t / "recs"
+            (recs / "52.json").mkdir(parents=True)
+            (recs / "51.json").write_text("old")
+            out = subprocess.run(base + [str(t / "out.json"), "--questions", str(t / "q.json"), "--records", str(recs)],
+                                 capture_output=True, text=True, timeout=60)
+            self.assertEqual(out.returncode, 2, out.stdout)
+            self.assertIn("note: %s exists and will be replaced" % (recs / "51.json"), out.stdout)
+            self.assertIn("upgrade_cards: cannot write %s:" % (recs / "52.json"), out.stdout)
+            self.assertNotIn("    at ", out.stdout + out.stderr)
+            # OUT was written whole, first; no temp file is left behind
+            self.assertEqual(load(t / "out.json")["format"], "decision-page/5")
+            self.assertEqual([p.name for p in t.rglob(".*tmp-*")], [])
+            self.assertTrue((recs / "52.json").is_dir())
 
     def test_a_file_it_cannot_place_is_refused(self):
         code, out, res, _, _ = upgrade({"cards": [{"n": 1, "t": "x"}]})

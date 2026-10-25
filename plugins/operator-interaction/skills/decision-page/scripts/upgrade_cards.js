@@ -23,7 +23,10 @@
    assumption lists, a writer marker, a newer stamp) stops the run: exit 1, every problem listed with its card,
    nothing written. On success it prints a line per card (rev kept byte for byte, or new) and every
    value it moved with a note, and exits 0. It reads JSON and writes JSON; it never evaluates content.
-   Exit 2: usage, or a file that cannot be read or parsed. Node built-ins only. */
+   Writes: OUT's directory is made, OUT is written first, then each record; every file goes to a temp name in its
+   own directory and is renamed over its target, so a failed write leaves no half-written file. A record file it
+   will replace is named before it is replaced.
+   Exit 2: usage, a file that cannot be read or parsed, or a write that fails (one plain line). Node built-ins only. */
 "use strict";
 const fs = require("fs"), path = require("path");
 
@@ -190,7 +193,8 @@ function fromKit(c, bad, note) {
     if (x.kind === "evidence") {
       /* the record's evidence is a flat list of text: an attachment id is dropped, and a link to it would break */
       if (isStr(x.id) && x.id) {
-        if (JSON.stringify(c).includes("[[att:" + x.id)) bad.push("a link names evidence attachment " + JSON.stringify(x.id) + ", whose id the record's evidence list drops");
+        const all = JSON.stringify(c);
+        if (all.includes("[[att:" + x.id + "|") || all.includes("[[att:" + x.id + "]]")) bad.push("a link names evidence attachment " + JSON.stringify(x.id) + ", whose id the record's evidence list drops");
         else note.moved.push("evidence attachment id " + JSON.stringify(x.id) + " dropped");
       }
       const t = isStr(x.title) && x.title.trim() ? x.title.trim() + " — " : "";
@@ -198,7 +202,9 @@ function fromKit(c, bad, note) {
       else if (Array.isArray(x.body)) x.body.forEach((b, i) => ev.push((i ? "" : t) + b));
       else bad.push("an evidence attachment's body is neither text nor a list");
     } else {
-      const y = Object.assign({}, x);
+      /* an own-key copy onto a null-prototype object: a "__proto__" key stays a plain key, never a prototype */
+      const y = Object.create(null);
+      for (const k of Object.keys(x)) y[k] = x[k];
       if (x.kind === "example" && "mode" in y) { y.form = y.mode; delete y.mode; }
       att.push(y);
     }
@@ -213,6 +219,7 @@ function fromKit(c, bad, note) {
     if (!isObj(o)) { bad.push("an option is not an object"); continue; }
     if (!isStr(o.k) || !LETTER.test(o.k)) { bad.push("an option letter " + JSON.stringify(o.k) + " is not one letter a-z"); continue; }
     for (const k of Object.keys(o)) if (!KIT_OPTION.has(k)) bad.push("(" + o.k + ") field " + k + " is not one the kit's schema names");
+    if (!isStr(o.text) || !o.text.trim()) { bad.push("(" + o.k + ") has no text: the kit's text is the option's title"); continue; }
     const x = {k: o.k, title: o.text};
     for (const k of ["line", "effect", "reach", "undo", "cost", "plan"]) if (k in o && !(k !== "undo" && isNone(o[k]))) x[k] = o[k];
     if (o.oneway === true) x.oneway = true;
@@ -323,24 +330,45 @@ function main() {
   const scan = v => { if (isStr(v)) { for (const m of v.matchAll(/\[\[([0-9]+)\]\]/g)) slugs.add(m[1]); } else if (Array.isArray(v)) v.forEach(scan); else if (isObj(v)) Object.values(v).forEach(scan); };
   cards.forEach(scan);
   for (const s of slugs) if (!kept.has(s) && !(s in refs)) lines.push("note: [[" + s + "]] is named but is neither a card here nor a ref: give it a refs entry or its card");
-  if (opt.records) {
-    fs.mkdirSync(opt.records, {recursive: true});
-    for (const c of cards) {
-      const r = Object.assign({}, c); delete r.L; delete r.dep;
-      if (isObj(r.detail) && "dep" in r.detail) { r.detail = Object.assign({}, r.detail); delete r.detail.dep; }
-      fs.writeFileSync(path.join(opt.records, c.n + ".json"), JSON.stringify(r, null, 2) + "\n");
+  /* what is written: OUT (a decision-page/5 file with no set is copied byte for byte; with --only, its envelope
+     holds the set's cards), then one record per card under --records */
+  let outBytes, tail;
+  if (v5 && !only) { outBytes = fs.readFileSync(inFile); tail = inFile + ": already " + PAGE_FORMAT + ", copied as it is"; }
+  else {
+    const outDoc = {format: PAGE_FORMAT};
+    for (const k of Object.keys(d)) if (k !== "format") outDoc[k] = k === "cards" ? cards : d[k];
+    outBytes = JSON.stringify(outDoc, null, 2) + "\n";
+    tail = outFile + ": " + cards.length + " card" + (cards.length === 1 ? "" : "s") + ", " + PAGE_FORMAT + (v5 ? " (already; the set only)" : "");
+  }
+  const records = opt.records ? cards.map(c => {
+    const r = Object.assign({}, c); delete r.L; delete r.dep;
+    if (isObj(r.detail) && "dep" in r.detail) { r.detail = Object.assign({}, r.detail); delete r.detail.dep; }
+    return [path.join(opt.records, c.n + ".json"), JSON.stringify(r, null, 2) + "\n"];
+  }) : [];
+  /* said before anything is replaced */
+  for (const [p] of records) if (fs.existsSync(p)) lines.push("note: " + p + " exists and will be replaced");
+  if (lines.length) process.stdout.write(lines.join("\n") + "\n");
+  /* each file written to a temp name in its own directory, then renamed over its target, so a failed write
+     leaves no half-written file; a write error is one plain line and exit 2 */
+  let at = outFile;
+  const put = (target, bytes) => {
+    at = target;
+    const tmp = path.join(path.dirname(target), "." + path.basename(target) + ".tmp-" + process.pid);
+    try { fs.writeFileSync(tmp, bytes); fs.renameSync(tmp, target); }
+    catch (e) { try { fs.unlinkSync(tmp); } catch (_) { /* no temp file was made */ } throw e; }
+  };
+  try {
+    fs.mkdirSync(path.dirname(path.resolve(outFile)), {recursive: true});
+    put(outFile, outBytes);
+    if (opt.records) {
+      at = opt.records;
+      fs.mkdirSync(opt.records, {recursive: true});
+      for (const [p, bytes] of records) put(p, bytes);
     }
+  } catch (e) {
+    process.stdout.write("upgrade_cards: cannot write " + at + ": " + String((e && e.message) || e).split("\n")[0] + "\n");
+    process.exit(2);
   }
-  /* a decision-page/5 file with no set is copied byte for byte; with --only, its envelope holds the set's cards */
-  if (v5 && !only) {
-    fs.writeFileSync(outFile, fs.readFileSync(inFile));
-    process.stdout.write(lines.join("\n") + "\n" + inFile + ": already " + PAGE_FORMAT + ", copied as it is\n");
-    return;
-  }
-  const outDoc = {format: PAGE_FORMAT};
-  for (const k of Object.keys(d)) if (k !== "format") outDoc[k] = k === "cards" ? cards : d[k];
-  fs.writeFileSync(outFile, JSON.stringify(outDoc, null, 2) + "\n");
-  process.stdout.write(lines.join("\n") + "\n" + outFile + ": " + cards.length + " card" + (cards.length === 1 ? "" : "s") + ", " + PAGE_FORMAT + (v5 ? " (already; the set only)" : "") + "\n");
+  process.stdout.write(tail + "\n");
 }
-
 main();
