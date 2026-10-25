@@ -269,6 +269,24 @@ def assume_problems(where, body, block=False):
     return out
 
 
+NOREC_LABELS = ("*your preference — no recommendation*", "*no recommendation — outside my authority*")
+BOLD_OPTION = re.compile(r"^- \*\*\([a-y]\) ")
+
+
+def norec_problems(where, body):
+    """A card or block with no bold option carries its no-recommendation label after its title, now
+    that no Rec line says so (A1); one with a bold option carries none."""
+    bold = sum(1 for x in body if BOLD_OPTION.match(x))
+    rows = [x for x in body if re.match(r"^\| \*\*\([a-y]\) ", x)]  # a block's bold table row
+    bold += len(rows)
+    label = any(f"· {lab}" in body[0] for lab in NOREC_LABELS)
+    if not bold and not label:
+        return [f"{where}: no recommended option and no no-recommendation label after its title"]
+    if bold and label:
+        return [f"{where}: a recommended option and a no-recommendation label"]
+    return []
+
+
 def empty_fold_problems(where, body):
     """A fold with nothing in it is left out, line and all: no fold line whose summary says
     none or a count of zero, and no open fold with no bullet under it."""
@@ -476,6 +494,18 @@ class GalleryContexts(unittest.TestCase):
         self.assertGreaterEqual(seen["block"], 2)
         for f in (GALLERY, RENDERING):
             self.assertFalse([x for x in f.read_text().splitlines() if REC_LINE.match(x)], f.name)
+
+    def test_a_card_with_no_recommendation_carries_its_label_after_its_title(self):
+        seen = 0
+        for n, kind, body in views(GALLERY):
+            self.assertEqual(norec_problems(f"gallery.md:{n}", body), [])
+            seen += any(lab in body[0] for lab in NOREC_LABELS)
+        self.assertGreaterEqual(seen, 2)
+        # mutant: gallery 45's label removed
+        v45 = next(body for _, _, body in views(GALLERY) if body[0].startswith("**45 — "))
+        cut = [v45[0].replace(" · *your preference — no recommendation*", "")] + v45[1:]
+        self.assertNotEqual(cut[0], v45[0])
+        self.assertTrue(norec_problems("mutant", cut))
 
     def test_an_empty_fold_is_left_out(self):
         flat = " ".join(RENDERING.read_text().split())

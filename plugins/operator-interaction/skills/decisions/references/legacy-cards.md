@@ -24,7 +24,8 @@ holds goes in `card-record.md`; a ruling stays in `rulings.md`, the record of wh
 
 What v5 removed from every view stays removed on a legacy card: its card-level effect (the
 page's `impact.effect`, a stored `impact:` line's `→ …`) is not shown; its options' own
-effects are.
+effects are. Nor is a stored Rec line shown as written: its basis and reason show in the
+Assumptions fold (**A stored Rec line**, below).
 
 ## The upgrader
 
@@ -117,7 +118,7 @@ A card the operator has answered stays as it is, its lints left knowingly.
 
 What a caller's stored card held in earlier forms, and how the decisions skill's chat card and
 block show it (`rendering.md`). Each renders as stored, never recomposed at render time, apart
-from what v5 removed from every view; a revision for any other reason writes it to the current
+from what v5 removed from every view (a stored effect, a stored Rec line); a revision for any other reason writes it to the current
 rules.
 
 - **Older stored lines read as written**, all but the effect. A stored `impact:` line's

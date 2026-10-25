@@ -328,8 +328,10 @@ class DecisionPageDepth(unittest.TestCase):
         d["cards"][0]["detail"]["rec"] = ["both failures read in the build logs",
                                           "both failures read in the build logs, the same cache both times"]
         old = card(run_page(d), 41)["parts"]["rec"]
+        # a space between the word's box and the reason, at the summary and at a one-string level
         self.assertEqual(old[1], '<div class="basisl"><span class="lbl">Basis</span><span class="bw">strong'
-                                 '</span>both failures read in the build logs</div>')
+                                 '</span> both failures read in the build logs</div>')
+        self.assertIn('<span class="bw">strong</span> both failures were read', rec[0])
         # the summary basis line holds no unknown: what is not known is the Open questions fold
         self.assertNotIn("unknown", c["parts"]["rec"][0])
         # Why ask keeps its class first at every level
@@ -700,12 +702,19 @@ class DepthRunner(unittest.TestCase):
         i = copy.deepcopy(g)
         i["cards"][0]["detail"]["tldr"][1][-1]["b"].append("Closes KAPPA-3570.")
         self.lint(i, "lint: card 41: KAPPA-3570 looks like an id (detail.tldr)")
-        # the Impact line and the rec line too, and counts and named things
+        # the Impact line too, and counts and named things
         d = example()
         d["cards"][0]["detail"]["impact"][0]["reach"]["t"] += ", and three reviewers"
         d["cards"][0]["detail"]["rec"][0].append("the content mode is off")
-        self.lint(d, '"three" (the Impact line, more detail) counts things its context does not name',
-                  '"content mode" (the basis line, more detail) is not glossed in its context')
+        out = self.lint(d, '"three" (the Impact line, more detail) counts things its context does not name')
+        # the basis line sits in the closed Assumptions fold: neither its reason nor its levels are the
+        # flat part, so their terms are not read (an id in them still is)
+        self.assertNotIn("content mode", out)
+        d = example()
+        d["cards"][0]["reason"] = "both failures were read in the build logs by three reviewers"
+        self.clean(d)
+        d["cards"][0]["reason"] += " (KAPPA-3570)"
+        self.lint(d, "lint: card 41: KAPPA-3570 looks like an id (reason)")
 
     def test_the_broad_tldr_lint_reaches_the_tldr_levels(self):
         d = example()
@@ -931,6 +940,32 @@ class AssumptionsFold(unittest.TestCase):
         code, out, err = runner(d)
         self.assertEqual(code, 2, out + err)
         self.assertIn("lint: card 41: depth: no assumptions: a card with a recommendation names", out)
+        # it counts what the page shows: assumptions whose rests is none show none, so they lint too
+        for v in ([{"rests": "none", "tw": "x"}], [{"rests": "n/a", "tw": "x"}, {"rests": "None.", "tw": "y"}]):
+            d = example()
+            d["cards"][0]["assume"] = v
+            res = run_page(d)
+            self.assertEqual(res["bad"], [], v)
+            self.assertNotIn('<ul class="asm">', afold(card(res, 41)["html"])[1], v)
+            self.assertIn("lint: card 41: depth: no assumptions", runner(d)[1], v)
+        # one shown assumption beside a none one clears it
+        d = example()
+        d["cards"][0]["assume"] = [{"rests": "none", "tw": "x"}, d["cards"][0]["assume"][0]]
+        self.assertEqual(runner(d)[:2], (0, ""))
+        # mutant: the runner counting the raw list again
+        js = RUNNER.read_text()
+        raw = js.replace("const as = page.assumeOf(c);", "const as = Array.isArray(c.assume) ? c.assume : [];", 1)
+        self.assertNotEqual(raw, js)
+        with tempfile.TemporaryDirectory() as tmp:
+            root = pathlib.Path(tmp)
+            (root / "scripts").mkdir()
+            (root / "assets").mkdir()
+            shutil.copy(PAGE, root / "assets" / "index.html")
+            script = root / "scripts" / "check_cards.js"
+            script.write_text(raw)
+            d = example()
+            d["cards"][0]["assume"] = [{"rests": "none", "tw": "x"}]
+            self.assertNotIn("no assumptions", runner(d, script=script)[1])
         # card 43 has no recommendation: never linted; the example, with its assumptions, is clean
         self.assertNotIn("card 43: depth: no assumptions", out)
         self.assertEqual(runner(example())[:2], (0, ""))

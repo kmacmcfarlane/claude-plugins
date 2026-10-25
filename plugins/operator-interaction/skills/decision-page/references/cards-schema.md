@@ -120,7 +120,7 @@ first, `→ (b) …`; with no recommendation, each option's in a few words, `(a)
 
 **Context introduces every specific thing the card names.** Every label, number, acronym,
 term of art or item that the flat part (`t`, the Impact, `tldr`, the option titles and one
-lines, the basis line) uses is introduced in `context`, as the `decisions` floor requires: the
+lines) uses is introduced in `context`, as the `decisions` floor requires: the
 flat part is what the operator reads, and an option's `text` sits in its **More**. Two shapes
 need it most:
 
@@ -139,7 +139,7 @@ review, plan or document, an item or a label. For each one, point to its gloss i
 `context`. A phrase with no gloss gets one before the page goes out. The pre-publish runner
 (SKILL.md step 2) lints counts and named things missing from `context`, and ids wherever they
 are; those lints are proxies, and plain-word terms stay the cold read's. The same holds for
-the medium and high renditions of the Impact, the TLDR and the basis line, checked against
+the medium and high renditions of the Impact and the TLDR, checked against
 Context's **summary** only: each part steps alone, so the Context beside a TLDR at full
 detail may be at its summary. A term a level introduces needs its gloss in Context's summary,
 or in the level itself.
@@ -153,8 +153,9 @@ tooltip or a slug. Context's high holds the further facts the decisions block ca
 the card's Context (what was tried, what was answered before, where a list or number came
 from). The page ignores a `detail` key it does not know; the runner lints it.
 
-**Size.** The flat part of a card (title, Impact, TLDR, option titles and one-liners, the
-basis reason) stays near 150 words; the folds carry the rest. `context` and an option's `act` are
+**Size.** The flat part of a card (title, Impact, TLDR, option titles and one-liners) stays
+near 150 words; the basis reason sits in the closed Assumptions fold, so it is a fold part,
+counted in the card in all at its top level and not in the flat part; the folds carry the rest. `context` and an option's `act` are
 outside that budget: what the operator needs to read the card, and to act on it, is never
 folded away. Context's summary is one or two sentences, typically 30–60 words (the runner
 lints past ~60); a term that needs a paragraph has its detail in its levels or a fold, with

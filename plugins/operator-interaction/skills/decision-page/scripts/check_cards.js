@@ -15,7 +15,7 @@
         the page title, the lede, the layer titles and notes, refs), whatever Context says; the
         page is the reader's only context. Backtick spans, https links and slugs are not ids;
       - terms: a count or a named thing in the flat part, or in the medium and high levels of the
-        Impact, the TLDR and the basis line, that Context's summary (with its bundle's shared context)
+        Impact and the TLDR, that Context's summary (with its bundle's shared context)
         does not introduce;
       - groups: a bundle (a layer with shared context) holding fewer than two cards;
       - the TLDR: a bullet that may carry the recommendation, at every level, headings, bullets
@@ -56,8 +56,9 @@ function loadPage() {
   const start = html.indexOf("<script>"), end = html.indexOf(END_MARK);
   if (start < 0 || end < start) fail("the template has no page-free part (its script or the end-of-page-free-part marker is missing): " + tpl);
   try {
-    const page = vm.runInNewContext(html.slice(start + "<script>".length, end) + "\n;({check, recordProblems, bgFirst})", {});
-    if (typeof page.check !== "function" || typeof page.recordProblems !== "function" || typeof page.bgFirst !== "function") throw new Error("no check(), recordProblems() or bgFirst()");
+    const page = vm.runInNewContext(html.slice(start + "<script>".length, end) + "\n;({check, recordProblems, bgFirst, assumeOf})", {});
+    if (typeof page.check !== "function" || typeof page.recordProblems !== "function" || typeof page.bgFirst !== "function"
+      || typeof page.assumeOf !== "function") throw new Error("no check(), recordProblems(), bgFirst() or assumeOf()");
     return page;
   } catch (e) { fail("the template's page-free part does not load: " + why(e)); }
 }
@@ -132,13 +133,14 @@ const REC_BROAD = /^[^A-Za-z]*(rec|recommend\w*|suggest\w*)\b|\bwe\s+suggest\b/i
 /* the options, objects in letter order */
 const opts = c => Array.isArray(c.options) ? c.options : [];
 const IMP = ["wait", "reach", "undo", "cost"];
-/* the flat part a cold reader reads first: what context must introduce, for counts and named things */
+/* the flat part a cold reader reads first: what context must introduce, for counts and named things. The basis
+   reason is not in it: it sits in the closed Assumptions fold */
 function flat(c) {
   const out = [c.t];
   for (const k of IMP) out.push(c.impact[k]);
   out.push(...c.tldr);
   for (const o of opts(c)) out.push(o.title, o.line);
-  for (const k of ["ifleft", "roundcosts", "ifunanswered", "reason", "norec", "dep"]) out.push(c[k]);
+  for (const k of ["ifleft", "roundcosts", "ifunanswered", "norec", "dep"]) out.push(c[k]);
   return out.filter(s => typeof s === "string");
 }
 /* every text in a value, in reading order: a section's heading, then each bullet and its sub-bullets */
@@ -280,8 +282,9 @@ function depth(c, say) {
   if (missing.length) say("bg", "depth: " + missing.join(" and ") + " missing: a new card says why now and why it is asked (the Background fold); leave it knowingly only on an upgraded older card");
   if (!(typeof c.reason === "string" && c.reason.trim()))
     say("reason", "depth: reason missing: a new card gives the one-clause reason for its rec (or for its basis word, with no rec); leave it knowingly only on an upgraded older card");
-  /* the Assumptions fold (the v5 layout): a recommendation names what it rests on, each with its tripwire */
-  const as = Array.isArray(c.assume) ? c.assume : [];
+  /* the Assumptions fold (the v5 layout): a recommendation names what it rests on, each with its tripwire. The
+     assumptions counted are the ones the page shows (its own assumeOf: one whose rests is none is not shown) */
+  const as = page.assumeOf(c);
   if (c.rec && !as.length)
     say("assume", "depth: no assumptions: a card with a recommendation names what the call rests on, each with its tripwire, the sign that would change it (assume: [{rests, tw}], shown in the Assumptions fold); a small call may leave it knowingly");
   /* the 198 sizes, at the top level: Background ~150, each option ~60-120, Evidence ~150, a card ~600-900.
@@ -305,8 +308,9 @@ function depth(c, say) {
   const ev = words(topOf(c.evidence, levelsOf(c, "evidence")));
   if (levelsOf(c, "evidence").length && c.basis !== "none" && ev < 60) say("ev", "depth: evidence is " + ev + " words at its fullest: give the basis drill-down near 150, what was observed, inferred and assumed, with the paths and links behind each; or leave it knowingly");
   else if (ev > 225) say("ev", "depth: evidence is " + ev + " words at its fullest: keep it near 150");
-  /* the card in all: the flat part and Context at their summary, the fold parts at their top level, each option's detail; not act */
-  const all = words(flat(c)) + words(c.context) + bg + ev + words(as) + optWords;
+  /* the card in all: the flat part and Context at their summary, the fold parts at their top level (the basis reason
+     among them), each option's detail; not act */
+  const all = words(flat(c)) + words(c.context) + bg + ev + words(topOf(c.reason, levelsOf(c, "rec"))) + words(as) + optWords;
   if (all > 1350) say("all", "depth: the card is " + all + " words in all: keep it near 600–900; a small call gets a short card");
   if (c.detail && typeof c.detail === "object")
     for (const k of Object.keys(c.detail)) if (!(k in PART))
@@ -387,8 +391,9 @@ function lintCard(c, w, sh, out) {
   terms(flat(c), "");
   c.tldr.forEach((b, i) => { if (REC_BROAD.test(b))
     say("tldr " + i, "tldr bullet " + (i + 1) + " may carry the recommendation: the options mark it; say what is decided instead, or leave it if it reports someone else's"); });
-  /* the visible parts' medium and high: each steps alone, so the Context beside them may be its summary */
-  for (const k of ["impact", "tldr", "rec"]) levelsOf(c, k).forEach((r, i) => terms(k === "impact" && r && typeof r === "object" ? textsOf(IMP.map(f => r[f])) : textsOf(r), " (" + PART[k] + ", " + DETAIL_NAME[i] + ")"));
+  /* the visible parts' medium and high: each steps alone, so the Context beside them may be its summary. The basis
+     line's levels are in the closed Assumptions fold, so they are not read */
+  for (const k of ["impact", "tldr"]) levelsOf(c, k).forEach((r, i) => terms(k === "impact" && r && typeof r === "object" ? textsOf(IMP.map(f => r[f])) : textsOf(r), " (" + PART[k] + ", " + DETAIL_NAME[i] + ")"));
   /* a TLDR level's headings, bullets and sub-bullets, numbered in reading order as the page numbers them */
   levelsOf(c, "tldr").forEach((bs, m) => textsOf(bs).forEach((b, i) => { if (REC_BROAD.test(b))
     say("tldr " + m + "." + i, "tldr bullet " + (i + 1) + " (" + DETAIL_NAME[m] + ") may carry the recommendation: the options mark it; say what is decided instead, or leave it if it reports someone else's"); }));

@@ -630,8 +630,8 @@ const tldrLevel=x=>'<div><span class="lbl">TLDR</span>'+rend(x,fmtD)+'</div>';
    marked on its option; what is not known is the card's Open questions, never this line */
 const basisHead=c=>'<span class="lbl">Basis</span><span class="bw">'+esc(c.basis)+'</span>';
 const basisLine=(c,x)=>x==null
-  ?'<div class="basisl">'+basisHead(c)+(shown(c.reason)?fmtD(c.reason):'')+'</div>'
-  :'<div class="basisl">'+basisHead(c)+(Array.isArray(x)?rend(x,fmtD):fmtD(x))+'</div>';
+  ?'<div class="basisl">'+basisHead(c)+(shown(c.reason)?' '+fmtD(c.reason):'')+'</div>'
+  :'<div class="basisl">'+basisHead(c)+(Array.isArray(x)?rend(x,fmtD):' '+fmtD(x))+'</div>';
 const optPara=(k,x)=>Array.isArray(x)?'<div><span class="mono ol">('+esc(k)+')</span>'+rend(x,fmtD)+'</div>':'<p><span class="mono ol">('+esc(k)+')</span> '+fmtD(x)+'</p>';
 /* every part's renditions as HTML, summary first: {key: [summary, medium?, high?]}. Context's levels keep
    its labelled wrapper, so its label shows at every level; the visible summaries never link */
