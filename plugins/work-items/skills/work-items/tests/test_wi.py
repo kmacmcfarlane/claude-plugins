@@ -4467,6 +4467,7 @@ class TestHostGitignoreUntouched(WiTestCase):
             ["export", str(repo / "backlog.yaml"), "--format", "backlog-yaml"],
             ["import", str(repo / "backlog.yaml"), "--format", "backlog-yaml"],
             ["note", iid, "--", "x"],
+            ["raise", iid, "--", "which store?"], ["counter"],
             ["done", dep], ["archive", "--older-than", "0d"],
             ["commit", "-m", "store"],
             ["install-launcher"],

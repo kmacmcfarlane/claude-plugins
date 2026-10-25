@@ -1178,8 +1178,9 @@ def read_tracking(root):
 
 def _store_key_values(root, key):
     """Every `key:` value in store.yaml as written, in order, or None when
-    there is no readable store file. The file has two keys, `tracking:` and
-    `repo:` (d1e9); lines with other keys are skipped."""
+    there is no readable store file. The file has two top-level keys,
+    `tracking:` and `repo:` (d1e9), and one block, `counters:` (03ab F8),
+    read by _store_counters; lines with other keys are skipped."""
     try:
         text = (root / STORE_FILE).read_text(encoding="utf-8")
     except (OSError, UnicodeDecodeError):
@@ -1214,11 +1215,151 @@ def _store_tracking_raw(root):
 
 
 def write_tracking(root, choice, repo=None):
+    """Rewrite store.yaml with this tracking choice (and `repo:`), carrying
+    its `counters:` block over unchanged, so a re-run `wi init` never drops
+    the decision counter (03ab F8)."""
+    try:
+        old = (root / STORE_FILE).read_text(encoding="utf-8")
+    except (OSError, UnicodeDecodeError):
+        old = ""
+    span = _counters_span(old.splitlines(keepends=True))
+    block = ""
+    if span is not None:
+        lines = old.splitlines(keepends=True)[span[0]:span[1]]
+        block = "".join(ln if ln.endswith("\n") else ln + "\n"
+                        for ln in lines)
     atomic_write(root / STORE_FILE,
                  "# wi store settings; format: the work-items skill's "
                  "references/format.md\n"
                  f"tracking: {choice}\n"
-                 + (f"repo: {repo}\n" if repo else ""))
+                 + (f"repo: {repo}\n" if repo else "") + block)
+
+
+# 03ab F8: decision numbers come from a counter in store.yaml, the last N
+# given out, which `wi raise` advances under the store's lock:
+#
+#   counters:
+#     decision: 309
+#
+# Its value never stands alone: every reader takes the larger of it and the
+# highest N on a `decision N:` line in items/ and archive/*/ (format.md
+# § Allocating a decision number).
+COUNTERS_RE = re.compile(r"^counters:\s*$")
+COUNTER_LINE_RE = re.compile(r"^\s+([a-z-]+):\s*(.*?)\s*$")
+COUNTER_VALUE_RE = re.compile(r"^\d+$")
+CONFLICT_RE = re.compile(r"^(<{7}|={7}|>{7})", re.M)
+
+
+def _counters_span(lines):
+    """(start, end) of the first `counters:` block in store.yaml's lines:
+    its header line and the indented lines under it, up to the first line
+    that is not indented; None when there is no block."""
+    for i, line in enumerate(lines):
+        if COUNTERS_RE.match(line.rstrip("\r\n")):
+            j = i + 1
+            while j < len(lines) and lines[j][:1] in (" ", "\t"):
+                j += 1
+            return i, j
+    return None
+
+
+def _store_counters(root):
+    """(text, {key: raw value}) for store.yaml's `counters:` block: text is
+    the file as read, None when there is no readable store file; the map is
+    empty without a block. The first line per key counts."""
+    try:
+        text = (root / STORE_FILE).read_text(encoding="utf-8")
+    except (OSError, UnicodeDecodeError):
+        return None, {}
+    lines = text.splitlines(keepends=True)
+    span = _counters_span(lines)
+    values = {}
+    if span is not None:
+        for line in lines[span[0] + 1:span[1]]:
+            m = COUNTER_LINE_RE.match(line.rstrip("\r\n"))
+            if m:
+                values.setdefault(m.group(1), m.group(2))
+    return text, values
+
+
+def counter_problem(root, key="decision"):
+    """Why store.yaml's counter cannot be read or written, or None: the file
+    holds merge conflict markers, or the counter's value is not a whole
+    number. Either way `raise` writes nothing and lint never reseeds."""
+    text, values = _store_counters(root)
+    if text is None:
+        return None
+    if CONFLICT_RE.search(text):
+        return (f"{root / STORE_FILE}: unresolved merge conflict markers; "
+                "resolve them (keep the larger counter) and re-run")
+    raw = values.get(key)
+    if raw is not None and not COUNTER_VALUE_RE.match(raw):
+        return (f"{root / STORE_FILE}: counters: {key} must be a whole "
+                f"number (got '{raw}'); set it to the last {key} N given out")
+    return None
+
+
+def read_counter(root, key="decision"):
+    """The counter's value; 0 for a missing file, block or key. The caller
+    checks counter_problem first: a value that is not a whole number
+    reads as 0 here."""
+    raw = _store_counters(root)[1].get(key)
+    return int(raw) if raw is not None and COUNTER_VALUE_RE.match(raw) else 0
+
+
+def write_counter(root, n, key="decision"):
+    """Set the counter to n in store.yaml, keeping every other line (the
+    `tracking:` and `repo:` lines, comments, other counters) as it is. A
+    store with no store.yaml gets none: a file without `tracking:` would be
+    a lint problem, and every reader takes the items' highest N anyway.
+    Returns whether it wrote."""
+    text, _ = _store_counters(root)
+    if text is None:
+        return False
+    lines = text.splitlines(keepends=True)
+    if lines and not lines[-1].endswith("\n"):
+        lines[-1] += "\n"
+    entry = f"  {key}: {n}\n"
+    span = _counters_span(lines)
+    if span is None:
+        lines += ["counters:\n", entry]
+    else:
+        start, end = span
+        block = [ln for ln in lines[start + 1:end]
+                 if not ((m := COUNTER_LINE_RE.match(ln.rstrip("\r\n")))
+                         and m.group(1) == key)]
+        lines[start + 1:end] = [entry] + block
+    atomic_write(root / STORE_FILE, "".join(lines))
+    return True
+
+
+def items_decision_max(root):
+    """The highest N on a column-0 `decision N:` line outside a fenced code
+    block, over items/ and archive/*/ (the same marker and fence rule as
+    unanswered_decisions); 0 when there is none. A file that cannot be
+    read is skipped."""
+    best = 0
+    for path in item_paths(root, archived=True):
+        try:
+            text = path.read_text(encoding="utf-8")
+        except (OSError, UnicodeDecodeError):
+            continue
+        lines = text.replace("\r\n", "\n").split("\n")
+        fenced = set()
+        for i, j in _fence_spans(lines):
+            fenced.update(range(i, j + 1))
+        for i, line in enumerate(lines):
+            m = DECISION_RE.match(line) if i not in fenced else None
+            if m:
+                best = max(best, int(m.group(1)))
+    return best
+
+
+def last_decision(root):
+    """The last decision number given out: the larger of the counter and
+    the items' highest N, so a counter behind the items (a hand-written
+    line, an older wi, a dropped block) never hands a number out again."""
+    return max(read_counter(root), items_decision_max(root))
 
 
 def _custody_git(root):
@@ -3517,22 +3658,31 @@ def _note_line(n, text, raw):
     """The Notes line for text `n` (1-based), or WiError(1). Every refusal
     starts `text <n>:` (the prefix a caller matches to reword that text) and
     never quotes the text, so a refused secret never reaches stderr."""
-    def refuse(why):
-        return WiError(1, f"text {n}: {why}; nothing written")
+    line = text if raw else f"- {today()} {(text or '').strip()}"
+    why = _line_refusal(text, line, raw)
+    if why:
+        raise WiError(1, f"text {n}: {why}; nothing written")
+    return line
+
+
+def _line_refusal(text, line, raw):
+    """Why `text`, to be written as the Notes line `line`, is refused, or
+    None: a line break, an empty text, and under raw a `## ` line or a
+    fence opener; any line lint would flag as a secret. The reason never
+    quotes the text. note and raise share it."""
     try:
         _one_line("the text", text)
     except WiError as e:
-        raise refuse(str(e)) from None
-    if not text.strip():
-        raise refuse("empty")
-    line = text if raw else f"- {today()} {text.strip()}"
+        return str(e)
+    if not (text or "").strip():
+        return "empty"
     if raw and line.startswith("## "):
-        raise refuse("starts '## ', which would add a section")
+        return "starts '## ', which would add a section"
     if raw and _fence_open(line):
-        raise refuse("opens a code fence")
+        return "opens a code fence"
     for _, why in secret_findings(line):
-        raise refuse(why)
-    return line
+        return why
+    return None
 
 
 def _abbrev(tok, name):
@@ -3584,6 +3734,78 @@ def cmd_note(args):
         item.touch()
         save_item(root, item)
     print(f"noted {item.id}" + (f" ({len(lines)} lines)" if len(lines) > 1 else ""))
+    return 0
+
+
+def now_second():
+    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+def _question_refusal(question):
+    """Why a raise's question line is refused, or None: note --raw's
+    refusals, and a question that starts `decision` (it would read as a
+    second headline). Checked before the lock, so a refusal writes
+    nothing; the reason never quotes the question."""
+    if question is None:
+        return "no question line: put it after --"
+    if re.match(r"\s*decision\b", question):
+        return "starts 'decision'; give only the question, wi numbers it"
+    return _line_refusal(question, question, raw=True)
+
+
+def raise_decision(root, ref, question):
+    """Give out the next decision number and write its headline, all under
+    one Lock (03ab F8): allocate N, build the lines, append them to item
+    `ref`'s Notes, save, then advance the counter. Returns (N, item).
+
+    One step under the lock: a crash after the item is saved and before
+    the counter is written loses nothing, since the next reader takes the
+    larger of the counter and the items. The card-record forms extend this
+    function (format.md § Allocating a decision number): N is validated or
+    allocated here, the lines built here, any record file written before
+    the append, still under this one lock."""
+    why = _question_refusal(question)
+    if why:
+        raise WiError(1, f"question: {why}; nothing written")
+    with Lock(root):
+        problem = counter_problem(root)
+        if problem:
+            raise WiError(1, f"{problem}; nothing written")
+        item = load_item_anywhere(root, ref)
+        n = _decision_floor(root) + 1
+        lines = [f"decision {n}: {question}", f"  raised: {now_second()}"]
+        for line in lines:
+            # the full line, numbered, passes the same refusals
+            why = _line_refusal(line, line, raw=True)
+            if why:
+                raise WiError(1, f"question: {why}; nothing written")
+        for line in lines:
+            item.append_note(line)
+        item.touch()
+        save_item(root, item)
+        write_counter(root, n)
+    return n, item
+
+
+def _decision_floor(root):
+    """The number raise allocates above: the larger of the counter and the
+    items' highest N (a seam the race test waits in)."""
+    return last_decision(root)
+
+
+def cmd_raise(args):
+    root = resolve_root(args.root)
+    n, _ = raise_decision(root, args.id, args.question)
+    print(n)
+    return 0
+
+
+def cmd_counter(args):
+    root = resolve_root(args.root)
+    problem = counter_problem(root)
+    if problem:
+        raise WiError(1, problem)
+    print(last_decision(root))
     return 0
 
 
@@ -5936,6 +6158,16 @@ def cmd_lint(args):
         problems.append(f"{root / STORE_FILE}: tracking must be one of "
                         f"{', '.join(TRACKING_CHOICES)} (got '{raw}'); fix: "
                         "`wi init --track` or `wi init --no-track`")
+    # 03ab F8: the decision counter. A problem (conflict markers, a value
+    # that is not a whole number) is never reseeded over; a counter behind
+    # the items is reseeded, a notice on stderr, the exit unchanged
+    problem = counter_problem(root)
+    if problem:
+        problems.append(problem)
+    else:
+        notice = reseed_counter(root)
+        if notice:
+            print(notice, file=sys.stderr)
     # lint has no warning tier: every finding it prints is a problem, exit 3
     # 5f46: a second store under the same dir, however the root was found
     rs = store_repo_state(root)
@@ -5954,6 +6186,31 @@ def cmd_lint(args):
         return 3
     print(f"lint clean: {len(items)} items")
     return 0
+
+
+def reseed_counter(root):
+    """Raise store.yaml's decision counter to the items' highest N when it
+    is behind (03ab F8), and return the notice to print, or None. Never
+    lowers it: a counter ahead of the items is a gap, which is valid.
+    Inside Lock (which commits an own store's store.yaml), it re-reads the
+    counter and rescans the items, and writes only when the larger of the
+    two is above the counter it re-read. Never raises: a lock or write that
+    fails is the notice, and lint's exit stays as it was."""
+    if not (root / STORE_FILE).is_file():
+        return None
+    if read_counter(root) >= items_decision_max(root):
+        return None
+    try:
+        with Lock(root):
+            if counter_problem(root):
+                return None
+            old = read_counter(root)
+            new = max(old, items_decision_max(root))
+            if new <= old or not write_counter(root, new):
+                return None
+    except (WiError, OSError) as e:
+        return f"counter: decision not reseeded ({e})"
+    return f"counter: decision reseeded {old} \u2192 {new}"
 
 
 def cmd_archive(args):
@@ -6187,6 +6444,13 @@ def build_parser():
          "item's Notes, under the lock; texts go after --"): [
             ("id", {}), ("lines", dict(nargs="+", metavar="text")),
             ("--raw",)],
+        ("raise", cmd_raise, "give out the next decision number under the "
+         "lock and append its `decision N:` headline and `raised:` line to "
+         "an item; the question goes after --; prints N"): [
+            ("id", {}), ("question", dict(nargs="?"))],
+        ("counter", cmd_counter, "print the last decision number given out "
+         "(the larger of store.yaml's counter and the items' highest N); "
+         "read-only"): [],
         ("block", cmd_block, "block on a reason or another item"): [
             ("id", {}), ("reason", dict(nargs="?")), ("--on", {})],
         ("unblock", cmd_unblock, "clear a block"): [("id", {}), ("--dep", {})],

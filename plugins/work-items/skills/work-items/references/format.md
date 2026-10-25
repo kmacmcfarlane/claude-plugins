@@ -81,7 +81,7 @@ a tracked old store beside the git-ignored `.work-items/`.
   items/<id>.md        every item, regardless of status
   archive/YYYY/<id>.md closed items moved by `wi archive` (explicit, batched)
   cards/<id>/<N>/      card records, one immutable .json per revision; never archived
-  store.yaml           the store's recorded tracking choice (§ Store tracking)
+  store.yaml           the store's recorded tracking choice and decision counter (§ Store tracking)
   .lock                gitignored; flock target for same-machine mutations
   .git/                the store's own repo, when it has one (§ The store's own repo)
 ```
@@ -119,6 +119,28 @@ a store is in one of these states (§ The store's own repo says what is valid):
 Commits follow the record, never the `.git` alone: `wi` never starts committing into a repo
 no `init` set up. A `.git` in a store at an old location is never own: it is a `lint`
 problem, fixed by moving the store (§ Moving a store).
+
+A `counters:` block holds the last decision number the store gave out (§ Allocating a
+decision number):
+
+```yaml
+# wi store settings; format: the work-items skill's references/format.md
+tracking: tracked
+counters:
+  decision: 309
+```
+
+`counters:` sits on a line of its own; the indented lines under it, up to the first line
+that is not indented, are `<key>: <whole number>`. Only `decision` is defined. A missing
+file, block or key reads as 0. `wi raise` and `wi lint` write it, keeping every other line
+of the file; `wi init` carries the block over unchanged when it rewrites the file. A store
+with no `store.yaml` gets none from a raise (a file without `tracking:` would be a lint
+problem); its numbers come from the items alone. A `decision:` value that is not a whole
+number, or a `store.yaml` holding merge conflict markers, is a `wi lint` problem (exit 3);
+`wi raise` and `wi counter` refuse such a file (exit 1, nothing written), and `lint` never
+reseeds over it. A `wi` older than the block reads only `tracking:` and `repo:`; an older
+`wi init` re-run rewrites the file without it, and the next raise or lint reseeds it from
+the items.
 
 - **Making the choice.** `wi init --track` or `wi init --no-track` (mutually exclusive).
   With neither, a terminal on stdin and stdout gets a two-line menu (1) tracked: items are
@@ -877,9 +899,11 @@ recorded after the fact goes on an indented `verbatim N …` line under the
 answer, which, indented, matches neither marker.
 
 **One counter.** Every question a caller puts to the operator takes its N
-from the store's one counter, so `needs-input` and the estate sweep see
-every ask; the caller's rules may name exceptions (librarian-mode's opt-in
-dialog and session-name gate). A source's own label — a series' `OQ3`, a
+from the store's one counter, the `counters:` block in `store.yaml` that
+`wi raise` advances under the store's lock (§ Allocating a decision
+number), so `needs-input` and the estate sweep see every ask; the caller's
+rules may name exceptions (librarian-mode's opt-in dialog and session-name
+gate). A source's own label — a series' `OQ3`, a
 gate's `G5` — rides in the decision's text (first in the question,
 `decision 41: F7 (oversize upload) · …`), never a marker: `decision OQ3:`
 and `answer G5:` match neither.
@@ -946,6 +970,66 @@ written). `wi` reads none of it.
 `wi prime` also shows a `HOLD <n>: <id> (<title cell>) …` line, first under
 the header, for open items tagged `hold` — an operator hold gates what may
 move.
+
+## Allocating a decision number: `wi raise` / `wi counter`
+
+A new decision's N comes from `wi`, never from a grep of the store:
+
+```
+$WI raise <id> -- '<question line>'   # prints N
+$WI counter                           # prints the last N given out
+```
+
+**`wi raise`** takes the store's lock (flock on `<root>/.lock`, 10 s, then exit 4) and, in
+that one locked step:
+
+1. refuses a `store.yaml` holding conflict markers or a `decision:` value that is not a
+   whole number (exit 1, nothing written);
+2. takes the last N: the larger of the counter and the highest N on a column-0
+   `decision N:` line outside a fenced code block, in `items/` and `archive/*/` (the
+   markers' own rules, § Operator questions);
+3. N is that plus one;
+4. appends two lines to item `<id>`'s `## Notes`, as `wi note --raw` does:
+
+   ```
+   decision N: <question line>
+     raised: <UTC time, to the second>
+   ```
+
+5. writes `decision: N` in the `counters:` block (§ Store tracking), adding the block when
+   the file has none;
+6. prints N alone on stdout.
+
+The question goes after `--`. It is one physical line and does not start with the word
+`decision` (`wi` numbers it); it passes `wi note --raw`'s refusals (a line break, an empty
+text, a `## ` line, a fence opener, any line `lint` would flag as a secret), and the
+numbered headline passes them too. A refusal exits 1, writes nothing and never quotes the
+question. `raise` never reads stdin. A store that is its own repo gets one commit holding
+the item and `store.yaml`, through the lock's commit path (§ The store's own repo); in a
+store the repo around it tracks, `$WI commit` commits both. A crash after the item is
+written and before the counter loses nothing: the next reader takes the larger of the two.
+A headline with only its `raised:` line is a headline-only decision: no card is stored. The
+card-record forms of `raise` (a stored card as its record, a revision of an open decision)
+extend this step, under the same lock, and are described in § Card records once they land.
+
+**`wi counter`** prints the last N given out, the larger of the counter and the items'
+highest N (0 for an empty store), and exits 0. It is read-only and takes no lock. It refuses
+a `store.yaml` it cannot read the counter from, as `raise` does (exit 1).
+
+**The reseed.** `wi lint` compares the counter with the items' highest N, `archive/`
+included. A counter behind the items (a `decision N:` line written by hand, by an older
+`wi`, or by a session that did not run `raise`) is reseeded inside the store's lock, which
+commits it in a store that is its own repo: `lint` re-reads the counter and rescans the
+items under the lock, and writes only when the larger of the two is above the counter it
+re-read. It prints `counter: decision reseeded <old> → <new>` on stderr, a notice, and the
+exit code is unchanged. A counter ahead of the items is a gap: numbers are never reused, so
+a gap is valid, never lowered, and `lint` says nothing. An existing store seeds itself at
+its first `raise` or `lint`; until then it behaves exactly as the old grep did.
+
+**Accepted limits.** Two branches of a host-tracked store can each give out the same N, as
+they could before the counter; the merge shows it as a `store.yaml` conflict, refused until
+resolved. A store rolled back to an older copy can give out again a number already shown
+whose `decision N:` line the restored copy lacks.
 
 ## Closed: `closed N:`
 
