@@ -212,9 +212,9 @@ def decision_raised(item):
 # and decision_raised reads past it. Applied with fullmatch only.
 CARD_RE = re.compile(
     r"[ \t]+card: (cards/[a-z0-9][a-z0-9-]*/[0-9]+/[0-9]{4}-[0-9]{2}-[0-9]{2}"
-    r"T[0-9]{2}-[0-9]{2}-[0-9]{2}Z\.card[1-9][0-9]*\.json) rev ([0-9]{4}-"
+    r"T[0-9]{2}-[0-9]{2}-[0-9]{2}Z\.card[1-9][0-9]{0,3}\.json) rev ([0-9]{4}-"
     r"[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z) · (decision-card/"
-    r"[1-9][0-9]*)(?: — .*)?")
+    r"[1-9][0-9]{0,3})(?: — .*)?")
 
 
 def _card_scan(item):
@@ -3829,6 +3829,8 @@ def _question_refusal(question):
     nothing; the reason never quotes the question."""
     if question is None:
         return "no question line: put it after --"
+    if question.strip() == "--":
+        return "is exactly '--', which reads as the end of options"
     if re.match(r"\s*decision\b", question, re.I):
         return "starts 'decision'; give only the question, wi numbers it"
     return _line_refusal(question, question, raw=True)
@@ -3846,8 +3848,14 @@ RECORD_DEPTH = 64
 # the write pattern for `rev` and `--raised`: to the second, ASCII digits
 REV_WRITE = r"[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z"
 REV_MINUTE = r"[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}Z"
-CARD_FORMAT_RE = re.compile(r"decision-card/([1-9][0-9]*)")
-CARD_ITEM_ID_RE = re.compile(r"[a-z0-9][a-z0-9-]*")
+# k has 1-4 digits and a written item id at most 128 characters, so a
+# record's path stays far below every filesystem's name limit and a raise
+# that passes its checks (and --check) cannot then fail to make its file
+CARD_FORMAT_RE = re.compile(r"decision-card/([1-9][0-9]{0,3})")
+CARD_ITEM_ID_RE = re.compile(r"[a-z0-9][a-z0-9-]{0,127}")
+# the longest key a record may hold: a list under a key is scanned with
+# its key per item, so a long key over many items costs key x items
+RECORD_KEY_MAX = 256
 DECISION_N_RE = re.compile(r"[1-9][0-9]*")
 # the machine lines a card carries under its `card:` line, each key's
 # grammar its own plan's: delegation:/terms: (answer changes), act: and
@@ -3857,7 +3865,17 @@ _MACHINE_RE = re.compile(r"[ \t]+([A-Za-z][A-Za-z0-9 _-]*):(?:[ \t].*)?")
 _CARD_TAIL = (" — the card is this record; read it with the decisions "
               "skill's card-record reference; never backfill this card from "
               "lines")
-_JSON_KEY = re.compile(r"[A-Za-z0-9_-]{1,32}")
+# a key named in an error: letters, `_` and `-`, at most two trailing
+# digits, at most 32 characters; any other key (a token-shaped one, a
+# long one) is named by its place
+_JSON_KEY = re.compile(r"(?=.{1,32}\Z)[A-Za-z][A-Za-z_-]*[0-9]{0,2}")
+
+
+# the head of a headline raised from one labelled item
+_LABEL_SHAPE = re.compile(r"\S+ \([^)]*\) · ")
+# variation selectors: not format characters (Unicode Mn), so NFKC keeps
+# them; dropped before the second token check (`⚠` + U+FE0F)
+_VARIATION_RE = re.compile("[\ufe00-\ufe0f\U000e0100-\U000e01ef]")
 
 
 class _BadJson(ValueError):
@@ -3934,13 +3952,19 @@ def _parse_record(text):
 
 def _depth(val):
     """The deepest nesting of objects and lists in `val` (a scalar is 0),
-    walked without recursion."""
+    walked without recursion; a key over RECORD_KEY_MAX is refused on
+    the way."""
     best, stack = 0, [(val, 1)]
     while stack:
         v, d = stack.pop()
-        kids = v.values() if isinstance(v, dict) else \
-            v if isinstance(v, list) else None
-        if kids is None:
+        if isinstance(v, dict):
+            if any(len(k) > RECORD_KEY_MAX for k in v):
+                raise WiError(1, f"record holds a key over {RECORD_KEY_MAX} "
+                                 "characters; nothing written")
+            kids = v.values()
+        elif isinstance(v, list):
+            kids = v
+        else:
             continue
         best = max(best, d)
         stack.extend((k, d + 1) for k in kids)
@@ -4012,6 +4036,10 @@ def _check_record(rec, n):
         if type(got) is not int or got != n:
             no(f"n: must equal the revised decision's number, {n}")
     _headline_field("q", rec.get("q"), in_q=True)
+    if re.match(r"decision\b", rec["q"], re.I):
+        no("q: starts 'decision'; give only the question, wi numbers it")
+    if "label" not in rec and _LABEL_SHAPE.match(rec["q"]):
+        no("q: reads as a label (`<id> (<name>) · `); give it as `label`")
     opts = rec.get("options")
     if not isinstance(opts, list) or not opts:
         no("options: must be a non-empty list")
@@ -4040,7 +4068,7 @@ def _check_record(rec, n):
         lid = lab.get("id")
         if not isinstance(lid, str) or not re.fullmatch(r"\S+", lid):
             no("label.id: must be one word")
-        _headline_field("label.id", lid)
+        _headline_field("label.id", lid, label_name=True)
         _headline_field("label.name", lab.get("name"), label_name=True)
     if "oneway" in rec and not isinstance(rec["oneway"], bool):
         no("oneway: must be true or false")
@@ -4068,12 +4096,75 @@ def _record_headline(n, rec):
     return line
 
 
+def _headline_reads_back(line, n, rec):
+    """Refuse (exit 1) a built headline a reader would not split back into
+    the record's parts, on the text as built and again on its NFKC form
+    with variation selectors dropped (lookalikes: a no-break or em space
+    around a dash, full-width brackets and bars, `⚠` + U+FE0F): exactly
+    one ` — options: `; a head holding `⚠` only as the one-way mark and
+    ending in no token character; with `rec` null, ` — ` only as the
+    norec boundary, the norec after it exactly; `split(' | ')` giving one
+    `(k) ` part per option in letter order, no other option marker and no
+    part starting or ending in a token character; `[recommended]` only
+    once, closing the rec's option. Never quotes the text."""
+    def norm(t):
+        return _VARIATION_RE.sub("", unicodedata.normalize("NFKC", t))
+
+    def no(why):
+        raise WiError(1, f"record: the built headline would not read back "
+                         f"({why}); nothing written")
+    ends = ("—", "|", "·", "⚠", "[", "(")
+    for t, norec in ((line, rec.get("norec")),
+                     (norm(line), norm(rec.get("norec") or ""))):
+        body = t[len(f"decision {n}: "):]
+        if len(re.findall("(?= — options: )", body)) != 1:  # overlaps too
+            no("' — options: ' must appear once")
+        head, tail = body.split(" — options: ")
+        if rec.get("oneway") is True:
+            if not head.endswith(" ⚠ one-way"):
+                no("the one-way mark is not where it goes")
+            head = head[:-len(" ⚠ one-way")]
+        if "⚠" in head:
+            no("'⚠' outside the one-way mark")
+        if head.rstrip().endswith(ends) or "[recommended" in head.lower():
+            no("the question ends in, or holds, a headline token")
+        if "label" in rec:
+            head = head.split(" · ", 1)[-1]
+        if head.lstrip().startswith(ends):
+            no("the question starts with a headline token")
+        if rec.get("rec") is None:
+            if " — " not in tail:
+                no("no norec boundary")
+            tail, after = tail.split(" — ", 1)
+            if after != norec or after.lstrip().startswith(ends):
+                no("' — ' is not only the norec boundary")
+        parts = tail.split(" | ")
+        if len(parts) != len(rec["options"]):
+            no("' | ' does not separate exactly the options")
+        for part, opt in zip(parts, rec["options"]):
+            m = re.fullmatch(r"\(([a-z])\) (.*)", part)
+            if not m or m.group(1) != opt["k"]:
+                no(f"option ({opt['k']}) does not open its part")
+            rest = m.group(2)
+            if rec.get("rec") == opt["k"]:
+                if not rest.endswith(" [recommended]"):
+                    no("'[recommended]' does not close the rec's option")
+                rest = rest[:-len(" [recommended]")]
+            if "[recommended" in rest.lower() or \
+                    re.search(r"[\[(]\s*[a-z]\s*[\])]", rest) or \
+                    rest.strip().startswith(ends) or \
+                    rest.rstrip().endswith(ends):
+                no(f"option ({opt['k']})'s title holds a headline token")
+
+
 def _json_strings(val, path="", key=None):
-    """(JSON path, text) for every string in the record, keys too. A
-    string inside a list is also given as `<parent key>: <text>`, so a
-    secret listed under its key (`"api_key": ["…"]`) reads as the
-    assignment it is. A key that is not a plain word of at most 32
-    characters is named by its place, never its text."""
+    """(JSON path, text) for every string in the record, keys too. An
+    item of a list under a key is also given as the line scan sees an
+    object's member, `"<key>": "<item>"` (a number or boolean as a
+    string), so a secret listed under its key (`"api_key": ["…"]`) reads
+    as the assignment it is; a multi-line item is also given as
+    `<key>: <item>`, so its continued lines join. A key that does not look
+    harmless (_JSON_KEY) is named by its place, never its text."""
     if isinstance(val, dict):
         for i, (k, v) in enumerate(val.items()):
             seg = k if _JSON_KEY.fullmatch(k) else f"<key {i}>"
@@ -4083,11 +4174,33 @@ def _json_strings(val, path="", key=None):
     elif isinstance(val, list):
         for i, v in enumerate(val):
             p = f"{path}[{i}]"
-            if isinstance(v, str) and key is not None:
-                yield p, f"{key}: {v}"
+            if key is not None and isinstance(v, (str, int, float)):
+                sv = v if isinstance(v, str) else \
+                    json.dumps(v)   # true/false, or the number as written
+                yield p, json.dumps(key, ensure_ascii=False) + ": " + \
+                    json.dumps(sv, ensure_ascii=False)
+                if isinstance(v, str) and "\n" in v:
+                    yield p, f"{key}: {v}"
             yield from _json_strings(v, p, key)
     elif isinstance(val, str):
         yield path or "(the record)", val
+
+
+def _record_bytes(rec):
+    """(text, bytes) the record is written as, refused (exit 1) when it
+    does not encode as UTF-8 or the bytes pass RECORD_CAP."""
+    try:
+        text = json.dumps(rec, ensure_ascii=False, indent=2) + "\n"
+        data = text.encode("utf-8")
+    except RecursionError:
+        raise WiError(1, "record is nested too deep; nothing written") \
+            from None
+    except UnicodeEncodeError:
+        raise WiError(1, "record holds a lone surrogate, which UTF-8 cannot "
+                         "carry; nothing written") from None
+    if len(data) > RECORD_CAP:
+        raise WiError(1, "record as written over 256 KB; nothing written")
+    return text, data
 
 
 def _record_secrets(text, rec):
@@ -4342,6 +4455,19 @@ def raise_decision(root, ref, question, *, record=None, revise=None,
     if record is not None:
         rec = _parse_record(record)
         k = _check_record(rec, n_rev)
+        # every check that reads the record runs here, before the lock: a
+        # new raise's n is not known yet, so 0 stands in; the n wi writes
+        # under the lock is a number it chose, and only the size is checked
+        # again there
+        if n_rev is None:
+            rec["n"] = 0
+        _headline_reads_back(_record_headline(rec["n"], rec), rec["n"], rec)
+        text, _ = _record_bytes(rec)
+        try:
+            _record_secrets(text, rec)
+        except RecursionError:
+            raise WiError(1, "record is nested too deep; nothing written") \
+                from None
     machine = _machine_lines(lines) if lines is not None else []
     with Lock(root):
         problem = counter_problem(root)
@@ -4382,25 +4508,12 @@ def raise_decision(root, ref, question, *, record=None, revise=None,
         if form == "record":
             if not CARD_ITEM_ID_RE.fullmatch(item.id):
                 raise WiError(1, f"{item.id}: not a card record path segment "
-                                 "([a-z0-9][a-z0-9-]*); nothing written")
+                                 "([a-z0-9][a-z0-9-]*, at most 128 "
+                                 "characters); nothing written")
             if n_rev is None:
                 rec["n"] = n
             headline = _record_headline(n, rec)
-            try:
-                text = json.dumps(rec, ensure_ascii=False, indent=2) + "\n"
-                try:
-                    data = text.encode("utf-8")
-                except UnicodeEncodeError:
-                    raise WiError(1, "record holds a lone surrogate, which "
-                                     "UTF-8 cannot carry; nothing written") \
-                        from None
-                if len(data) > RECORD_CAP:
-                    raise WiError(1, "record as written over 256 KB; "
-                                     "nothing written")
-                _record_secrets(text, rec)
-            except RecursionError:
-                raise WiError(1, "record is nested too deep; nothing written") \
-                    from None
+            _, data = _record_bytes(rec)
             name = rec["rev"].replace(":", "-") + f".card{k}.json"
             rel = f"cards/{item.id}/{n}/{name}"
             card = f"  card: {rel} rev {rec['rev']} · decision-card/{k}" \
@@ -7218,6 +7331,8 @@ def _raise_question(parser, extra, argv):
     positional: an optional positional after the id is consumed, empty, as
     soon as an option follows the id, and `-- '<question>'` after options
     would then be refused. One text, after `--` when it starts with `-`."""
+    if "--" in argv and argv[argv.index("--") + 1:] == ["--"]:
+        return "--"  # `-- --`: a question _question_refusal refuses
     left = list(extra)
     if "--" in left:  # kept or dropped by Python version
         left.remove("--")

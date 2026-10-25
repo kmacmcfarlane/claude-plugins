@@ -1005,8 +1005,8 @@ that one locked step:
    the file has none;
 6. prints N alone on stdout.
 
-The question goes after `--`. It is one physical line and does not start with the word
-`decision`, in any case (`wi` numbers it); it passes `wi note --raw`'s refusals (a line break, an empty
+The question goes after `--`. It is one physical line, is not exactly `--`, and does not
+start with the word `decision`, in any case (`wi` numbers it); it passes `wi note --raw`'s refusals (a line break, an empty
 text, a `## ` line, a fence opener, any line `lint` would flag as a secret), and the
 numbered headline passes them too. A refusal exits 1, writes nothing and never quotes the
 question. `raise` never reads stdin. A store that is its own repo gets one commit holding
@@ -1064,14 +1064,16 @@ created exclusively: an existing file is never replaced. A record is never re-se
 after it is written, so a hash of the file is a hash of the bytes `wi` wrote. `wi archive`
 never moves `cards/`: an archived item's `card:` lines still resolve.
 
-**What `wi` checks**, all before anything is written, under the store lock:
+**What `wi` checks**, all before anything is written: what reads only the record (its
+size, JSON, fields, built headline and both secret scans) before the store lock is taken,
+the rest under it:
 
 - the record is at most 256 KB as read and at most 256 KB as written (the indented bytes,
   checked before the secret scans), UTF-8, strict JSON (no `NaN`, `Infinity`, a number that
   overflows to one, or a non-zero number that reads as 0; no duplicate key at any depth),
-  nested at most 64 deep (objects and lists, the record itself the first), and one object;
-  an error names a position, never content;
-- `format` is `decision-card/<k>` (k from 1), `rev` is `YYYY-MM-DDTHH:MM:SSZ` with ASCII
+  nested at most 64 deep (objects and lists, the record itself the first), with no key over
+  256 characters, and one object; an error names a position, never content;
+- `format` is `decision-card/<k>` (k from 1, at most four digits), `rev` is `YYYY-MM-DDTHH:MM:SSZ` with ASCII
   digits (a minute-form `rev` is refused on write, with the fix: write it to the second,
   `…:00Z`); each by a full match;
 - a new raise writes N into `n`, over any value; `--revise N` needs `n` equal to N;
@@ -1079,26 +1081,39 @@ never moves `cards/`: an archived item's `card:` lines still resolve.
   line with no control, format (Unicode Cf: zero-width, bidi, soft hyphen, BOM, tag) or
   line-separator character and none of the headline's own tokens: ` — options: `, ` | `,
   `[recommended]` (any case) and `⚠ one-way` anywhere, and an option marker (`(b) `)
-  anywhere but in `q`; `q` does not start with whitespace; `label.name` holds no `(`, `)` or
-  `·`; with `rec` null, no title holds ` — ` (the norec label's boundary);
+  anywhere but in `q`; `q` does not start with whitespace or the word `decision`, nor, with
+  no `label`, read as one (`<id> (<name>) · `); `label.id` and `label.name` hold no `(`, `)`
+  or `·`; with `rec` null, no title holds ` — ` (the norec label's boundary);
+- the built headline reads back into the record's parts, as built and again in its NFKC
+  form with variation selectors dropped (so a no-break or em space around a dash, a
+  full-width bracket or bar, or `⚠` with U+FE0F forges nothing): ` — options: ` exactly
+  once; `⚠` only as the one-way mark; a question that neither starts nor ends in a token
+  character (`—`, `|`, `·`, `⚠`, `[`, `(`); with `rec` null, ` — ` only as the boundary before
+  the norec, which follows it exactly; ` | ` splitting the options into exactly one `(k) `
+  part each, in letter order, with no other option marker and no part starting or ending in
+  a token character; `[recommended]` once, closing the rec's option;
 - `options` is a non-empty list, each with a letter `k` (a–z, in order, each once, so (z)
   last) and a `title`; `rec` is any option's letter, (z) included, or `null` with `norec`;
   `label`, when present, is `{id, name}` with `id` one word; `oneway`, when present, is
   `true` or `false`;
-- the item's id is one path segment (`[a-z0-9][a-z0-9-]*`);
+- the item's id is one path segment (`[a-z0-9][a-z0-9-]*`, at most 128 characters), so a
+  raise that passes every check, and `--check` with it, cannot then fail to name its file;
 - every line of the bytes, and every decoded string value of the record (keys too), whole,
-  pass the secret scan (§ Secret rule), a string inside a list also as `<its key>: <value>`
-  (`"api_key": ["…"]`); a hit is named by the record's line, or by the value's JSON path and
-  the line within it (`options[1].plan line 2`), never by content (a key that is not a plain
-  word of at most 32 characters is named by its place);
+  pass the secret scan (§ Secret rule); an item of a list under a key (a string, number or
+  boolean) is also scanned as the line scan sees an object's member, `"<key>": "<item>"`
+  (so `"api_key": ["…"]` reads as the assignment it is), and a multi-line item also as
+  `<key>: <item>`; a hit is named by the record's line, or by the value's JSON path and the
+  line within it (`options[1].plan line 2`), never by content (a key is named only when it
+  looks harmless, letters, `_` and `-` with at most two trailing digits, at most 32
+  characters; any other by its place);
 - the bytes and every item line encode as UTF-8 (a lone surrogate is refused);
 - `cards`, `cards/<id>` and `cards/<id>/<N>` are each a real directory or missing, never a
   symbolic link, and the record's directory lies under the store's `cards/`; a missing
   level is made one at a time.
 
 A refusal exits 1 (a bad record or form) or 3 (a file in the way, a symbolic link), names
-the field or the path, and writes nothing. `--check` runs every check, under the lock, and
-writes nothing: it exits 0 when the raise would go through, else as the raise would.
+the field or the path, and writes nothing; no directory is made before every check has
+passed. `--check` runs every check, the same ones in the same order, and writes nothing: it exits 0 when the raise would go through, else as the raise would.
 
 **The headline**, built, never typed, on one physical line, in § Operator questions' form:
 

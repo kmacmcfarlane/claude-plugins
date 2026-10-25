@@ -16,6 +16,7 @@ Standard library only. Run from plugins/work-items/skills/work-items:
     python3 -m unittest discover -s tests -q
 """
 import copy
+import fcntl
 import importlib.util
 import json
 import os
@@ -24,6 +25,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import time
 import unittest
 from pathlib import Path
 
@@ -828,6 +830,170 @@ class TestLinesOnly(CardCase):
     def test_lines_without_record_or_revise_refused(self):
         self.refused(1, "raise", IID, "--lines", str(self.lines), "--", "q?",
                      why="--lines goes with")
+
+
+class TestRound2(CardCase):
+    """Security review round 2: list items scanned as the line scan sees
+    them, keys bounded and the scans before the lock, the built headline
+    read back (lookalikes too), a bounded format number, `-- --`."""
+
+    def test_list_items_under_one_case_secret_words(self):
+        """Each key the `key: v` form missed, as an object's list item.
+        Mutant: list items scanned only as `key: v`."""
+        cases = [(k, KEYISH) for k in (
+            "key", "auth", "cred", "creds", "credentials", "pass", "webhook",
+            "credential")] + [("credential", "hunter2x"),
+                              ("pass", 83912745)]
+        for key, val in cases:
+            with self.subTest(key=key, val=val):
+                rec = record()
+                rec["x"] = {key: [val]}
+                r = self.refused(1, "raise", IID, "--record",
+                                 self.write_rec(rec), why=f"x.{key}[0]")
+                self.assertNotIn(str(val), r.stderr)
+
+    def test_long_key_refused(self):
+        """Mutant: the key bound removed (the 257-character key written)."""
+        rec = record()
+        rec["k" * 257] = "v"
+        self.refused(1, "raise", IID, "--record", self.write_rec(rec),
+                     why="key over 256")
+        rec = record()
+        rec["k" * 256] = "v"
+        self.raise_rec(rec)
+
+    def check_time(self, rec):
+        t = time.monotonic()
+        try:
+            wi.raise_decision(self.root, IID, None, record=json.dumps(rec),
+                              check=True)
+        except wi.WiError:
+            pass
+        return time.monotonic() - t
+
+    def test_scan_time_bounded(self):
+        """The reproducer's shape (a 60,000-character key over 10,000
+        strings) and the largest a 256-character key allows are each done
+        in under 2 s. Mutant: the key bound removed (89 s)."""
+        self.assertLess(self.check_time(record(**{"k" * 60000: [""] * 10000})),
+                        2.0)
+        self.assertLess(self.check_time(record(**{"k" * 256: [""] * 30000})),
+                        2.0)
+
+    def test_scans_run_before_the_lock(self):
+        """With the store's lock held elsewhere, a record with a secret is
+        refused at once (exit 1), not after the lock's wait (exit 4).
+        Mutant: the encode and scans moved back under the lock."""
+        rec = record()
+        rec["options"][0]["plan"] = SECRET
+        with open(self.root / ".lock", "a") as fh:
+            fcntl.flock(fh, fcntl.LOCK_EX)
+            t = time.monotonic()
+            self.refused(1, "raise", IID, "--record", self.write_rec(rec),
+                         why="record line")
+            self.assertLess(time.monotonic() - t, 8)
+
+    def test_headline_forgeries(self):
+        """Each forgery the reviewer built, and lookalikes under NFKC.
+        Mutant: the read-back check removed."""
+        def O(*titles):
+            return [{"k": chr(97 + i), "title": t} for i, t in enumerate(titles)]
+        nr = dict(rec=None, norec="none yet")
+        rows = {
+            "q ends ' — options:'": dict(q="Ship? — options:"),
+            "q ends ' —'": dict(q="Ship? —"),
+            "title ends ' |'": dict(options=O("Ship |", "Hold"), rec="b"),
+            "title starts '| '": dict(options=O("Ship", "| Hold"), rec="b"),
+            "title ends '(c)'": dict(options=O("Ship (c)", "Hold", "Drop"),
+                                     rec="b"),
+            "norec title starts '— '": dict(options=O("— Ship", "Hold"), **nr),
+            "norec title ends ' —'": dict(options=O("Ship", "Hold —"), **nr),
+            "q starts '·' after a label": dict(q="· Ship?"),
+            "title '[recommended'": dict(options=O("Ship [recommended",
+                                                   "Hold"), rec="b"),
+            "q ends ' ⚠'": dict(q="Ship ⚠", oneway=False),
+            "title '[Recommended ]'": dict(options=O("Ship [Recommended ]",
+                                                    "Hold"), rec="b"),
+            "NBSP around the dash": dict(q="Ship?\u00a0—\u00a0options:\u00a0x"),
+            "em spaces around the dash": dict(
+                q="Ship?\u2003—\u2003options: x"),
+            "full-width bar": dict(options=O("Ship \uff5c (c) Drop", "Hold"),
+                                   rec="b"),
+            "full-width brackets": dict(options=O("Ship \uff3brecommended\uff3d",
+                                                  "Hold"), rec="b"),
+            "⚠ with U+FE0F": dict(q="Ship ⚠\ufe0f one-way?", oneway=False),
+        }
+        for name, over in rows.items():
+            with self.subTest(name):
+                self.refused(1, "raise", IID, "--record",
+                             self.write_rec(record(**over)),
+                             why="nothing written")
+        # the plain forms still pass
+        self.raise_rec(record(q="Ship — now or later?"))
+
+    def test_read_back_is_what_refuses(self):
+        """The forgeries the field checks let through are refused by the
+        read-back, by name."""
+        for over in (dict(q="Ship? —"), dict(q="Ship ⚠", oneway=False),
+                     dict(q="Ship?\u2003—\u2003options: x")):
+            with self.subTest(over=over):
+                self.refused(1, "raise", IID, "--record",
+                             self.write_rec(record(**over)),
+                             why="would not read back")
+
+    def test_format_number_bounded_check_and_raise_agree(self):
+        """decision-card/10000 is refused by --check and by the raise alike,
+        with no directory made; an id over 128 characters too. Mutant: the
+        bound removed (both go through)."""
+        for args in ([], ["--check"]):
+            with self.subTest(args=args):
+                self.refused(1, "raise", IID, "--record",
+                             self.write_rec(record(format="decision-card/10000")),
+                             *args, why="format:")
+                self.assertFalse((self.root / "cards").exists())
+        long_id = "a" * 125 + "-1234"
+        self.item(long_id)
+        for args in ([], ["--check"]):
+            with self.subTest(args=args, id="long"):
+                self.refused(1, "raise", long_id, "--record",
+                             self.write_rec(record()), *args,
+                             why="at most 128")
+                self.assertFalse((self.root / "cards").exists())
+        self.ok("raise", IID, "--record",
+                self.write_rec(record(format="decision-card/9999")), "--check")
+        self.raise_rec(record(format="decision-card/9999"))
+
+    def test_question_exactly_dashes(self):
+        """Mutant: the `--` refusal removed (a headline `decision 1: --`)."""
+        self.refused(1, "raise", IID, "--", "--", why="exactly '--'")
+
+    def test_q_nits(self):
+        """q starting `decision`; a label-shaped q with no label; label.id
+        holding the label's delimiters. Mutants: each check removed."""
+        nolabel = record(q="F7 (probe) · Ship?")
+        del nolabel["label"]
+        rows = [(record(q="decision 5: Ship?"), "starts 'decision'"),
+                (nolabel, "reads as a label"),
+                (record(label={"id": "F(7", "name": "probe"}), "delimiters"),
+                (record(label={"id": "F·7", "name": "probe"}), "delimiters")]
+        for rec, why in rows:
+            with self.subTest(why=why):
+                self.refused(1, "raise", IID, "--record", self.write_rec(rec),
+                             why=why)
+
+    def test_key_named_only_when_harmless(self):
+        """A token-shaped key is named by its place; a plain word by its
+        name. Mutant: _JSON_KEY back to any 32 word characters."""
+        token = "ghp7aB3cD9eF2gH"
+        rec = record()
+        rec["x"] = {token: f"api_key: |\n  {KEYISH}"}
+        r = self.refused(1, "raise", IID, "--record", self.write_rec(rec),
+                         why="x.<key 0>")
+        self.assertNotIn(token, r.stderr)
+        rec = record()
+        rec["x"] = {"notes_2": f"api_key: |\n  {KEYISH}"}
+        self.refused(1, "raise", IID, "--record", self.write_rec(rec),
+                     why="x.notes_2 line 2")
 
 
 @unittest.skipUnless(GIT, "git not available")
