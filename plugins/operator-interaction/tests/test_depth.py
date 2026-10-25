@@ -709,7 +709,8 @@ class BackgroundSummary(unittest.TestCase):
               {"why": "Is it [[42]] first? Then the rest."},
               {"why": "No stop at all"},
               {"why": "<img src=x onerror=alert(1)> moves now. Later."},
-              {"why": "none"}, {}, {"why": "  "}]
+              {"why": "none"}, {}, {"why": "  "},
+              {"why": "The `cards.json` file moves now. Later."}]
         got = node(BG_HARNESS, cs)
         self.assertEqual(got[0]["first"], "Two broken publishes came from a cache.")
         self.assertEqual(got[0]["sum"],
@@ -721,8 +722,22 @@ class BackgroundSummary(unittest.TestCase):
         self.assertNotIn("<img", got[3]["sum"])
         self.assertIn("&lt;img", got[3]["sum"])
         # none is not shown: no summary span
-        for g in got[4:]:
+        for g in got[4:7]:
             self.assertEqual(g, {"first": "", "sum": ""})
+        # a backtick span renders as code, as everywhere on the page
+        self.assertEqual(got[7]["sum"],
+                         ' <span class="fsum">why now: The <code>cards.json</code> file moves now.</span>')
+
+    def test_backticks_in_the_summary_cannot_pass_as_text(self):
+        # mutant: the summary escaped but not given its code spans
+        src = page_free_script()
+        mutant = src.replace("code(esc(s))+'</span>'", "esc(s)+'</span>'", 1)
+        self.assertNotEqual(mutant, src)
+        out = subprocess.run([NODE, "-e", mutant + BG_HARNESS],
+                             input=json.dumps([{"why": "The `cards.json` file moves now."}]),
+                             capture_output=True, text=True, timeout=60)
+        self.assertEqual(out.returncode, 0, out.stderr)
+        self.assertNotIn("<code>cards.json</code>", json.loads(out.stdout)[0]["sum"])
 
     def test_the_fold_is_first_of_the_bottom_folds_closed_with_its_summary(self):
         res = run_page(example())

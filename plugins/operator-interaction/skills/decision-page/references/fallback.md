@@ -31,11 +31,12 @@ first); this file sets only the layout.
   level, its high in `detail` when it has one: that high holds the facts a cold reader has
   lost (the `decisions` skill's `references/card-record.md` § Levels), and a doc reader has no
   click to reach it. The Impact line, the TLDR and the rec line are at their summary. After
-  the rec line, a **More detail** sub-heading carries the fold parts at their top level:
-  **Background** first, a bold line with **Why now:** and **Why ask:** (class first) under it
-  (a doc cannot fold, so the Background fold's content sits there, where the page keeps it
-  closed), then the **Open questions** as a list, each option in full with its Effect, Reach, Undo and Cost, Depends on, and the Evidence with its paths and links.
-  That is the card-in-all measure of
+  the rec line, a **More detail** sub-heading carries the fold parts at their top level, in
+  the card's v5 order: the **Open questions** as a list (the fold above the Impact), each
+  option in full with its Effect, Reach, Undo and Cost, then **Background**, the first fold
+  after the options, a bold line with **Why now:** and **Why ask:** (class first) under it (a
+  doc cannot fold, so the fold's content sits there, where the page keeps it closed), then
+  Depends on, and the Evidence with its paths and links. That is the card-in-all measure of
   `references/cards-schema.md` § Size, with Context at its high. A level in sections shows
   each heading as a bold line, its bullets under it.
 - No ids: items, commits and series by their short names or titles, as on the page

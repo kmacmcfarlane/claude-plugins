@@ -378,12 +378,12 @@ Rec **(b)** · basis **word** — *one-clause reason*
 | (c) Investigate first | what it would settle | — | — | time and spend |
 | (z) Wait | what waiting costs; what it blocks; at the deadline, what happens | who waits | — (or: ⚠ what a deadline loses for good) | … |
 
+**To act on (b):** *(only for an option that asks the operator to act, as on a card)*
+1. …
+
 ▾ Background — why now: the first sentence of why now
 **Why now:** …
 **Why ask:** *class* — …
-
-**To act on (b):** *(only for an option that asks the operator to act, as on a card)*
-1. …
 
 Rec **(b)** · basis **partial** — *reason*
 *Basis:* observed — … (link) · inferred — … · unknown — …
@@ -402,9 +402,10 @@ Rec **(b)** · basis **partial** — *reason*
   one-way or costly; with no such row, the Undo column is dropped. Only the recommended
   option's row label is bold. The table takes the place of a section per option and of the
   options' impact lines.
-- Under the table the Background fold stands open, `▾ Background — why now: …` with its
-  **Why now:** and **Why ask:** lines under it (§ Folds) — then a round ask's **If left:**
-  and **A round costs:**, then any **To act on (x):** part, before the Rec line (§ Card).
+- Under the table run a round ask's **If left:** and **A round costs:**, then any **To act
+  on (x):** part; then the Background fold stands open, as § Folds places it, first after
+  the options and their parts: `▾ Background — why now: …` with its **Why now:** and **Why
+  ask:** lines under it, just before the Rec line (§ Card).
 - A block **includes** the basis drill-down (the tags and links). `expand` on a block is
   answered: *already at full detail — `tell me [what]` for something specific?*
 - The read-back line (⚠ blocks only) names the one-way option(s). A block for a wide

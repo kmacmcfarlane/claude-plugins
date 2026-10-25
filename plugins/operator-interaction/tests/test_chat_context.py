@@ -231,11 +231,19 @@ def check_bg_line(test, where, body):
     words = body[k][len(BG_LINE):].split()
     test.assertTrue(words, f"{where}: the Background line has no summary")
     test.assertLessEqual(len(words), 30, f"{where}: the Background summary runs {len(words)} words")
+    test.assertFalse(SENTENCE_END.search(body[k][len(BG_LINE):]),
+                     f"{where}: the Background summary is more than one sentence")
+
+
+# a block's parts under its table that come before its Background fold (§ Folds)
+BLOCK_BEFORE_BG = ("**If left:**", "**A round costs:**", "**To act on (")
 
 
 def check_bg_block(test, where, body):
-    """A block's Background fold stands open below its table: `▾ Background — why now: …`, then
-    **Why now:** and **Why ask:** on the two lines under it; no flat why line."""
+    """A block's Background fold stands open below its table, after any If left, A round costs
+    and To act on (x) part and just before its Rec line: `▾ Background — why now: …` (one
+    sentence), then **Why now:** and **Why ask:** on the two lines under it; no flat why
+    line."""
     test.assertNotIn("Why you, why now", heads(body), f"{where}: the flat why line")
     bg = [i for i, x in enumerate(body) if x.startswith(BG_OPEN)]
     test.assertEqual(len(bg), 1, f"{where}: one open Background fold")
@@ -246,6 +254,13 @@ def check_bg_block(test, where, body):
                     and body[k + 2].startswith("**Why ask:**"),
                     f"{where}: Why now and Why ask are not under the open fold")
     test.assertLessEqual(len(body[k][len(BG_OPEN):].split()), 30, f"{where}: a long summary")
+    test.assertFalse(SENTENCE_END.search(body[k][len(BG_OPEN):]),
+                     f"{where}: the Background summary is more than one sentence")
+    after = [x for x in body[k + 3:] if x.strip()]
+    test.assertFalse(any(x.startswith(BLOCK_BEFORE_BG) for x in after),
+                     f"{where}: If left, A round costs or To act on comes after Background")
+    test.assertTrue(after and REC_LINE.match(after[0]),
+                    f"{where}: the Background fold is not just before the Rec line")
 
 
 def groups(path):
@@ -430,6 +445,7 @@ class Checks(unittest.TestCase):
             "▸ Background — why now: the lease lapses at five.", "Rec **(a)** · basis **strong**"]
     BLOCK = ["**43 — Remove it?** ⚠ one-way", "**Impact:** later: w · reach: r", "",
              "| Impact | Effect | Reach | Undo | Cost |", "|---|---|---|---|---|", "",
+             "**To act on (b):**", "1. step", "",
              "▾ Background — why now: the release is cut on Thursday.",
              "**Why now:** the release is cut on Thursday.", "**Why ask:** it is yours.", "",
              "Rec **(b)** · basis **partial**"]
@@ -462,6 +478,11 @@ class Checks(unittest.TestCase):
         card[8] = "▸ Background — why now: " + "word " * 31
         with self.assertRaises(AssertionError):
             check_bg_line(self, "mutant", card)
+        # a summary of two sentences
+        card = list(self.CARD)
+        card[8] = "▸ Background — why now: the lease lapses at five. Then it is gone."
+        with self.assertRaises(AssertionError):
+            check_bg_line(self, "mutant", card)
         # another fold before it under the options
         card = list(self.CARD)
         card.insert(8, "▸ Attached — 1: a log")
@@ -470,14 +491,31 @@ class Checks(unittest.TestCase):
 
     def test_a_block_whose_background_is_closed_or_empty_is_caught(self):
         block = list(self.BLOCK)
-        block[6] = "▸ Background — why now: the release is cut on Thursday."
+        block[9] = "▸ Background — why now: the release is cut on Thursday."
         with self.assertRaises(AssertionError):
             check_bg_block(self, "mutant", block)
         block = list(self.BLOCK)
-        del block[7:9]
+        del block[10:12]
         with self.assertRaises(AssertionError):
             check_bg_block(self, "mutant", block)
         self.assertTrue(empty_fold_problems("mutant", block))
+        # a two-sentence summary
+        block = list(self.BLOCK)
+        block[9] = "▾ Background — why now: the release is cut on Thursday. It is soon."
+        with self.assertRaises(AssertionError):
+            check_bg_block(self, "mutant", block)
+
+    def test_a_block_whose_background_comes_before_its_act_or_round_lines_is_caught(self):
+        # the old order: the fold under the table, To act on after it
+        block = list(self.BLOCK)
+        block[6:13] = block[9:13] + block[6:9]
+        self.assertEqual(block[6], "▾ Background — why now: the release is cut on Thursday.")
+        with self.assertRaises(AssertionError):
+            check_bg_block(self, "mutant", block)
+        block = list(self.BLOCK)
+        block.insert(13, "**If left:** *one finding*")
+        with self.assertRaises(AssertionError):
+            check_bg_block(self, "mutant", block)
 
     def test_an_open_questions_line_out_of_place_or_an_unknown_is_caught(self):
         card = ["**41 — Resume the backup?**", "**What:** x", "**Context:** y · z",

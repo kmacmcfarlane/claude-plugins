@@ -200,7 +200,7 @@ line (no effect), options, their impacts, the label, and no recommendation.
 - (z) Decide later — *it waits; the release slips past Friday if undecided by Thursday noon*
 
 ▸ Background — why now: the release is Friday, and it slips if this is undecided by Thursday noon.
-*No recommendation: Background says why.* · basis **partial** — *observed: the waived check's output; inferred: the fix estimate*
+*No recommendation: a product call, not mine.* · basis **partial** — *observed: the waived check's output; inferred: the fix estimate*
 
 ---
 
