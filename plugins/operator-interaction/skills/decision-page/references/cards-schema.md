@@ -309,7 +309,17 @@ parsed: a backtick, a `[[N]]`, an `https://` address, an HTML tag such as `</scr
 Write the lines bare, with no fence around them: the page draws the block. A control or
 bidirectional character (a zero-width space, a right-to-left override) shows as a visible
 tag naming it, `U+202E`, so the text cannot read other than it is. `src` is plain text the
-same way.
+same way. **The characters the page tags**, in the text and in `src`, exactly: the C0 controls
+U+0000–U+0008 and U+000B–U+001F (every C0 control but tab and line feed; a carriage return in
+the text is read as a line break first), DEL and the C1 controls U+007F–U+009F, the soft
+hyphen U+00AD, the Arabic letter mark U+061C, the Mongolian vowel separator U+180E,
+U+200B–U+200F (the zero-width spaces and joiners and the directional marks), U+2028–U+202E
+(the line and paragraph separators and the directional embeddings and overrides),
+U+2060–U+2069 (the word joiner, invisible operators and the directional isolates), the byte
+order mark U+FEFF, the tag characters U+E0000–U+E007F, the variation selectors
+U+E0100–U+E01EF, the interlinear annotation marks U+FFF9–U+FFFB, the combining grapheme
+joiner U+034F, the Hangul fillers U+115F, U+1160, U+3164 and U+FFA0, the Khmer inherent
+vowels U+17B4 and U+17B5, and the Mongolian free variation selectors U+180B–U+180F.
 
 **The page refuses**, wherever a field carries one, an excerpt that is not an object, one holding a key
 other than `text`, `lang` and `src`, with blank `text`, a `lang` outside its

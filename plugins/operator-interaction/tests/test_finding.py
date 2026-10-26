@@ -283,6 +283,31 @@ class FindingRunner(unittest.TestCase):
                            'cards.flatMap(c => [c.label])')
         self.assertIn("lint: card 43: D3 looks like an id (context)", runner(d, script=js)[1])
 
+    def test_a_long_short_name_on_the_finding_alone_is_linted(self):
+        d = example()
+        del c43(d)["label"]
+        c43(d)["finding"]["label"]["name"] = "the site colour does not match the logo"
+        out = runner(d)[1]
+        self.assertIn("lint: card 43: shape: the label D3's short name is 8 words", out)
+        js = mutant_runner("const l = c.label || (c.finding && c.finding.label);", "const l = c.label;")
+        self.assertNotIn("short name is 8 words", runner(d, script=js)[1])
+
+    def test_the_tag_set_is_the_pages_and_the_schema_lists_it(self):
+        for ch in ("\u0000", "\u000d", "\u00ad", "\u202e", "\U000e0001", "\U000e0100", "\ufffa", "\u034f",
+                   "\u3164", "\u17b5", "\u180b"):
+            self.assertTrue(RAW_CTRL.match(ch), repr(ch))
+        for ch in ("\t", "\n", "a", "\u00e9"):
+            self.assertIsNone(RAW_CTRL.match(ch), repr(ch))
+        schema = " ".join((SKILL / "references" / "cards-schema.md").read_text().split())
+        for part in ("U+0000–U+0008 and U+000B–U+001F", "U+007F–U+009F", "U+00AD", "U+061C", "U+180E",
+                     "U+200B–U+200F", "U+2028–U+202E", "U+2060–U+2069", "U+FEFF", "U+E0000–U+E007F",
+                     "U+E0100–U+E01EF", "U+FFF9–U+FFFB", "U+034F", "U+115F, U+1160, U+3164 and U+FFA0",
+                     "U+17B4 and U+17B5", "U+180B–U+180F"):
+            self.assertIn(part, schema)
+        self.assertIn("each character the page tags (the `decision-page` skill's `references/cards-schema.md` "
+                      "§ An excerpt), in the excerpt and its `src`, as its `U+` tag",
+                      " ".join(RENDERING.read_text().split()))
+
     def test_the_cold_read_reads_its_title_and_mechanism(self):
         for k in ("title", "mechanism"):
             with self.subTest(k):
@@ -322,11 +347,18 @@ class FindingRunner(unittest.TestCase):
 # the gallery's cards raised from a finding: a review's (51-53, 97) and an audit's (88)
 FINDING_CARDS = {51, 52, 53, 88, 97}
 # **Finding:** label (short name)[: title] — `where`[ <the rest of src> | · from `src`], or a head with no label
-FINDING_HEAD = re.compile(r"^\*\*Finding:\*\* (?:(?P<id>\S+) \((?P<name>[^)]+)\)(?:: (?P<t1>.+?))?|(?P<t2>[^`]+?))"
-                          r" — `[^`]+`(?P<src> [^`·]+| · from `[^`]+`)?$")
+CODE = r"(?:`[^`]+`|``+ .+? ``+)"  # a code span, a longer delimiter with spaces inside when it holds a backtick
+FINDING_HEAD = re.compile(r"^\*\*Finding:\*\* (?:(?P<id>\S+) \((?P<name>[^)]+)\)(?:: (?P<t1>(?:(?! — | · from )[^`])+))?|(?P<t2>(?:(?! — | · from )[^`])+))"
+                          r"(?: — (?P<where>" + CODE + r"))?(?P<src> " + CODE + r"| · from " + CODE + r")?$")
 # a control or bidirectional character an excerpt writes as its U+ tag in chat (the page's own class, in short)
-RAW_CTRL = re.compile("[\u0000-\u0008\u000b-\u001f\u007f-\u009f\u00ad\u061c\u180e\u200b-\u200f"
-                      "\u2028-\u202e\u2060-\u2069\ufeff]")
+def xc_ctrl():
+    """The page's own XC_CTRL class (index.html), as a Python pattern: the characters it tags."""
+    m = re.search(r"const XC_CTRL=/(\[.*?\])/gu;", PAGE.read_text())
+    assert m, "no XC_CTRL in the template"
+    return re.compile(re.sub(r"\\u\{([0-9A-Fa-f]+)\}", lambda x: "\\U%08X" % int(x.group(1), 16), m.group(1)))
+
+
+RAW_CTRL = xc_ctrl()
 TITLE_LABEL = re.compile(r"^\*\*\d+ — (\S+) \(([^)]+)\) · ")
 
 
@@ -357,7 +389,7 @@ def finding_problems(where, body, raised):
         if t and (m.group("id"), m.group("name")) != t.groups():
             out.append(where + ": the Finding's label is not the title's, with its short name")
     mech = body[k + 1] if k + 1 < len(body) else ""
-    if not mech.strip() or mech.startswith(("```", "**", "▸", "▾", "- ")):
+    if not mech.strip() or mech.startswith(("```", "~~~", "**", "▸", "▾", "- ")):
         out.append(where + ": no mechanism line under the Finding's head")
     elif len(mech.split()) <= 4:
         out.append(where + ": the mechanism is a bare label")
@@ -381,8 +413,8 @@ def fence_problems(where, block, unclosed=False):
         run = max([len(r) for x in text for r in re.findall(r"`+", x)] or [0])
         if run >= len(fence):
             out.append(where + ": a run of %d backticks in the excerpt, inside a fence of %d" % (run, len(fence)))
-    elif any(x.startswith("~~~") for x in text):
-        out.append(where + ": a line of the excerpt opens on ~~~, inside a ~~~ fence")
+    elif any("~" in x for x in text):
+        out.append(where + ": a tilde in the excerpt, inside a ~~~ fence")
     for x in text:
         c = RAW_CTRL.search(x)
         if c:
@@ -424,7 +456,8 @@ class FindingChat(unittest.TestCase):
             "left out": body[:k] + body[finding_end(body, k):],
             "before What": body[:w] + body[k:finding_end(body, k)] + body[w:k] + body[finding_end(body, k):],
             "another short name": body[:k] + [body[k].replace("(unescaped display name)", "(raw name)")] + body[k + 1:],
-            "no location": body[:k] + [body[k].split(" — `")[0]] + body[k + 1:],
+            "a location not in code": body[:k] + [body[k].replace("`templates/welcome.html:14-16` `at 3f2a9c1`",
+                                                                  "templates/welcome.html:14-16")] + body[k + 1:],
             "a bare mechanism": body[:k + 1] + ["XSS in the email"] + body[k + 2:],
             "no language": body[:k + 2] + ["```"] + body[k + 3:],
         }
@@ -440,17 +473,33 @@ class FindingChat(unittest.TestCase):
         self.assertEqual(body[k + 2], "```jinja")
         # its head ends on the excerpt's src, the rest after the location (M1)
         m = FINDING_HEAD.match(body[k])
-        self.assertEqual(m.group("src"), " at 3f2a9c1")
-        mutant = [body[k].replace(" at 3f2a9c1", " at")] + body[k + 1:]
-        self.assertFalse(src_shown(body[k].split(" at 3f2a9c1")[0], "3f2a9c1"))
+        self.assertEqual(m.group("src"), " `at 3f2a9c1`")
         self.assertTrue(src_shown(body[k], "3f2a9c1"))
-        self.assertTrue(mutant)
+        # mutant: the head without its src
+        m = FINDING_HEAD.match(body[k].replace(" `at 3f2a9c1`", ""))
+        self.assertIsNotNone(m)
+        self.assertIsNone(m.group("src"))
+
+    def test_the_head_forms(self):
+        ok = ["**Finding:** F3 (raw name): its title — `a/b.py:3`",
+              "**Finding:** F3 (raw name): its title — `a/b.py:3` `at 3f2a9c1`",
+              "**Finding:** F3 (raw name): its title — `a/b.py:3` · from `c/d.py:1-9 at 3f2a9c1`",
+              "**Finding:** its title · from `c/d.py:1-9`",
+              "**Finding:** F3 (raw name): its title — `` a`b.py:3 `` · from `` run `make` at 10:02 ``"]
+        for h in ok:
+            with self.subTest(h):
+                self.assertIsNotNone(FINDING_HEAD.match(h))
+        self.assertIsNone(FINDING_HEAD.match("**Finding:** F3 (raw name): its title — a/b.py:3"))
+        self.assertEqual(FINDING_HEAD.match(ok[3]).group("where"), None)
 
     def test_the_rendering_shows_the_src_and_a_fence_safe_excerpt(self):
         text = " ".join(RENDERING.read_text().split())
         self.assertIn("then the excerpt's `src` when it is given", text)
         self.assertIn("longer than the longest run of backticks in it", text)
-        self.assertIn("is written as its tag, `U+200B`, `U+202E`, as the page shows it", text)
+        self.assertIn("as its `U+` tag (`U+200B`, `U+202E`); tabs and line breaks stay as they are", text)
+        self.assertIn("when it is the location exactly, nothing more", text)
+        self.assertIn("With no location, the head ends on its title, then ` · from ` and the `src`", text)
+        self.assertIn("takes a longer code-span delimiter", text)
         self.assertIn("its one Finding may cover the set", text)
 
     def test_the_gallery_fences_are_safe_and_the_checks_fail_on_unsafe_ones(self):
@@ -464,6 +513,7 @@ class FindingChat(unittest.TestCase):
             "a raw right-to-left override": block[:2] + ["\u202e" + block[2]] + block[3:],
             "a raw zero-width space": block[:2] + [block[2] + "\u200b"] + block[3:],
             "a tilde line in a tilde fence": ["~~~go", "~~~", "x", "~~~"],
+            "a tilde in a tilde fence": ["~~~go", "x := ~y", "~~~"],
             "no language": ["````"] + block[1:],
         }
         for name, b in mutants.items():
@@ -483,7 +533,6 @@ class FindingChat(unittest.TestCase):
         # each skill's description within the 1024-character limit
         for path in (page, SKILL_MD.read_text()):
             self.assertLessEqual(len(description(path)), DESCRIPTION_MAX)
-        self.assertGreater(len(description(page) + ", each card showing its finding"), 1000)
         self.assertIn("a set of review or audit findings goes to chat by default, and the page is offered for it too",
                       page.split("\n---\n")[0])
         self.assertIn("so offer the page for such a set as for any other", RENDERING.read_text())

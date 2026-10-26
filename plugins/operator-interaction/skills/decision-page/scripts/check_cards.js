@@ -433,7 +433,8 @@ function plan(c, say) {
 
 /* ---- the source label's short name: plain words, about 2 to 6 ---- */
 function labelName(c, say) {
-  const l = c.label;
+  /* the card's label, else its finding's (F7): either is shown with its short name */
+  const l = c.label || (c.finding && c.finding.label);
   if (l && typeof l === "object" && typeof l.name === "string" && words(l.name) > 6)
     say("shape label", "shape: the label " + l.id + "'s short name is " + words(l.name) + " words: keep it to about 2–6 plain words");
 }
