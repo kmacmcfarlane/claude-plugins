@@ -3,7 +3,8 @@
 The read-back hands each new answer over with its kind; a follow-up is handed over as one and
 is never an answer, so a caller that keeps a store writes it as a wake line, not an answer line
 (L1). A publish hands over one showing per new card, with its `rev`, and their count (L4).
-Pinned in `skills/decision-page/SKILL.md` Steps 3 and 6.
+Pinned in `skills/decision-page/SKILL.md` Steps 3 and 6. A tick-box doc's section headings name
+their card's `rev`, and its read-back hands that `rev` over (L5, `references/fallback.md` § 1).
 
 Run from the plugin dir: python3 -m unittest discover -s tests -q
 """
@@ -14,6 +15,7 @@ from pathlib import Path
 PLUGIN = Path(__file__).resolve().parent.parent
 PAGE_SKILL = PLUGIN / "skills" / "decision-page"
 SKILL = PAGE_SKILL / "SKILL.md"
+FALLBACK = PAGE_SKILL / "references" / "fallback.md"
 
 
 def flat(text):
@@ -50,6 +52,30 @@ class ShownHandOver(unittest.TestCase):
                       "clock) and the surface word *page*, one per card, then their count: *N "
                       "cards handed over*", step3)
         self.assertIn("A republish that keeps a card's `rev` hands over nothing for it", step3)
+
+
+class TickBoxRev(unittest.TestCase):
+    """L5: each tick-box section's heading names its card's revision, and the read-back hands
+    each changed decision over with it, as a page answer carries its `rev`."""
+
+    def setUp(self):
+        text = FALLBACK.read_text()
+        self.doc = flat(step(text, "## 1. A doc with tick boxes", "## 2."))
+
+    def test_the_heading_ends_with_its_rev(self):
+        self.assertIn("`41 · Docs build home → (b) every merge to main builds and publishes the "
+                      "site from CI (rev 2026-10-23T10:00:00Z)`", self.doc)
+        self.assertIn("Every heading ends with its card's revision in plain text, `(rev <rev>)`",
+                      self.doc)
+
+    def test_a_rewritten_section_carries_the_new_rev(self):
+        self.assertIn("rewrite its section with every box unticked and its heading carrying the "
+                      "new `(rev …)`", self.doc)
+
+    def test_the_read_back_hands_the_rev_over(self):
+        self.assertIn("each with the `rev` its heading names, as a page answer carries one",
+                      self.doc)
+        self.assertIn("as shown, with its heading's `rev`", self.doc)
 
 
 if __name__ == "__main__":

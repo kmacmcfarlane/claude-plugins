@@ -16,9 +16,11 @@ first); this file sets only the layout.
   `<title> — N decisions, <note>`, then a **Shared context:** line with its shared context; under it, one section per decision, headed with its
   number, short name and the recommended option's effect, its letter first, as the page's row
   shows it: `41 · Docs build home → (b) every merge to main builds and publishes the site from
-  CI`; with no recommendation, each option's in a few words, `→ (a) …; (b) …`; a card with a
-  `label` puts the label and its short name after its own, `43 · Theme colour · D3 (site
-  colour off the logo) → …`.
+  CI (rev 2026-10-23T10:00:00Z)`; with no recommendation, each option's in a few words, `→ (a)
+  …; (b) …`; a card with a `label` puts the label and its short name after its own, `43 ·
+  Theme colour · D3 (site colour off the logo) → … (rev …)`. Every heading ends with its
+  card's revision in plain text, `(rev <rev>)`, the card's `rev` exactly as the page would
+  carry it.
 - In each section, the card's essentials as text: the TLDR bullets first, then **Context:**
   (the terms the card uses, then where the operator left it), then **What:** (`what`, and for a
   set a bullet per item: its name, where it lives, what it is, and its outcome under each
@@ -72,13 +74,16 @@ in Your words to add anything.* When reading it back:
 - nothing: unanswered.
 
 When a decision changes after the doc is shared (an **Added:** line, a re-ask), rewrite its
-section with every box unticked and say so in chat: ticks on the old text answered the old
-card. Keep what you last handed over for each decision (its ticks and words), and hand over
-only the decisions whose ticks or words differ from it; the rest are unchanged, not open.
+section with every box unticked and its heading carrying the new `(rev …)`, and say so in
+chat: ticks on the old text answered the old card. Keep what you last handed over for each
+decision (its ticks and words), and hand over only the decisions whose ticks or words differ
+from it, each with the `rev` its heading names, as a page answer carries one; the rest are
+unchanged, not open.
 
 For a caller that records shown and seen, hand over each decision's number, the time (UTC,
-your clock) and the word *doc*: as shown, when the doc is shared and when a section is
-rewritten unticked; as seen, with each decision a read-back hands over, and with no other.
+your clock) and the word *doc*: as shown, with its heading's `rev`, when the doc is shared
+and when a section is rewritten unticked; as seen, with each decision a read-back hands
+over, and with no other.
 
 Read the doc back with the same tool, then echo and hand over as SKILL.md's read-back step
 says. The doc is the record of what was ticked: quote it, do not paraphrase it.
