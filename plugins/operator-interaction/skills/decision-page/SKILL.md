@@ -8,7 +8,7 @@ description: "Put a set of decisions to the operator as an answer page: a publis
 A set of decisions on one page the operator works through at their own pace: a map of its
 groups, each card a one-line row that opens flat on its essentials (its TLDR, then its Context, then its Open questions, folded, then its Impact) with folds for the rest; a
 click on a part with a more-detail button shows it as terse bullets, then in headed sections,
-each option but (z) shows its **Pros** and **Cons** rows under it, and **More** beside an option shows that option in full; one choice per card enforced by the
+each option but (z) shows its **Pros** and **Cons** rows under it, and picking an option, or **More** beside it, opens its view (its Plan in brief, its Pros | Cons table, then its effect, reach, undo and cost); one choice per card enforced by the
 radio buttons, answers saved as they click. You publish it, they answer, you read the answers
 back and hand them to your caller. The format first served a 24-decision set on how decisions
 are handled.
@@ -131,7 +131,7 @@ The rules below are what the digest condenses:
   stored line where it keeps one and they hold across the options.
 - Every option but (z) carries its own `effect`, and on a new card its `reach`, with its `undo`
   only where it is one-way or costly and its `cost` where it has one, shown in that option's
-  **More**, each effect by its mechanism (how it happens, who meets it and when, the before
+  view, each effect by its mechanism (how it happens, who meets it and when, the before
   and after), never a bare label (the runner's `mech` lint); (z)'s effect is what waiting does.
   A ⚠ one-way card (`oneway: true`) is refused with an option but (z) missing its reach. An
   option one-way or costly to undo carries `oneway: true` and its undo: the page refuses a
@@ -140,7 +140,13 @@ The rules below are what the digest condenses:
 - Every option but (z) carries its main upside and downside in one line each, `pro` and
   `con`, shown under it as its **Pros** and **Cons** rows, always visible; the recommended
   option always gives its con (the runner's `tradeoffs` lint). The points in full, one to five
-  each, the weightiest first, go in `pros` and `cons`.
+  each, the weightiest first, go in `pros` and `cons`: the option's view shows them as its
+  **Pros | Cons** table.
+- Every option, (z) too, carries its **Plan in brief**, `plan`: what choosing it sets in motion,
+  in 2–4 sentences (the runner's `plan` lint, at most about 100 words). Its view opens on it,
+  then the Pros | Cons table, then its effect, reach, undo and cost; picking the option opens
+  its view and closes the card's other open one, and every view starts closed, a ⚠ card's
+  too. An older option with no plan shows its `text` there instead.
 - What is not known yet goes in `open`, one question each, folded above the Impact.
 - What the recommendation rests on goes in `assume`, each `{rests, tw}`: the assumption and
   its tripwire, the sign that would change the call. The page shows it in the closed
@@ -150,7 +156,7 @@ The rules below are what the digest condenses:
   knowingly). An unknown is never an assumption: it goes in `open`.
 - Every card carries the depth the decisions skill's block holds, scaled to the decision, up to
   the soft sizes (`references/writer-digest.md` § Levels and their shapes): Why now and Why ask
-  in full, an effect, a reach and a full text for every option but (z), and the basis
+  in full, an effect, a reach and a plan for every option but (z), and the basis
   drill-down in `evidence` with its paths and links. **Levels scale with the decision** and are
   optional on every part: a small call may carry none; a wide or one-way decision carries the
   most, a medium and a high in `detail` for its visible parts (Context, the Impact line, the

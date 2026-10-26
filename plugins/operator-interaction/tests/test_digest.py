@@ -47,6 +47,7 @@ THRESHOLDS = {
     "words in an option's effect, at or under which mech fires": r"\bMECH_MIN = (\d+)",
     "words in the Background fold's summary": r"\bBGSUM_CAP = (\d+)",
     "words in a pro or con": r"\bPROCON_CAP = (\d+)",
+    "words in a plan in brief": r"\bPLAN_CAP = (\d+)",
 }
 
 
@@ -277,6 +278,17 @@ class WriterDigest(unittest.TestCase):
         self.assertIn("lint `tradeoffs` missing", lint_problems(self.js, gone))
         moved = self.digest.replace("| `tradeoffs` | `shape:` |", "| `tradeoffs` | `depth:` |")
         self.assertTrue(lint_problems(self.js, moved))
+        # the plan lint (F5): its row, and its start
+        self.assertEqual(runner_lints(self.js)["plan"], {"depth:"})
+        gone = self.digest.replace("| `plan` | `depth:` |", "| plan | `depth:` |")
+        self.assertIn("lint `plan` missing", lint_problems(self.js, gone))
+        moved = self.digest.replace("| `plan` | `depth:` |", "| `plan` | `shape:` |")
+        self.assertTrue(lint_problems(self.js, moved))
+        # the option's plan row against the record's (the An option table)
+        cut = self.digest.replace("| `plan` | of a new card |", "| `plan` | optional |")
+        self.assertNotEqual(cut, self.digest)
+        self.assertIn("An option: `plan` Required is 'optional', the schema's 'of a new card'",
+                      required_problems(self.record, cut, "An option"))
 
     def test_thresholds(self):
         self.assertEqual(threshold_problems(self.js, self.digest), [])
@@ -286,7 +298,7 @@ class WriterDigest(unittest.TestCase):
                          ("cw > 60", "cw > 61"), ("all > 1350", "all > 1400"),
                          ("cs > 2", "cs > 3"), ("c.tldr.length > 2", "c.tldr.length > 3"),
                          ("MECH_MIN = 4", "MECH_MIN = 5"), ("BGSUM_CAP = 25", "BGSUM_CAP = 26"),
-                         ("PROCON_CAP = 25", "PROCON_CAP = 30")]:
+                         ("PROCON_CAP = 25", "PROCON_CAP = 30"), ("PLAN_CAP = 100", "PLAN_CAP = 120")]:
             with self.subTest(old=old):
                 self.assertIn(old, self.js)
                 self.assertTrue(threshold_problems(self.js.replace(old, new), self.digest))

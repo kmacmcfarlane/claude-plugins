@@ -108,7 +108,8 @@ Do not set `what`: it is older data only.
 | `k` | to render | one letter |
 | `title` | to render | at most six words, verb first |
 | `line` | optional | one line read after the page's label (`because:` on the rec, `if chosen:` on the others, `if left:` on `z`): write it to follow *if chosen:*; the downside goes in `con` |
-| `text` | optional | the option in full |
+| `text` | optional | the option in full: an older card's view, shown in the plan's place only when it has no `plan`; a new card writes `plan` |
+| `plan` | of a new card | **Plan in brief**, 2–4 sentences on one line, at most ~100 words: what choosing the option sets in motion; (z) too, what deciding later sets in motion. Its view opens on it |
 | `effect` | to render, but on (z) | its own effect by its mechanism, how it happens, who meets it and when, the before and after; never a bare label; on (z), what waiting does |
 | `reach` | of a new card; to render on a ⚠ card, but (z) | who or what it reaches; ~5–25 words |
 | `undo` | with `oneway` | only on an option one-way or costly to undo: how it is undone and at what cost, or that it cannot be |
@@ -116,18 +117,22 @@ Do not set `what`: it is older data only.
 | `cost` | optional | its cost, where it has one |
 | `pro` | of a new card, but on (z) | one line, about 25 words at most, the main upside: shown under the option as its **Pros** row, always visible; none on `z`, which shows no rows |
 | `con` | of a new card, but on (z) | one line, about 25 words at most, the main downside or risk: its **Cons** row; the recommended option always gives one; none on `z` |
-| `pros` | optional | `["point", …]`, 1–5 upsides in full (0–5 on `z`), weightiest first, for the option's own view |
-| `cons` | optional | `["point", …]`, 1–5 downsides in full (0–5 on `z`), weightiest first |
+| `pros` | optional | `["point", …]`, 1–5 upsides in full (0–5 on `z`), weightiest first: the Pros column of the option's view, its **Pros \| Cons** table |
+| `cons` | optional | `["point", …]`, 1–5 downsides in full (0–5 on `z`), weightiest first: the table's Cons column |
 | `act` | optional | `["step", …]`, when the option asks the operator to act; not on `z`; each step text on one line, no `<placeholder>`; a step names where a secret goes, never its value; a paste text holding an angle-bracketed word, or of more than one line, goes in a file named by its `/…` path |
-| `detail` | optional | `[medium, high]` levels of its `text` |
+| `detail` | optional | `[medium, high]` levels of its `plan` (of its `text` on an older option with none), each longer than the one below |
 
 **None is not shown.** A field, facet or option field that is blank or says only `none`, `n/a`
 or a dash is left off the page (a `dep`, an `open`, a `cost`, an `evidence`, an option's reach
 or cost): leave it out rather than write none. The required Impact facets, an undo when given
 and `basis` are statements, and stay shown. Leave undo out on an option reversible at little
-cost: no undo shown reads as that. A none `pro` or `con` has no row. There is no Options in full fold: each option's **More**
-shows its text at its fullest (a click steps through its levels), then its effect, reach,
-undo and cost.
+cost: no undo shown reads as that. A none `pro` or `con` has no row, and a none `plan` is no plan. There is no
+Options in full fold: each option's **view**, closed until the option is picked or its **More**
+pressed (picking one closes the card's other open view; every view starts closed, a ⚠ card's
+too), shows in this order: its **Plan in brief** (a click steps through its levels), then its
+**Pros | Cons** table, two columns side by side, then its effect, reach, undo and cost. An
+older option with no `plan` shows its `text` at its fullest in the plan's place. Its
+**To act on (x):** stays under the option, outside the view.
 
 ## An excerpt
 
@@ -161,8 +166,8 @@ levels are facet objects, `{wait, reach, undo, cost}`: `{"wait": bullet, …}` a
 Levels scale with the decision: a small call carries none; a wide or ⚠ one-way card carries
 medium and high on its visible parts and on the fold items with depth to give. Each level is
 longer than the one below. Soft sizes at a part's top level: Background (`why` + `whyask`)
-~150 words; each option's text plus its effect, reach, undo and cost ~60–120; `evidence` ~150;
-the card in all ~600–900, each option's `pro` and `con` counted in it. Never pad: a fact no source holds goes under `open`.
+~150 words; each option's plan (or older text) plus its effect, reach, undo and cost ~60–120; `evidence` ~150;
+the card in all ~600–900, each option's `pro` and `con` and its table's `pros` and `cons` counted in it. Never pad: a fact no source holds goes under `open`.
 
 ## The runner's thresholds
 
@@ -182,6 +187,7 @@ The lints fire past these values, except `mech`, which fires at or under its val
 | words in an option's effect, at or under which mech fires | 4 |
 | words in the Background fold's summary | 25 |
 | words in a pro or con | 25 |
+| words in a plan in brief | 100 |
 
 ## The checks
 
@@ -198,7 +204,7 @@ order, or not ending `z`; a `rec` not among them, or null without `norec`; a mis
 required to render; blank `context`; a TLDR bullet, at any level, opening on Rec or
 Recommend… or saying I or we recommend; an `impact` missing wait or reach, or with an undo or
 cost not text; an `open` not a list of text; an option but (z) with no effect; on a ⚠ card an
-option but (z) with no reach; an option field not text; a `pro` or `con` holding a line break
+option but (z) with no reach; an option field not text; a `plan`, `pro` or `con` holding a line break
 (CR, LF, NEL, a line or paragraph separator, a vertical tab or form feed); a `pros` or `cons`
 not a list of text, over five points, a point holding a line break, or empty but on `z`; a `oneway` not true or false; an option
 flagged `oneway: true` without its `undo`; an `act` on (z), not a non-empty list of text, or a
@@ -242,9 +248,10 @@ page-wide one prints `lint: page:`.
 | `key` | `depth:` | a `detail` key the page does not show |
 | `oneway` | `oneway:` | a ⚠ card with no option flagged one-way; a flagged option while the Impact carries no undo |
 | `tradeoffs` | `shape:` | an option but `z` with no shown `pro` or `con`; a recommended option with no `con`; a card with two or more options but `z` and none (an upgraded older card may leave it knowingly); a `pro` or `con` past its words |
+| `plan` | `depth:` | an option, `z` included, with no shown `plan` (one line when no option has one; an upgraded older card may leave it knowingly, its view showing its `text`); a `plan` past its words; an option with both `plan` and `text`, whose text is not shown |
 
 Then the cold read: list each noun phrase in the Impact, TLDR, option titles and one lines,
 and each option's `pro` and `con` (visible rows, linted by `count` and `named` though outside
-the flat part's size), that names a specific thing, and point to its gloss in `context`. Of each effect, ask: does
+the flat part's size) and its view's `plan`, `pros` and `cons`, that names a specific thing, and point to its gloss in `context`. Over the view the `named` lint reads qualified names only ("content mode"); a bare noun, a phrase opening on a function word ("to plan") or on a verb form ("reaches review") is yours to check here. Of each effect, ask: does
 it name what happens to the thing being built? Could you say how it happens, not only that
 it does?

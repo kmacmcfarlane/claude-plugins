@@ -189,6 +189,11 @@ where the decision is wide, up to five of each in full (`pros`, `cons`), the wei
 Every option but (z) gets both; the recommended option's con is never skipped. A con says what
 the option itself costs or risks, never only that another option is better.
 
+**Each option's plan in brief**, written with it, (z) too: what choosing it sets in motion, in
+2–4 sentences (`plan` in the record). It opens the option's view: the `tell me (x)` answer and
+the option's part in a block, then its `Pros | Cons` table, then its facets
+(`references/rendering.md` § An option's view).
+
 Write it when the decision is raised, and store it with the card where the caller keeps one,
 so every later view reads it instead of composing it again.
 

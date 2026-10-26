@@ -39,7 +39,9 @@
         Impact carries no undo;
       - trade-offs: an option but (z) with no one-line pro or con (the inline Pros and Cons rows);
         a recommended option with no con; a card with two or more real options and none; a pro or
-        con past PROCON_CAP words.
+        con past PROCON_CAP words;
+      - the plan (F5): an option with no plan in brief (the first part of its view); a plan past
+        PLAN_CAP words; an option with both plan and text, whose text is not shown.
       Lints are proxies.
 
    Prints one line per problem. Exit 0 clean; 1 on a refusal, or on a file or template that
@@ -59,9 +61,10 @@ function loadPage() {
   const start = html.indexOf("<script>"), end = html.indexOf(END_MARK);
   if (start < 0 || end < start) fail("the template has no page-free part (its script or the end-of-page-free-part marker is missing): " + tpl);
   try {
-    const page = vm.runInNewContext(html.slice(start + "<script>".length, end) + "\n;({check, recordProblems, bgFirst, assumeOf, proCon})", {});
+    const page = vm.runInNewContext(html.slice(start + "<script>".length, end) + "\n;({check, recordProblems, bgFirst, assumeOf, proCon, planOf, prosCons})", {});
     if (typeof page.check !== "function" || typeof page.recordProblems !== "function" || typeof page.bgFirst !== "function"
-      || typeof page.assumeOf !== "function" || typeof page.proCon !== "function") throw new Error("no check(), recordProblems(), bgFirst(), assumeOf() or proCon()");
+      || typeof page.assumeOf !== "function" || typeof page.proCon !== "function" || typeof page.planOf !== "function"
+      || typeof page.prosCons !== "function") throw new Error("no check(), recordProblems(), bgFirst(), assumeOf(), proCon(), planOf() or prosCons()");
     return page;
   } catch (e) { fail("the template's page-free part does not load: " + why(e)); }
 }
@@ -129,6 +132,17 @@ const counts = s => [...unId(s).matchAll(COUNT)].map(m => ({word: m[1], n: W[m[1
 const DET = new Set(["the","this","that","these","those","each","every","a","an","its","our","your","their","any","no","one","which","whose","same","new","old"]);
 const NAMED = /\b([a-z][a-z-]*)\s+(mode|setting|review|plan|document|doc|spec|policy|flag|profile|template|track|phase|stage)\b/gi;
 const named = s => [...strip(s).matchAll(NAMED)].map(m => { const w = m[1].toLowerCase(); return DET.has(w) || W[w] ? m[2].toLowerCase() : (m[1] + " " + m[2]).toLowerCase(); });
+/* over an option's view (its plan and its table's points, prose where the nouns are often verbs: "to plan", "and
+   review", "reaches review"), a match is dropped when its first word is a function word or a verb form, as DET
+   drops a determiner, and the bare noun left is not read: only a qualified name ("content mode") fires. A verb form
+   is a third-person -es ("reaches"); -ed and -ing stay, since they qualify real names ("the staging phase", "a managed
+   setting"). The s of a possessive ("the maintainer's plan") is no qualifier either */
+const FUNC = new Set(["to", "and", "or", "nor", "but", "of", "for", "without", "with", "then", "than", "so", "as", "at", "by", "in",
+  "on", "from", "into", "onto", "per", "via", "if", "when", "until", "before", "after", "while"]);
+const VERB_FORM = /(?:es)$/;
+const namedView = s => { const t = strip(s); return [...t.matchAll(NAMED)].flatMap(m => { const w = m[1].toLowerCase();
+  const possessive = w === "s" && m.index > 0 && /['’]/.test(t[m.index - 1]);
+  return possessive || DET.has(w) || W[w] || FUNC.has(w) || VERB_FORM.test(w) ? [] : [(m[1] + " " + m[2]).toLowerCase()]; }); };
 /* the broad recommendation forms the page lets through: they may be someone else's. Rec as a
    whole word and recommend…, never Recent or Records */
 const REC_BROAD = /^[^A-Za-z]*(rec|recommend\w*|suggest\w*)\b|\bwe\s+suggest\b/i;
@@ -170,6 +184,11 @@ const PART = {context: "Context", impact: "the Impact line", tldr: "the TLDR", r
   why: "Why now", whyask: "Why ask", dep: "Depends on", evidence: "the Evidence"};
 const levelsOf = (c, k) => c.detail && typeof c.detail === "object" && Array.isArray(c.detail[k]) ? c.detail[k] : [];
 const optLevels = o => Array.isArray(o.detail) ? o.detail : [];
+/* an option's prose, the summary its levels step from: its plan in brief (F5), or, on an older option with none,
+   its text. The page reads the same (its planOf) */
+const optProse = o => page.planOf(o) || o.text;
+/* an option's view, as the page shows it (F5): its plan in brief, then the points of its Pros | Cons table */
+const viewTexts = o => [page.planOf(o), ...page.prosCons(o).flatMap(r => r[1])].filter(Boolean);
 
 function shapes(c, say) {
   const sh = (key, line) => say("shape " + key, "shape: " + line);
@@ -188,7 +207,8 @@ function shapes(c, say) {
   const fold = (name, key, sum, ls) => { if (ls.length && sum != null && sentences(textsOf(sum).join(" ")) > 2)
     sh("sum " + key, name + "'s summary is " + sentences(textsOf(sum).join(" ")) + " sentences: keep it to one or two; its levels carry the rest"); };
   for (const k of ["why", "whyask", "dep", "evidence"]) fold(PART[k], k, c[k], levelsOf(c, k));
-  for (const o of opts(c)) fold("(" + o.k + ")'s text", "o" + o.k, o.text, optLevels(o));
+  /* an older option's text; a plan in brief is 2-4 sentences by design, and the plan lint sizes it */
+  for (const o of opts(c)) if (!page.planOf(o)) fold("(" + o.k + ")'s text", "o" + o.k, o.text, optLevels(o));
   /* medium, terse bullets with a sub-bullet or two; high, headed sections */
   const medium = (name, m) => {
     if (typeof m === "string") return sh(name + " m", name + " more detail is prose: write it as terse bullets, with a sub-bullet or two where they help");
@@ -205,9 +225,9 @@ function shapes(c, say) {
     if (ls[0] != null) medium(PART[k], ls[0]);
     if (ls[1] != null) high(PART[k], ls[1]);
   }
-  for (const o of opts(c)) { const ls = optLevels(o);
-    if (ls[0] != null) medium("(" + o.k + ")'s text", ls[0]);
-    if (ls[1] != null) high("(" + o.k + ")'s text", ls[1]); }
+  for (const o of opts(c)) { const ls = optLevels(o), name = "(" + o.k + ")'s " + (page.planOf(o) ? "plan" : "text");
+    if (ls[0] != null) medium(name, ls[0]);
+    if (ls[1] != null) high(name, ls[1]); }
   /* the Impact's medium: one bullet per facet, the options in its sub-bullets; its high renders as facet sections */
   const im = levelsOf(c, "impact")[0];
   if (im && typeof im === "object") for (const k of IMP) { const v = im[k]; if (v == null) continue;
@@ -279,7 +299,7 @@ function depth(c, say) {
     for (let i = 1; i < ws.length; i++) if (ws[i] <= ws[i - 1])
       say("grow " + key + i, "depth: " + name + " " + LEVEL[i] + " is not longer than its " + LEVEL[i - 1] + " (" + ws[i] + " words against " + ws[i - 1] + "): each level is a fuller rendition of the one below it"); };
   for (const k in PART) grow(PART[k], k, summary[k], levelsOf(c, k));
-  for (const o of opts(c)) grow("(" + o.k + ")'s text", "o" + o.k, o.text, optLevels(o));
+  for (const o of opts(c)) grow("(" + o.k + ")'s " + (page.planOf(o) ? "plan" : "text"), "o" + o.k, optProse(o), optLevels(o));
   /* what a new card owes, which the page does not refuse so an upgraded older card renders with nothing invented */
   const missing = ["why", "whyask"].filter(k => !(typeof c[k] === "string" && c[k].trim()));
   if (missing.length) say("bg", "depth: " + missing.join(" and ") + " missing: a new card says why now and why it is asked (the Background fold); leave it knowingly only on an upgraded older card");
@@ -299,7 +319,7 @@ function depth(c, say) {
   else if (bg > 225) say("bg", "depth: Background is " + bg + " words at its fullest: keep Why now and Why ask near 150 together");
   let optWords = 0;
   for (const o of opts(c)) {
-    const top = words(topOf(o.text, optLevels(o)));
+    const top = words(topOf(optProse(o), optLevels(o)));
     if (o.k === "z") { optWords += top + words(o.effect); continue; }
     if (!(typeof o.reach === "string" && o.reach.trim()) && c.oneway !== true)
       say("row " + o.k, "depth: (" + o.k + ") has no reach: give it who or what it reaches, its undo where it is one-way or costly, and its cost where it has one");
@@ -312,8 +332,9 @@ function depth(c, say) {
   if (levelsOf(c, "evidence").length && c.basis !== "none" && ev < 60) say("ev", "depth: evidence is " + ev + " words at its fullest: give the basis drill-down near 150, what was observed, inferred and assumed, with the paths and links behind each; or leave it knowingly");
   else if (ev > 225) say("ev", "depth: evidence is " + ev + " words at its fullest: keep it near 150");
   /* the card in all: the flat part and Context at their summary, the fold parts at their top level (the basis reason
-     among them), each option's detail and its inline Pros and Cons rows; not act */
-  const pc = opts(c).reduce((n, o) => n + words(page.proCon(o).map(r => r[1])), 0);
+     among them), each option's detail (its plan or text at its top level, and its facets), its inline Pros and Cons
+     rows and the points of its view's Pros | Cons table; not act */
+  const pc = opts(c).reduce((n, o) => n + words(page.proCon(o).map(r => r[1])) + words(page.prosCons(o).map(r => r[1])), 0);
   const all = words(flat(c)) + words(c.context) + bg + ev + words(topOf(c.reason, levelsOf(c, "rec"))) + words(as) + optWords + pc;
   if (all > 1350) say("all", "depth: the card is " + all + " words in all: keep it near 600–900; a small call gets a short card");
   if (c.detail && typeof c.detail === "object")
@@ -354,6 +375,24 @@ function tradeoffs(c, say) {
   }
 }
 
+/* ---- the plan lint (F5): an option's view opens on its Plan in brief, what choosing it sets in motion, 2-4
+   sentences. It reads the page's own planOf, so a none plan counts as missing. (z) gives one too: what deciding
+   later sets in motion. A card with no plan on any option gets one line ---- */
+const PLAN_CAP = 100;
+function plan(c, say) {
+  const os = opts(c), miss = os.filter(o => !page.planOf(o)).map(o => o.k);
+  for (const o of os) { const n = words(page.planOf(o));
+    if (n > PLAN_CAP) say("plan long " + o.k, "depth: (" + o.k + ")'s plan is " + n + " words: keep its Plan in brief to 2–4 sentences, about " + PLAN_CAP + " words at most; its fuller renditions go in its levels (detail)"); }
+  /* a view opens on the plan: an option's text beside it is never shown */
+  for (const o of os) if (page.planOf(o) && typeof o.text === "string" && o.text.trim())
+    say("plan text " + o.k, "depth: (" + o.k + ") has both plan and text; text is not shown: its view opens on the plan, so put what text says in the plan or its levels (detail), and drop text");
+  if (!miss.length) return;
+  if (miss.length === os.length && os.length > 1)
+    say("plan", "depth: none of the card's " + os.length + " options carries its plan in brief: give each, (z) too, a plan (2–4 sentences, what choosing it sets in motion), the first part of its view; or leave it knowingly on an upgraded older card, whose view shows its text instead");
+  else for (const k of miss)
+    say("plan " + k, "depth: (" + k + ") has no plan: give it a Plan in brief (plan: 2–4 sentences, what choosing it sets in motion), the first part of its view; or leave it knowingly on an upgraded older card, whose view shows its text instead");
+}
+
 /* ---- the source label's short name: plain words, about 2 to 6 ---- */
 function labelName(c, say) {
   const l = c.label;
@@ -375,7 +414,7 @@ function cardTexts(c) {
   put("tldr", c.tldr);
   if (Array.isArray(c.assume)) for (const a of c.assume) if (a && typeof a === "object") put("assume", [a.rests, a.tw]);
   for (const o of opts(c)) {
-    for (const k of ["title", "line", "text", "effect", "reach", "undo", "cost", "pro", "con"]) put("(" + o.k + ")", o[k]);
+    for (const k of ["title", "line", "text", "plan", "effect", "reach", "undo", "cost", "pro", "con", "pros", "cons"]) put("(" + o.k + ")", o[k]);
     if (Array.isArray(o.act)) put("act (" + o.k + ")", o.act);
     if (Array.isArray(o.detail)) put("detail (" + o.k + ")", o.detail);
   }
@@ -409,15 +448,17 @@ function lintCard(c, w, sh, out) {
   const seen = new Set(), say = (key, line) => { if (!seen.has(key)) { seen.add(key); out.push(w + line); } };
   for (const [at, s] of cardTexts(c)) for (const x of ids(s)) say("id " + x[0], idLine(x, at));
   /* the terms a visible text uses, against Context's summary; at is "" for the flat part, or " (part, level)" */
-  const terms = (fields, at) => {
+  const terms = (fields, at, namer = named) => {
     for (const s of fields) for (const x of counts(s)) if (!ctxNums.has(x.n))
       say("count " + x.n, "\"" + x.word + "\"" + at + " counts things its context does not name: say what the " + x.word + " things are, or list them, in context");
-    for (const s of fields) for (const t of named(s)) if (!ctxLow.includes(t))
+    for (const s of fields) for (const t of namer(s)) if (!ctxLow.includes(t))
       say("named " + t, "\"" + t + "\"" + at + " is not glossed in its context: give it a one-line gloss in context, what it is and where it comes from");
   };
   terms(flat(c), "");
   /* the Pros and Cons rows are visible too, though not in the flat part's budget: the cold read covers them */
   terms(opts(c).flatMap(o => page.proCon(o).map(r => r[1])), " (pros and cons)");
+  /* and each option's view (F5), which picking the option opens: its plan in brief and its Pros | Cons table */
+  terms(opts(c).flatMap(viewTexts), " (an option's view)", namedView);
   c.tldr.forEach((b, i) => { if (REC_BROAD.test(b))
     say("tldr " + i, "tldr bullet " + (i + 1) + " may carry the recommendation: the options mark it; say what is decided instead, or leave it if it reports someone else's"); });
   /* the visible parts' medium and high: each steps alone, so the Context beside them may be its summary. The basis
@@ -434,6 +475,7 @@ function lintCard(c, w, sh, out) {
   depth(c, say);
   oneway(c, say);
   tradeoffs(c, say);
+  plan(c, say);
   labelName(c, say);
 }
 

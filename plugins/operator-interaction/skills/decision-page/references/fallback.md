@@ -37,7 +37,9 @@ first); this file sets only the layout.
   in the card's v5 order: the **Open questions** as a list (the fold above the Impact), then
   **Assumptions** (the fold under it): a **Basis:** line with the basis word and `reason`, the
   Evidence with its paths and links, then each assumption in bold with its *tripwire:* under
-  it; then each option in full with its Effect, Reach, Undo and Cost, then **Background**, the first fold
+  it; then each option's view, in the page's order: its **Plan in brief** (its `plan`, or an older
+  option's `text`), its **Pros | Cons** table (`pros` and `cons`, two columns), then its Effect,
+  Reach, Undo and Cost; then **Background**, the first fold
   after the options, a bold line with **Why now:** and **Why ask:** (class first) under it (a
   doc cannot fold, so the fold's content sits there, where the page keeps it closed), then
   Depends on. That is the card-in-all measure of

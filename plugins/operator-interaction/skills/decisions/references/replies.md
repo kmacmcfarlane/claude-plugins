@@ -122,6 +122,10 @@ line when it moves. The card
 itself is one scroll up; do not send it again. Re-render the whole card only when the options
 or the recommendation change, and then say which and why. Near-zero cost when you already
 know the fact; if finding it needs real work, say so and offer `dig into` instead.
+`tell me (x)`, an option's letter, asks for that option's view: answer with its *plan in
+brief:*, its `Pros | Cons` table, then its facet line, in that order
+(`references/rendering.md` § An option's view). It shows what the card holds and adds no
+fact, so it carries no **Added:** line.
 
 **`expand` — more detail.** Show the decision one level higher in your next message (line →
 card → block); a line expanded to a card gains its Context, and a card expanded to a block

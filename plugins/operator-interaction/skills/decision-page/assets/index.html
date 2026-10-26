@@ -8,7 +8,7 @@
    (the terms it uses), then a closed Open questions fold, then a closed Assumptions fold (the basis word and
    its reason, the evidence, each assumption with its tripwire), then its Impact, one facet a line (wait,
    reach, undo, cost: there is no card-level effect). Every view shows impact: a card's row the recommended
-   option's effect, an open card its Impact lines, each option's More its own effect, reach, undo
+   option's effect, an open card its Impact lines, each option's view its own effect, reach, undo
    (only where it is one-way or costly; ⚠ on an option flagged one-way) and cost. Each option but (z) shows its
    one-line Pros and Cons under it, as labelled rows, always visible. A decision raised from
    one labelled item of a source shows its title, then the label and its short name, muted. Inside a card the essentials are flat (TLDR, Context, Impact, options, follow-ups,
@@ -17,8 +17,10 @@
    decision-page/5: each card a decision-card/5 record (options as objects) plus L and dep. A part with a
    more-detail button, above or inside a fold, steps to more detail on a click (terse bullets)
    and again to full detail (headed sections); each level replaces the part's text, and the next
-   click goes back to the summary. The static lines do not step. More beside an option shows it
-   in full (open on a one-way card). A part, facet or field that is empty or "none" is not shown
+   click goes back to the summary. The static lines do not step. An option's view (F5, the v5 order): its Plan in
+   brief, then its Pros | Cons table, then its Effect, Reach, Undo and Cost; an older option with no plan shows its
+   text at its fullest level in the plan's place. Picking an option opens its view and closes the card's other open
+   one; More beside an option toggles its view alone; every view starts closed, a ⚠ card's too. A part, facet or field that is empty or "none" is not shown
    (isNone). A decision reference ([[N]]) reads N · short name: hovering or focusing it shows its
    tooltip, and a click opens its card when it is on the page; on one not on the page a tap or click
    pins the tooltip, and a second tap, a tap elsewhere or Escape closes it. All content comes from cards.json beside
@@ -173,6 +175,15 @@ details.more{margin:0 12px 9px 38px;font-size:.86rem}
 .omore{grid-column:2;grid-row:1;margin:8px 10px 0 0;min-height:28px}
 .odet{margin:0 12px 10px 38px;padding-top:7px;border-top:1px dashed var(--line);font-size:.88rem;max-width:70ch;min-width:0;overflow-wrap:anywhere;display:flex;flex-direction:column;gap:5px}
 .odet ul,.lv ul.lvl{margin:0;padding-left:1.2em;display:flex;flex-direction:column;gap:3px}
+/* an option's view, in the v5 order (F5): Plan in brief, its label over it, as Context's; then the Pros | Cons table,
+   two columns side by side, each headed by its facet label (as Effect and Reach are labelled), one point a row,
+   at most five a side; then the facets */
+.oplan{display:flex;flex-direction:column;gap:2px;min-width:0}
+.opc{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:4px 14px;padding:6px 0;border-block:1px solid var(--line);min-width:0}
+.opc>div{min-width:0;overflow-wrap:anywhere}
+.opc>.opcp{grid-column:1}
+.opc>.opcc{grid-column:2}
+.opc ul{margin:2px 0 0;padding-left:1.1em;display:flex;flex-direction:column;gap:3px}
 /* a part with detail levels: one rendition shows at a time; its button names the next step */
 .sec{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 10px;align-items:start}
 .sec>.lvb{grid-column:2;grid-row:1}
@@ -200,6 +211,9 @@ details.more{margin:0 12px 9px 38px;font-size:.86rem}
   .opt>.odet{grid-row:5}
   .sec{grid-template-columns:minmax(0,1fr)}
   .sec>.lvb{grid-column:1;grid-row:2;justify-self:end}
+  /* an option's view at phone width: the Pros | Cons columns stack, Pros then Cons */
+  .opc{grid-template-columns:minmax(0,1fr)}
+  .opc>.opcp,.opc>.opcc{grid-column:1}
 }
 details.more>summary,details.pane>summary{cursor:pointer;color:var(--accent);font-size:.82rem;list-style:none}
 details.more>summary::before,details.pane>summary::before{content:"▸ ";display:inline-block;transition:transform .15s}
@@ -274,7 +288,7 @@ footer{color:var(--muted);font-size:.85rem;max-width:70ch}
   <header>
     <h1 id="title">Decision answers</h1>
     <p class="lede" id="lede"></p>
-    <p class="lede">For each decision, pick one option or one follow-up (the radio buttons allow only one), and add your words if you like. Each click saves at once; there is no submit button. Tell Claude in chat when you're done. The map under the progress bar lists the groups; each decision is one line in its group, and a click on the line opens its card (<b>Expand all</b> and <b>Collapse all</b> open or close every card). <b>Use recommendation</b> and <b>Later</b> beside a line answer without opening the card. A <span class="slug-t">number · name</span> is a decision: hover over it or focus it to see it, and click it to open its card; on one not on this page, a tap or click pins what it shows, and a second tap, a tap elsewhere or Escape closes it. Each line shows, after an arrow (→) and its letter, what the recommended option changes in the system the work builds (with no recommendation, each option's, in a few words); each card opens on a TLDR, then its Context (the terms it uses), then its impact, one facet a line, then one line per option, each but (z) with its <b>Pros</b> and <b>Cons</b> under it; the folds under it go from compressed to full detail. A part with a <i>more detail</i> button, above or inside a fold, shows more detail as short bullets when you click it or its text, and full detail in headed sections on a second click; <b>More</b> beside an option shows it in full, with its own effect, reach, undo and cost. A part with nothing to say (none) is left out. An Impact describes the system the work builds, never the review or the process; its <i>later:</i> line says what waiting holds up. <b>Open questions</b>, folded above the Impact, lists what is not known yet; <b>Assumptions</b>, folded under it, gives the basis of the call, its evidence, and each assumption it rests on with its tripwire, the sign that would change it.<span id="doclink"></span></p>
+    <p class="lede">For each decision, pick one option or one follow-up (the radio buttons allow only one), and add your words if you like. Each click saves at once; there is no submit button. Tell Claude in chat when you're done. The map under the progress bar lists the groups; each decision is one line in its group, and a click on the line opens its card (<b>Expand all</b> and <b>Collapse all</b> open or close every card). <b>Use recommendation</b> and <b>Later</b> beside a line answer without opening the card. A <span class="slug-t">number · name</span> is a decision: hover over it or focus it to see it, and click it to open its card; on one not on this page, a tap or click pins what it shows, and a second tap, a tap elsewhere or Escape closes it. Each line shows, after an arrow (→) and its letter, what the recommended option changes in the system the work builds (with no recommendation, each option's, in a few words); each card opens on a TLDR, then its Context (the terms it uses), then its impact, one facet a line, then one line per option, each but (z) with its <b>Pros</b> and <b>Cons</b> under it; the folds under it go from compressed to full detail. A part with a <i>more detail</i> button, above or inside a fold, shows more detail as short bullets when you click it or its text, and full detail in headed sections on a second click; picking an option opens its view (and closes the card's other one), and <b>More</b> beside an option opens or closes its view alone: its plan in brief, its <b>Pros</b> and <b>Cons</b> side by side, then its own effect, reach, undo and cost. A part with nothing to say (none) is left out. An Impact describes the system the work builds, never the review or the process; its <i>later:</i> line says what waiting holds up. <b>Open questions</b>, folded above the Impact, lists what is not known yet; <b>Assumptions</b>, folded under it, gives the basis of the call, its evidence, and each assumption it rests on with its tripwire, the sign that would change it.<span id="doclink"></span></p>
     <div class="banner" id="nodb" hidden>This view can't save answers. Nothing you pick here is kept; answer in chat instead (<code id="nodbex">N: a</code>).</div>
     <div class="banner" id="viewonly" hidden>You are viewing these answers. Only the page's owner can answer here.</div>
     <div class="banner" id="nodata" hidden>The decisions didn't load. Reload the page; if it keeps failing, ask Claude for them in chat.</div>
@@ -380,6 +394,16 @@ const proConRows=o=>{const rs=proCon(o);
   return rs.length?'<div class="otr">'+rs.map(([l,v])=>'<p><span class="lbl">'+l+'</span><span>'+fmt(v)+'</span></p>').join("")+'</div>':''};
 /* an option's pros and cons in full (F5's table): at most five each, one point a row */
 const PROS_MAX=5;
+/* the table's points, a none one left out: [label, points] */
+const prosCons=o=>isObj(o)?[["Pros",o.pros],["Cons",o.cons]].map(([l,v])=>[l,Array.isArray(v)?v.filter(p=>isTxt(p)&&shown(p)):[]]):[];
+/* the Pros | Cons table (F5): two columns, each headed by its facet label, its points one a row; "" with none on
+   either side; a side with none is not drawn, and a lone side keeps its own column */
+const prosConTable=o=>{const cs=prosCons(o).filter(([,v])=>v.length);
+  return cs.length?'<div class="opc">'+cs.map(([l,v])=>'<div class="'+(l==="Pros"?"opcp":"opcc")+'"><span class="lbl">'+l+'</span><ul>'+v.map(p=>'<li>'+fmtD(p)+'</li>').join("")+'</ul></div>').join("")+'</div>':''};
+/* the option's Plan in brief (F5): what choosing it sets in motion, 2-4 sentences; "" when none, so an older option's
+   text takes its place. The runner's plan lint reads the same text */
+const PLAN_LABEL="Plan in brief";
+const planOf=o=>isObj(o)&&isTxt(o.plan)&&shown(o.plan)?o.plan:"";
 /* a line break of any kind: CR, LF, NEL, the line and paragraph separators, vertical tab, form feed */
 const LINE_BREAK=/[\r\n\u0085\u2028\u2029\v\f]/;
 /* a fill-in placeholder: an angle-bracketed word with no spaces, such as <dir> or <path> */
@@ -479,8 +503,10 @@ function cardProblems(c,w,keys){
     if(c.rec===null){if(!isStr(c.norec))bad.push(w+": rec null needs norec")}
     else if(!ls.includes(c.rec))bad.push(w+": rec is not one of its option letters");
     for(const o of os){const x=w+": ("+o.k+")";
-      for(const k of ["line","text","effect","reach","undo","cost","pro","con"])if(o[k]!=null&&!isStr(o[k]))bad.push(x+" "+k+" must be text");
+      for(const k of ["line","text","plan","effect","reach","undo","cost","pro","con"])if(o[k]!=null&&!isStr(o[k]))bad.push(x+" "+k+" must be text");
       /* the inline Pros and Cons are one line each; the points in full are pros and cons, one to five ((z) may give none) */
+      /* the plan in brief is one line of 2-4 sentences: chat draws it on one line */
+      if(isStr(o.plan)&&LINE_BREAK.test(o.plan))bad.push(x+" plan must be one line: its Plan in brief, 2-4 sentences, with no line break");
       for(const k of ["pro","con"])if(isStr(o[k])&&LINE_BREAK.test(o[k]))bad.push(x+" "+k+" must be one line: its inline "+(k==="pro"?"Pros":"Cons")+" row; put the points in full in "+k+"s");
       for(const k of ["pros","cons"])if(o[k]!=null){const v=o[k],lo=o.k==="z"?0:1;
         if(!Array.isArray(v))bad.push(x+" "+k+" must be a list of "+lo+" to "+PROS_MAX+" points as text");
@@ -684,8 +710,11 @@ function parts(c){
     dep:opt(c.dep,dl,"Not summarised: more detail shows what it depends on.",x=>labelled("Depends on",x)),
     ev:opt(c.evidence,ev,"Not summarised: more detail shows the evidence.",x=>rend(x,fmtD))
   };
-  for(const o of optsOf(c)){const lv=Array.isArray(o.detail)?o.detail:[];
-    P["opt-"+o.k]=shown(o.text)?[optPara(o.k,o.text)].concat(lv.map(x=>optPara(o.k,x))):(lv.length?lv.map(x=>optPara(o.k,x)):[""])}
+  /* an option's prose: its plan in brief, its levels stepping from it; an older option with no plan, its text and
+     its levels, the option's letter first */
+  for(const o of optsOf(c)){const lv=Array.isArray(o.detail)?o.detail:[],pl=planOf(o);
+    P["opt-"+o.k]=pl?[rend(pl,fmtD)].concat(lv.map(x=>rend(x,fmtD)))
+      :shown(o.text)?[optPara(o.k,o.text)].concat(lv.map(x=>optPara(o.k,x))):(lv.length?lv.map(x=>optPara(o.k,x)):[""])}
   return P;
 }
 /* one part: its renditions, one shown at a time, and a button naming the next step; just the summary when it has
@@ -697,23 +726,40 @@ function secHtml(c,key,label,rs,start){
     +'<button type="button" class="btn lvb" data-lv="'+key+'" data-n="'+n+'" data-lbl="'+esc(label)+'" aria-expanded="'+(at>0)+'" aria-controls="'+id+'" aria-label="'+esc(label)+': '+t+'">'+t+'</button>'
     +'<div id="'+id+'" data-secbody>'+rs.map((h,i)=>'<div class="lv"'+(i!==at?' hidden':'')+'>'+h+'</div>').join("")+'</div></div>';
 }
-/* More beside option k: the option in full. Its text opens at its fullest level and steps through the rest
-   (less detail goes to its summary, then up again); then its Effect, Reach, Undo and Cost. On a ⚠ one-way card
-   the facets come first, so its Undo sits at the top as the block's table row did. (z)'s effect, what waiting
-   does, is its Wait. Each piece that is none is left out (isNone), but Undo: a none Undo says the option cannot
-   be undone. An option with no undo is reversible at little cost, and shows none; one flagged oneway marks its
-   Undo ⚠ */
+/* option k's view (F5, the v5 order of 9168), on every card, ⚠ one-way or not: its Plan in brief (labelled; its
+   levels, when given, step from it: more detail, full detail, then back), then its Pros | Cons table, then its
+   Effect, Reach, Undo and Cost. An older option with no plan shows its text in the plan's place, unlabelled, at its
+   fullest level, stepping through the rest. (z)'s effect, what waiting does, is its Wait. Each piece that is none
+   is left out (isNone), but Undo: a none Undo says the option cannot be undone. An option with no undo is
+   reversible at little cost, and shows none; one flagged oneway marks its Undo ⚠ */
 function optionDetail(c,k,P){
   const o=optOf(c,k);
   if(!o)return "";
   P=P||parts(c);
-  const rs=P["opt-"+k];
+  const rs=P["opt-"+k],pl=!!planOf(o);
   const f=(l,v)=>isTxt(v)&&shown(v)?'<p class="f"><span class="lbl">'+l+'</span><span>'+fmtD(v)+'</span></p>':'';
-  const text=rs.length>1?secHtml(c,"opt-"+k,"Option ("+k+")",rs,rs.length-1):(rs[0]||"");
-  if(k==="z")return text+f("Wait",o.effect);
-  const facets=f("Effect",o.effect)+f("Reach",o.reach)+(isTxt(o.undo)?'<p class="f">'+(o.oneway===true?'<span class="lbl owu">⚠ Undo</span>':'<span class="lbl">Undo</span>')+'<span>'+fmtD(o.undo)+'</span></p>':'')+f("Cost",o.cost);
-  return c.oneway===true?facets+text:text+facets;
+  const prose=rs.length>1?secHtml(c,"opt-"+k,pl?PLAN_LABEL+" ("+k+")":"Option ("+k+")",rs,pl?0:rs.length-1):(rs[0]||"");
+  const plan=pl?'<div class="oplan"><span class="lbl">'+PLAN_LABEL+'</span>'+prose+'</div>':prose;
+  const facets=k==="z"?f("Wait",o.effect)
+    :f("Effect",o.effect)+f("Reach",o.reach)+(isTxt(o.undo)?'<p class="f">'+(o.oneway===true?'<span class="lbl owu">⚠ Undo</span>':'<span class="lbl">Undo</span>')+'<span>'+fmtD(o.undo)+'</span></p>':'')+f("Cost",o.cost);
+  return plan+prosConTable(o)+facets;
 }
+/* the option views on one card (F5): picking option k, its radio, opens k's view and closes the card's other open
+   one; More toggles one view alone. open is {letter: shown}; the next state comes back */
+const pickOpen=(open,k)=>{const o={};for(const x in open)o[x]=x===k;return o};
+const moreOpen=(open,k)=>Object.assign({},open,{[k]:!open[k]});
+/* show or hide the view a More button controls, its button pressed while it shows */
+function setView(root,b,on){
+  const el=root.getElementById(b.getAttribute("aria-controls"));if(!el)return;
+  el.hidden=!on;b.setAttribute("aria-expanded",String(on));b.classList.toggle("on",on);
+}
+/* the views of card n, by their More buttons: {letter: button} */
+const viewButtons=(root,n)=>{const m={};root.querySelectorAll('[data-omore][data-n="'+n+'"]').forEach(b=>{m[b.dataset.omore]=b});return m};
+const viewState=bs=>{const o={};for(const k in bs)o[k]=bs[k].getAttribute("aria-expanded")==="true";return o};
+/* option k picked on card n: its view opens, any other closes. root is the document (a stand-in under node) */
+function pickView(root,n,k){const bs=viewButtons(root,n),next=pickOpen(viewState(bs),k);for(const x in bs)setView(root,bs[x],next[x])}
+/* More on option k of card n: its view toggles, the others stay as they are */
+function moreView(root,n,k){const bs=viewButtons(root,n);if(!bs[k])return;const next=moreOpen(viewState(bs),k);setView(root,bs[k],next[k])}
 /* the effect a card's row shows after the rec pill (answer 340 (a)): the recommended option's own effect, its
    letter first, plain text at tag size; with no recommendation, each option's in a few words. One helper, so its
    source can change alone */
@@ -740,9 +786,10 @@ function cardHtml(c){
     +'<fieldset><legend>Your answer: one option or one follow-up</legend><div class="opts">';
   for(const o of optsOf(c)){const k=o.k;
     const isRec=!!c.rec&&k===c.rec, lab=k==="z"?"if left:":(isRec?"because:":"if chosen:");
-    /* More: every option with something to show; open at the start on a ⚠ one-way card, whose Impact rows
-       the decisions skill shows unfolded */
-    const more=g+'-'+fid(k)+'-more',det=optionDetail(c,k,P),open=c.oneway===true&&k!=="z";
+    /* More: every option with something to show. Every view starts closed, a ⚠ one-way card's too (the ⚠ shows
+       on the card's border, its row's pill, the Impact's ⚠ undo line and the ⚠ Undo in the view); picking the
+       option opens it */
+    const more=g+'-'+fid(k)+'-more',det=optionDetail(c,k,P),open=false;
     h+='<div class="opt'+(isRec?' isrec':'')+'"><label class="optl"><input type="radio" name="'+g+'" id="'+g+'-'+fid(k)+'" value="'+esc(k)+'">'
       +'<span class="ot"><span class="ol">('+esc(k)+')</span>'+esc(o.title)+(isRec?'<span class="pill rec">recommended</span>':'')+'</span>'
       +(shown(o.line)?'<span class="oi"><em>'+lab+'</em> '+fmt(o.line)+'</span>':'')+'</label>'
@@ -839,10 +886,7 @@ function stepSection(sec){
   sec.querySelectorAll(":scope>[data-secbody]>.lv").forEach((el,i)=>{el.hidden=i!==lvl});
   if(b){const t=lvText(lvl,max);b.textContent=t;b.setAttribute("aria-expanded",String(lvl>0));b.setAttribute("aria-label",b.dataset.lbl+": "+t)}
 }
-function toggleOption(b){
-  const el=document.getElementById(b.getAttribute("aria-controls"));if(!el)return;
-  el.hidden=!el.hidden;b.setAttribute("aria-expanded",String(!el.hidden));b.classList.toggle("on",!el.hidden);
-}
+function toggleOption(b){moreView(document,b.dataset.n,b.dataset.omore)}
 function placeholderFor(choice){const f=FOLLOW.find(x=>x[0]===choice);return f?f[3]:"Optional. Anything to add, e.g. “b, but keep X”."}
 
 function syncCard(n){
@@ -927,6 +971,8 @@ function goCard(k){
 document.addEventListener("change",e=>{
   const t=e.target;if(t.type!=="radio"||!t.name.startsWith("d"))return;
   choose(t.name.slice(1),t.value);
+  /* an option picked opens its view and closes the card's other one; a follow-up leaves the views as they are */
+  if(!FOLLOW_KEYS.has(t.value))pickView(document,t.name.slice(1),t.value);
   if(["later","tell me","dig into"].includes(t.value))$("#"+t.name+"-words").focus();
 });
 document.addEventListener("input",e=>{
@@ -959,6 +1005,10 @@ document.addEventListener("click",e=>{
   if(cl){if(readonly)return;const n=cl.dataset.clear;answers[n]={};const ta=$("#d"+n+"-words");if(ta)ta.value="";syncCard(n);syncAll();write(n);return}
   /* a part steps on its button, or on a click on its shown text: never on a link, a control, a fold's
      summary, or while text is selected (so it can be copied); More toggles its option's detail */
+  /* a click on an option's radio already picked fires no change: it opens the option's view all the same (picking
+     again re-opens it); a follow-up's leaves the views as they are */
+  const pk=e.target;
+  if(pk&&pk.type==="radio"&&pk.checked&&typeof pk.name==="string"&&pk.name.startsWith("d")&&!FOLLOW_KEYS.has(pk.value))pickView(document,pk.name.slice(1),pk.value);
   const lv=e.target.closest("[data-lv]"),om=e.target.closest("[data-omore]"),sb=e.target.closest("[data-secbody]");
   if(lv)stepSection(lv.closest(".sec"));
   else if(om)toggleOption(om);

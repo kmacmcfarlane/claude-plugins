@@ -192,7 +192,8 @@ Smallest to largest, each showing more of the impact in facet order (templates i
   size that adds the context the reader may have lost, whose folds are shown open (▾), and
   whose Impact line is followed by
   a table (a row per option, its effect, reach, undo and cost, plus a Wait row) in place of
-  the options' impact lines, then the Background fold open, why now and why ask on two
+  the options' impact lines, then each option's *plan in brief:* and its `Pros | Cons` table,
+  then the Background fold open, why now and why ask on two
   lines; its Assumptions fold, open, carries the basis drill-down with evidence links.
 
 **The line-only rule.** A decision may stay a list line only when all of these hold: the
@@ -275,7 +276,7 @@ Details, echo wording and edge cases: `references/replies.md`.
 | `N: letter`, or a choice in words | act — on a ⚠ decision, when the chosen option is one-way, repeat it back and act only once confirmed |
 | a source label for the number (`F7: a`) | read it as the decision whose title carries that label, and echo both (`references/replies.md`) |
 | `later [when]` | set the wake (a time, an event, or the next time you finish a piece of work and report); re-ask with what changed |
-| `tell me [what]` | answer under the same number with an **Added:** line and only the lines the fact changes |
+| `tell me [what]` | answer under the same number with an **Added:** line and only the lines the fact changes; `tell me (x)` answers with that option's view: its *plan in brief:*, its `Pros \| Cons` table, then its facet line |
 | `expand` | show it one level higher next round; on a block, say it is already at full detail |
 | `dig into [what]`, or picking a priced *investigate first* option | echo it (no read-back: it acts on nothing), run the bounded investigation, cost stated up front; bring the same number back |
 | `you decide` | decide, record why, report it — on ⚠ only a reversible option, said so; if the only good answer is the one-way option, repeat your recommendation and re-ask |
@@ -311,7 +312,7 @@ it appears: **paging** on a cold re-show.
 ## References
 
 - `references/worksheet.md` — the six groups, their fields, who supplies each, the two clocks, the Context and the Impact line, the cold read
-- `references/rendering.md` — the impact facets and Impact line, the Context section, the tag size, list line, card and block templates, the message layout, a bundle as a group, labels, source labels, the re-show
+- `references/rendering.md` — the impact facets and Impact line, the Context section, the tag size, list line, card and block templates, an option's view (`tell me (x)`), the message layout, a bundle as a group, labels, source labels, the re-show
 - `references/replies.md` — reply parsing, echo, read-back, batch, later and re-ask, reframe
 - `references/evidence-basis.md` — the basis word, its tags and the rule
 - `references/rationale.md` — why each rule, with its sources
