@@ -297,8 +297,10 @@ renders what the operator read instead of composing it again.
   only a reversible option; when the only good answer is the one-way option, it is
   re-asked, as the skill says.
 - **`drop`:** `answer N: drop — withdrawn — "<the reply>"`.
-- **A reframe:** `answer N: reframed as decision M — "<the reply>"`, and M is raised to the
-  floor like any new decision.
+- **A reframe:** two lines, written together: `answer N: reframed as decision M — "<the
+  reply>"` and `closed N: superseded by M`, and M is raised to the floor like any new
+  decision. A `withdrawn N:` line is never written; one already stored (`withdrawn N:
+  reframed as M`) is read as those two lines.
 - **A batch (`ok N-M`):** one `answer` line per accepted number, each keeping the batch
   reply verbatim (`answer 51: ok 51-53 (read as: …)`). The skipped ones stay open and are
   re-asked, as the skill says.

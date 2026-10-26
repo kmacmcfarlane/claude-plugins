@@ -3,8 +3,9 @@
 `wi` reads any `answer N:` line as answered, so what the librarian writes on one decides
 whether `wi needs-input` still lists a decision. A follow-up (`later`, `hold`, `dig into`,
 `tell me`, `expand`) is never stored as an answer line: it is a `wake N:` line, or nothing
-(L1), whether it came in chat or from an answer page or tick-box doc's read-back. This file
-pins that rule in `references/decisions.md` § What the store records, **Answered**.
+(L1), whether it came in chat or from an answer page or tick-box doc's read-back. A reframe
+writes its answer line and `closed N: superseded by M` together (L2). This file pins those
+rules in `references/decisions.md` § What the store records, **Answered**.
 
 Standard library only. Run from plugins/dev-flow:
 
@@ -56,6 +57,18 @@ class FollowUps(unittest.TestCase):
     def test_a_follow_up_stored_as_an_answer_is_moved(self):
         self.assertIn("` verbatim N (moved <UTC time>, from its answer line): <the original "
                       "line>`", flat(self.text))
+
+
+class Reframes(unittest.TestCase):
+    """L2: a reframe writes an answer line and a closed line together; `withdrawn N:` is
+    never written again, and one already stored is read as those two lines."""
+
+    def test_the_reframe_bullet_holds_both_lines(self):
+        reframe = bullet(DECISIONS.read_text(), "**A reframe:**")
+        self.assertIn('`answer N: reframed as decision M — "<the reply>"`', reframe)
+        self.assertIn("`closed N: superseded by M`", reframe)
+        self.assertIn("A `withdrawn N:` line is never written", reframe)
+        self.assertIn("is read as those two lines", reframe)
 
 
 if __name__ == "__main__":

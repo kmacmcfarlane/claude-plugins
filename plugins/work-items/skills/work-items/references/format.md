@@ -1286,7 +1286,11 @@ closed N: superseded by <M | <repo>#M>
 
 `acted` names the commit or the item that carried the answer out; `rule`
 the file the answer became a standing rule in; `superseded by` the later
-decision that replaced it. An answer carried out by several changes is
+decision that replaced it. A reframe closes as `superseded by M` at once,
+with its answer line: `answer N: reframed as decision M …` and `closed N:
+superseded by M`, written together. An older `withdrawn N: reframed as M`
+line (no grammar of its own) is read the same way, as that answer and that
+closed line; it is never written again. An answer carried out by several changes is
 closed when the last of them lands; one that changes nothing closes as
 `acted <the id of the item it was recorded on>`. A `drop` answer
 (`answer N: drop …`, the word `drop` unquoted) needs no `closed N:` line
@@ -1399,8 +1403,8 @@ kind's rules; this table is where a reader finds them all.
 | verbatim | `verbatim N (added <UTC>, from <source>): "<the reply>"`; `verbatim N (moved <UTC>, from its answer line): <the original line>` | indented, under its answer or wake line | the caller | no | landed |
 | given | `given: <UTC> · by: … · session: … · via: … [· delegation: <id>] [· why: …]` | indented, under its answer line | the caller | the answer-changes plan's pattern | planned (the answer-changes plan) |
 | wake | `wake N: <time \| event \| next Report>` | 0 | the caller, for `later`, `hold` and `dig into` | no | landed |
-| closed | `closed N: acted <sha \| id>`, `closed N: rule <path>`, `closed N: superseded by <M \| <repo>#M>` | 0 | the caller | no (§ Closed gives a reader's split) | landed |
-| withdrawn | `withdrawn N: reframed as M …` | 0 | written by some callers, with no grammar of its own | no | legacy |
+| closed | `closed N: acted <sha \| id>`, `closed N: rule <path>`, `closed N: superseded by <M \| <repo>#M>` | 0 | the caller; a reframe writes its `superseded by` line with its answer line | no (§ Closed gives a reader's split) | landed |
+| withdrawn | `withdrawn N: reframed as M …` | 0 | nobody: never written again | no | legacy: read as `answer N: reframed as decision M` and `closed N: superseded by M` (§ Closed) |
 | shown | `shown N: <UTC> <chat \| page \| doc>` | 0 | the session that displays the decision | `SHOWN_RE` | landed |
 | seen | `seen N: <UTC> <turn \| page \| doc>` | 0 | the session that displayed it | `SEEN_RE` | landed (held: § Shown and seen) |
 | decided | `decided: <UTC> <class> — … · authority: … · reopen: …` | 0 | the caller | no (§ Decided alone gives a reader's split) | landed |

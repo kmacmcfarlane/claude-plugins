@@ -148,5 +148,31 @@ class FollowUpsAreNeverAnswers(unittest.TestCase):
         self.assertIn("(moved <UTC>, from its answer line)", self.table["verbatim"]["form"])
 
 
+class Reframes(unittest.TestCase):
+    """L2: a reframe writes its answer line and `closed N: superseded by M` together; a
+    `withdrawn N:` line is legacy, read as those two lines."""
+
+    def setUp(self):
+        text = flat(FORMAT.read_text())
+        start = text.index("## Closed: `closed N:`")
+        self.closed = text[start:text.index("## Shown and seen", start)]
+        self.table = {row["kind"]: row for row in rows(section(FORMAT.read_text()))}
+
+    def test_the_closed_section(self):
+        self.assertIn("A reframe closes as `superseded by M` at once, with its answer line: "
+                      "`answer N: reframed as decision M …` and `closed N: superseded by M`, "
+                      "written together.", self.closed)
+        self.assertIn("An older `withdrawn N: reframed as M` line (no grammar of its own) is "
+                      "read the same way", self.closed)
+        self.assertIn("it is never written again", self.closed)
+
+    def test_withdrawn_is_legacy_in_the_table(self):
+        row = self.table["withdrawn"]
+        self.assertTrue(row["state"].startswith("legacy: read as `answer N: reframed as "
+                                                "decision M` and `closed N: superseded by M`"),
+                        row["state"])
+        self.assertEqual(row["writer"], "nobody: never written again")
+
+
 if __name__ == "__main__":
     unittest.main()
