@@ -338,7 +338,8 @@ Example:
   only on an option that is one-way or costly to undo (§ Impact). The bullet holds the
   option's label, and any plain-words gloss it needs;
   the consequence is on the impact line. (z) stays one line, what waiting costs after the
-  dash.
+  dash. Only the recommended option is bold — (b) above, in its own place, not moved first
+  (SKILL.md § Critical). With no recommendation, none is.
 - **Pros and cons**, under each option but (z), after its impact line: two italic lines,
   labelled as its facets are, `*pros: …*` then `*cons: …*`, the option's main upside and its
   main downside or risk, one line each (the record's `pro` and `con`; the answer page's
@@ -348,8 +349,8 @@ Example:
   recommendation with no downside is not weighed. A con is the option's own, not a reason
   against it relative to the recommendation: it says what choosing it costs or risks. A card
   upgraded from an older format may hold none: it shows none (nothing is invented), and gains
-  them when it is next revised. Only the recommended option is bold — (b) above, in its own place, not moved first
-  (SKILL.md § Critical). With no recommendation, none is.
+  them when it is next revised. (z) carries none, here and on the answer page: it stays one
+  line.
 - **▸ Background:** why now and why ask, in a closed fold, the first under the options, its
   summary `why now:` and the first sentence of why now (§ Folds). Inside it, **Why now:** says
   why it is up now, *nothing forces it* when nothing does (SKILL.md § The floor, item 3), and

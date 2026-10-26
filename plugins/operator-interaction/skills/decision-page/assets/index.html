@@ -164,8 +164,10 @@ details.more{margin:0 12px 9px 38px;font-size:.86rem}
 /* an option's Pros and Cons (302's feedback): two rows under it, always visible, each a facet label (.lbl, as
    Effect and Reach are labelled) in its own column, then the text, with no colon */
 .otr{grid-column:1/-1;margin:-4px 12px 9px 38px;display:flex;flex-direction:column;gap:1px;font-size:.84rem;color:var(--muted);max-width:70ch;min-width:0}
-.otr p{display:grid;grid-template-columns:4.2rem minmax(0,1fr);gap:8px;align-items:baseline;min-width:0;overflow-wrap:anywhere}
-.otr .lbl{padding-top:.1em}
+/* one facet layout, shared: the Pros and Cons rows and More's Effect, Reach, Undo and Cost, each its label in a
+   column of its own, then the text */
+.otr p,.odet .f{display:grid;grid-template-columns:4.2rem minmax(0,1fr);gap:8px;align-items:baseline;min-width:0;overflow-wrap:anywhere}
+.otr .lbl,.odet .f .lbl{padding-top:.1em}
 .act ol{margin:4px 0 0;padding-left:1.3em;display:flex;flex-direction:column;gap:3px}
 /* More beside an option: its full text and facets, toggled under it (never inside the label, so it never picks the radio) */
 .omore{grid-column:2;grid-row:1;margin:8px 10px 0 0;min-height:28px}
@@ -190,6 +192,7 @@ details.more{margin:0 12px 9px 38px;font-size:.86rem}
 .impline .lvs .lvh{font-size:.8rem}
 @media (max-width:640px){
   .omore{grid-column:1/-1;grid-row:auto;justify-self:end;margin:0 10px 8px}
+  .odet,.otr,.act{margin-left:12px}
   .sec{grid-template-columns:minmax(0,1fr)}
   .sec>.lvb{grid-column:1;grid-row:2;justify-self:end}
 }
@@ -365,12 +368,15 @@ const actList=(c,k)=>{const o=optOf(c,k),st=o?o.act:null;
   if(!Array.isArray(st)||!st.length)return "";
   return '<div class="act"><span class="lbl">To act on ('+esc(k)+'):</span><ol>'+st.map(x=>'<li>'+fmt(x)+'</li>').join("")+'</ol></div>'};
 /* an option's one-line Pros and Cons (302's feedback: "separate sub-headings just like Effect and Reach"): the
-   rows the page shows, [label, text], a none one left out. The runner's tradeoffs lint reads the same rows */
-const proCon=o=>isObj(o)?[["Pros",o.pro],["Cons",o.con]].filter(([,v])=>isTxt(v)&&shown(v)):[];
+   rows the page shows, [label, text], a none one left out. (z) decide later carries none, on either surface (chat's
+   (z) is one line): a pro or con on it is not shown. The runner's tradeoffs lints read the same rows */
+const proCon=o=>isObj(o)&&o.k!=="z"?[["Pros",o.pro],["Cons",o.con]].filter(([,v])=>isTxt(v)&&shown(v)):[];
 const proConRows=o=>{const rs=proCon(o);
   return rs.length?'<div class="otr">'+rs.map(([l,v])=>'<p><span class="lbl">'+l+'</span><span>'+fmt(v)+'</span></p>').join("")+'</div>':''};
 /* an option's pros and cons in full (F5's table): at most five each, one point a row */
 const PROS_MAX=5;
+/* a line break of any kind: CR, LF, NEL, the line and paragraph separators, vertical tab, form feed */
+const LINE_BREAK=/[\r\n\u0085\u2028\u2029\v\f]/;
 /* a fill-in placeholder: an angle-bracketed word with no spaces, such as <dir> or <path> */
 const PLACEHOLDER=/<[A-Za-z][\w-]*>/;
 
@@ -470,12 +476,14 @@ function cardProblems(c,w,keys){
     for(const o of os){const x=w+": ("+o.k+")";
       for(const k of ["line","text","effect","reach","undo","cost","pro","con"])if(o[k]!=null&&!isStr(o[k]))bad.push(x+" "+k+" must be text");
       /* the inline Pros and Cons are one line each; the points in full are pros and cons, one to five ((z) may give none) */
-      for(const k of ["pro","con"])if(isStr(o[k])&&/[\r\n]/.test(o[k]))bad.push(x+" "+k+" must be one line: its inline "+(k==="pro"?"Pros":"Cons")+" row; put the points in full in "+k+"s");
+      for(const k of ["pro","con"])if(isStr(o[k])&&LINE_BREAK.test(o[k]))bad.push(x+" "+k+" must be one line: its inline "+(k==="pro"?"Pros":"Cons")+" row; put the points in full in "+k+"s");
       for(const k of ["pros","cons"])if(o[k]!=null){const v=o[k],lo=o.k==="z"?0:1;
         if(!Array.isArray(v))bad.push(x+" "+k+" must be a list of "+lo+" to "+PROS_MAX+" points as text");
         else if(v.length>PROS_MAX)bad.push(x+" "+k+" has "+v.length+" points: give at most "+PROS_MAX+", the weightiest");
         else if(v.length<lo)bad.push(x+" "+k+" is empty: give 1 to "+PROS_MAX+" points as text, or leave it out");
-        else{const i=v.findIndex(p=>!isTxt(p));if(i>=0)bad.push(x+" "+k+" point "+(i+1)+" is not text: each point is one line of text")}}
+        else{const i=v.findIndex(p=>!isTxt(p)),j=v.findIndex(p=>isStr(p)&&LINE_BREAK.test(p));
+          if(i>=0)bad.push(x+" "+k+" point "+(i+1)+" is not text: each point is one line of text");
+          else if(j>=0)bad.push(x+" "+k+" point "+(j+1)+" has a line break: each point is one line of text")}}
       if(o.k!=="z"&&!isTxt(o.effect))bad.push(x+" needs its effect: what it changes, by its mechanism");
       /* a ⚠ one-way card shows every option's reach: the read-back weighs it */
       if(c.oneway===true&&o.k!=="z"&&!isTxt(o.reach))bad.push(x+" needs its reach: a ⚠ one-way card gives every option but (z) its reach");
@@ -695,10 +703,10 @@ function optionDetail(c,k,P){
   if(!o)return "";
   P=P||parts(c);
   const rs=P["opt-"+k];
-  const f=(l,v)=>isTxt(v)&&shown(v)?'<p><span class="lbl">'+l+'</span>'+fmtD(v)+'</p>':'';
+  const f=(l,v)=>isTxt(v)&&shown(v)?'<p class="f"><span class="lbl">'+l+'</span><span>'+fmtD(v)+'</span></p>':'';
   const text=rs.length>1?secHtml(c,"opt-"+k,"Option ("+k+")",rs,rs.length-1):(rs[0]||"");
   if(k==="z")return text+f("Wait",o.effect);
-  const facets=f("Effect",o.effect)+f("Reach",o.reach)+(isTxt(o.undo)?'<p>'+(o.oneway===true?'<span class="lbl owu">⚠ Undo</span>':'<span class="lbl">Undo</span>')+fmtD(o.undo)+'</p>':'')+f("Cost",o.cost);
+  const facets=f("Effect",o.effect)+f("Reach",o.reach)+(isTxt(o.undo)?'<p class="f">'+(o.oneway===true?'<span class="lbl owu">⚠ Undo</span>':'<span class="lbl">Undo</span>')+'<span>'+fmtD(o.undo)+'</span></p>':'')+f("Cost",o.cost);
   return c.oneway===true?facets+text:text+facets;
 }
 /* the effect a card's row shows after the rec pill (answer 340 (a)): the recommended option's own effect, its

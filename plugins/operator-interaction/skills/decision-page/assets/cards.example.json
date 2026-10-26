@@ -193,8 +193,6 @@
           "line": "[[42]] and [[43]] wait",
           "text": "Decide later.",
           "effect": "The local build stays until you answer; [[42]] and [[43]] wait.",
-          "pro": "nothing changes while the other two questions are thought through",
-          "con": "the cache failures continue, and [[42]] and [[43]] stay blocked",
           "pros": [
             "No setup work this week"
           ],
@@ -603,8 +601,6 @@
           "line": "the first CI publish waits",
           "text": "Decide later.",
           "effect": "The first CI publish waits for this answer.",
-          "pro": "the old addresses keep working while the laptop build stays",
-          "con": "the first CI publish cannot go out until this is answered",
           "cons": [
             "The move to CI publishing waits on this answer"
           ]
@@ -903,9 +899,7 @@
           "title": "Decide later",
           "line": "the blue stays",
           "text": "Decide later.",
-          "effect": "The site keeps the blue meanwhile.",
-          "pro": "the colour can be chosen once the CI build is settled",
-          "con": "the site keeps the blue, off the logo, meanwhile"
+          "effect": "The site keeps the blue meanwhile."
         }
       ],
       "q": "Which accent colour should the docs site use?"

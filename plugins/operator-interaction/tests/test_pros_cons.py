@@ -35,6 +35,8 @@ from test_depth import HARNESS, card, run_page
 from test_impact import NODE, PAGE, example, page_free_script
 from test_option_impact import DECIDE_LATER, FACET_LINE, OPTION
 
+# every line break check() refuses in a pro, a con or a point
+BREAKS = ["\n", "\r", "\u0085", "\u2028", "\u2029", "\v", "\f"]
 PROS = re.compile(r"^  \*pros: \S.*\*$")
 CONS = re.compile(r"^  \*cons: \S.*\*$")
 
@@ -80,6 +82,23 @@ def row_problems(o_html, pro, con):
     return out
 
 
+def layout_problems(html, c):
+    """The rows and More's facets share one layout: one CSS rule gives both the label column grid, and
+    each renders as a paragraph of that rule's class holding the label, then the text in its own span."""
+    out = []
+    if not re.search(r"\.otr p,\.odet \.f\{display:grid;grid-template-columns:4\.2rem minmax\(0,1fr\)", html):
+        out.append("no one rule lays out both the rows and More's facets")
+    for k in ("Effect", "Reach", "Cost"):
+        if '<p class="f"><span class="lbl">%s</span><span>' % k not in c["more"]["b"]:
+            out.append("More's %s is not in the facet layout" % k)
+    if '<p class="f"><span class="lbl owu">⚠ Undo</span><span>' not in c["more"]["b"]:
+        out.append("More's Undo is not in the facet layout")
+    for k in ("Pros", "Cons"):
+        if '<div class="otr"><p><span class="lbl">' not in c["html"] or '<p><span class="lbl">%s</span><span>' % k not in c["html"]:
+            out.append("the %s row is not in the facet layout" % k)
+    return out
+
+
 def page_with(script_text, d):
     """Card html rendered by a (mutated) page-free script."""
     out = subprocess.run([NODE, "-e", script_text + HARNESS], input=json.dumps([d]), capture_output=True,
@@ -122,17 +141,38 @@ class PageRows(unittest.TestCase):
                 seen += 1
         self.assertEqual(seen, 9)
 
-    def test_the_rows_carry_the_facet_label_style(self):
-        # the label is the class More's Effect and Reach carry, laid out in a column of its own
-        html = PAGE.read_text()
+    def test_the_rows_look_like_effect_and_reach(self):
+        # one layout, shared: the rows and More's facets are each a label in a column of its own, then the text
         res = run_page(example())
-        more = card(res, 41)["more"]["b"]
-        self.assertIn('<span class="lbl">Effect</span>', more)
-        self.assertIn('<span class="lbl">Reach</span>', more)
-        self.assertIn('<span class="lbl">Pros</span>', card(res, 41)["html"])
-        self.assertIn('<span class="lbl">Cons</span>', card(res, 41)["html"])
+        self.assertEqual(layout_problems(PAGE.read_text(), card(res, 42)), [])
         self.assertNotRegex(card(res, 41)["html"], r"Pros:|Cons:")
-        self.assertRegex(html, r"\.otr p\{display:grid;grid-template-columns:4\.2rem minmax\(0,1fr\)")
+
+    def test_mutants_a_split_layout_is_caught(self):
+        html = PAGE.read_text()
+        css = html.replace(".otr p,.odet .f{display:grid;", ".otr p{display:grid;", 1)
+        self.assertNotEqual(css, html)
+        self.assertTrue(layout_problems(css, card(run_page(example()), 42)))
+        src = page_free_script()
+        block = src.replace("""const f=(l,v)=>isTxt(v)&&shown(v)?'<p class="f">""", """const f=(l,v)=>isTxt(v)&&shown(v)?'<p>""", 1)
+        self.assertNotEqual(block, src)
+        self.assertTrue(layout_problems(html, card(page_with(block, example()), 42)))
+
+    def test_decide_later_draws_no_rows_even_when_given(self):
+        d = example()
+        for c in d["cards"]:
+            c["options"][-1]["pro"] = "nothing to set up"
+            c["options"][-1]["con"] = "the wait goes on"
+        res = run_page(d)
+        self.assertEqual(res["bad"], [])
+        for c in d["cards"]:
+            self.assertNotIn('class="otr"', opt_html(card(res, c["n"])["html"], c["n"], "z"), c["n"])
+        # the example's (z) gives none
+        self.assertFalse(any("pro" in c["options"][-1] or "con" in c["options"][-1] for c in example()["cards"]))
+        # mutant: (z) drawn like any option
+        src = page_free_script()
+        m = src.replace("""const proCon=o=>isObj(o)&&o.k!=="z"?""", "const proCon=o=>isObj(o)?", 1)
+        self.assertNotEqual(m, src)
+        self.assertIn('class="otr"', opt_html(card(page_with(m, d), 41)["html"], 41, "z"))
 
     def test_a_none_pro_or_con_has_no_row(self):
         d = example()
@@ -205,6 +245,20 @@ class PageCheck(unittest.TestCase):
         self.refused("b", "pro", "one\ntwo", "(b) pro must be one line")
         self.refused("a", "con", "one\r\ntwo", "(a) con must be one line")
         self.refused("a", "pro", 5, "(a) pro must be text")
+        for br in BREAKS:
+            self.refused("a", "pro", "one" + br + "two", "(a) pro must be one line")
+            self.refused("b", "cons", ["fine", "one" + br + "two"], "(b) cons point 2 has a line break")
+
+    def test_mutant_narrow_line_break_is_caught(self):
+        src = page_free_script()
+        m = src.replace("const LINE_BREAK=/[\\r\\n\\u0085\\u2028\\u2029\\v\\f]/;", "const LINE_BREAK=/[\\r\\n]/;", 1)
+        self.assertNotEqual(m, src)
+        d = example()
+        opt(d, 41, "a")["pro"] = "one\u2028two"
+        self.assertEqual(page_with(m, d)["bad"], [])
+        d = example()
+        opt(d, 41, "b")["pros"] = ["one\u0085two"]
+        self.assertEqual(page_with(m, d)["bad"], [])
 
     def test_what_is_allowed(self):
         d = example()
@@ -230,7 +284,10 @@ class TradeoffsLint(unittest.TestCase):
         for c in example()["cards"]:
             for o in c["options"]:
                 at = (c["n"], o["k"])
-                self.assertTrue(o.get("pro", "").strip() and o.get("con", "").strip(), at)
+                if o["k"] == "z":
+                    self.assertFalse("pro" in o or "con" in o, at)
+                else:
+                    self.assertTrue(o.get("pro", "").strip() and o.get("con", "").strip(), at)
                 lo = 0 if o["k"] == "z" else 1
                 for k in ("pros", "cons"):
                     v = o.get(k, [])
@@ -266,11 +323,24 @@ class TradeoffsLint(unittest.TestCase):
                               "it knowingly on an upgraded older card\n")
 
     def test_decide_later_is_never_linted(self):
+        # the example's (z) gives no pro or con; one given, past the cap, is not shown, so not linted
         d = example()
-        for c in d["cards"]:
-            o = c["options"][-1]
-            del o["pro"], o["con"]
+        d["cards"][0]["options"][-1]["pro"] = " ".join(["word"] * 40)
         self.assertEqual(runner(d)[:2], (0, ""))
+
+    def test_a_pro_or_con_past_the_cap(self):
+        d = example()
+        opt(d, 41, "a")["con"] = " ".join(["word"] * 25)
+        self.assertEqual(runner(d)[:2], (0, ""))
+        opt(d, 41, "a")["con"] = " ".join(["word"] * 26)
+        code, out, _ = runner(d)
+        self.assertEqual(code, 2, out)
+        self.assertEqual(out, "lint: card 41: shape: (a)'s con is 26 words: keep its Cons row to one line, about 25 "
+                              "words; the points in full go in cons\n")
+        js = RUNNER.read_text()
+        off = js.replace("if (n > PROCON_CAP)", "if (false)", 1)
+        self.assertNotEqual(off, js)
+        self.assertEqual(runner_with(off, d)[:2], (0, ""))
 
     def test_it_reads_what_the_page_shows(self):
         d = example()

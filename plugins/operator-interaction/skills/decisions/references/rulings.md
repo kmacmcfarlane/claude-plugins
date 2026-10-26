@@ -330,11 +330,12 @@ alternative not taken, in case practice argues for it.
   302: "pros and cons with separate sub-headings just like "Effect" and "Reach" to make them
   easy to read"; and on the v4 prototype: the trade-offs inline with each option, always
   visible, on two separate lines) — each option but (z) shows its main upside and downside in
-  one line each, always visible: on the answer page two **Pros** and **Cons** rows under the
-  option, labelled in the facet label's style; in chat two italic lines under its impact line,
+  one line each, always visible ((z) decide later carries none on either surface: chat's
+  one-line (z) sets it): on the answer page two **Pros** and **Cons** rows under the
+  option, labelled and laid out as the option's Effect and Reach are; in chat two italic lines under its impact line,
   `*pros: …*` and `*cons: …*`. The record's `pro` and `con` hold them, and `pros` and `cons`
   the points in full, one to five each, for the option's own view. The page runner's
   `tradeoffs` lint (an option with no pro or con, a recommended option with no con, a card
-  with none), the five-point cap, and the page's *if chosen:* in place of *not recommended
+  with none, a pro or con past about 25 words), the five-point cap, and the page's *if chosen:* in place of *not recommended
   because:* before a non-recommended option's line are designs made in planning, not the
   operator's. Not taken: a ▸ Trade-Offs fold; the trade-offs only behind **More**.

@@ -68,8 +68,8 @@ Two kinds of required:
 | `undo` | text | with `oneway` | how it is undone and at what cost, or that it cannot be; given only on an option one-way or costly to undo |
 | `oneway` | boolean | optional | `true` on an option one-way or costly to undo; it then needs its `undo` |
 | `cost` | text | optional | its cost, where it has one |
-| `pro` | text, one line | of a new card, but on (z) | its **Pros** row: the option's main upside in one line, shown under it, always visible, labelled like Effect and Reach (the operator's feedback on decision 302); in chat, its `*pros: …*` line under its impact line |
-| `con` | text, one line | of a new card, but on (z) | its **Cons** row: its main downside or risk in one line, shown under its Pros; the recommended option always gives one. In chat, its `*cons: …*` line |
+| `pro` | text, one line | of a new card, but on (z) | its **Pros** row: the option's main upside in one line, about 25 words at most, shown under it, always visible, labelled like Effect and Reach (the operator's feedback on decision 302); in chat, its `*pros: …*` line under its impact line. (z) has none on either surface: chat's (z) is one line, and the page shows no row for it |
+| `con` | text, one line | of a new card, but on (z) | its **Cons** row: its main downside or risk in one line, shown under its Pros; the recommended option always gives one. In chat, its `*cons: …*` line. None on (z) |
 | `pros` | list of text | optional | the option's upsides in full, one point each, one to five ((z) none to five), the weightiest first: the Pros column of the option's own view, its Pros \| Cons table. Until a surface draws that table, a reader checks them and keeps them as data |
 | `cons` | list of text | optional | its downsides in full, one point each, one to five ((z) none to five), the weightiest first: the table's Cons column |
 | `act` | list of text | optional | **To act on (x):** the steps the operator takes, one line each, in order; never on (z), never a fill-in placeholder (`<dir>`), never a secret's value |

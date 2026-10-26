@@ -116,7 +116,7 @@ today.*
 
 ▸ Background — why now: the design review is this afternoon, and it needs a preview.
 
-*Gallery note — pros and cons: under each option's impact line sit its `*pros:*` and `*cons:*` lines, labelled as its facets are, one line each: what the option gains, and what it costs or risks. The recommended (a) gives its con too, since a recommendation with no downside is not weighed; (b)'s con is its own cost, not "(a) is better". (z) stays one line. On the answer page the same two lines are each option's **Pros** and **Cons** rows.*
+*Gallery note — pros and cons: under each option's impact line sit its `*pros:*` and `*cons:*` lines, labelled as its facets are, one line each: what the option gains, and what it costs or risks. The recommended (a) gives its con too, since a recommendation with no downside is not weighed; (b)'s con is its own cost, not "(a) is better". (z) stays one line and carries neither, here and on the answer page. On the answer page the same two lines are each option's **Pros** and **Cons** rows, laid out as its Effect and Reach.*
 
 ---
 

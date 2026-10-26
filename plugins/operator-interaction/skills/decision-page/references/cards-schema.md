@@ -31,9 +31,10 @@ recommendation, `(recommended)`, or `(b) is recommended`); an `impact` without i
 reach as text, or with an undo or cost that is not text; an `open` that is not a list of text;
 an `assume` that is not a list of `{rests, tw}`, each non-empty text;
 an option but (z) with no effect; on a ⚠ card, an option but (z) with no reach; an option
-field that is not text; a `pro` or `con` on more than one line; a `pros` or `cons` that is not a
-list of text, holds more than five points or a point that is not text, or is empty on an option
-but (z); a `oneway` that is not true or false; an option flagged `oneway: true`
+field that is not text; a `pro` or `con` holding a line break (CR, LF, NEL, a line or
+paragraph separator, a vertical tab or form feed); a `pros` or `cons` that is not a list of
+text, holds more than five points, a point that is not text or one holding a line break, or is
+empty on an option but (z); a `oneway` that is not true or false; an option flagged `oneway: true`
 without its undo; an `act` on (z), or one that is not a non-empty list of steps as text, a step
 holding a fill-in placeholder (an angle-bracketed word with no spaces, such as `<dir>` or
 `<path>`), or a step holding a line break; a `label` that is not `{id, name}`, the id one word
@@ -108,8 +109,9 @@ Each record field maps to a part of the `decisions` skill's card (its `reference
 - the options, each its letter and `title`, the recommended one bold with a *recommended*
   pill, its `line` after the page's label (*because:* on the recommended option, *if chosen:*
   on every other but (z), *if left:* on (z)), then its `pro` and `con` as two rows under it,
-  always visible, labelled **Pros** and **Cons** in the facet label's style (as Effect and
-  Reach are labelled), each in the label column with its text after it and no colon; then its
+  always visible, labelled **Pros** and **Cons** and laid out as its **More**'s Effect, Reach,
+  Undo and Cost are (the label in a column of its own, the text after it, no colon); (z) has no
+  rows, even when given; then its
   `act` as **To act on (x):** under it, and its **More**: its `text` at its fullest level, then its Effect, Reach, Undo and Cost ((z)'s
   effect is its Wait). On a ⚠ card the facets come first and every option's **More** but (z)'s
   starts open;

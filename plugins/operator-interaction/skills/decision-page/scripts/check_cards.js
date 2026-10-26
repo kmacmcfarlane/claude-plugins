@@ -38,7 +38,8 @@
       - one-way options: a ⚠ card with no option flagged oneway; a flagged option while the
         Impact carries no undo;
       - trade-offs: an option but (z) with no one-line pro or con (the inline Pros and Cons rows);
-        a recommended option with no con; a card with two or more real options and none.
+        a recommended option with no con; a card with two or more real options and none; a pro or
+        con past PROCON_CAP words.
       Lints are proxies.
 
    Prints one line per problem. Exit 0 clean; 1 on a refusal, or on a file or template that
@@ -333,8 +334,12 @@ function oneway(c, say) {
 /* ---- the trade-offs lint (302's feedback, F4): each option but (z) shows its one-line Pros and Cons under it. It reads
    the rows the page shows (its own proCon: a none one is not shown). A card with two or more real options and none
    gets one line; otherwise each option missing a row gets its own, and a recommended option with no con its own ---- */
+const PROCON_CAP = 25;
 function tradeoffs(c, say) {
   const real = opts(c).filter(o => o.k !== "z");
+  /* a row is one line: a pro or con past the cap is a paragraph, which belongs in pros or cons */
+  for (const o of real) for (const [l, v] of page.proCon(o)) { const n = words(v);
+    if (n > PROCON_CAP) say("tradeoffs long " + o.k + l, "shape: (" + o.k + ")'s " + (l === "Pros" ? "pro" : "con") + " is " + n + " words: keep its " + l + " row to one line, about " + PROCON_CAP + " words; the points in full go in " + (l === "Pros" ? "pros" : "cons")); }
   const rows = o => new Set(page.proCon(o).map(r => r[0]));
   if (real.length >= 2 && real.every(o => !rows(o).size)) {
     say("tradeoffs", "shape: none of the card's " + real.length + " options but (z) carries its pros and cons: give each a one-line pro and con (pro, con: the inline Pros and Cons rows), or leave it knowingly on an upgraded older card");

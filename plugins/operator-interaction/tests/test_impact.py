@@ -173,7 +173,7 @@ class DecisionPageImpact(unittest.TestCase):
         res = run_page(d)
         self.assertEqual(res["bad"], [])
         more = res["views"][2]["more"]
-        self.assertIn('<span class="lbl">Effect</span>Links and headings turn the logo', more["b"])
+        self.assertIn('<span class="lbl">Effect</span><span>Links and headings turn the logo', more["b"])
         for k in ("a", "b"):
             self.assertNotIn(">Reach<", more[k])
 
