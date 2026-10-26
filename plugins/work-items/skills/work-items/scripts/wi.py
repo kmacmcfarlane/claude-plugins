@@ -4325,11 +4325,12 @@ def _item_has_decision(item, n):
                and int(m.group(1)) == n for i, line in enumerate(lines))
 
 
-def _card_dir(root, iid, n, make):
+def _card_dir(root, iid, n, make, tail="nothing written"):
     """cards/<id>/<N> walked level by level: each level lstat-ed, a
     symlink or non-directory refused (exit 3), a missing level made with
     os.mkdir (never makedirs, which follows a link) when `make`; then the
-    real path must lie under the store's cards/."""
+    real path must lie under the store's cards/. `tail` ends a refusal
+    (the read path says nothing read)."""
     level = Path(root)
     for seg in ("cards", iid, str(n)):
         level = level / seg
@@ -4348,16 +4349,15 @@ def _card_dir(root, iid, n, make):
             st = os.lstat(level)
         if stat.S_ISLNK(st.st_mode):
             raise WiError(3, f"{level} is a symbolic link; a card record is "
-                             "never written or read through one; nothing "
-                             "written")
+                             f"never written or read through one; {tail}")
         if not stat.S_ISDIR(st.st_mode):
-            raise WiError(3, f"{level} is not a directory; nothing written")
+            raise WiError(3, f"{level} is not a directory; {tail}")
     # defence in depth: the lstat walk above already refuses every link,
     # so this is unreachable today; kept should a later change loosen it
     under = os.path.join(os.path.realpath(root), "cards") + os.sep
     if not os.path.realpath(level).startswith(under):
         raise WiError(3, f"{level} resolves outside the store's cards/; "
-                         "nothing written")
+                         f"{tail}")
     return level
 
 
@@ -4392,6 +4392,57 @@ def _existing_record(root, rel, path, data):
                          "from a stopped write), then run the raise again; "
                          "nothing written")
     return "adopt"
+
+
+def read_card_record(root, iid, n, rel, rev, fmt):
+    """(bytes, record) of the card record a `card:` line names (3b51 W3,
+    format.md § Card records, Reading a record): the path's segments are
+    the item id, N and the name the line's rev and format give; no level
+    and not the file is a symlink (the level walk, never followed); the
+    file parses as the strict JSON the write took, and its n, rev and
+    format are the line's. The bytes are the file's as read, never
+    re-serialized. Any failure is WiError(3), never quoting content."""
+    def changed(what):
+        return WiError(3, f"card record {what} ({rel}); restore it from the "
+                          f"store's history (git -C {root} log -- {rel}); "
+                          "never backfill it")
+    parts = rel.split("/")
+    name = rev.replace(":", "-") + f".card{fmt.split('/', 1)[1]}.json"
+    if len(parts) != 4 or parts[0] != "cards" or parts[1] != iid \
+            or parts[2] != str(n) or parts[3] != name:
+        raise WiError(3, f"the card: line for decision {n} on {iid} names "
+                         f"{rel}, which is not this decision's record path "
+                         f"(cards/{iid}/{n}/{name}); nothing read")
+    path = _card_dir(root, iid, n, make=False, tail="nothing read") / name
+    try:
+        st = os.lstat(path)
+    except FileNotFoundError:
+        raise changed("missing") from None
+    except OSError:
+        raise changed("unreadable") from None
+    if stat.S_ISLNK(st.st_mode):
+        raise WiError(3, f"{path} is a symbolic link; a card record is never "
+                         "written or read through one; nothing read")
+    if not stat.S_ISREG(st.st_mode):
+        raise changed("not a regular file")
+    try:
+        # O_NOFOLLOW: a link swapped in since the lstat is refused, not read
+        fd = os.open(path, os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0))
+        with open(fd, "rb") as fh:
+            data = fh.read(RECORD_CAP + 1)
+    except OSError:
+        raise changed("unreadable") from None
+    if len(data) > RECORD_CAP:
+        raise changed("changed")
+    try:
+        rec = _parse_record(data.decode("utf-8"))
+    except (UnicodeDecodeError, WiError):
+        raise changed("changed") from None
+    got_n = rec.get("n")
+    if type(got_n) is not int or got_n != n or rec.get("rev") != rev \
+            or rec.get("format") != fmt:
+        raise changed("changed")
+    return data, rec
 
 
 def _encodable(what, line):
@@ -4961,10 +5012,19 @@ def cmd_ls(args):
 
 
 def cmd_show(args):
+    if args.card is None and args.all:
+        raise WiError(1, "--all goes with --card N")
+    if args.card is not None:
+        if args.brief:
+            raise WiError(1, "--brief and --card are exclusive")
+        if not DECISION_N_RE.fullmatch(args.card):
+            raise WiError(1, "--card takes a decision number (1-9 digits)")
     root = resolve_root(args.root)
     items = load_all(root, archived=True)
-    by_id = DepIndex(root, items, archived=True)
     item = resolve_id(items, args.id)
+    if args.card is not None:
+        return show_card(root, item, int(args.card), args.all, args.json)
+    by_id = DepIndex(root, items, archived=True)
     if args.json:
         rec = item_json(item, by_id)
         rec["body"] = item.desc
@@ -4991,6 +5051,53 @@ def cmd_show(args):
                 print(f"- {ref}")
     else:
         print(item.render(plain=False), end="")
+    return 0
+
+
+def show_card(root, item, n, every, as_json):
+    """`show <id> --card N` (3b51 W3): the current card record of decision
+    N, the last `card:` line for N, checked by read_card_record; with
+    `every`, each revision's line in file order, every file checked, the
+    last marked current. Exit 2 when N has no `card:` line on the item;
+    3 when a file is missing, unreadable or mismatched. Read-only."""
+    lines = card_lines(item).get(n)
+    if not lines:
+        raise WiError(2, f"decision {n} has no card record on {item.id}: a "
+                         "card stored before v5, or a headline only; read it "
+                         "by the decisions skill's legacy reference")
+    if not every:
+        lines = lines[-1:]
+    revs = []
+    for rel, rev, fmt in lines:
+        data, rec = read_card_record(root, item.id, n, rel, rev, fmt)
+        revs.append({"path": rel, "rev": rev, "format": fmt,
+                     "sha256": hashlib.sha256(data).hexdigest(),
+                     "data": data, "record": rec})
+    if every:
+        if as_json:
+            print(json.dumps({"item": item.id, "n": n, "revisions": [
+                {"path": r["path"], "rev": r["rev"], "format": r["format"],
+                 "sha256": r["sha256"], "current": i == len(revs) - 1}
+                for i, r in enumerate(revs)]}, indent=1, ensure_ascii=False))
+        else:
+            for i, r in enumerate(revs):
+                print(f"{r['path']} rev {r['rev']} · {r['format']} "
+                      f"sha256:{r['sha256']}"
+                      + (" (current)" if i == len(revs) - 1 else ""))
+        return 0
+    r = revs[0]
+    if as_json:
+        print(json.dumps({"item": item.id, "n": n, "path": r["path"],
+                          "rev": r["rev"], "format": r["format"],
+                          "sha256": r["sha256"], "record": r["record"]},
+                         indent=1, ensure_ascii=False))
+        return 0
+    sys.stdout.write(f"card: {r['path']}\nrev: {r['rev']}\n"
+                     f"format: {r['format']}\nsha256: {r['sha256']}\n\n")
+    sys.stdout.flush()
+    # the file's bytes as written, never re-serialized
+    sys.stdout.buffer.write(r["data"])
+    sys.stdout.buffer.flush()
     return 0
 
 
@@ -7249,8 +7356,11 @@ def build_parser():
             ("--json",), ("--plain",), ("--limit", dict(type=int, default=7)),
             ("--stale", dict(default="24h")), ("--pipeline",), ("--one",),
             ("--claim", dict(metavar="WORKER")), ("--non-interactive",)],
-        ("show", cmd_show, "show one item"): [
-            ("id", {}), ("--brief",), ("--json",)],
+        ("show", cmd_show, "show one item; --card N prints decision N's "
+         "current card record (path, rev, format, the sha256 of the file's "
+         "bytes, then the bytes), --all every revision's line; read-only"): [
+            ("id", {}), ("--brief",), ("--json",),
+            ("--card", dict(metavar="N")), ("--all",)],
         ("add", cmd_add, "create an item"): [
             ("title", {}), ("-t", "--type", dict(default="task", choices=sorted(TYPES))),
             ("-p", "--priority", dict(type=int, default=2, choices=range(5))),

@@ -7,6 +7,10 @@ store-wide); `--lines` adds machine lines, also alone under the current card;
 refusals, two secret scans, a symlink-safe level walk, and adoption of a
 byte-identical orphan.
 
+W3: `wi show <id> --card N [--all] [--json]` reads the current record (or
+every revision) back with the sha256 of its exact bytes, refusing a
+symlinked level and a missing or mismatched file.
+
 Each check here was proved against a mutant of wi.py (the mutant named in
 the test's docstring makes it fail). Temporary stores only; git runs with a
 temp HOME and global config, and never sees a repo around the temp dir.
@@ -17,6 +21,7 @@ Standard library only. Run from plugins/work-items/skills/work-items:
 """
 import copy
 import fcntl
+import hashlib
 import importlib.util
 import json
 import os
@@ -1098,6 +1103,211 @@ class TestOwnRepo(CardCase):
             f"cards/{IID}/1/2026-10-23T10-00-00Z.card5.json",
             f"items/{IID}.md", "store.yaml"]))
         self.assertEqual(self.git("status", "--porcelain").stdout, "")
+
+
+class TestShowCard(CardCase):
+    """3b51 W3: `wi show <id> --card N [--all] [--json]` reads decision N's
+    card record: path, rev, format, the sha256 of the file's exact bytes,
+    and the record; exit 2 with no `card:` line, 3 for a missing,
+    unreadable or mismatched file or a symlinked level; read-only."""
+
+    REL1 = f"cards/{IID}/1/2026-10-23T10-00-00Z.card5.json"
+    REL2 = f"cards/{IID}/1/2026-10-23T11-00-00Z.card5.json"
+
+    def setUp(self):
+        super().setUp()
+        self.raise_rec()
+        self.ok("raise", IID, "--revise", "1", "--why", "re-asked",
+                "--record", self.write_rec(record(n=1, rev=REV2,
+                                                  q="Ship it today?")))
+
+    def show(self, *extra, **kw):
+        return self.wi("show", IID, "--card", "1", *extra, **kw)
+
+    def sha(self, rel):
+        return hashlib.sha256((self.root / rel).read_bytes()).hexdigest()
+
+    def test_current_record_and_its_hash(self):
+        """The last card: line's file, its sha256 over the file's bytes,
+        then the bytes as written; the store unchanged. Mutant: the first
+        card: line taken."""
+        before = self.snapshot()
+        r = subprocess.run([sys.executable, str(WI), "show", IID, "--card",
+                            "1"], env=dict(self.env,
+                                           WORK_ITEMS_ROOT=str(self.root)),
+                           capture_output=True)
+        self.assertEqual(r.returncode, 0, r.stderr)
+        data = (self.root / self.REL2).read_bytes()
+        self.assertEqual(r.stdout, (
+            f"card: {self.REL2}\nrev: {REV2}\nformat: decision-card/5\n"
+            f"sha256: {hashlib.sha256(data).hexdigest()}\n\n").encode()
+            + data)
+        self.assertEqual(self.snapshot(), before)
+
+    def test_bytes_never_reserialized(self):
+        """The bytes on disk are printed and hashed as they are, whatever
+        their layout (here compact, a non-ASCII value unescaped). Mutants:
+        the record re-serialized for the output, or for the hash."""
+        path = self.root / self.REL2
+        rec = json.loads(path.read_text())
+        rec["context"] = "café ⚠"
+        data = json.dumps(rec, ensure_ascii=False,
+                          separators=(",", ":")).encode()
+        path.write_bytes(data)
+        r = subprocess.run([sys.executable, str(WI), "show", IID, "--card",
+                            "1"], env=dict(self.env,
+                                           WORK_ITEMS_ROOT=str(self.root)),
+                           capture_output=True)
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertTrue(r.stdout.endswith(b"\n\n" + data))
+        self.assertIn(f"sha256: {hashlib.sha256(data).hexdigest()}\n"
+                      .encode(), r.stdout)
+
+    def test_all(self):
+        """Both lines in file order, the second marked current. Mutant:
+        (current) on every line."""
+        r = self.show("--all")
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertEqual(r.stdout, (
+            f"{self.REL1} rev {REV} · decision-card/5 "
+            f"sha256:{self.sha(self.REL1)}\n"
+            f"{self.REL2} rev {REV2} · decision-card/5 "
+            f"sha256:{self.sha(self.REL2)} (current)\n"))
+
+    def test_json(self):
+        """The keys; record is the file's JSON."""
+        r = self.show("--json")
+        self.assertEqual(r.returncode, 0, r.stderr)
+        got = json.loads(r.stdout)
+        self.assertEqual(set(got), {"item", "n", "path", "rev", "format",
+                                    "sha256", "record"})
+        self.assertEqual((got["item"], got["n"], got["path"], got["rev"],
+                          got["format"], got["sha256"]),
+                         (IID, 1, self.REL2, REV2, "decision-card/5",
+                          self.sha(self.REL2)))
+        self.assertEqual(got["record"],
+                         json.loads((self.root / self.REL2).read_text()))
+
+    def test_all_json(self):
+        r = self.show("--all", "--json")
+        self.assertEqual(r.returncode, 0, r.stderr)
+        got = json.loads(r.stdout)
+        self.assertEqual(got, {"item": IID, "n": 1, "revisions": [
+            {"path": self.REL1, "rev": REV, "format": "decision-card/5",
+             "sha256": self.sha(self.REL1), "current": False},
+            {"path": self.REL2, "rev": REV2, "format": "decision-card/5",
+             "sha256": self.sha(self.REL2), "current": True}]})
+
+    def test_no_card_line_exits_2(self):
+        """A legacy card (a headline, no card: line): exit 2, the message a
+        caller tells from an older wi's argparse exit 2."""
+        self.item(OTHER, notes="decision 7: Old question? — options: (a) x "
+                               "| (z) decide later\n  impact: legacy")
+        r = self.wi("show", OTHER, "--card", "7")
+        self.assertEqual(r.returncode, 2, r.stdout + r.stderr)
+        self.assertEqual(r.stdout, "")
+        self.assertIn(f"decision 7 has no card record on {OTHER}: a card "
+                      "stored before v5, or a headline only; read it by the "
+                      "decisions skill's legacy reference", r.stderr)
+        # N not on the item at all reads the same
+        r = self.wi("show", IID, "--card", "2")
+        self.assertEqual(r.returncode, 2, r.stdout + r.stderr)
+
+    def test_missing_file_exits_3(self):
+        """Exit 3 naming the path and the history to restore it from; no
+        file written back. Mutant: a missing file read as exit 0."""
+        (self.root / self.REL2).unlink()
+        r = self.show()
+        self.assertEqual(r.returncode, 3, r.stdout + r.stderr)
+        self.assertEqual(r.stdout, "")
+        self.assertIn(f"card record missing ({self.REL2}); restore it from "
+                      f"the store's history (git -C {self.root} log -- "
+                      f"{self.REL2}); never backfill it", r.stderr)
+        self.assertFalse((self.root / self.REL2).exists())
+
+    def test_mismatched_file_exits_3(self):
+        """A file whose n, rev or format differs from its line, or that
+        no longer parses: exit 3, content never quoted. Mutant: the field
+        check removed."""
+        path = self.root / self.REL2
+        good = json.loads(path.read_text())
+        for field, val in (("rev", REV), ("n", 2), ("format",
+                                                    "decision-card/6"),
+                           ("n", True)):
+            with self.subTest(field=field, val=val):
+                rec = dict(good, **{field: val})
+                path.write_text(json.dumps(rec, indent=2) + "\n")
+                r = self.show()
+                self.assertEqual(r.returncode, 3, r.stdout + r.stderr)
+                self.assertIn(f"card record changed ({self.REL2})", r.stderr)
+        for bad in (b"{\"n\": 1,", b"\xff\xfe", b"[]\n",
+                    b"{\"q\": NaN}\n"):
+            with self.subTest(bad=bad):
+                path.write_bytes(bad)
+                r = self.show()
+                self.assertEqual(r.returncode, 3, r.stdout + r.stderr)
+                self.assertIn("changed", r.stderr)
+                self.assertNotIn("NaN", r.stderr)
+
+    def test_line_naming_another_path_exits_3(self):
+        """A card: line under decision 1 naming decision 2's directory:
+        refused, never read from the decision's own path instead. Mutant:
+        the segment check removed (the file at cards/<id>/1/ read, exit
+        0)."""
+        name = "2026-10-23T11-00-00Z.card5.json"
+        text = self.item_text().replace(f"/1/{name}", f"/2/{name}")
+        (self.root / "items" / f"{IID}.md").write_text(text)
+        r = self.show()
+        self.assertEqual(r.returncode, 3, r.stdout + r.stderr)
+        self.assertIn("not this decision's record path", r.stderr)
+
+    def test_symlinked_levels_refused(self):
+        """cards, cards/<id>, cards/<id>/<N> or the file a link to a valid
+        copy outside the store: exit 3, the target never read. Mutant: the
+        lstat walk removed (the copy read, exit 0)."""
+        cards = self.root / "cards"
+        out = self.tmp / "outside"
+        shutil.copytree(cards, out)
+        for level in ("cards", f"cards/{IID}", f"cards/{IID}/1",
+                      self.REL2):
+            with self.subTest(level=level):
+                real = self.root / level
+                saved = self.tmp / "saved"
+                os.rename(real, saved)
+                os.symlink(out / Path(level).relative_to("cards")
+                           if level != "cards" else out, real)
+                try:
+                    r = self.show()
+                    self.assertEqual(r.returncode, 3, r.stdout + r.stderr)
+                    self.assertEqual(r.stdout, "")
+                    self.assertIn("is a symbolic link; a card record is "
+                                  "never written or read through one; "
+                                  "nothing read", r.stderr)
+                finally:
+                    os.unlink(real)
+                    os.rename(saved, real)
+        self.assertEqual(self.show().returncode, 0)
+
+    def test_archived_item_still_resolves(self):
+        """wi archive moves the item, never cards/: exit 0, the same
+        bytes."""
+        before = (self.root / self.REL2).read_bytes()
+        self.ok("done", IID)
+        self.ok("archive", "--older-than", "0d")
+        self.assertFalse((self.root / "items" / f"{IID}.md").exists())
+        r = self.show("--json")
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertEqual(json.loads(r.stdout)["sha256"],
+                         hashlib.sha256(before).hexdigest())
+
+    def test_usage(self):
+        """A bad N, --all without --card, --brief with --card: exit 1."""
+        for args in (("--card", "0"), ("--card", "x"), ("--card", "1 "),
+                     ("--all",), ("--card", "1", "--brief")):
+            with self.subTest(args=args):
+                r = self.wi("show", IID, *args)
+                self.assertEqual(r.returncode, 1, r.stdout + r.stderr)
+                self.assertEqual(r.stdout, "")
 
 
 if __name__ == "__main__":

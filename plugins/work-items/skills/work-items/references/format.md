@@ -1182,6 +1182,41 @@ again.
 **The commit.** A store that is its own repo gets one commit holding the file, the item and
 `store.yaml`; in a store the repo around it tracks, `$WI commit` commits them.
 
+**Reading a record.** `$WI show <id> --card N [--all] [--json]`, read-only (no lock, nothing
+written), reads the record the last `card:` line for N on the item names (the item in
+`items/` or `archive/`):
+
+```
+card: cards/<id>/<N>/<file>
+rev: <rev>
+format: decision-card/<k>
+sha256: <hex over the file's exact bytes>
+
+<the file's bytes, as they are on disk>
+```
+
+`--json` prints `{"item", "n", "path", "rev", "format", "sha256", "record"}`, `record` the
+file's JSON. `--all` prints one line per `card:` line for N, in file order, `<path> rev <rev>
+· <format> sha256:<hex>`, the last ending ` (current)`, so the revision a grant names can be
+found; with `--json`, `{"item", "n", "revisions": [{"path", "rev", "format", "sha256",
+"current"}]}`. Before anything is printed, each file read is checked: the line's path is
+`cards/<the item's id>/<N>/<the name its rev and format give>`; `cards`, `cards/<id>`,
+`cards/<id>/<N>` and the file are each lstat-ed, never a symbolic link (a link is never
+followed: its target is not read), and the record's directory lies under the store's
+`cards/`; the file is a regular file of at most 256 KB, parses as the strict JSON a write
+takes, and its `n`, `rev` and `format` equal the line's. The hash is over the bytes as read,
+never a re-serialized record.
+
+Exits: 0; 1 for a bad N (or `--all` without `--card`, or `--brief` with it); **2** when N has
+no `card:` line on the item (*decision N has no card record on `<id>`: a card stored before
+v5, or a headline only; read it by the decisions skill's legacy reference*); **3** when a
+file is missing, unreadable or mismatched (*card record missing (`<path>`); restore it from
+the store's history (`git -C <root> log -- <path>`); never backfill it*), or a level is a
+symbolic link. An older `wi` also exits 2 on `--card`, from its argument parser: a caller
+tells them apart by the message, `show --card`'s opening *decision N has no card record*, the parser's
+holding *unrecognized arguments*. An id that matches no item exits 2 as every `show` does
+(*no item matching*).
+
 ## Closed: `closed N:`
 
 Once an answered decision's outcome has taken effect, the caller records it
