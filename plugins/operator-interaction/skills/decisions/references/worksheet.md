@@ -130,6 +130,7 @@ after; otherwise it is asked.
 |---|---|---|
 | Source | the document or session the decision comes from (a plan, a review, a run's record), and whether the operator has read it | you |
 | Source label | the label the source gives the item a decision is raised from (a finding's F7), and its short name: the source's own title for it, or two to six plain words you write (`references/rendering.md` § Source labels) | you, from the source |
+| Requirements | the work's stated requirements (acceptance criteria, conditions of satisfaction, a brief's must-haves), or none; where there are some, where this decision stands against them: *required* (the criterion it rests on, in plain words), *shapes the work* (what in the work it decides) or *outside the criteria*, the card's **Scope:** line (`references/rendering.md` § Card) | the caller, who holds the requirements; you, from them |
 | Items | when the decision acts on several things: each one, and whether they need different answers (then a group, one card each) or one answer fits all (then one card) | you |
 | Terms | each label, number, acronym or term of art the card would use that the operator has not used themselves, and the words each stands for | you, from the source |
 | Operator actions | per option: what the operator must do to carry it out, or *answer only* | you |

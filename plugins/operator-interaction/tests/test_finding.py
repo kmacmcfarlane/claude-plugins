@@ -114,7 +114,7 @@ class FindingPage(unittest.TestCase):
         self.assertEqual(res["cards"]["41"]["fnd"], "")
         self.assertEqual(res["cards"]["42"]["fnd"], "")
         # mutant: the part left out of the card
-        res = one(example(), mutant_page("+whatPart(c)+findingPart(c)+openFold(c)", "+whatPart(c)+openFold(c)"))
+        res = one(example(), mutant_page("+whatPart(c)+findingPart(c)+scopePart(c)+openFold(c)", "+whatPart(c)+scopePart(c)+openFold(c)"))
         self.assertNotIn('<div class="fnd">', res["cards"]["43"]["card"])
 
     def test_it_sits_after_what_before_the_folds_and_is_never_folded(self):
@@ -135,8 +135,8 @@ class FindingPage(unittest.TestCase):
         # mutants: before What; inside the Assumptions fold
         self.assertTrue(problems(mutant_page("+whatPart(c)+findingPart(c)+", "+findingPart(c)+whatPart(c)+")))
         self.assertTrue(problems(mutant_page(
-            "+whatPart(c)+findingPart(c)+openFold(c)+assumeFold(c,P)",
-            "+whatPart(c)+openFold(c)+assumeFold(c,P).replace('<div>','<div>'+findingPart(c))")))
+            "+whatPart(c)+findingPart(c)+scopePart(c)+openFold(c)+assumeFold(c,P)",
+            "+whatPart(c)+scopePart(c)+openFold(c)+assumeFold(c,P).replace('<div>','<div>'+findingPart(c))")))
 
     def test_every_field_is_escaped_and_the_excerpt_never_parsed(self):
         def problems(script=None):
@@ -427,7 +427,7 @@ class FindingChat(unittest.TestCase):
     def test_the_templates_put_the_finding_after_what(self):
         text = RENDERING.read_text()
         card = fenced(text, "**N — Title as a question?**\n**Context:**")
-        self.assertEqual(heads(card)[:4], ["Context", "What", "Finding", "Impact"])
+        self.assertEqual(heads(card)[:5], ["Context", "What", "Finding", "Scope", "Impact"])
         k = next(i for i, x in enumerate(card) if x.startswith("**Finding:**"))
         self.assertRegex(card[k], r"^\*\*Finding:\*\* F7 \(short name\): .+ — `[^`]+`")
         self.assertTrue(card[k + 1].startswith("how it happens"), card[k + 1])

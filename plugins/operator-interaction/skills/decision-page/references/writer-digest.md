@@ -27,7 +27,8 @@ by its short name; a fact only an id carries goes in backticks in an option's `a
 `evidence`. A decision raised from one labelled item of a source carries `label`, and that
 label passes anywhere with its short name beside it: *F7 (oversize upload)*. A decision raised
 from a finding (of a review, an audit, a test run or a scan) carries `finding`: where it lives,
-how it happens, and its code as an excerpt.
+how it happens, and its code as an excerpt. Where the work states requirements, a card carries
+`scope`: how it stands against them.
 
 ## Text
 
@@ -89,6 +90,7 @@ it knowingly only on a card upgraded from an older format.
 | `what` | optional | one sentence: what is decided, in plain words; shown as the **What** part after Context, never folded |
 | `items` | optional; a card that counts a set where it says what is decided is refused with none, or too few | `[{name, where, about, per}, …]`, one per item of a set, every item listed: `name` its plain name (never an id), `where` where it lives when that helps, `about` what it is in a few words, `per` `{"a": "…", "b": "…"}`, its outcome under each option, keyed by the card's letters, only where the options treat it differently (left out, it reads the same under every option); the part reads *What · N items* |
 | `finding` | optional | `{label, title, where, mechanism, excerpt}`, on a card raised from a finding: shown as the **Finding** part after What, never folded. `mechanism` (required in it) how it happens, who meets it and when, one paragraph with no line break; `label` `{id, name}`, the card's own `label` when it carries one (the page refuses another); `title` the finding's own title, one line; `where` where it lives, one line (a path and line range; a commit goes in the excerpt's `src`); `excerpt` its code, log or failing output, an excerpt (below), drawn verbatim |
+| `scope` | optional | `{level, says}`, wherever the work states requirements (acceptance criteria, conditions of satisfaction): shown as the **Scope** part after What and any Finding, never folded, one line. `level` one of `required` (`says` the criterion it rests on, in plain words), `shapes` (it decides something the work itself creates; `says` what) or `outside` (no criterion covers it; `says` optional), shown as a boxed word; `says` one line. Left out where the work states no requirements; the criterion goes here, not in `context` |
 | `open` | optional | a list of text: what is not known yet, one question each; shown folded above the Impact |
 | `impact` | to render | `{wait, reach}` as text; `undo` only when some option is one-way or costly to undo, naming that option (`(b) none — …`), left out when every option is reversible at little cost; `cost` optional (leave it out when none); across all options, favouring none; `reach` about the thing the work builds, never the process (that is `wait`). No `effect`: each option carries its own |
 | `options` | to render | the options, below, `a`… in order, ending `z` (decide later) |
@@ -177,7 +179,7 @@ Levels scale with the decision: a small call carries none; a wide or ⚠ one-way
 medium and high on its visible parts and on the fold items with depth to give. Each level is
 longer than the one below. Soft sizes at a part's top level: Background (`why` + `whyask`)
 ~150 words; each option's plan (or older text) plus its effect, reach, undo and cost ~60–120; `evidence` ~150;
-the card in all ~600–900, the What part (`what` and `items`), the Finding (not its excerpt), each option's `pro` and `con` and its table's `pros` and `cons` counted in it; a set still lists every item. Never pad: a fact no source holds goes under `open`.
+the card in all ~600–900, the What part (`what` and `items`), the Finding (not its excerpt), the Scope's `says`, each option's `pro` and `con` and its table's `pros` and `cons` counted in it; a set still lists every item. Never pad: a fact no source holds goes under `open`.
 
 ## The runner's thresholds
 
@@ -212,7 +214,9 @@ not text, a `per` not an object of text keyed by the card's option letters; no
 one; a field the record no longer has (`o`, `blocks`, a card-level `act`, `warn`, `unknown`,
 `stakes`, `detail.o`); a `finding` not an object, with no `mechanism` as text or one holding a
 line break, a `title` or `where` not one line of text, a `label` not `{id, name}` or not the
-card's own `label`, or an `excerpt` the excerpt rules refuse; a bad or duplicate `n`; a `rev` or `raised` not a UTC time; a `q` on
+card's own `label`, or an `excerpt` the excerpt rules refuse; a `scope` not an object, its `level`
+not `required`, `shapes` or `outside`, its `says` not one line of text, or none on a `required` or
+`shapes` scope; a bad or duplicate `n`; a `rev` or `raised` not a UTC time; a `q` on
 more than one line; options not objects with a single `a`–`z` letter and a title, out of
 order, or not ending `z`; a `rec` not among them, or null without `norec`; a missing field
 required to render; blank `context`; a TLDR bullet, at any level, opening on Rec or
@@ -254,8 +258,8 @@ page-wide one prints `lint: page:`.
 | `page` | `page:` | an id in the page title, the lede, a layer's title, note or shared context, or a `refs` short or question |
 | `group` | `page:` | a bundle (a layer with `shared`) holding fewer than two cards |
 | `refs` | `page:` | a `refs` answer holding an id (left as given when it is the operator's words) |
-| `id` | — | an id in any card text, the What part's `what` and `items` and the Finding's label, `title`, `where` and `mechanism` included (never its excerpt): a hash, an item tag, a ticket key, a label like OQ3, decision N; a label a card or its finding declares passes with its short name beside it |
-| `count` | — | a count in the flat part, the Finding's `title` and `mechanism`, or a visible level that Context (with its bundle's `shared`) and the What part (`what`, `items` and their number) do not name; one where the card says what is decided points to `items` |
+| `id` | — | an id in any card text, the What part's `what` and `items`, the Finding's label, `title`, `where` and `mechanism` (never its excerpt) and the Scope's `says` included: a hash, an item tag, a ticket key, a label like OQ3, decision N; a label a card or its finding declares passes with its short name beside it |
+| `count` | — | a count in the flat part, the Finding's `title` and `mechanism`, the Scope's `says`, or a visible level that Context (with its bundle's `shared`) and the What part (`what`, `items` and their number) do not name; one where the card says what is decided points to `items` |
 | `named` | — | a named mode, setting, review, plan, document, … not glossed in Context or What |
 | `set` | `shape:` | a set's `items` list of another length than its count (not short of the largest); a set on a card the upgrader carried over, its `rev` kept (refused once a writer revises it) |
 | `tldr` | — | a TLDR bullet, at any level, that may carry the recommendation |
@@ -280,6 +284,6 @@ page-wide one prints `lint: page:`.
 Then the cold read: could you name every item the card acts on, from its What part alone? List
 each noun phrase in the Impact, TLDR, option titles and one lines,
 and each option's `pro` and `con` (visible rows, linted by `count` and `named` though outside
-the flat part's size), the Finding's `title` and `mechanism`, and its view's `plan`, `pros` and `cons`, that names a specific thing, and point to its gloss in `context`. Over the view the `named` lint reads qualified names only ("content mode"); a bare noun, a phrase opening on a function word ("to plan") or on a verb form ("reaches review") is yours to check here. Of each effect, ask: does
+the flat part's size), the Finding's `title` and `mechanism`, the Scope's `says`, and its view's `plan`, `pros` and `cons`, that names a specific thing, and point to its gloss in `context`. Over the view the `named` lint reads qualified names only ("content mode"); a bare noun, a phrase opening on a function word ("to plan") or on a verb form ("reaches review") is yours to check here. Of each effect, ask: does
 it name what happens to the thing being built? Could you say how it happens, not only that
 it does?

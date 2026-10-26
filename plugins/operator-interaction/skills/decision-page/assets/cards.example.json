@@ -58,11 +58,12 @@
     {
       "format": "decision-card/5",
       "n": 41,
-      "rev": "2026-10-26T12:00:00Z",
+      "rev": "2026-10-27T09:00:00Z",
       "L": "direction",
       "t": "Docs build home",
       "context": "The docs site is built and published from one maintainer's laptop, where a stale cache (a leftover copy of an old build) broke two publishes this month, and clearing it once ([[38]]) held a week. CI is the shared build service that already runs on every merge to `main`.",
       "what": "Where the docs build runs and who can publish the site.",
+      "scope": {"level": "required", "says": "any contributor can publish a docs change without waiting on one person, as the docs brief asks"},
       "tldr": [
         "Docs build and publish from one laptop today",
         "Move them to CI, or keep the laptop build"

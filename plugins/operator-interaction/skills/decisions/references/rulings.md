@@ -414,3 +414,19 @@ alternative not taken, in case practice argues for it.
   taken: the page card opening on the finding and chat showing it above the card (337 (b),
   265 (a) as given), which would have reversed *TLDR first* for findings cards; the finding
   right after the TLDR (337 (c)).
+- **A Scope line against the requirements, both surfaces** (2026-10-20, answer 266 (b), from the
+  operator's words relayed on 2026-10-16, a card wants "a top line describing how in-scope the
+  change is" to the work's conditions of satisfaction; its place set by the v4 layout, signed off
+  with answer 313 on 2026-10-22) — wherever the work states requirements, a card carries its
+  own **Scope:** line, after What and any Finding and before the folds above the Impact, never
+  folded: *required*, with the criterion in plain words; *shapes the work*, with what it shapes;
+  or *outside the criteria*. The criterion goes on that line, not in Context; the title carries
+  no scope tag and the page no scope pill; the line is left out where the work states no
+  requirements. It reorders the 2026-10-12 chat order and the 2026-10-09 page order (*TLDR
+  first*) by adding a part after What, as 266 (b) named on its card. Designs made in planning
+  and build, not the operator's: the record's `scope`, `{level, says}`, its levels
+  `required`, `shapes` and `outside` (the page refuses another, and a `required` or
+  `shapes` scope with no `says`); the page's level as a small boxed word; the chat line's
+  form, `**Scope:** *level* — says`; the pre-publish runner reading `says` for ids and in the
+  cold read, and counting it in the card in all. Not taken: the scope word on the title line, a
+  pill on the page (266 (a)); a line only on decisions outside the criteria (266 (c)).
