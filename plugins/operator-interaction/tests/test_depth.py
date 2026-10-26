@@ -92,11 +92,20 @@ def secs(html):
     out = []
     for m in re.finditer(r'<div class="sec" data-n="\d+" data-sec="([^"]+)" data-lvl="(\d+)" '
                          r'data-max="(\d+)">', html):
-        start = int(m.group(3)) if m.group(1).startswith("opt-") else 0
+        start = opens_at(html, m.group(1), int(m.group(3)))
         assert int(m.group(2)) == start, m.group(0)
         body = html[m.end():]
         out.append((m.group(1), int(m.group(3)), body))
     return out
+
+
+def opens_at(html, key, mx):
+    """The level a part opens at: its summary, but an older option's text in its view, which opens at its fullest.
+    An option's Plan in brief (F5) opens at its summary, the plan."""
+    if not key.startswith("opt-"):
+        return 0
+    plan = r'<span class="lbl">Plan in brief</span><div class="sec" data-n="\d+" data-sec="%s"' % key
+    return 0 if re.search(plan, html) else mx
 
 
 def renditions(html, n, key):
@@ -250,8 +259,8 @@ class DecisionPageDepth(unittest.TestCase):
                 rs = renditions(c["html"], c["n"], key)
                 self.assertEqual(len(rs), mx + 1, (c["n"], key))
                 self.assertEqual(len(c["parts"][key]), mx + 1, (c["n"], key))
-                # shown: the summary, or an option's fullest level in its More
-                at = mx if key.startswith("opt-") else 0
+                # shown: the summary (a plan in brief too), or an older option's fullest level in its view
+                at = opens_at(c["html"], key, mx)
                 self.assertEqual([h for h, _ in rs], [i != at for i in range(mx + 1)], (c["n"], key))
                 self.assertEqual(rs[0][1], c["parts"][key][0], (c["n"], key))
                 seen.add(key)
@@ -271,8 +280,10 @@ class DecisionPageDepth(unittest.TestCase):
             for m in re.finditer(r'<button[^>]*class="btn lvb"[^>]*>([^<]*)</button>', html):
                 tag = m.group(0)
                 self.assertTrue(tag.startswith('<button type="button"'), tag)
-                # an option's text in its More opens at its fullest: its button steps to less detail
-                step, exp = (("less detail", "true") if 'data-lv="opt-' in tag else ("more detail", "false"))
+                # an older option's text in its view opens at its fullest: its button steps to less detail; a plan
+                # in brief opens at the plan
+                older = 'data-lv="opt-' in tag and 'data-lbl="Plan in brief' not in tag
+                step, exp = (("less detail", "true") if older else ("more detail", "false"))
                 self.assertIn('aria-expanded="%s"' % exp, tag)
                 self.assertEqual(m.group(1), step)
                 label = re.search(r'data-lbl="([^"]+)"', tag).group(1)
@@ -401,9 +412,9 @@ class DecisionPageDepth(unittest.TestCase):
                 self.assertNotIn(">More</button>", lab, c["n"])
             for opt in re.findall(r'<div class="opt(?: isrec)?">.*?(?=<div class="opt[ "]|</div><div class="follow")', h, re.S):
                 k = re.search(r'value="([a-z])"', opt).group(1)
-                # (z) too, since Options in full went: its text and its impact live there now.
-                # A ⚠ one-way card shows each option but (z) open, as its Impact rows were
-                is_open = c["n"] == 42 and k != "z"  # the example's ⚠ card
+                # (z) too, since Options in full went: its view and its impact live there now.
+                # Every view starts closed, a ⚠ one-way card's too (F5, 08 § L1): picking opens it
+                is_open = False
                 self.assertEqual(opt.count(">More</button>"), 1, (c["n"], k))
                 btn = re.search(r'<button[^>]*data-omore[^>]*>More</button>', opt).group(0)
                 self.assertTrue(btn.startswith('<button type="button" class="btn omore%s"' % (" on" if is_open else "")), btn)
@@ -414,20 +425,21 @@ class DecisionPageDepth(unittest.TestCase):
                 self.assertLess(opt.index("</label>"), opt.index(btn))
                 self.assertLess(opt.index(btn), opt.index('class="odet"'))
 
-    def test_the_option_detail_is_its_fullest_text_then_its_facets(self):
+    def test_the_option_view_opens_on_its_plan_then_its_facets(self):
         d = example()
         del d["cards"][0]["options"][0]["cost"]
         res = run_page(d)
         more = card(res, 41)["more"]
-        # its text opens at its fullest level, and steps through the rest, so none is lost
+        # its plan in brief, labelled, opens at the plan, and its levels step from it, so none is lost
+        self.assertTrue(more["b"].startswith('<div class="oplan"><span class="lbl">Plan in brief</span><div class="sec"'), more["b"][:120])
         rs = renditions(more["b"], 41, "opt-b")
-        self.assertEqual([h for h, _ in rs], [True, True, False])
-        self.assertTrue(rs[2][1].startswith('<div><span class="mono ol">(b)</span><div class="lvs"><h4 class="lvh">'
-                                            'What happens</h4><ul class="lvl">'
+        self.assertEqual([h for h, _ in rs], [False, True, True])
+        self.assertEqual(rs[0][1], "<p>CI builds and publishes the site on every merge to <code>main</code>, with a deploy token "
+                                   "you add as a CI secret. The laptop build stays for previews only.</p>")
+        self.assertTrue(rs[2][1].startswith('<div class="lvs"><h4 class="lvh">What happens</h4><ul class="lvl">'
                                             "<li>Build and publish from CI on every merge to <code>main</code>; "
                                             "the laptop build stays for previews only."), rs[2][1][:200])
-        self.assertIn("Build and publish from CI on every merge to main, with the local build kept", rs[0][1])
-        # its text, then its own facets; the separate impact line is gone (it is the option's effect)
+        # its plan, then its own facets; the separate impact line is gone (it is the option's effect)
         self.assertNotIn('<p class="impact">', more["b"])
         self.assertLess(more["b"].index('class="sec"'), more["b"].index('<span class="lbl">Effect</span>'))
         pos = [more["b"].index('<span class="lbl">' + f + "</span>") for f in ("Effect", "Reach", "Cost")]
@@ -435,12 +447,37 @@ class DecisionPageDepth(unittest.TestCase):
         # an option with no undo is reversible at little cost: no Undo line
         self.assertNotIn(">Undo<", more["b"])
         self.assertNotIn(">Cost<", more["a"])
-        # (z): its text and its effect, labelled Wait
-        self.assertTrue(more["z"].startswith('<p><span class="mono ol">(z)</span> Decide later.</p>'), more["z"])
+        # (z): its plan and its effect, labelled Wait
+        self.assertTrue(more["z"].startswith('<div class="oplan"><span class="lbl">Plan in brief</span><p>Nothing is set up;'), more["z"])
         self.assertIn('<span class="lbl">Wait</span><span>The local build stays until you answer', more["z"])
-        # without levels, the option's own text
-        d["cards"][0]["options"][0].pop("detail")
-        self.assertTrue(card(run_page(d), 41)["more"]["a"].startswith('<p><span class="mono ol">(a)</span> Keep building on a laptop.'))
+
+    def test_an_older_option_with_no_plan_shows_its_text_at_its_fullest(self):
+        # 07 § F5's older slot: a card with no plan shows its text in the plan's place, at its fullest level
+        d = example()
+        o = d["cards"][0]["options"][1]
+        o.pop("plan")
+        o["text"] = "Build and publish from CI on every merge to main, with the local build kept for previews."
+        d["cards"][0]["options"][2].pop("plan")
+        d["cards"][0]["options"][2]["text"] = "Decide later."
+        more = card(run_page(d), 41)["more"]
+        self.assertNotIn("Plan in brief", more["b"])
+        rs = renditions(more["b"], 41, "opt-b")
+        self.assertEqual([h for h, _ in rs], [True, True, False])
+        self.assertTrue(rs[2][1].startswith('<div><span class="mono ol">(b)</span><div class="lvs"><h4 class="lvh">'
+                                            'What happens</h4>'), rs[2][1][:200])
+        self.assertIn("Build and publish from CI on every merge to main, with the local build kept", rs[0][1])
+        # the text in the plan's place: then the table, then the facets
+        self.assertLess(more["b"].index('class="sec"'), more["b"].index('class="opc"'))
+        self.assertLess(more["b"].index('class="opc"'), more["b"].index('<span class="lbl">Effect</span>'))
+        self.assertTrue(more["z"].startswith('<p><span class="mono ol">(z)</span> Decide later.</p>'), more["z"])
+        # without levels, the option's own text; with neither plan nor text, its levels alone
+        o.pop("detail")
+        self.assertTrue(card(run_page(d), 41)["more"]["b"].startswith('<p><span class="mono ol">(b)</span> Build and publish'))
+        # a none plan is no plan
+        d = example()
+        d["cards"][0]["options"][0]["plan"] = "None."
+        d["cards"][0]["options"][0]["text"] = "Keep building on a laptop."
+        self.assertNotIn("Plan in brief", card(run_page(d), 41)["more"]["a"])
 
     # ---- escaping and links
 
@@ -649,6 +686,16 @@ class DepthRunner(unittest.TestCase):
         d["cards"][0]["detail"]["tldr"][0] = ["Laptop or CI"]
         self.lint(d, "lint: card 41: depth: the TLDR medium is not longer than its summary")
         d = example()
+        d["cards"][1]["options"][0]["detail"][1] = "Add the redirects."
+        self.lint(d, "lint: card 42: depth: (a)'s plan high is not longer than its medium")
+        # a plan's levels grow from the plan
+        d = example()
+        d["cards"][1]["options"][0]["plan"] = " ".join(["word"] * 60)
+        self.lint(d, "lint: card 42: depth: (a)'s plan medium is not longer than its summary")
+        # an older option's from its text
+        d = example()
+        d["cards"][1]["options"][0].pop("plan")
+        d["cards"][1]["options"][0]["text"] = "Add a redirect for each of the twelve URLs."
         d["cards"][1]["options"][0]["detail"][1] = "Add the redirects."
         self.lint(d, "lint: card 42: depth: (a)'s text high is not longer than its medium")
 

@@ -34,7 +34,7 @@ that order:
 | Tag size | the recommended option's effect, its letter first (with no recommendation, each option's in a few words) |
 | List line | the recommended option's effect (with no recommendation, each option's in a few words) · Wait |
 | Card | an **Impact:** line, Wait · Reach, then Undo when an option is one-way or costly, then Cost when it is what the operator weighs, and no effect; under each option, its own impact line: effect · reach · undo (one-way or costly only) · cost |
-| Block | the card's **Impact:** line, then the Impact table: a row per option, then a Wait row; columns Effect, Reach, Undo (`—` on a reversible row), Cost |
+| Block | the card's **Impact:** line, then the Impact table: a row per option, then a Wait row; columns Effect, Reach, Undo (`—` on a reversible row), Cost; under it, each option's view: its plan in brief and its Pros \| Cons table (§ An option's view) |
 
 - **Impact names the system, not the process.** Effect and Reach describe the thing the
   work builds and those who depend on it: code, data, users, deploys, downstream consumers,
@@ -431,6 +431,21 @@ Example:
 | (c) Investigate first | what it would settle | — | — | time and spend |
 | (z) Wait | what waiting costs; what it blocks; at the deadline, what happens | who waits | — (or: ⚠ what a deadline loses for good) | … |
 
+**(a) Option**
+*plan in brief:* what choosing it sets in motion, in 2–4 sentences
+
+| Pros | Cons |
+|---|---|
+| an upside in full | a downside or risk in full |
+| … | … |
+
+**(b) Option**
+*plan in brief:* …
+
+| Pros | Cons |
+|---|---|
+| … | … |
+
 **To act on (b):** *(only for an option that asks the operator to act, as on a card)*
 1. …
 
@@ -453,9 +468,12 @@ Example:
   later's, labelled `(z) Wait` — with the columns Effect, Reach, Undo and Cost. An Undo cell
   holds `—` on a row that is reversible at little cost and starts with ⚠ on a row that is
   one-way or costly; with no such row, the Undo column is dropped. Only the recommended
-  option's row label is bold. The table takes the place of a section per option and of the
-  options' impact lines.
-- Under the table run a round ask's **If left:** and **A round costs:**, then any **To act
+  option's row label is bold. The table takes the place of the options' impact lines.
+- Under the table, **each option's view** in letter order, (z) too, without its facets, which
+  are its table row: its title in bold as its own line, then its *plan in brief:* line, then
+  its **Pros | Cons** table (§ An option's view). An option with no points on either side has
+  no table; an older option with no plan shows its text after its title instead.
+- Under them run a round ask's **If left:** and **A round costs:**, then any **To act
   on (x):** part; then the Background fold stands open, as § Folds places it, first after
   the options and their parts: `▾ Background — why now: …` with its **Why now:** and **Why
   ask:** lines under it; only the read-back line, on a ⚠ block, follows it.
@@ -467,6 +485,41 @@ Example:
 - Write every one-way or costly **Undo** cell plainly, after its ⚠ — it is what decides
   whether an answer is read back (`references/replies.md`).
 - Never use the words "answer alone" as a label; the ⚠ and the read-back line carry it.
+
+## An option's view
+
+What choosing one option sets in motion, and its trade-offs in full, in the answer page's
+order (the option's view: Plan in brief, the Pros | Cons table, then the facets; the
+operator's v5 ordering, item 9168). `tell me (x)` (`46: tell me (b)`) answers with it, under
+the decision's number; a block shows each option's under its Impact table, its facets being
+the table's row.
+
+```
+**N (x) — Option title**
+*plan in brief:* what choosing it sets in motion, in 2–4 sentences
+
+| Pros | Cons |
+|---|---|
+| an upside in full, the weightiest first | a downside or risk in full |
+| … | … |
+
+*→ effect · reach: … · ⚠ undo: … · cost: …*
+```
+
+- **The order is fixed**: the *plan in brief:* line first, then the table, then the option's
+  facet line, as its card shows it (§ Impact); on a ⚠ decision too.
+- **Plan in brief** is the card record's `plan` (2–4 sentences, about 100 words at most),
+  labelled as the facets are. An older card with no plan gives its option's text in full
+  there.
+- **The table** is two columns headed `Pros | Cons`, as the Impact table's are headed
+  `Effect | Reach` (the operator's feedback on decision 302: pros and cons labelled like Effect
+  and Reach), one point a row, at most five a side, the weightiest first: the record's `pros`
+  and `cons`, the one-line `*pros:*` and `*cons:*` lines in full. A side shorter than the
+  other leaves its cells empty; with no points on either side there is no table, and with
+  points on one side only, the other column stays, empty.
+- (z)'s view is its plan and any cons, and its facet line is what waiting costs.
+- `tell me (x)` changes nothing on the card: it is shown, not revised, so no **Added:** line
+  and no new revision. The card is one scroll up; do not send it again.
 
 ## Several decisions in one message
 

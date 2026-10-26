@@ -339,3 +339,25 @@ alternative not taken, in case practice argues for it.
   with none, a pro or con past about 25 words), the five-point cap, and the page's *if chosen:* in place of *not recommended
   because:* before a non-recommended option's line are designs made in planning, not the
   operator's. Not taken: a ▸ Trade-Offs fold; the trade-offs only behind **More**.
+- **An option's view: Plan in brief, the Pros | Cons table, then the facets; picking opens
+  it, both surfaces** (2026-10-22, the operator's feedback on the v4 prototype: "Selecting an
+  option opens it as if More is pressed (others that are open in the decision close if a new
+  one is selected)", the trade-offs "in greater detail inside the expanded view of an option …
+  max 5 items per pros and cons, display side-by-side in a two-column table", and the plan in
+  brief "should be inside any decision's expanded view in a section above Effect, Reach, Cost";
+  then the v5 layout, item 9168: an option's view opens on Plan in brief, then the Pros/Cons
+  table) — an option's view shows its **Plan in brief** (the record's `plan`), then a
+  two-column **Pros | Cons** table (`pros` and `cons`, at most five each, headed by the facet
+  labels), then its Effect, Reach, Undo (⚠ on a flagged option) and Cost; **To act on (x)**
+  stays under the option, outside it. On the answer page picking an option opens its view and
+  closes the card's other open one, **More** toggles one alone, and every view starts closed, a
+  ⚠ card's too: this reverses the build design that showed a one-way card's options open
+  (*No Options in full*, above), and strikes the build rule that put a ⚠ card's facets first.
+  In chat, `tell me (x)` answers with the option's plan, its table and its facet line, and a
+  block shows each option's plan and table under its Impact table. An older card with no plan
+  shows its option's text in the plan's place. Designs made in planning and build, not the
+  operator's: the page runner's `plan` lint (an option with none; a plan past about 100
+  words), the plan's levels stepping from it, the chat label *plan in brief:*, the block's
+  views under its table with their facets left in the table's rows, a follow-up leaving the
+  views as they are, and `tell me (x)` as a showing, not a revision. Not taken: the facets
+  before the table (v4's first order); a ⚠ card's options open from the start.

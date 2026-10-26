@@ -60,6 +60,36 @@ today.*
 | (c) Investigate first | reads this month's access logs for other callers; could change the answer if both partners have already switched | — | — | about 15 minutes |
 | (z) Wait | the endpoint stays as it is, and the cleanup release goes out without this change | the API cleanup release | — | nothing now |
 
+**(a) Remove it now**
+*plan in brief:* the `/v1/export` route and its handler are deleted in Thursday's API cleanup release. From then on a call to it gets not found, so the two partners' exports fail until each moves to `/v2/export`.
+
+| Pros | Cons |
+|---|---|
+| The old endpoint's code and tests go this week | The two partners' exports fail from Thursday until they switch |
+| Nothing old is left to maintain or patch | A hotfix brings it back, but not the outage the partners already had |
+
+**(b) Keep it, with a deprecation header and a sunset date**
+*plan in brief:* every `/v1/export` response gains a deprecation header naming a sunset date 90 days out, and the release notes say the same. The endpoint is removed after that date, once the partners have had their 90 days.
+
+| Pros | Cons |
+|---|---|
+| Nothing breaks on Thursday | The old code stays 90 more days |
+| Each partner gets a dated warning in every response | The removal comes back as a second change after the sunset date |
+
+**(c) Investigate first**
+*plan in brief:* I read this month's access logs for every caller of `/v1/export`, about 15 minutes, and bring 43 back with what they show. Both partners having switched already would change the answer.
+
+| Pros | Cons |
+|---|---|
+| Settles whether anyone but the two partners still calls it | The answer waits about 15 minutes |
+
+**(z) Wait**
+*plan in brief:* nothing changes now: the endpoint stays, and the cleanup release goes out without this change.
+
+| Pros | Cons |
+|---|---|
+| | This change waits for the next cleanup release |
+
 ▾ Background — why now: the API cleanup release is cut on Thursday; this change goes out in it, or waits for the next one.
 **Why now:** the API cleanup release is cut on Thursday; this change goes out in it, or waits for the next one.
 **Why ask:** removing it breaks two partners and cannot be quietly undone; that call is not mine to take alone.
@@ -83,7 +113,7 @@ today.*
 
 ▸ Background — why now: the new dashboard needs one unit before it ships.
 
-*Gallery note — layout and order: the cards and the block come first, each opening on its decision line (the title and What), then its Context, then its impact (a line on a card; on the block, the line and then a table), the compact list and the hint last, so the list is what is on screen when the agent stops. Why this order: 41 breaks before you are back; the API cleanup group comes next because it holds a ⚠, with 44 kept beside 43; then 42, which blocks the docs build, before 45, which blocks nothing. 44 and 42 stay list lines: you are warm on both, both are two-way and narrow on a strong basis, 44's options converge and 42 is a template you have seen. 41, 43 and 45 are cold, so each is at least a card; 43 is a block because this is its first showing. Each card and the block carries its Context — the terms it uses, then where you left it — and would carry it for a warm reader too; the block's runs to bullets, its first the card-size Context and the rest what a reader coming back may have lost. The list lines carry none. In each card and the block the options keep their letter order and only the recommended one is bold: 43's (b) stays second, and 45, with no recommendation, bolds none. No Impact line carries an effect: each starts at what waiting costs, and on a card each option carries its own effect, reach and cost on the italic line under it, a facet that does not apply left out; on the block the table's rows carry them. 43's block shows what is still open, whether the partners plan to switch, as an open ▾ Open questions fold above its Impact; 41 and 45 have nothing open, so they have no fold. Every card and the block then carry their ▸ Assumptions line just above the Impact: the basis word, and how many assumptions the recommendation rests on, each with its tripwire; 45, with no recommendation, names none, so its line is the basis alone; the block shows the fold open, its Basis line, its evidence and each assumption with its tripwire. No card ends on a Rec line: the bold option is the recommendation, and what is not known is never an assumption. Undo shows only where it bites: 41's (b), whose restart costs about 3 hours, and 43's (a), which no hotfix fully takes back, each marked ⚠ on its option and on the Impact line; 45's options, each one config line from the other, carry none, and on the block 43's reversible rows read `—`. On each card, why now and why ask sit in a closed ▸ Background fold, the first under the options, its summary the first sentence of why now, so the card reads the choices first; the block shows the fold open (▾), its two lines under its table. Every list line carries an effect and what waiting costs, the line-only ones too: the recommended option's after its label, and 45's each option's, since it has no recommendation; no list line carries an option's reach, undo or cost; only 43 has a ⚠ slot, and no line has a stakes word.*
+*Gallery note — layout and order: the cards and the block come first, each opening on its decision line (the title and What), then its Context, then its impact (a line on a card; on the block, the line and then a table), the compact list and the hint last, so the list is what is on screen when the agent stops. Why this order: 41 breaks before you are back; the API cleanup group comes next because it holds a ⚠, with 44 kept beside 43; then 42, which blocks the docs build, before 45, which blocks nothing. 44 and 42 stay list lines: you are warm on both, both are two-way and narrow on a strong basis, 44's options converge and 42 is a template you have seen. 41, 43 and 45 are cold, so each is at least a card; 43 is a block because this is its first showing. Each card and the block carries its Context — the terms it uses, then where you left it — and would carry it for a warm reader too; the block's runs to bullets, its first the card-size Context and the rest what a reader coming back may have lost. The list lines carry none. In each card and the block the options keep their letter order and only the recommended one is bold: 43's (b) stays second, and 45, with no recommendation, bolds none. No Impact line carries an effect: each starts at what waiting costs, and on a card each option carries its own effect, reach and cost on the italic line under it, a facet that does not apply left out; on the block the table's rows carry them. 43's block shows what is still open, whether the partners plan to switch, as an open ▾ Open questions fold above its Impact; 41 and 45 have nothing open, so they have no fold. Every card and the block then carry their ▸ Assumptions line just above the Impact: the basis word, and how many assumptions the recommendation rests on, each with its tripwire; 45, with no recommendation, names none, so its line is the basis alone; the block shows the fold open, its Basis line, its evidence and each assumption with its tripwire. No card ends on a Rec line: the bold option is the recommendation, and what is not known is never an assumption. Undo shows only where it bites: 41's (b), whose restart costs about 3 hours, and 43's (a), which no hotfix fully takes back, each marked ⚠ on its option and on the Impact line; 45's options, each one config line from the other, carry none, and on the block 43's reversible rows read `—`. On each card, why now and why ask sit in a closed ▸ Background fold, the first under the options, its summary the first sentence of why now, so the card reads the choices first; the block shows the fold open (▾), its two lines under its table and its options' views. Under 43's table, each option's view in letter order, (z) too: its title, its *plan in brief:* line, then its `Pros | Cons` table, the points in full; the facets stay in the table's row above, so the view does not repeat them, and (z), with no upside, leaves its Pros cell empty. Every list line carries an effect and what waiting costs, the line-only ones too: the recommended option's after its label, and 45's each option's, since it has no recommendation; no list line carries an option's reach, undo or cost; only 43 has a ⚠ slot, and no line has a stakes word.*
 
 - **41 Resume the paused nightly backup?** — rec **(a) resume** → *the snapshot finishes in about 15 minutes* · *later: the snapshot is lost at 17:45 and the backup starts over* · basis **strong** · *25 min old, storage lease lapses ~17:45 (90 min from 16:15)*
 - **43 Remove the deprecated `/v1/export` endpoint?** — rec **(b) keep it, with a sunset date** → *nothing breaks; every response announces removal in 90 days* · *later: misses Thursday's API cleanup release* · ⚠ one-way · basis **partial** · *6 h old*
@@ -298,6 +328,20 @@ what timed out". Only what the fact changes is sent; the card is one scroll up.*
 **46 — Added:** pulling the base image from the container registry timed out after 5 minutes; the registry's status page showed degraded service then and shows normal now.
 *Recommendation (a) unchanged · impact unchanged · basis unchanged, strong: the registry reports normal service again.*
 
+*Then the operator asks for an option's view: "46: tell me (b)". Its plan in brief, its pros and cons in full, then its facet line, in that order; the card does not change, so there is no **Added:** line.*
+
+*Read as: 46 → tell me (b), its view.*
+
+**46 (b) — Deploy yesterday's build instead**
+*plan in brief:* I deploy yesterday's preview build again, the one without the search-page change; it needs no new pull from the registry. The preview is up within minutes, showing the old search page.
+
+| Pros | Cons |
+|---|---|
+| A preview is certain within minutes | The design review sees the old page, not the change |
+| No wait on the slow registry | The search-page change still needs its own preview later |
+
+*→ the preview shows the old page, without the search-page change*
+
 ---
 
 ## 12. `expand`
@@ -489,6 +533,29 @@ waited* says whether the impact changed.*
 | **(a) Move all workers now** | every worker reads from the new broker today | every worker service, and whoever is on call for them | ⚠ switch each service's config back within the week; after that the old queue is gone | about an hour of config changes |
 | (b) Move one service first | the email worker moves today; the rest follow in two days if it stays quiet | the email worker only, for now | — | two more days before the rollout finishes |
 | (z) Wait | the rollout stays paused and the old queue keeps running | the worker rollout | — | the old queue's upkeep |
+
+**(a) Move all workers now**
+*plan in brief:* each worker service's config switches to the new message broker today, about an hour of changes. The old queue runs a week more as a fallback, then is shut down.
+
+| Pros | Cons |
+|---|---|
+| The rollout finishes today | Every worker moves at once, so a problem reaches them all |
+| The old queue is still there for a week to fall back to | After the week, switching back means bringing the old queue up again |
+
+**(b) Move one service first**
+*plan in brief:* the email worker moves to the new broker today; the other services follow in two days if it stays quiet. The old queue keeps running until the last one moves.
+
+| Pros | Cons |
+|---|---|
+| A problem shows on one service before it reaches the rest | The rollout takes two more days |
+| | The old queue runs, and needs upkeep, two days longer |
+
+**(z) Wait**
+*plan in brief:* nothing moves: the rollout stays paused and the old queue keeps running.
+
+| Pros | Cons |
+|---|---|
+| | The worker rollout stays paused |
 
 ▾ Background — why now: the worker rollout waits on it.
 **Why now:** the worker rollout waits on it.

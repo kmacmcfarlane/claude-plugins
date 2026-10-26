@@ -97,7 +97,7 @@
           "k": "a",
           "title": "Keep the local build",
           "line": "the cache failures stay",
-          "text": "Keep building on a laptop. Nothing changes; the maintainer publishes by hand.",
+          "plan": "The maintainer keeps building on their laptop and publishing by hand, as now. Nothing is set up or changed. A stale cache is cleared when a reader reports a broken page.",
           "effect": "Nothing changes; the maintainer publishes by hand.",
           "reach": "The maintainer who publishes.",
           "cost": "About two failed publishes a month.",
@@ -115,7 +115,10 @@
           "detail": [
             [
               "Keep building on the maintainer's laptop, publishing by hand",
-              "Stale-cache failures stay at about two a month"
+              "Stale-cache failures stay at about two a month",
+              "Nothing is set up or changed this week",
+              "A broken page is fixed by clearing the cache and publishing again",
+              "Publishing waits whenever the maintainer is away"
             ],
             [
               {
@@ -139,7 +142,7 @@
           "k": "b",
           "title": "Publish from CI",
           "line": "removes the one-machine dependency",
-          "text": "Build and publish from CI on every merge to main, with the local build kept for previews.",
+          "plan": "CI builds and publishes the site on every merge to `main`, with a deploy token you add as a CI secret. The laptop build stays for previews only.",
           "effect": "Every merge to main builds and publishes the site from CI.",
           "reach": "Every docs contributor.",
           "cost": "About 4 minutes of CI per merge.",
@@ -167,7 +170,10 @@
                 "sub": [
                   "each merge publishes within about 4 minutes"
                 ]
-              }
+              },
+              "A deploy token you add as a CI secret lets it publish",
+              "The first CI publish replaces the live site",
+              "I tell you when the first CI publish is live"
             ],
             [
               {
@@ -191,7 +197,7 @@
           "k": "z",
           "title": "Decide later",
           "line": "[[42]] and [[43]] wait",
-          "text": "Decide later.",
+          "plan": "Nothing is set up; the laptop build carries on as now. [[42]] and [[43]] stay open until you answer.",
           "effect": "The local build stays until you answer; [[42]] and [[43]] wait.",
           "pros": [
             "No setup work this week"
@@ -511,7 +517,7 @@
           "k": "a",
           "title": "Redirect the old URLs",
           "line": "old links keep working",
-          "text": "Add a redirect for each of the twelve URLs.",
+          "plan": "I add one redirect line per moved page to the site config, twelve in all, before the first CI publish. Each old URL then sends its reader to the new page.",
           "effect": "Twelve redirects are added to the site config before the first CI publish.",
           "reach": "Readers following old links, who land on the new pages.",
           "cost": "Twelve lines of redirect config to keep.",
@@ -528,7 +534,9 @@
           "detail": [
             [
               "Add a redirect for each of the twelve old URLs",
-              "One line per page in the site config, before the first CI publish"
+              "One line per page in the site config, before the first CI publish",
+              "Each old link sends its reader on to the new page",
+              "The lines stay until those pages move again"
             ],
             [
               {
@@ -551,7 +559,7 @@
           "k": "b",
           "title": "Let old URLs break",
           "line": "lost links cannot be restored",
-          "text": "Let the old URLs return not found.",
+          "plan": "The first CI publish goes out with no redirects, and the twelve old URLs return not found from then on. Nothing is added to the config.",
           "effect": "The twelve old URLs return not found from the first CI publish.",
           "reach": "External readers and every site linking to the old pages.",
           "undo": "Cannot be fully undone: once search engines drop the old URLs, redirects added later do not win the ranking back.",
@@ -575,7 +583,8 @@
                 "sub": [
                   "search ranking for those pages is lost"
                 ]
-              }
+              },
+              "No line is added to the site config"
             ],
             [
               {
@@ -599,7 +608,7 @@
           "k": "z",
           "title": "Decide later",
           "line": "the first CI publish waits",
-          "text": "Decide later.",
+          "plan": "The first CI publish waits until you choose; nothing else changes.",
           "effect": "The first CI publish waits for this answer.",
           "cons": [
             "The move to CI publishing waits on this answer"
@@ -861,7 +870,7 @@
           "k": "a",
           "title": "Keep the blue",
           "line": "no visual change",
-          "text": "Keep the current blue for links and headings. Nothing changes for readers, and the screenshots in the guides stay accurate. The site stays a different colour from the logo, as it has been since launch.",
+          "plan": "Links and headings keep the current blue, and nothing in the theme file changes. The guide screenshots stay as they are.",
           "effect": "No visual change; the site stays blue.",
           "reach": "Readers of the docs site.",
           "cost": "Nothing.",
@@ -879,7 +888,7 @@
           "k": "b",
           "title": "Switch to logo green",
           "line": "matches the logo",
-          "text": "Switch links and headings to the logo's green at the first CI publish. The site matches the logo and the product's other sites. The screenshots in the guides still show the blue until they are retaken, which reads as dated to a careful reader.",
+          "plan": "I change the accent colour to the logo's green, one line in the theme file, for the first CI publish. The guide screenshots are retaken afterwards, about an hour.",
           "effect": "Links and headings turn the logo's green from the first CI publish.",
           "reach": "Readers of the docs site, and the guide screenshots.",
           "cost": "The guide screenshots look dated until they are retaken, about an hour.",
@@ -898,7 +907,7 @@
           "k": "z",
           "title": "Decide later",
           "line": "the blue stays",
-          "text": "Decide later.",
+          "plan": "The site keeps the blue until you choose; the theme file is untouched.",
           "effect": "The site keeps the blue meanwhile."
         }
       ],

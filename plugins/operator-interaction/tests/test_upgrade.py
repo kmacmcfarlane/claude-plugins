@@ -32,13 +32,15 @@ ASSUME_LINT = "depth: no assumptions: "
 # nor pros and cons (F4): the upgrade invents none, so the tradeoffs lint fires on an upgraded
 # legacy card, left knowingly the same way
 TRADEOFFS_LINTS = ("options but (z) carries its pros and cons", ") has no pro", ") has no con")
+# nor a plan in brief (F5): an upgraded card's view shows its text instead, so the plan lint is left knowingly too
+PLAN_LINTS = ("options carries its plan in brief", ") has no plan: ")
 
 
 def unassumed(code, out):
-    """The runner's (code, output) less the lints an upgraded older card may carry knowingly: assume
-    and tradeoffs, since the upgrade invents no field."""
+    """The runner's (code, output) less the lints an upgraded older card may carry knowingly: assume,
+    tradeoffs and plan, since the upgrade invents no field."""
     rest = [x for x in out.splitlines()
-            if ASSUME_LINT not in x and not any(t in x for t in TRADEOFFS_LINTS)]
+            if ASSUME_LINT not in x and not any(t in x for t in TRADEOFFS_LINTS + PLAN_LINTS)]
     return (0 if code == 2 and not rest else code), "".join(x + "\n" for x in rest)
 
 UPGRADER = SKILL / "scripts" / "upgrade_cards.js"
@@ -206,10 +208,16 @@ class Upgrade(unittest.TestCase):
         rcode, rout, _ = runner(d)
         # no refusal; the only lints are the kit's what, which a later feature shows as its own part, the
         # assume lint on a recommended card the kit gave no assumptions, and the cold read of the kit's own
-        # pro and con rows, which an upgrade carries over as written and cannot gloss without inventing context
+        # pro and con rows and of its plans and tables (the option's view), which an upgrade carries over as written
+        # and cannot gloss without inventing context, and the plan lint on a (z) the kit gave no plan
         self.assertIn(rcode, (0, 2), rout)
         self.assertTrue(all("what present" in x or ASSUME_LINT in x or "(pros and cons)" in x
+                            or "(an option's view)" in x or any(t in x for t in PLAN_LINTS)
                             for x in rout.splitlines()), rout)
+        # the kit's plans come over as the option's plan in brief, and its view opens on them
+        self.assertTrue(all(o.get("plan") for c in d["cards"] for o in c["options"] if o["k"] != "z"))
+        h = run_page(d)["cards"][0]["more"]["a"]
+        self.assertTrue(h.startswith('<div class="oplan"><span class="lbl">Plan in brief</span>'), h[:80])
         self.assertIn("card 51: kit, rev kept", out)
         self.assertIn("card 52: kit (v4), rev kept;", out)
         self.assertEqual(by_n(d)[52]["rev"], "2026-02-03T08:15Z")

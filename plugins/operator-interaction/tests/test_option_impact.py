@@ -35,6 +35,23 @@ BARE_UNDO = re.compile(r"(?<!⚠ )\bundo: ")
 EMPTY = re.compile(r"(?i)^(none|n/a|—|-|nothing|not recorded)?$")
 
 
+def impact_rows(body):
+    """A block's Impact table rows (its header and rule dropped): the table under the `| Impact |`
+    head, up to its first line that is not a row. A block's other tables (each option's Pros | Cons,
+    F5) are not its Impact table."""
+    out, inside = [], False
+    for line in body:
+        if line.startswith("| Impact |"):
+            inside = True
+            continue
+        if inside:
+            if not line.startswith("|"):
+                break
+            if not line.startswith("|---"):
+                out.append(line)
+    return out
+
+
 def facets(line):
     """An option's impact line as [(label, text)], the effect labelled 'effect'; None when
     the line is not one."""
@@ -95,6 +112,7 @@ def check_undo_marked(test, where, body):
     option's line, and a block's Undo cell either `—` (reversible) or opening on ⚠. Returns
     the number of marked undos seen."""
     marked = 0
+    rows = impact_rows(body)
     for line in body:
         if line.startswith("**Impact:**"):
             test.assertIsNone(BARE_UNDO.search(line), f"{where}: an unmarked undo on the Impact line")
@@ -103,7 +121,7 @@ def check_undo_marked(test, where, body):
         if fs:
             test.assertNotIn("undo", [lab for lab, _ in fs], f"{where}: an unmarked undo on an option")
             marked += sum(1 for lab, _ in fs if lab == "⚠ undo")
-        if line.startswith("| ") and not line.startswith(("| Impact", "|---")):
+        if line in rows:
             cell = line.split("|")[4].strip()
             test.assertTrue(cell == "—" or cell.startswith("⚠ "),
                             f"{where}: Undo cell {cell[:30]!r} is neither — nor marked")
@@ -200,12 +218,17 @@ class Checks(unittest.TestCase):
                 "**Impact:** later: w · reach: r · ⚠ undo: (a) a hotfix, after the outage",
                 "- (a) Remove it", "  *→ partners break · ⚠ undo: a hotfix, after the outage*",
                 "- **(b) Keep it**", "  *→ nothing breaks*",
+                "| Impact | Effect | Reach | Undo | Cost |", "|---|---|---|---|---|",
                 "| (a) Remove it | x | r | ⚠ a hotfix, after the outage | an hour |",
-                "| **(b) Keep it** | y | — | — | an hour |"]
+                "| **(b) Keep it** | y | — | — | an hour |",
+                # an option's Pros | Cons table under the Impact table (F5) is not one of its rows
+                "", "**(a) Remove it**", "*plan in brief:* the route goes on Thursday.", "",
+                "| Pros | Cons |", "|---|---|", "| the old code goes | partners break |"]
         self.assertEqual(check_undo_marked(self, "good", good), 3)
+        self.assertEqual(impact_rows(good), good[8:10])
         for k, bad in ((1, good[1].replace("⚠ undo", "undo")),
                        (5, "  *→ nothing breaks · undo: drop the header*"),
-                       (7, "| **(b) Keep it** | y | — | drop the header | an hour |")):
+                       (9, "| **(b) Keep it** | y | — | drop the header | an hour |")):
             card = list(good)
             card[k] = bad
             with self.assertRaises(AssertionError):
@@ -246,8 +269,7 @@ class Gallery(unittest.TestCase):
     def test_every_block_with_a_one_way_row_marks_it(self):
         for n, kind, body in views(GALLERY):
             if kind == "block":
-                cells = [x.split("|")[4].strip() for x in body
-                         if x.startswith("| ") and not x.startswith(("| Impact", "|---"))]
+                cells = [x.split("|")[4].strip() for x in impact_rows(body)]
                 self.assertTrue(any(c.startswith("⚠ ") for c in cells), f"gallery.md:{n}")
                 self.assertIn("—", cells, f"gallery.md:{n}: a reversible row reads —")
 
@@ -257,7 +279,7 @@ class Gallery(unittest.TestCase):
             if kind != "block":
                 continue
             seen += 1
-            rows = [x for x in body if x.startswith("| ") and not x.startswith(("| Impact", "|---"))]
+            rows = impact_rows(body)
             self.assertGreaterEqual(len(rows), 3, f"gallery.md:{n}")
             for r in rows:
                 self.assertEqual(r.count("|"), 6, f"gallery.md:{n}: {r[:40]}")
@@ -322,6 +344,7 @@ def system_slots(body):
     """A card's or block's Effect and Reach text: the Impact line's reach, each option's
     effect and reach, a block row's Effect and Reach cells."""
     out = []
+    rows = impact_rows(body)
     for line in body:
         if line.startswith("**Impact:**"):
             m = re.search(r" · reach: (.*?)( · ⚠ undo: | · cost: |$)", line)
@@ -329,7 +352,7 @@ def system_slots(body):
         fs = facets(line)
         if fs:
             out += [text for lab, text in fs if lab in ("effect", "reach")]
-        if line.startswith("| ") and not line.startswith(("| Impact", "|---", "| (z)")):
+        if line in rows and not line.startswith("| (z)"):
             cells = line.split("|")
             out += [cells[2], cells[3]]
     return out

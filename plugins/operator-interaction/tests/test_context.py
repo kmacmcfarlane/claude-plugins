@@ -335,8 +335,8 @@ const matchMedia = () => ({matches: true}), innerHeight = 800, scrollX = 0, scro
 const getSelection = () => "";
 const calls = [];
 const choose = (...a) => calls.push("choose"), write = (...a) => calls.push("write");
-const stepSection = () => {}, toggleOption = () => {}, setAll = () => {}, tipHtml = k => "tip " + k;
-let byN = new Map([["41", {rec: "b"}]]), readonly = false, answers = {}, timers = {};
+const stepSection = () => {}, toggleOption = () => {}, setAll = () => {}, tipHtml = k => "tip " + k, pickView = () => {};
+let byN = new Map([["41", {rec: "b"}]]), readonly = false, answers = {}, timers = {}, FOLLOW_KEYS = new Set();
 const el = (sels, dataset) => ({dataset: dataset || {}, attrs: {},
   closest(s) { return sels.includes(s) ? this : null; }, setAttribute(k, v) { this.attrs[k] = v; },
   removeAttribute(k) { delete this.attrs[k]; }, getBoundingClientRect: () => ({left: 0, top: 0, bottom: 10})});

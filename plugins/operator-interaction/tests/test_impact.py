@@ -205,8 +205,8 @@ class DecisionPageImpact(unittest.TestCase):
                 lbl = lambda f: ('<span class="lbl owu">⚠ Undo</span>' if f == "Undo" and o.get("oneway")
                                  else '<span class="lbl">%s</span>' % f)
                 pos = [more.index(lbl(f)) for f, _ in cells]
-                if c.get("oneway"):  # the one-way card's facets come before the option's text
-                    self.assertLess(pos[-1], more.index('class="sec"'), (c["n"], o["k"]))
+                # the Plan in brief comes first on every card, a ⚠ one-way card's too (F5, 08 § L1)
+                self.assertTrue(more.startswith('<div class="oplan"><span class="lbl">Plan in brief</span>'), (c["n"], o["k"]))
                 self.assertEqual(pos, sorted(pos), (c["n"], o["k"]))
                 for _, x in cells:
                     self.assertIn(o[x][:20], more, (c["n"], o["k"], x))

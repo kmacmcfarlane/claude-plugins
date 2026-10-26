@@ -109,12 +109,17 @@ Each record field maps to a part of the `decisions` skill's card (its `reference
 - the options, each its letter and `title`, the recommended one bold with a *recommended*
   pill, its `line` after the page's label (*because:* on the recommended option, *if chosen:*
   on every other but (z), *if left:* on (z)), then its `pro` and `con` as two rows under it,
-  always visible, labelled **Pros** and **Cons** and laid out as its **More**'s Effect, Reach,
+  always visible, labelled **Pros** and **Cons** and laid out as its view's Effect, Reach,
   Undo and Cost are (the label in a column of its own, the text after it, no colon); (z) has no
   rows, even when given; then its
-  `act` as **To act on (x):** under it, and its **More**: its `text` at its fullest level, then its Effect, Reach, Undo and Cost ((z)'s
-  effect is its Wait). On a ⚠ card the facets come first and every option's **More** but (z)'s
-  starts open;
+  `act` as **To act on (x):** under it, outside its view; and its **view** (F5, the v5 order of item
+  9168), closed until the option is picked or its **More** pressed: **Plan in brief** (`plan`,
+  labelled, opening at the plan, its `detail` levels stepping from it), then the **Pros | Cons**
+  table (`pros` and `cons`, two columns side by side, each headed by its facet label, one point a
+  row, at most five a side; a side with none is not drawn), then its Effect, Reach, Undo and Cost
+  ((z)'s effect is its Wait). An older option with no `plan` shows its `text` in the plan's place,
+  at its fullest level. The order is the same on every card, a ⚠ card's too, and every view
+  starts closed;
 - the recommendation is marked on its option (bold, the *recommended* pill and *because:*)
   and in the row's rec pill; there is no Recommendation part and no Rec line;
 - the folds: **Background** (`why`, then `whyask` with `class` first; the first of the bottom
@@ -128,7 +133,7 @@ first, `→ (b) …`; with no recommendation, each option's in a few words, `(a)
 **Context introduces every specific thing the card names.** Every label, number, acronym,
 term of art or item that the flat part (`t`, the Impact, `tldr`, the option titles and one
 lines) uses is introduced in `context`, as the `decisions` floor requires: the
-flat part is what the operator reads, and an option's `text` sits in its **More**. Two shapes
+flat part is what the operator reads, and an option's `plan` (or older `text`) sits in its view. Two shapes
 need it most:
 
 - **A count** ("four changes", "the three"). Context says what the things are, or lists them:
@@ -146,16 +151,17 @@ review, plan or document, an item or a label. For each one, point to its gloss i
 `context`. A phrase with no gloss gets one before the page goes out. The pre-publish runner
 (SKILL.md step 2) lints counts and named things missing from `context`, and ids wherever they
 are; those lints are proxies, and plain-word terms stay the cold read's. The same holds for
-the medium and high renditions of the Impact and the TLDR, checked against
+the medium and high renditions of the Impact and the TLDR, and each option's view (its `plan` and
+the points of its Pros | Cons table, which picking the option opens), checked against
 Context's **summary** only: each part steps alone, so the Context beside a TLDR at full
 detail may be at its summary. A term a level introduces needs its gloss in Context's summary,
 or in the level itself.
 
 **Levels on the page.** A part with levels steps summary → medium → high → summary on a
 click, the level replacing the part's text; a part steps alone, only through the levels it
-has, and opens at its summary (an option's text in its **More** opens at its fullest). Links
+has, and opens at its summary (an older option's `text` in its view opens at its fullest; a `plan` opens at the plan). Links
 (`https://` only) are clickable in the medium and high renditions, in the fold parts at every
-level and in an option's **More**; never in a heading, a visible part's summary, `act`, a
+level and in an option's view; never in a heading, a visible part's summary, `act`, a
 tooltip or a slug. Context's high holds the further facts the decisions block carries after
 the card's Context (what was tried, what was answered before, where a list or number came
 from). The page ignores a `detail` key it does not know; the runner lints it.
@@ -163,7 +169,7 @@ from). The page ignores a `detail` key it does not know; the runner lints it.
 **Size.** The flat part of a card (title, Impact, TLDR, option titles and one-liners) stays
 near 150 words; the basis reason sits in the closed Assumptions fold, so it is a fold part,
 counted in the card in all at its top level and not in the flat part; each option's Pros and
-Cons rows count in the card in all too, not in the flat part; the folds carry the rest. `context` and an option's `act` are
+Cons rows, and the points of its view's Pros | Cons table, count in the card in all too, not in the flat part; the folds carry the rest. `context` and an option's `act` are
 outside that budget: what the operator needs to read the card, and to act on it, is never
 folded away. Context's summary is one or two sentences, typically 30–60 words (the runner
 lints past ~60); a term that needs a paragraph has its detail in its levels or a fold, with
@@ -177,7 +183,8 @@ whitespace-split:
 | What | Size |
 |---|---|
 | Background: `why` + `whyask`, each at its top level | ~150 |
-| Each option but `z`: its top text + its effect, reach, undo and cost | ~60–120 |
+| Each option but `z`: its top `plan` (or older `text`) + its effect, reach, undo and cost | ~60–120 |
+| An option's `plan`, Plan in brief | 2–4 sentences, at most ~100 words |
 | Evidence, at its top level | ~150, with the paths and links behind each claim |
 | The card in all: the flat part and Context at their summary, the fold parts at their top level, each option's detail; not `act` | ~600–900 |
 | A fold part's medium | between its summary and its high, about half its high |
@@ -208,7 +215,7 @@ to its one-line row, in its group: the number, the title, the ⚠ pill on a one-
 rec pill and the recommended option's effect with its letter, and the answer, with **Use
 recommendation** (on a card with one) and **Later** beside the row, outside it. A click on the
 row opens the card. Every view shows impact: a card's row the recommended option's effect; an
-open card the Impact, one facet a line; and each option's **More** its own effect, reach,
+open card the Impact, one facet a line; and each option's view its own effect, reach,
 undo (where it is one-way or costly) and cost. Each group opens on a band: the *Group* label,
 its title, a count of its decisions and *What they share:* its note; a bundle adds a closed
 **Shared context** fold whose summary is the context's first sentence. An Impact describes the system the work builds, never the review or the process, which
@@ -219,13 +226,16 @@ then its Open questions, then its Assumptions, then its Impact: a page is read a
 reader is treated as cold. Any part with `detail` toggles its level on a click, on its button
 or on its text (never on a link or a control, nor while text is selected, so it can be
 copied); the folds (Open questions and Assumptions above the Impact, Background and
-Dependencies after the answer) keep their order and stay closed; each option has a **More** button at its right, outside its label, which shows the
-option in full. There is no Options in full fold: it repeated each option's **More** (the
+Dependencies after the answer) keep their order and stay closed; each option has a **More** button at its right, outside its label, which opens or closes the
+option's view alone. **Picking an option** (its radio) opens its view and closes the card's other
+open one, as **More** would (the operator: "Selecting an option opens it as if More is pressed");
+a follow-up leaves the views as they are. There is no Options in full fold: it repeated each option's **More** (the
 operator, 2026-10-14). The basis word, the titles, the one lines, the Pros and Cons rows,
-`act`, and the round and default lines are static. A `⚠ one-way` card is the decisions skill's block: the card's
-essentials plus each option's facets, unfolded, so its options' **More** open from the start.
-It gets no special control: the read-back of a one-way pick happens in chat, when the answers
-are read back.
+`act`, and the round and default lines are static. A `⚠ one-way` card's options start closed
+too, until picked (the build design that opened them is reversed by F5); the ⚠ shows on the
+card's border, its row's ⚠ pill, the Impact's *⚠ undo:* line and the *⚠ Undo* in the option's
+view. It gets no special control: the read-back of a one-way pick happens in chat, when the
+answers are read back.
 
 **None is not shown** (the operator, 2026-10-14: *if any sub-section is empty or none, just
 don't display it*). A part, facet or field that is missing, blank, or says only `none`,

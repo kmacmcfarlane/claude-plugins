@@ -16,9 +16,10 @@ import re
 import sys
 import unittest
 
-from test_impact import NODE, PAGE, example
+from test_impact import NODE, PAGE, example, page_free_script
 from test_depth import card, node, run_page
 from test_context import runner
+from test_pros_cons import page_with
 
 
 def setUpModule():
@@ -125,16 +126,25 @@ class DecisionPageNone(unittest.TestCase):
             more = card(run_page(d), 42)["more"]["a"]
             self.assertIn('<span class="lbl">Undo</span><span>' + undo, more, undo)
 
-    def test_a_one_way_more_shows_its_facets_first(self):
+    def test_a_one_way_view_runs_in_the_same_order_as_any(self):
+        # F5 (08 § L1): the "row first on a ⚠ card" rule is struck; every view opens on its Plan in brief, then its
+        # Pros | Cons table, then its facets, ⚠ Undo among them
         res = run_page(example())
-        more = card(res, 42)["more"]["b"]
-        pos = [more.index(f) for f in ('<span class="lbl">Effect</span>', '<span class="lbl">Reach</span>',
-                                       '<span class="lbl owu">⚠ Undo</span>', '<span class="lbl">Cost</span>')]
-        self.assertEqual(pos, sorted(pos))
-        self.assertLess(pos[-1], more.index('class="sec"'))
-        # any other card: the text first, then the facets
-        more = card(res, 41)["more"]["a"]
-        self.assertLess(more.index('class="sec"'), more.index('<span class="lbl">Effect</span>'))
+        for n, k in ((42, "b"), (41, "a")):
+            more = card(res, n)["more"][k]
+            fs = ['<span class="lbl">Effect</span>', '<span class="lbl">Reach</span>', '<span class="lbl">Cost</span>']
+            if n == 42:
+                fs.insert(2, '<span class="lbl owu">⚠ Undo</span>')
+            pos = [more.index(f) for f in fs]
+            self.assertEqual(pos, sorted(pos))
+            self.assertLess(more.index('<span class="lbl">Plan in brief</span>'), more.index('class="opc"'), (n, k))
+            self.assertLess(more.index('class="opc"'), pos[0], (n, k))
+        # mutant: the old ⚠ order, facets first
+        src = page_free_script()
+        m = src.replace("return plan+prosConTable(o)+facets;", "return c.oneway===true?facets+plan+prosConTable(o):plan+prosConTable(o)+facets;", 1)
+        self.assertNotEqual(m, src)
+        more = page_with(m, example())["cards"][1]["more"]["b"]
+        self.assertGreater(more.index('<span class="lbl">Plan in brief</span>'), more.index('<span class="lbl">Effect</span>'))
 
     def test_a_one_way_cards_option_with_a_blank_reach_or_effect_is_refused(self):
         for f, want in (("effect", "card 42: (b) needs its effect"), ("reach", "card 42: (b) needs its reach")):
@@ -188,13 +198,20 @@ class DecisionPageNone(unittest.TestCase):
         lab = re.search(r'<label class="optl"><input type="radio" name="d43" id="d43-a".*?</label>', h).group(0)
         self.assertNotIn('class="oi"', lab)
 
-    def test_a_one_way_card_opens_each_options_more(self):
+    def test_a_one_way_cards_options_start_closed(self):
+        # F5 (08 § L1): a ⚠ card's views start closed until picked, as every card's do; the ⚠ shows on the card's
+        # border, its row's pill, the Impact's ⚠ undo line and the ⚠ Undo in the view
         res = run_page(example())
-        h = card(res, 42)["html"]
-        for k in ("a", "b"):
-            self.assertIn('<div class="odet" id="d42-%s-more">' % k, h)
-        self.assertIn('<div class="odet" id="d42-z-more" hidden>', h)
-        self.assertIn('<div class="odet" id="d41-a-more" hidden>', card(res, 41)["html"])
+        for n in (41, 42, 43):
+            h = card(res, n)["html"]
+            for k in ("a", "b", "z"):
+                self.assertIn('<div class="odet" id="d%d-%s-more" hidden>' % (n, k), h)
+        self.assertNotIn('class="btn omore on"', "".join(c["html"] for c in res["cards"]))
+        # mutant: the ⚠ card's options open again
+        src = page_free_script()
+        m = src.replace("det=optionDetail(c,k,P),open=false;", 'det=optionDetail(c,k,P),open=c.oneway===true&&k!=="z";', 1)
+        self.assertNotEqual(m, src)
+        self.assertIn('<div class="odet" id="d42-a-more">', page_with(m, example())["cards"][1]["html"])
 
 
 def unflagged_warn_page():
