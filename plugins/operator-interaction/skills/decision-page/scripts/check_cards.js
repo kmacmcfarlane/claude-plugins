@@ -416,6 +416,8 @@ function lintCard(c, w, sh, out) {
       say("named " + t, "\"" + t + "\"" + at + " is not glossed in its context: give it a one-line gloss in context, what it is and where it comes from");
   };
   terms(flat(c), "");
+  /* the Pros and Cons rows are visible too, though not in the flat part's budget: the cold read covers them */
+  terms(opts(c).flatMap(o => page.proCon(o).map(r => r[1])), " (pros and cons)");
   c.tldr.forEach((b, i) => { if (REC_BROAD.test(b))
     say("tldr " + i, "tldr bullet " + (i + 1) + " may carry the recommendation: the options mark it; say what is decided instead, or leave it if it reports someone else's"); });
   /* the visible parts' medium and high: each steps alone, so the Context beside them may be its summary. The basis

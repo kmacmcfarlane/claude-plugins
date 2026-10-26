@@ -243,7 +243,8 @@ page-wide one prints `lint: page:`.
 | `oneway` | `oneway:` | a ⚠ card with no option flagged one-way; a flagged option while the Impact carries no undo |
 | `tradeoffs` | `shape:` | an option but `z` with no shown `pro` or `con`; a recommended option with no `con`; a card with two or more options but `z` and none (an upgraded older card may leave it knowingly); a `pro` or `con` past its words |
 
-Then the cold read: list each noun phrase in the Impact, TLDR, option titles and one lines
-that names a specific thing, and point to its gloss in `context`. Of each effect, ask: does
+Then the cold read: list each noun phrase in the Impact, TLDR, option titles and one lines,
+and each option's `pro` and `con` (visible rows, linted by `count` and `named` though outside
+the flat part's size), that names a specific thing, and point to its gloss in `context`. Of each effect, ask: does
 it name what happens to the thing being built? Could you say how it happens, not only that
 it does?

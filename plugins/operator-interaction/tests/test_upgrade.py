@@ -204,10 +204,12 @@ class Upgrade(unittest.TestCase):
         self.assertEqual(code, 0, out)
         self.assertEqual(run_page(d)["bad"], [])
         rcode, rout, _ = runner(d)
-        # no refusal; the only lints are the kit's what, which a later feature shows as its own part, and
-        # the assume lint on a recommended card the kit gave no assumptions
+        # no refusal; the only lints are the kit's what, which a later feature shows as its own part, the
+        # assume lint on a recommended card the kit gave no assumptions, and the cold read of the kit's own
+        # pro and con rows, which an upgrade carries over as written and cannot gloss without inventing context
         self.assertIn(rcode, (0, 2), rout)
-        self.assertTrue(all("what present" in x or ASSUME_LINT in x for x in rout.splitlines()), rout)
+        self.assertTrue(all("what present" in x or ASSUME_LINT in x or "(pros and cons)" in x
+                            for x in rout.splitlines()), rout)
         self.assertIn("card 51: kit, rev kept", out)
         self.assertIn("card 52: kit (v4), rev kept;", out)
         self.assertEqual(by_n(d)[52]["rev"], "2026-02-03T08:15Z")

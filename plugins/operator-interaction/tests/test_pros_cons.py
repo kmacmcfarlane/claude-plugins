@@ -76,6 +76,8 @@ def row_problems(o_html, pro, con):
             out.append("%s row reads %r" % (lab, g[1]))
     if 'class="oi"' in o_html and o_html.index('class="oi"') > o_html.index('class="otr"'):
         out.append("the rows come before the option's line")
+    if o_html.index('</label>') > o_html.index('class="otr"'):
+        out.append("the rows sit inside the option's label, where a click picks the option")
     for after in ('class="act"', 'class="odet"'):
         if after in o_html and o_html.index(after) < o_html.index('class="otr"'):
             out.append("the rows come after " + after)
@@ -198,9 +200,30 @@ class PageRows(unittest.TestCase):
         self.assertNotIn("<script>", h)
         self.assertIn("&lt;img src=x onerror=alert(1)&gt; stays", h)
 
+    def test_marks_in_a_row_render(self):
+        # a row is card text: a slug and a backtick span render as everywhere else
+        d = example()
+        opt(d, 43, "a")["con"] = "[[42]] waits, and `theme.css` keeps its blue"
+        h = opt_html(card(run_page(d), 43)["html"], 43, "a")
+        rows = h[h.index('<div class="otr">'):]
+        self.assertIn('class="slug in"', rows)
+        self.assertIn("<code>theme.css</code>", rows)
+        src = page_free_script()
+        m = src.replace("'</span><span>'+fmt(v)+'</span></p>'", "'</span><span>'+esc(v)+'</span></p>'", 1)
+        self.assertNotEqual(m, src)
+        h = opt_html(card(page_with(m, d), 43)["html"], 43, "a")
+        rows = h[h.index('<div class="otr">'):]
+        self.assertNotIn('class="slug in"', rows)
+        self.assertNotIn("<code>", rows)
+
     def test_mutants_rows_dropped_or_unlabelled_are_caught(self):
         src = page_free_script()
         dropped = src.replace("+proConRows(o)+actList(c,k)", "+actList(c,k)", 1)
+        inside = src.replace("'</span>':'')+'</label>'", "'</span>':'')+proConRows(o)+'</label>'", 1)
+        self.assertNotEqual(inside, src)
+        d = example()
+        o = opt(d, 41, "a")
+        self.assertTrue(row_problems(opt_html(card(page_with(inside, d), 41)["html"], 41, "a"), o["pro"], o["con"]))
         unlabelled = src.replace("'<p><span class=\"lbl\">'+l+'</span><span>'", "'<p><span>'+l+':</span><span>'", 1)
         for m in (dropped, unlabelled):
             self.assertNotEqual(m, src)
@@ -359,6 +382,18 @@ class TradeoffsLint(unittest.TestCase):
         d = example()
         del opt(d, 41, "a")["pro"]
         self.assertEqual(runner_with(removed, d)[:2], (0, ""))
+
+    def test_the_cold_read_covers_the_rows(self):
+        d = example()
+        opt(d, 43, "a")["con"] = "the 17 widgets break for Frobnicator users"
+        out = runner(d)[1]
+        self.assertIn('lint: card 43: "17" (pros and cons) counts things its context does not name', out)
+        # the rows stay out of the flat part, so the card in all moves only by their words
+        js = RUNNER.read_text()
+        off = js.replace('  terms(opts(c).flatMap(o => page.proCon(o).map(r => r[1])), " (pros and cons)");\n', "", 1)
+        self.assertNotEqual(off, js)
+        self.assertNotIn("17", runner_with(off, d)[1])
+        self.assertNotIn("o.pro", js[js.index("function flat("):js.index("function flat(") + 400])
 
     def test_an_id_in_a_row_is_linted(self):
         d = example()

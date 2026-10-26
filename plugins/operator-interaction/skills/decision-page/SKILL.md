@@ -8,7 +8,7 @@ description: "Put a set of decisions to the operator as an answer page: a publis
 A set of decisions on one page the operator works through at their own pace: a map of its
 groups, each card a one-line row that opens flat on its essentials (its TLDR, then its Context, then its Open questions, folded, then its Impact) with folds for the rest; a
 click on a part with a more-detail button shows it as terse bullets, then in headed sections,
-each option shows its **Pros** and **Cons** rows under it, and **More** beside an option shows that option in full; one choice per card enforced by the
+each option but (z) shows its **Pros** and **Cons** rows under it, and **More** beside an option shows that option in full; one choice per card enforced by the
 radio buttons, answers saved as they click. You publish it, they answer, you read the answers
 back and hand them to your caller. The format first served a 24-decision set on how decisions
 are handled.
