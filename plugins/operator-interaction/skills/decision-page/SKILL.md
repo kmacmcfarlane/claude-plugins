@@ -102,7 +102,8 @@ The rules below are what the digest condenses:
   shapes need it most:
   - **A count** ("four changes", "the three"). Where the card says what is decided (its `t`,
     TLDR, an option's title or line), a count names a set: list every item in `items`, the
-    What part, one each (below); the runner refuses a set with no items list of its length.
+    What part, one each (below); the runner refuses a set with no items or too few (one the
+    upgrader carried over, its `rev` kept, gets a lint until it is revised).
     Elsewhere, Context says what the things are, or lists them: *the review asked for four
     changes: X, Y, Z and W*.
   - **A named mode, setting, review, plan or document** ("content mode", "the review").
@@ -386,7 +387,7 @@ answer page*, and the card rules the page renders.
 - `assets/cards.example.json` — invented example data
 - `scripts/check_cards.js` — the pre-publish check under node: the page's own refusals, then
   the set refusal (a card that counts two or more things where it says what is decided, with
-  no `items` list of that length), then lints for ids anywhere on the page, counts and named
+  no `items` or too few; a lint on a card the upgrader carried over), then lints for ids anywhere on the page, counts and named
   things a card's Context and What part do not introduce, the level shapes, a reach that reads as the recommendation's, an option's effect
   with no mechanism, and the depth lints (a level not longer than the one below, thin or long
   depth, an option with no reach, what a new card owes), and an option with no pro or con;

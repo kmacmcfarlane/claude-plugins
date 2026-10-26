@@ -783,8 +783,13 @@ class DecisionPageRunner(unittest.TestCase):
         d["cards"][0]["context"] = (d["cards"][0]["context"][:-1]
                                     + "; the three are the build, the cache and the publish step.")
         self.assert_clean(d)
-        # in the TLDR it names a set: refused until its items are listed (F6; test_items.py)
-        code, out, _ = runner(with_tldr("Start the three now"))
+        # in the TLDR's second bullet, the count lint
+        self.assert_lint(with_tldr("Start the three now"), '"three" counts things its context does not name')
+        # in its first, where it says what is decided, it names a set: refused until its items are listed (F6;
+        # test_items.py)
+        d = example()
+        d["cards"][0]["tldr"][0] = "Start the three now"
+        code, out, _ = runner(d)
         self.assertEqual(code, 1, out)
         self.assertIn("card 41: a set not listed in items: it counts 3 things", out)
 

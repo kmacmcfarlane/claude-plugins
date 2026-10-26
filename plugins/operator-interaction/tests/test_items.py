@@ -7,7 +7,8 @@ Three parts:
   items*, each item's name, where, about and per (its outcome under each option, in letter order),
   every field escaped; `check()` refuses a malformed `what` or `items`;
 - the pre-publish runner (`scripts/check_cards.js`, under node): the set refusal (a card that counts
-  two or more things where it says what is decided, with no `items` list of that length; the
+  two or more things where it says what is decided, with no `items` or too few, a lint on a card the
+  upgrader carried over with its rev; the
   runner's alone, in page and record mode), the `count` lint's fix pointing to `items` there, the
   `rec-only` lint on an item's `per`, the id lint over the What part, and the What part in the card
   in all;
@@ -186,7 +187,7 @@ class WhatPartRunner(unittest.TestCase):
     def test_a_count_where_the_card_says_what_is_decided_needs_its_items(self):
         places = {
             "t": lambda c: c.__setitem__("t", "Move three pages"),
-            "tldr": lambda c: c["tldr"].append("Move three pages"),
+            "first tldr bullet": lambda c: c["tldr"].__setitem__(0, "Move three pages"),
             "option title": lambda c: c["options"][0].__setitem__("title", "Keep three pages"),
             "option line": lambda c: c["options"][0].__setitem__("line", "keeps three pages local"),
         }
@@ -204,13 +205,40 @@ class WhatPartRunner(unittest.TestCase):
                 self.assertNotIn(SET_REFUSAL, out)
                 self.assertIn(code, (0, 2), out)
 
-    def test_items_of_another_length_are_refused_and_named(self):
+    def test_a_count_in_the_second_tldr_bullet_goes_to_the_count_lint(self):
         d = example()
-        d["cards"][0]["tldr"].append("Move three pages")
+        d["cards"][0]["tldr"][1] = "Move three pages"
+        code, out, _ = runner(d)
+        self.assertEqual(code, 2, out)
+        self.assertNotIn(SET_REFUSAL, out)
+        self.assertIn('"three" counts things its context does not name: say what the three things are', out)
+        # mutant: every bullet read for the refusal
+        script = mutant_runner("const out = [c.t, c.tldr[0]];", "const out = [c.t, ...c.tldr];")
+        self.assertEqual(runner(d, script=script)[0], 1)
+
+    def test_fewer_items_than_the_largest_count_are_refused(self):
+        d = example()
+        d["cards"][0]["tldr"][0] = "Move three pages"
         three(d["cards"][0])["items"].pop()
         code, out, _ = runner(d)
         self.assertEqual(code, 1, out)
         self.assertIn("card 41: " + SET_REFUSAL + "3 things where it says what is decided, but items lists 2", out)
+        # the largest count rules: "two" and "three", two items, still short
+        d["cards"][0]["options"][0]["title"] = "Keep two pages"
+        self.assertEqual(runner(d)[0], 1)
+
+    def test_any_other_mismatch_is_a_lint(self):
+        # more items than the count, or a list matching none of two counts but not short of the largest
+        d = example()
+        d["cards"][0]["tldr"][0] = "Move three pages"
+        three(d["cards"][0])["items"].append({"name": "Search settings", "about": "a configuration page"})
+        code, out, _ = runner(d)
+        self.assertEqual(code, 2, out)
+        self.assertIn("lint: card 41: shape: " + SET_REFUSAL + "3 things where it says what is decided, but items "
+                      "lists 4: make the count and the list agree", out)
+        # mutant: the length rule exact again, the longer list refused
+        script = mutant_runner("short = n < max", "short = n !== max")
+        self.assertEqual(runner(d, script=script)[0], 1)
 
     def test_a_count_elsewhere_is_never_refused(self):
         # Context, the Impact, (z)'s line, the folds: not where the card says what is decided
@@ -223,19 +251,51 @@ class WhatPartRunner(unittest.TestCase):
             code, out, _ = runner(d)
             self.assertNotIn(SET_REFUSAL, out)
 
+    def refused(self, line):
+        d = example()
+        d["cards"][0]["options"][0]["line"] = line
+        return SET_REFUSAL in runner(d)[1]
+
     def test_a_numbered_label_is_not_a_set(self):
-        # "principle 3", "step 2": a numeral after a word labels one thing; "Fix 3 bugs" counts three
-        for t, refused in (("Clarify principle 3", False), ("as step 2 did", False),
-                           ("Fix 3 bugs", True), ("Fix the 3 failing tests", True)):
+        # a numeral labels one thing when a word comes before it and it ends the text, comes before punctuation,
+        # or before a function word; before a noun or an adjective it counts
+        for t in ("File 9 proposed work items", "Fix 3 broken links", "Move 12 old pages", "Ship 4 new skills",
+                  "Fix 3 bugs", "Fix the 3 failing tests"):
             with self.subTest(t):
-                d = example()
-                d["cards"][0]["options"][0]["line"] = t
-                out = runner(d)[1]
-                self.assertEqual(SET_REFUSAL in out, refused, out)
-        # mutant: the label rule gone, "principle 3" is refused as a set
+                self.assertTrue(self.refused(t))
+        for t in ("Clarify principle 3", "as step 2 of the guide says", "runs on Python 3 only", "Clarify principle 3.",
+                  "Build tier three", "Option two first"):
+            with self.subTest(t):
+                self.assertFalse(self.refused(t))
+        # mutants: the label rule gone; a noun after the numeral read as a function word
+        script = mutant_runner("const LABEL_NUM = /([A-Za-z]+)\\s+$/;", "const LABEL_NUM = /$^/;")
         d = example()
         d["cards"][0]["options"][0]["line"] = "Clarify principle 3"
-        script = mutant_runner("const LABEL_NUM = /([A-Za-z]+)\\s+$/;", "const LABEL_NUM = /$^/;")
+        self.assertIn(SET_REFUSAL, runner(d, script=script)[1])
+        script = mutant_runner('|| (!!nx && FUNC_AFTER.has(nx[1].toLowerCase()))', "|| !!nx")
+        d["cards"][0]["options"][0]["line"] = "Fix 3 broken links"
+        self.assertNotIn(SET_REFUSAL, runner(d, script=script)[1])
+
+    def test_numbers_that_count_no_set_are_not_refused(self):
+        for t in ("retries 3 times", "pages 3-5 move", "move 3-5 of them", "serves HTTP/2 clients",
+                  "keeps 2 of the pages", "indents 2 spaces", "cuts it to 600 words", "trims 1350 to 900 words", "Ship all three of the skills", "moves 3 to 5 pages",
+                  "Which of the two hosts stays"):
+            with self.subTest(t):
+                self.assertFalse(self.refused(t))
+        # the options themselves, counted where the card has that many real options (card 41 has two)
+        for t in ("Choose between the two options", "Pick one of two layouts"):
+            with self.subTest(t):
+                self.assertFalse(self.refused(t))
+        # but a count of another number, or a sentence not about the options, is a set
+        self.assertTrue(self.refused("Choose between the three options"))
+        self.assertTrue(self.refused("Move two pages"))
+        # mutants: no unit rule; no options rule
+        d = example()
+        d["cards"][0]["options"][0]["line"] = "indents 2 spaces"
+        script = mutant_runner('|| new RegExp("^(?:\\\\s*(?:to|and|-|–)\\\\s*[0-9a-z]+)?\\\\s+" + SET_UNIT + "\\\\b", "i").test(after)', "")
+        self.assertIn(SET_REFUSAL, runner(d, script=script)[1])
+        d["cards"][0]["options"][0]["line"] = "Choose between the two options"
+        script = mutant_runner(".filter(x => !(x === nOpts && ABOUT_OPTIONS.test(t)))", "")
         self.assertIn(SET_REFUSAL, runner(d, script=script)[1])
 
     def test_the_page_itself_never_refuses_it(self):
@@ -255,25 +315,52 @@ class WhatPartRunner(unittest.TestCase):
         self.assertEqual(code, 1, out)
         self.assertIn("record 42: " + SET_REFUSAL + "12 things", out)
 
+    def test_a_carried_over_card_gets_the_lint_until_it_is_revised(self):
+        # the upgrader's marker names the rev it kept: while rev is that rev, the set is a lint (a lazy, seamless
+        # upgrade keeps every rev); a writer's revision, a new rev, makes it a refusal again
+        d = example()
+        c = d["cards"][1]
+        del c["items"]
+        c["upgraded"] = {"from": "kit", "rev": c["rev"]}
+        self.assertEqual(run_page(d)["bad"], [])
+        code, out, _ = runner(d)
+        self.assertEqual(code, 2, out)
+        self.assertIn("lint: card 42: shape: " + SET_REFUSAL + "12 things", out)
+        self.assertIn("carried over by the upgrader with its rev, so linted, and refused once revised with a new rev", out)
+        r = record_of(c)
+        self.assertEqual(run_record(r)[0], 2)
+        c["rev"] = "2026-10-27T08:00:00Z"
+        code, out, _ = runner(d)
+        self.assertEqual(code, 1, out)
+        self.assertIn("card 42: " + SET_REFUSAL + "12 things", out)
+        # mutant: the marker read without its rev
+        c["rev"] = "2026-10-27T08:00:00Z"
+        script = mutant_runner("c.upgraded.rev === c.rev", "true")
+        self.assertEqual(runner(d, script=script)[0], 2)
+        # the page refuses a malformed marker
+        for bad in ("kit", {"from": "kit"}, {"from": "kit", "rev": "yesterday"}, {"from": "", "rev": c["rev"]}):
+            with self.subTest(bad=bad):
+                c["upgraded"] = bad
+                self.assertTrue(any("upgraded must be {from, rev}" in b for b in run_page(d)["bad"]))
+
     def test_the_set_refusal_mutant(self):
         d = example()
         del d["cards"][1]["items"]
-        script = mutant_runner("if (seen.size && !seen.has(n)) {", "if (false) {")
+        script = mutant_runner("refuse: short && !carried(c)", "refuse: false")
         code, out, _ = runner(d, script=script)
         self.assertNotEqual(code, 1, out)
-        self.assertNotIn(SET_REFUSAL, out)
 
     def test_an_unlisted_count_in_those_places_points_to_items(self):
         d = example()
-        d["cards"][0]["tldr"].append("Move three pages")
-        three(d["cards"][0])
-        d["cards"][0]["options"][0]["title"] = "Keep five pages"
+        d["cards"][0]["tldr"][0] = "Move four pages"
+        three(d["cards"][0])["items"].append({"name": "Search settings", "about": "a configuration page"})
+        d["cards"][0]["options"][0]["title"] = "Keep three pages"
         code, out, _ = runner(d)
         self.assertEqual(code, 2, out)
-        self.assertIn('lint: card 41: "five" counts things its context does not name: list the five things in '
+        self.assertIn('lint: card 41: "three" counts things its context does not name: list the three things in '
                       "items, the What part", out)
-        # the items' own number is named by the list: "three" is not linted
-        self.assertNotIn('"three"', out)
+        # the items' own number is named by the list: "four" is not linted
+        self.assertNotIn('"four"', out)
         # outside those places the fix stays Context's
         d = example()
         d["cards"][0]["impact"]["wait"] = "the five pages wait"
@@ -291,6 +378,12 @@ class WhatPartRunner(unittest.TestCase):
         # a per for another option alone is not the recommendation's
         d["cards"][1]["items"][0]["per"] = {"b": "breaks"}
         self.assertEqual(runner(d)[:2], (0, ""))
+        # the recommended option and (z): it says what waiting does too
+        d["cards"][1]["items"][0]["per"] = {"a": "redirects", "z": "stays where it is"}
+        self.assertEqual(runner(d)[:2], (0, ""))
+        script = mutant_runner("if (ks.length === 1 && ks[0] === c.rec)",
+                               'if (ks.includes(c.rec) && ks.every(k => k === c.rec || k === "z"))')
+        self.assertIn("per gives only the recommended", runner(d, script=script)[1])
 
     def test_the_id_lint_reads_the_what_part(self):
         for put, at in ((lambda c: c.__setitem__("what", "Whether KAPPA-3570 lands."), "(what)"),
@@ -388,6 +481,22 @@ class WhatPartChat(unittest.TestCase):
         self.assertIn("could you name every item it acts on", cold)
         flat = " ".join(RENDERING.read_text().split())
         self.assertIn("**What:** after **Context:**", flat)
+
+    def test_a_set_named_by_its_rule_passes_the_cold_read(self):
+        cold = " ".join(WORKSHEET.read_text().split())
+        self.assertIn("unless the card names the set by a rule that picks out its members", cold)
+        # gallery 87 names its twelve pages by their rule, and says so
+        text = GALLERY.read_text()
+        s87 = text[text.index("**87 — "):text.index("## 29.")]
+        self.assertIn("*The set is named by its rule, \"the pages that cite the retired setup guide\", rather than "
+                      "listed", s87)
+
+    def test_the_rulings_mark_the_reversed_orders(self):
+        flat = " ".join((REFS / "rulings.md").read_text().split())
+        self.assertIn("Context absorbs What (decision 197 (a), the operator's answer 2026-10-08; reversed on the page "
+                      "by answer 290 (a)", flat)
+        self.assertIn("(the What line's place before Context reversed by answer 290 (a)", flat)
+        self.assertIn("**The What part after Context, listing a set, both surfaces**", flat)
 
 
 if __name__ == "__main__":

@@ -213,7 +213,7 @@ class WriterDigest(unittest.TestCase):
         card = keyed(section(self.digest, "A card"), 1)
         self.assertEqual(card.get("what"), "optional")
         self.assertEqual(card.get("items"),
-                         "optional; a card that counts a set where it says what is decided is refused without it")
+                         "optional; a card that counts a set where it says what is decided is refused with none, or too few")
         self.assertNotIn("Do not set `what`", self.digest)
         self.assertNotIn("what", keyed(section(self.digest, "The checks"), 1))
         for row in ("| `what` | optional |", "| `items` | optional;"):
@@ -225,6 +225,23 @@ class WriterDigest(unittest.TestCase):
         self.assertNotEqual(old, self.record)
         self.assertIn("A card: `what` Required is 'optional', the schema's 'older data'",
                       required_problems(old, self.digest, "A card"))
+
+    def test_the_set_lint_and_the_upgraders_marker_are_listed(self):
+        # F6 fix round: the set lint (another length; a carried-over card) prints under shape:, the named lint reads
+        # What too, and the upgrader's marker has its record row
+        self.assertEqual(runner_lints(self.js)["set"], {"shape:"})
+        checks = section(self.digest, "The checks")
+        self.assertIn("| `named` | — | a named mode, setting, review, plan, document, … not glossed in Context or What |",
+                      checks)
+        self.assertNotIn("A card\nupgraded from an older format is refused the same way", self.digest)
+        self.assertNotIn("is refused the same way: give it its items", " ".join(self.digest.split()))
+        gone = self.digest.replace("| `set` | `shape:` |", "| set | `shape:` |")
+        self.assertIn("lint `set` missing", lint_problems(self.js, gone))
+        moved = self.digest.replace("| `set` | `shape:` |", "| `set` | `depth:` |")
+        self.assertTrue(lint_problems(self.js, moved))
+        self.assertEqual(keyed(section(self.digest, "A card"), 1).get("upgraded"), "optional; written by the upgrader only")
+        gone = self.digest.replace("| `upgraded` |", "| upgraded |")
+        self.assertIn("A card: `upgraded` missing", required_problems(self.record, gone, "A card"))
 
     def test_card_field_mutations(self):
         gone = self.digest.replace("| `basis` | to render |", "| basis | to render |")

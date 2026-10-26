@@ -36,10 +36,12 @@ TRADEOFFS_LINTS = ("options but (z) carries its pros and cons", ") has no pro", 
 PLAN_LINTS = ("options carries its plan in brief", ") has no plan: ")
 
 
-# nor a set's items (F6): an older card about a set counts its items without listing them, which the runner
-# refuses (the set refusal: the What part lists every item), so a writer gives the upgraded card its items before a
-# republish. The legacy fixture's card 42 moves twelve pages
+# nor a set's items (F6): an older card about a set counts its items without listing them. Carried over by the
+# upgrader with its rev kept (its upgraded marker), it gets the set check as a lint, a lazy and seamless upgrade; a
+# writer who revises it, with a new rev, owes its items, or the runner refuses it. The legacy fixture's card 42 moves
+# twelve pages
 SET_REFUSAL = ": a set not listed in items: it counts 12 things where it says what is decided"
+SET_LINT = "shape: a set not listed in items: "
 ITEMS_42 = [{"name": "Guide %d" % i, "where": "/guides/", "about": "a how-to guide"} for i in range(1, 11)] + [
     {"name": "Site settings", "where": "/config/", "about": "a configuration page"},
     {"name": "Theme settings", "where": "/config/", "about": "a configuration page"}]
@@ -56,7 +58,7 @@ def unassumed(code, out):
     """The runner's (code, output) less the lints an upgraded older card may carry knowingly: assume,
     tradeoffs and plan, since the upgrade invents no field."""
     rest = [x for x in out.splitlines()
-            if ASSUME_LINT not in x and not any(t in x for t in TRADEOFFS_LINTS + PLAN_LINTS)]
+            if ASSUME_LINT not in x and not any(t in x for t in TRADEOFFS_LINTS + PLAN_LINTS + (SET_LINT,))]
     return (0 if code == 2 and not rest else code), "".join(x + "\n" for x in rest)
 
 UPGRADER = SKILL / "scripts" / "upgrade_cards.js"
@@ -144,14 +146,24 @@ class Upgrade(unittest.TestCase):
         self.assertEqual(code, 0, out)
         self.assertEqual(d["format"], "decision-page/5")
         self.assertEqual(run_page(d)["bad"], [])
-        # the set card is refused until its items are listed, and it alone (F6)
+        # every card carries the upgrader's marker: the shape it came from and the rev it kept, byte for byte
+        for c in d["cards"]:
+            self.assertEqual(c["upgraded"], {"from": "legacy", "rev": c["rev"]})
+        # the set card, carried over, gets the set check as a lint, never a refusal (F6, the lazy upgrade)
         code, rout, _ = runner(d)
+        self.assertEqual(code, 2, rout)
+        self.assertIn("lint: card 42: " + SET_LINT + "it counts 12 things", rout)
+        self.assertEqual(unassumed(code, rout), (0, ""))
+        # revised by a writer, a new rev, it owes its items: refused, and it alone
+        rev = copy.deepcopy(d)
+        rev["cards"][1]["rev"] = "2026-10-26T12:00:00Z"
+        code, rout, _ = runner(rev)
         self.assertEqual((code, [x.split(":")[0] for x in rout.splitlines()]), (1, ["card 42"]), rout)
         self.assertIn("card 42" + SET_REFUSAL, rout)
-        for c in d["cards"]:
+        for c in rev["cards"]:
             with_items(c)
-        self.assertEqual(run_page(d)["bad"], [])
-        self.assertEqual(unassumed(*runner(d)[:2]), (0, ""))
+        self.assertEqual(run_page(rev)["bad"], [])
+        self.assertEqual(unassumed(*runner(rev)[:2]), (0, ""))
         # the legacy cards with a recommendation are the ones linted for it
         self.assertEqual(sorted(x.split(":")[1].strip() for x in runner(d)[1].splitlines() if ASSUME_LINT in x),
                          ["card 41", "card 42"])
@@ -355,10 +367,14 @@ class Upgrade(unittest.TestCase):
             self.assertNotIn("L", r, name)
             self.assertNotIn("dep", r, name)
             self.assertEqual(r["format"], "decision-card/5")
+            self.assertEqual(r["upgraded"]["rev"], r["rev"], name)
+            self.assertEqual(unassumed(*run_record(r)), (0, ""), name)
             if name == "42.json":
+                self.assertIn("lint: record 42: " + SET_LINT, run_record(r)[1])
+                r["rev"] = "2026-10-26T12:00:00Z"
                 self.assertEqual(run_record(r)[0], 1, name)
                 self.assertIn("record 42" + SET_REFUSAL, run_record(r)[1])
-            self.assertEqual(unassumed(*run_record(with_items(r))), (0, ""), name)
+                self.assertEqual(unassumed(*run_record(with_items(r))), (0, ""), name)
         self.assertEqual(by_n(res)[42]["dep"], "[[41]] (b)")
 
     def test_a_v5_file_passes_through(self):

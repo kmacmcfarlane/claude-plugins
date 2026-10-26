@@ -35,7 +35,10 @@ The `decision-page` skill's `scripts/upgrade_cards.js` moves a `cards.json` to
 that is no UTC time at all gets a new one, reported *new rev*). It tells the shapes apart card by card and refuses, all or nothing, any card it
 cannot fully map: no question (`--questions`), a field the shape does not have, an unknown
 scope level, unequal assumption lists, a writer marker, a newer stamp. `--only` limits it to a
-set of decisions; `--records` also writes one record per card, without `L` and `dep`.
+set of decisions; `--records` also writes one record per card, without `L` and `dep`. Each card
+it writes carries `upgraded`, `{from, rev}`: the shape it came from and the `rev` it kept. Beside
+`rev`, never touching it, it marks the card as carried over: until a writer revises it with a new
+`rev`, the pre-publish runner lints its set check rather than refusing it.
 
 ## Legacy shipped → `decision-card/5`
 

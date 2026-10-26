@@ -10,10 +10,12 @@
       record plus L and dep). With --record, the card checks alone (no layer, no slug check), and
       the page-only L and dep refused in a record;
    1b. the set refusal, the runner's own (never the page's, so an older published page still renders): a
-      card whose title, TLDR, or an option's title or line (but (z)'s) counts two or more things, with no
-      items list of that length (the What part lists every item of a set, F6);
+      card whose title, first TLDR bullet, or an option's title or line (but (z)'s) counts two or more
+      things, with no items or fewer items than the largest count (the What part lists every item of a
+      set, F6). A card the upgrader carried over with its rev kept gets it as the set lint instead;
    2. on a file that passes, lints, each line saying how to fix it, or that the thing may be left
       knowingly:
+      - the set: an items list of another length than the count; a carried-over card's set;
       - ids: a machine-readable id anywhere the page shows text (every card field and level, act,
         the page title, the lede, the layer titles and notes, refs, the What part and its items), whatever Context says; the
         page is the reader's only context. Backtick spans, https links and slugs are not ids;
@@ -166,10 +168,11 @@ function flat(c) {
   for (const k of ["ifleft", "roundcosts", "ifunanswered", "norec", "dep"]) out.push(c[k]);
   return out.filter(s => typeof s === "string");
 }
-/* the places that say what is decided (F6, the set refusal): the title, the TLDR, and each option's title and line,
-   but (z)'s, which says what waiting costs */
+/* the places that say what is decided (F6, the set check): the title, the TLDR's first bullet (what is decided; a
+   count in its second goes to the count lint), and each option's title and line, but (z)'s, which says what waiting
+   costs */
 function decided(c) {
-  const out = [c.t, ...c.tldr];
+  const out = [c.t, c.tldr[0]];
   for (const o of opts(c)) if (o.k !== "z") out.push(o.title, o.line);
   return out.filter(s => typeof s === "string");
 }
@@ -275,10 +278,10 @@ function recOnly(c, say) {
     if ((e.match(/\([a-y]\)/g) || []).length < 2 && sr >= 0.4 && so === 0)
       say("rec-only" + at, "impact: the reach" + at + " reads as the recommended option's (\"" + e.slice(0, 60) + "\"): say who or what any option reaches; the option's own reach is on the option");
   }
-  /* an item's per (F6) is its outcome under each option: one that names the recommended option and no other reads
-     as the recommendation's alone */
+  /* an item's per (F6) is its outcome under each option: one that names the recommended option alone reads as the
+     recommendation's; one naming (z) beside it also says what waiting does, and passes */
   page.itemsOf(c).forEach((x, i) => { const ks = page.perOf(x).map(p => p[0]);
-    if (ks.includes(c.rec) && !others.some(o => ks.includes(o.k)))
+    if (ks.length === 1 && ks[0] === c.rec)
       say("rec-only item " + (i + 1), "impact: item " + (i + 1) + " (" + x.name + ")'s per gives only the recommended option's outcome: give its outcome under each option, or leave per out when every option leaves it the same"); });
 }
 
@@ -493,6 +496,9 @@ function lintCard(c, w, sh, out) {
   /* a TLDR level's headings, bullets and sub-bullets, numbered in reading order as the page numbers them */
   levelsOf(c, "tldr").forEach((bs, m) => textsOf(bs).forEach((b, i) => { if (REC_BROAD.test(b))
     say("tldr " + m + "." + i, "tldr bullet " + (i + 1) + " (" + DETAIL_NAME[m] + ") may carry the recommendation: the options mark it; say what is decided instead, or leave it if it reports someone else's"); }));
+  /* the set check's lint: a list of another length, or a carried-over card's set (its refusal is setProblems') */
+  const sc = setCheck(c);
+  if (sc && !sc.refuse) say("set", "shape: " + sc.text);
   shapes(c, say);
   recOnly(c, say);
   systemOnly(c, say);
@@ -512,29 +518,54 @@ function lint(d) {
   return out;
 }
 
-/* ---- the set refusal (F6, b78c): a card about a set cannot pass without its items named. A count of two or more
-   where the card says what is decided needs an items list of that length; one list may answer any of the counts.
-   The runner's alone: the page's check() never refuses it, so an older published page still renders ---- */
-/* a numeral right after a word that is no determiner, with no plural noun after it, labels a thing (principle 3,
-   step 2), never counts a set; "Fix 3 bugs" and "the 3 failing tests" still count. A proxy: a label followed by a
-   word ending in s ("step 2 says") still counts */
+/* ---- the set check (F6, b78c): a card about a set cannot pass without its items named. A count of two or more
+   where the card says what is decided needs its items. Refused when there are none, or fewer than the largest count;
+   any other mismatch (a list of another length) is a lint. A card the upgrader carried over (its upgraded.rev equal to
+   its rev: format only, rev kept) gets the lint in place of the refusal, so a lazy upgrade stays seamless; once a
+   writer revises it with a new rev, it is refused like any card. The runner's alone: the page's check() never
+   refuses it, so an older published page still renders ---- */
+/* a numeral (digits or a word) labels one thing, never counts a set, when a word that is no determiner comes right
+   before it and it ends the text, comes before punctuation, or comes before a function word: principle 3, step 2 of
+   the guide, Python 3 only, tier three, Option two first. "Fix 3 broken links" and "the three pages" count */
 const LABEL_NUM = /([A-Za-z]+)\s+$/;
-const COUNT_DET = new Set([...DET, "all", "both", "only", "first", "last", "other"]);
+const COUNT_DET = new Set([...DET, "all", "both", "only", "first", "last", "other", "of", "between"]);
+const FUNC_AFTER = new Set(["of", "and", "or", "nor", "to", "in", "on", "at", "by", "for", "from", "with", "into", "onto", "per",
+  "via", "as", "if", "but", "not", "so", "than", "then", "now", "only", "first", "already", "also", "again", "still",
+  "says", "said", "say", "is", "are", "was", "were", "be", "been", "has", "had", "have", "does", "did", "do", "will",
+  "would", "can", "could", "may", "might", "must", "should", "which", "that", "this", "these", "those", "it", "its",
+  "the", "a", "an", "when", "while", "before", "after", "under", "over", "until", "since"]);
 const isLabelNum = (t, m) => { const p = t.slice(0, m.index).match(LABEL_NUM);
-  return /^[0-9]+$/.test(m[1]) && !!p && !COUNT_DET.has(p[1].toLowerCase()) && !/^\s+[A-Za-z]+s\b/.test(t.slice(m.index + m[1].length)); };
-const setCounts = s => { const t = unId(s);
-  return [...t.matchAll(COUNT)].filter(m => !isLabelNum(t, m))
-    .map(m => W[m[1].toLowerCase()] || Number(m[1])); };
-function setProblems(c, w) {
-  const n = page.itemsOf(c).length, out = [], seen = new Set();
-  for (const s of decided(c)) for (const x of setCounts(s)) if (x >= 2 && !seen.has(x)) seen.add(x);
-  if (seen.size && !seen.has(n)) {
-    const x = [...seen][0];
-    out.push(w + ": a set not listed in items: it counts " + x + " things where it says what is decided" + (n ? ", but items lists " + n
-      : ", and there are no items") + ": list each in items (the What part: {name, where, about, per}), so the operator can name every item it acts on");
-  }
-  return out;
+  if (!p || COUNT_DET.has(p[1].toLowerCase())) return false;
+  const rest = t.slice(m.index + m[1].length), nx = rest.match(/^\s+([A-Za-z]+)/);
+  return !rest.trim() || /^\s*[.,;:!?)\]—–]/.test(rest) || (!!nx && FUNC_AFTER.has(nx[1].toLowerCase())); };
+/* not a set's count: N times; a range (3-5, pages 3-5, 1350 to 900 words); a number after a slash (HTTP/2); N of
+   the …, a part of a set named elsewhere; a quantity of a unit (2 spaces, 600 words) */
+const SET_UNIT = "(?:spaces?|words?|characters?|chars?|lines?|columns?|bytes?|tokens?|sentences?|bullets?|px|em|rem|pt|times)";
+const notSetCount = (t, m) => { const before = t.slice(0, m.index), after = t.slice(m.index + m[1].length);
+  return /[-–/]\s*$/.test(before) || /\b(?:to|and)\s+$/.test(before) && /\d\s*$/.test(before.replace(/\s*(?:to|and)\s+$/, ""))
+    || /^\s*[-–]\s*\w/.test(after) || new RegExp("^(?:\\s*(?:to|and|-|–)\\s*[0-9a-z]+)?\\s+" + SET_UNIT + "\\b", "i").test(after)
+    || /^\s+of\s+(?:the|these|those|its|our|your|their|them)\b/i.test(after); };
+/* a sentence about the options themselves: a count equal to the real options' is the options, not a set */
+const ABOUT_OPTIONS = /\b(?:options?|which of|which one|between|one of|either|choose|pick)\b/i;
+const setCounts = (s, nOpts) => { const t = unId(s);
+  return [...t.matchAll(COUNT)].filter(m => !isLabelNum(t, m) && !notSetCount(t, m))
+    .map(m => W[m[1].toLowerCase()] || Number(m[1])).filter(x => !(x === nOpts && ABOUT_OPTIONS.test(t))); };
+/* a card the upgrader carried over, format only: its marker names the rev it kept */
+const carried = c => !!c.upgraded && typeof c.upgraded === "object" && c.upgraded.rev === c.rev;
+/* the set check on one card: null, or {refuse, text} */
+function setCheck(c) {
+  const n = page.itemsOf(c).length, nOpts = opts(c).filter(o => o.k !== "z").length, seen = new Set();
+  for (const s of decided(c)) for (const x of setCounts(s, nOpts)) if (x >= 2) seen.add(x);
+  if (!seen.size) return null;
+  const max = Math.max(...seen), short = n < max;
+  if (!short && seen.has(n)) return null;
+  return {refuse: short && !carried(c), text: "a set not listed in items: it counts " + [...seen].join(" and ") + " things where it says what is decided"
+    + (n ? ", but items lists " + n : ", and there are no items") + ": " + (short
+      ? "list each in items (the What part: {name, where, about, per}), so the operator can name every item it acts on"
+        + (carried(c) ? "; carried over by the upgrader with its rev, so linted, and refused once revised with a new rev" : "")
+      : "make the count and the list agree, or leave it knowingly when the count names something else")};
 }
+function setProblems(c, w) { const s = setCheck(c); return s && s.refuse ? [w + ": " + s.text] : []; }
 
 /* ---- the run ---- */
 const page = loadPage();

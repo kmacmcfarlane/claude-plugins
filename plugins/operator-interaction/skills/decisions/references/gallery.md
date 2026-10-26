@@ -839,6 +839,8 @@ the operator opens the plan.*
 
 ▸ Background — why now: the link checker fails the docs build until the cleanup lands.
 
+*The set is named by its rule, "the pages that cite the retired setup guide", rather than listed: the rule picks out each of the 12 pages, so the operator can name every one it acts on, and the What part needs no bullets. A set with no such rule lists its items (example 32).*
+
 *Not this: What: "L2, the cleanup scope", with options "(a) level 1 only" and "(b) level 1
 plus wording". The operator never read the plan those labels come from, and neither option
 says what happens if it is chosen.*

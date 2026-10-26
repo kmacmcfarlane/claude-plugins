@@ -58,7 +58,7 @@
     {
       "format": "decision-card/5",
       "n": 41,
-      "rev": "2026-01-12T09:30:00Z",
+      "rev": "2026-10-26T12:00:00Z",
       "L": "direction",
       "t": "Docs build home",
       "context": "The docs site is built and published from one maintainer's laptop, where a stale cache (a leftover copy of an old build) broke two publishes this month, and clearing it once ([[38]]) held a week. CI is the shared build service that already runs on every merge to `main`.",
@@ -473,7 +473,7 @@
     {
       "format": "decision-card/5",
       "n": 42,
-      "rev": "2026-01-12T09:30:00Z",
+      "rev": "2026-10-26T12:00:00Z",
       "L": "details",
       "t": "Old URLs after the move",
       "context": "Building in CI ([[41]], option b) moves twelve pages to new web addresses (URLs): the ten how-to guides and the two configuration pages. A redirect is one config line that sends a reader from an old URL to its new one.",
@@ -905,7 +905,7 @@
     {
       "format": "decision-card/5",
       "n": 43,
-      "rev": "2026-01-12T09:30:00Z",
+      "rev": "2026-10-26T12:00:00Z",
       "L": "details",
       "t": "Theme colour",
       "label": {

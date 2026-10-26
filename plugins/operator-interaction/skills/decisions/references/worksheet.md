@@ -213,7 +213,9 @@ only the card, as someone who has seen nothing else, and for each option ask:
    what it takes to act, from the card alone?
 
 Then, for the card as a whole: if it decides on a set, could you name every item it acts on,
-from its **What:** bullets alone? A count with no list under it fails.
+from its **What:** bullets alone? A count with no list under it fails, unless the card names
+the set by a rule that picks out its members (*the pages that cite the retired setup guide*):
+that passes, since the reader can name each one from it.
 
 Then check every label, number or acronym on it against SKILL.md § The floor, item 1: defined
 where it first appears — in its **Context:** — or replaced by its words; a source label

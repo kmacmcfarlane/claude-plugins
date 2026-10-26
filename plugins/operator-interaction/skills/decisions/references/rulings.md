@@ -124,7 +124,8 @@ alternative not taken, in case practice argues for it.
   stay true after it is seen), older stored cards with no Context keeping the old order, and
   the stored line's reading, designs made in build, not the operator's) — every card and
   block in chat carries a **Context:** section shaped like the page's `context`, in the
-  page's order: the decision line, then Context, then the Impact and the options; a card's
+  page's order: the decision line, then Context, then the Impact and the options (the What
+  line's place before Context reversed by answer 290 (a), *The What part after Context*, below); a card's
   at the page's summary size, a block's at its medium; written when raised, stored with the
   card, shown every time; a list line carries none. Not taken: the cue alone, shown to a
   cold reader only (2026-09-30); the cue on a line of its own above Context; a block's
@@ -377,12 +378,18 @@ alternative not taken, in case practice argues for it.
   and decision 197 (a)'s *Context absorbs What* on the page; *TLDR first* (2026-10-09) holds.
   Designs made in planning and build, not the operator's: the field shapes, `per` keyed by
   option letter and left out when every option treats the item the same, the page's *What · N
-  items* label, the pre-publish runner's **set refusal** (a card whose title, TLDR, or an
-  option's title or line but (z)'s counts two or more things with no `items` list of that
-  length is refused; the page's own check never refuses it, so an older published page still
-  renders; one list may answer any of the counts), the `count` lint's fix pointing to `items`
+  items* label, the pre-publish runner's **set refusal** (a card whose title, first TLDR
+  bullet, or an option's title or line but (z)'s counts two or more things with no `items`,
+  or fewer than the largest count, is refused; a list of another length is the `set` lint; the
+  page's own check never refuses it, so an older published page still renders; the numerals
+  and quantities that count no set are left out), the `count` lint's fix pointing to `items`
   there, the `rec-only` lint on a `per` naming the recommended option alone, the chat item
   bullet's form (`- name, where — about · *(a) …; (b) …*`), and the cold read's question,
-  *could you name every item it acts on?* Not taken: a Subject part beside What (290's
+  *could you name every item it acts on?* (a set named by a rule that picks out its members
+  passes it). Then the operator's ruling on the lazy upgrade (relayed in the F6 fix round:
+  a lazy, seamless migration that keeps every `rev`): a card the upgrader carried
+  over, its `upgraded` marker naming the `rev` it kept, gets the set check as a lint, never a
+  refusal, until a writer revises it with a new `rev`; the marker is a design made in build.
+  Not taken: a Subject part beside What (290's
   alternatives); the items in Context with item lines under the Impact; the What list under the
   TLDR, before Context.

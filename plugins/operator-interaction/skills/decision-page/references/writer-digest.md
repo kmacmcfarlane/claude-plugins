@@ -76,6 +76,7 @@ it knowingly only on a card upgraded from an older format.
 | `n` | to render | whole number, 1 or more, unique, the caller's own |
 | `rev` | to render | the UTC time you write it, `YYYY-MM-DDTHH:MM:SSZ`. New on any change to the card, Context included, since answers given to an old `rev` stop counting; kept only by a format-only upgrade |
 | `raised` | optional | UTC, when the decision was first raised |
+| `upgraded` | optional; written by the upgrader only | `{from, rev}`: the shape a card was carried over from and the `rev` it kept. Never write it; a revision gives a new `rev`, so it no longer matches |
 | `t` | to render | short name, 2–6 words, a noun phrase |
 | `q` | to render | the question as asked, one line (the headline's) |
 | `label` | optional | `{id, name}`, when the decision is raised from one labelled item of a source (a finding, a plan's question or feature; never a work item, ticket or commit): `id` one word (`F7`), `name` its short name, 2–6 plain words, from the source where it has one; shown after the title, muted: `t` · **F7** (oversize upload) |
@@ -84,7 +85,7 @@ it knowingly only on a card upgraded from an older format.
 | `tldr` | to render | 1–2 bullets, each one sentence of about 14 words or fewer: what is decided, what rides on it; never the recommendation |
 | `context` | to render | 1–2 sentences, ~30–60 words: introduces every count, named mode, setting, review, plan, document, item or label the flat part uses; then the resume cue. Does not repeat the TLDR. Its high level holds the facts a cold reader has lost |
 | `what` | optional | one sentence: what is decided, in plain words; shown as the **What** part after Context, never folded |
-| `items` | optional; a card that counts a set where it says what is decided is refused without it | `[{name, where, about, per}, …]`, one per item of a set, every item listed: `name` its plain name (never an id), `where` where it lives when that helps, `about` what it is in a few words, `per` `{"a": "…", "b": "…"}`, its outcome under each option, keyed by the card's letters, only where the options treat it differently (left out, it reads the same under every option); the part reads *What · N items* |
+| `items` | optional; a card that counts a set where it says what is decided is refused with none, or too few | `[{name, where, about, per}, …]`, one per item of a set, every item listed: `name` its plain name (never an id), `where` where it lives when that helps, `about` what it is in a few words, `per` `{"a": "…", "b": "…"}`, its outcome under each option, keyed by the card's letters, only where the options treat it differently (left out, it reads the same under every option); the part reads *What · N items* |
 | `open` | optional | a list of text: what is not known yet, one question each; shown folded above the Impact |
 | `impact` | to render | `{wait, reach}` as text; `undo` only when some option is one-way or costly to undo, naming that option (`(b) none — …`), left out when every option is reversible at little cost; `cost` optional (leave it out when none); across all options, favouring none; `reach` about the thing the work builds, never the process (that is `wait`). No `effect`: each option carries its own |
 | `options` | to render | the options, below, `a`… in order, ending `z` (decide later) |
@@ -225,9 +226,17 @@ neither text nor a non-empty list of text; a malformed `detail` (a bullet neithe
 level with none of its four facets), or an option's `detail` not `[medium, high]`.
 
 **The set refusal** (the runner's alone, exit 1, after the page's own; the page never refuses
-it, so an older published page still renders): a card whose `t`, TLDR, or an option's title or
-line (but (z)'s) counts two or more things, with no `items` list of that length. A card
-upgraded from an older format is refused the same way: give it its items before a republish.
+it, so an older published page still renders): a card whose `t`, first TLDR bullet, or an
+option's title or line (but (z)'s) counts two or more things, with no `items`, or fewer items
+than the largest count. A list of another length is the `set` lint. **A card the upgrader
+carried over** (its `upgraded.rev` equal to its `rev`) gets the set check as the `set` lint,
+never a refusal: the upgrade is lazy and keeps every `rev`. A writer who revises it gives it a
+new `rev`, and from then it is refused like any card until its items are listed. Not a set's
+count: a numeral that labels one thing (a word before it; the text's end, punctuation or a
+function word after it: *principle 3*, *step 2 of the guide*, *tier three*), *N times*, a
+range, a number after a slash, *N of the …*, a quantity of a unit (*2 spaces*, *600 words*),
+and a count equal to the real options' in a sentence about them (*choose between the two
+options*).
 
 **Lints** (exit 2; each line says how to fix it, or leave it knowingly; never pad). A card's
 lint prints `lint: card N:` (a record's `lint: record N:`), then the start below (— is none); a
@@ -240,7 +249,8 @@ page-wide one prints `lint: page:`.
 | `refs` | `page:` | a `refs` answer holding an id (left as given when it is the operator's words) |
 | `id` | — | an id in any card text, the What part's `what` and `items` included: a hash, an item tag, a ticket key, a label like OQ3, decision N; a label a card declares passes with its short name beside it |
 | `count` | — | a count in the flat part or a visible level that Context (with its bundle's `shared`) and the What part (`what`, `items` and their number) do not name; one where the card says what is decided points to `items` |
-| `named` | — | a named mode, setting, review, plan, document, … not glossed in Context |
+| `named` | — | a named mode, setting, review, plan, document, … not glossed in Context or What |
+| `set` | `shape:` | a set's `items` list of another length than its count (not short of the largest); a set on a card the upgrader carried over, its `rev` kept (refused once a writer revises it) |
 | `tldr` | — | a TLDR bullet, at any level, that may carry the recommendation |
 | `shape` | `shape:` | a level off its shape, Context past its size, a long Impact facet, a label's short name past 6 words |
 | `rec-only` | `impact:` | an Impact reach, at any level, that shares 40% or more of its words with the recommended option and none with any other option (the v5 form: with no card-level effect, the reach is what it reads; a reach naming two or more options is the decision's); an item's `per` that names the recommended option and no other |
