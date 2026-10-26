@@ -18,12 +18,13 @@
       knowingly:
       - the set: an items list of another length than the count; a carried-over card's set;
       - ids: a machine-readable id anywhere the page shows text (every card field and level, act,
-        the page title, the lede, the layer titles and notes, refs, the What part and its items), whatever Context says; the
-        page is the reader's only context. Backtick spans, https links and slugs are not ids;
+        the page title, the lede, the layer titles and notes, refs, the What part and its items, the Finding but its
+        excerpt), whatever Context says; the page is the reader's only context. Backtick spans, https links and slugs are
+        not ids, and a source label a card or its finding declares passes with its short name beside it;
       - terms: a count or a named thing in the flat part, or in the medium and high levels of the
         Impact and the TLDR, that Context's summary (with its bundle's shared context, and the What
         part: its text and its items) does not introduce; a count in the places that say what is
-        decided points to items;
+        decided points to items; the Finding's title and mechanism are read too (F7);
       - groups: a bundle (a layer with shared context) holding fewer than two cards;
       - the TLDR: a bullet that may carry the recommendation, at every level, headings, bullets
         and sub-bullets in reading order;
@@ -33,7 +34,7 @@
         one bullet per facet;
       - an Impact reach that reads as the recommended option's alone; an item's per that gives the
         recommended option's outcome alone;
-      - the mechanism: an option's effect of a bare label, MECH_MIN words or fewer (rule 268);
+      - the mechanism: an option's effect, or the Finding's mechanism, of a bare label, MECH_MIN words or fewer (rule 268);
       - the system: a process phrase (a review comment, another round, your time, a blocked
         session) in an option's effect or reach, or the Impact's reach, which describe the thing
         the work builds (rule 259);
@@ -69,11 +70,12 @@ function loadPage() {
   const start = html.indexOf("<script>"), end = html.indexOf(END_MARK);
   if (start < 0 || end < start) fail("the template has no page-free part (its script or the end-of-page-free-part marker is missing): " + tpl);
   try {
-    const page = vm.runInNewContext(html.slice(start + "<script>".length, end) + "\n;({check, recordProblems, bgFirst, assumeOf, proCon, planOf, prosCons, itemsOf, perOf})", {});
+    const page = vm.runInNewContext(html.slice(start + "<script>".length, end) + "\n;({check, recordProblems, bgFirst, assumeOf, proCon, planOf, prosCons, itemsOf, perOf, findingOf})", {});
     if (typeof page.check !== "function" || typeof page.recordProblems !== "function" || typeof page.bgFirst !== "function"
       || typeof page.assumeOf !== "function" || typeof page.proCon !== "function" || typeof page.planOf !== "function"
-      || typeof page.prosCons !== "function" || typeof page.itemsOf !== "function" || typeof page.perOf !== "function")
-      throw new Error("no check(), recordProblems(), bgFirst(), assumeOf(), proCon(), planOf(), prosCons(), itemsOf() or perOf()");
+      || typeof page.prosCons !== "function" || typeof page.itemsOf !== "function" || typeof page.perOf !== "function"
+      || typeof page.findingOf !== "function")
+      throw new Error("no check(), recordProblems(), bgFirst(), assumeOf(), proCon(), planOf(), prosCons(), itemsOf(), perOf() or findingOf()");
     return page;
   } catch (e) { fail("the template's page-free part does not load: " + why(e)); }
 }
@@ -84,11 +86,11 @@ const W = {two:2, three:3, four:4, five:5, six:6, seven:7, eight:8, nine:9, ten:
    slugs, hex colours (never a #tag after an id noun: item #4151 stays), dates and times, clock times
    and versions */
 const ID_NOUN = "(?:work item|item|commit|ticket|decision|answer|card)s?";
-/* the source labels the page's cards declare ({id, name}), each passing only with its short name beside it:
-   F7 (oversize upload). Set by lint() from the file it checks */
+/* the source labels the page's cards declare ({id, name}), a card's own and its finding's (F7), each passing only with
+   its short name beside it: F7 (oversize upload). Set by lint() from the file it checks */
 let DECLARED = [];
 const reEsc = x => x.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-const declare = cards => cards.map(c => c.label).filter(l => l && typeof l === "object" && typeof l.id === "string" && typeof l.name === "string")
+const declare = cards => cards.flatMap(c => [c.label, c.finding && typeof c.finding === "object" ? c.finding.label : null]).filter(l => l && typeof l === "object" && typeof l.id === "string" && typeof l.name === "string")
   .map(l => new RegExp("(?<![A-Za-z0-9])" + reEsc(l.id) + "\\s*\\(\\s*" + reEsc(l.name.trim()).replace(/\s+/g, "\\s+") + "\\s*\\)", "gi"));
 const unlabel = s => DECLARED.reduce((t, r) => t.replace(r, " "), s);
 const strip = s => unlabel(s).replace(/`[^`]*`/g, " ").replace(/https:\/\/\S+/g, " ").replace(/\[\[[0-9]+\]\]/g, "")
@@ -182,6 +184,9 @@ function decided(c) {
 /* the What part's texts, as the page shows them: what, then each item's name, where, about and per */
 const whatTexts = c => [c.what, ...page.itemsOf(c).flatMap(x => [x.name, x.where, x.about, ...page.perOf(x).map(p => p[1])])]
   .filter(s => typeof s === "string");
+/* the Finding's texts a cold reader reads (F7): its title and its mechanism, as the page shows them; its label is
+   glossed by its own short name, where is a location and the excerpt is verbatim, so none of those is read for terms */
+const findingTexts = c => { const f = page.findingOf(c); return f ? [f.title, f.mechanism].filter(s => typeof s === "string") : []; };
 /* every text in a value, in reading order: a section's heading, then each bullet and its sub-bullets */
 const textsOf = x => typeof x === "string" ? [x] : Array.isArray(x) ? x.flatMap(textsOf)
   : x && typeof x === "object" ? ("h" in x ? [x.h, ...textsOf(x.b)] : "t" in x ? [x.t, ...textsOf(x.sub || [])] : Object.values(x).flatMap(textsOf)) : [];
@@ -312,8 +317,14 @@ function mech(c, say) {
     const e = o.effect, n = words(e);
     if (typeof e === "string" && e.trim() && n <= MECH_MIN && !NO_CHANGE.test(e))
       say("mech " + o.k, "impact: (" + o.k + ")'s effect is " + n + " words (\"" + e.trim() + "\"): say its mechanism, how it happens, who meets it and when, and the before and after; or leave it knowingly"); }
+  /* the Finding says how it happens too (F7): a mechanism of a bare label is the finding's name, not its mechanism */
+  const f = page.findingOf(c), fm = f ? f.mechanism : null;
+  if (typeof fm === "string" && words(fm) <= MECH_MIN)
+    say("mech finding", "impact: the finding's mechanism is " + words(fm) + " words (\"" + fm.trim() + "\"): say how it happens, who meets it and when; or leave it knowingly");
 }
 
+/* the Finding's words in the card in all: its title, where and mechanism; never its excerpt, which has its own size */
+const findingWords = c => { const f = page.findingOf(c); return f ? [f.title, f.where, f.mechanism].filter(s => typeof s === "string") : []; };
 /* ---- the depth lints (decision 198): sizes read at each part's top level, words split on whitespace ---- */
 const topOf = (sum, ls) => ls.length ? ls[ls.length - 1] : sum;
 
@@ -359,10 +370,10 @@ function depth(c, say) {
   if (levelsOf(c, "evidence").length && c.basis !== "none" && ev < 60) say("ev", "depth: evidence is " + ev + " words at its fullest: give the basis drill-down near 150, what was observed, inferred and assumed, with the paths and links behind each; or leave it knowingly");
   else if (ev > 225) say("ev", "depth: evidence is " + ev + " words at its fullest: keep it near 150");
   /* the card in all: the flat part and Context at their summary, the fold parts at their top level (the basis reason
-     among them), the What part (its text and its items), each option's detail (its plan or text at its top level, and its facets), its inline Pros and Cons
+     among them), the What part (its text and its items), the Finding (not its excerpt), each option's detail (its plan or text at its top level, and its facets), its inline Pros and Cons
      rows and the points of its view's Pros | Cons table; not act */
   const pc = opts(c).reduce((n, o) => n + words(page.proCon(o).map(r => r[1])) + words(page.prosCons(o).map(r => r[1])), 0);
-  const all = words(flat(c)) + words(c.context) + words(whatTexts(c)) + bg + ev + words(topOf(c.reason, levelsOf(c, "rec"))) + words(as) + optWords + pc;
+  const all = words(flat(c)) + words(c.context) + words(whatTexts(c)) + bg + ev + words(findingWords(c)) + words(topOf(c.reason, levelsOf(c, "rec"))) + words(as) + optWords + pc;
   if (all > 1350) say("all", "depth: the card is " + all + " words in all: keep it near 600–900; a small call gets a short card");
   if (c.detail && typeof c.detail === "object")
     for (const k of Object.keys(c.detail)) if (!(k in PART))
@@ -440,6 +451,11 @@ function cardTexts(c) {
   for (const k of IMP) put("impact", c.impact[k]);
   put("tldr", c.tldr);
   page.itemsOf(c).forEach((x, i) => put("item " + (i + 1), [x.name, x.where, x.about, ...page.perOf(x).map(p => p[1])]));
+  /* the Finding as the page shows it: its label with its short name (a declared label passes), title, where and
+     mechanism; never its excerpt, verbatim data whose src names a commit by design */
+  { const f = page.findingOf(c);
+    if (f) put("finding", [f.label && typeof f.label === "object" && typeof f.label.id === "string" ? f.label.id + " (" + f.label.name + ")" : null,
+      f.title, f.where, f.mechanism].filter(s => typeof s === "string")); }
   if (Array.isArray(c.assume)) for (const a of c.assume) if (a && typeof a === "object") put("assume", [a.rests, a.tw]);
   for (const o of opts(c)) {
     for (const k of ["title", "line", "text", "plan", "effect", "reach", "undo", "cost", "pro", "con", "pros", "cons"]) put("(" + o.k + ")", o[k]);
@@ -487,6 +503,8 @@ function lintCard(c, w, sh, out) {
   /* a count where the card says what is decided names a set: its items belong in the What part (F6) */
   terms(decided(c), "", named, "list the WORD things in items, the What part, one each with its name; or say what they are in context");
   terms(flat(c), "");
+  /* the Finding, never folded, after What (F7): its title and mechanism */
+  terms(findingTexts(c), " (the finding)");
   /* the Pros and Cons rows are visible too, though not in the flat part's budget: the cold read covers them */
   terms(opts(c).flatMap(o => page.proCon(o).map(r => r[1])), " (pros and cons)");
   /* and each option's view (F5), which picking the option opens: its plan in brief and its Pros | Cons table */

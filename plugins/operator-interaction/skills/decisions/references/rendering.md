@@ -113,7 +113,8 @@ after a dash on the option's own line, a plain `undo:` — is read by
 Every card and block carries a **Context** section, shaped like the answer page's `context`
 field (the `decision-page` skill's `references/cards-schema.md`), in the page's order: the
 title first, which does the page TLDR's work, then **Context:**, then **What:** (what is
-decided, and for a set each item, § Card), then the folds above the Impact (▸ Open questions when anything is open, then
+decided, and for a set each item, § Card), then **Finding:** on a card raised from a finding
+(§ Card), then the folds above the Impact (▸ Open questions when anything is open, then
 ▸ Assumptions, § Folds), then the Impact and the options. A list line and a tag-size mention
 carry no Context: a line stays a line.
 
@@ -295,6 +296,9 @@ Example:
 **Context:** the terms, items and counts the card uses, each in plain words; then where you left it · what you decide now.
 **What:** what is decided, in plain words; items by plain name, the id as a trailing tag; other ids glossed.
 - an item's plain name, where it lives — what it is, in a few words · *(a) its outcome; (b) its outcome*
+**Finding:** F7 (short name): the finding's own title — `path/to/file:40-52` *(only on a card raised from a finding)*
+how it happens, who meets it and when, the before and after, in one to three sentences
+*(then its excerpt, verbatim, in a fenced block tagged with its language)*
 ▸ Open questions — 2 open: what is not known yet, cut at about 12 words
 ▸ Assumptions — basis: **partial** · 2 assumptions with tripwires
 **Impact:** later: wait · reach: who or what · ⚠ undo: (a) how, at what cost, or why not
@@ -316,7 +320,8 @@ Example:
 ```
 
 - **The order is the page's**: the title, then **Context:**, then **What:** with a set's
-  item bullets, then the ▸ Open questions line when anything is open, then the
+  item bullets, then **Finding:** on a card raised from a finding, then the ▸ Open questions
+  line when anything is open, then the
   ▸ Assumptions line (§ Folds), then **Impact:** — and under them the options, any **To act
   on (x):** part, a round ask's **If left:** and **A round costs:**, any **If unanswered:**,
   then the ▸ Background line (§ Context, § Folds). There is no Rec line.
@@ -331,6 +336,21 @@ Example:
   order, *(a) …; (b) …* (the record's `per`). An item that fares the same under every option
   carries no outcome: its option's effect says it once. A bullet never opens on an option's
   letter. A card about one thing has no bullets.
+- **Finding:** on a card raised from a finding (of a review, an audit, a test run or a scan),
+  after **What:** and its item bullets, before the folds and the Impact, never folded (the
+  record's `finding`; answer 337 (a), its worked findings card confirmed on item 9168). Its
+  head line: `**Finding:**`, the source label with its short name, a colon and the finding's
+  own title, then ` — ` and where it lives in `code` (a path and line range): **Finding:** F7
+  (oversize upload): the handler reads before it checks — `upload/handler.go:40-52`. The label
+  is the one the title carries, with the same short name (§ Source labels); a part the
+  finding lacks is left out, so one with no label opens on its title, and one with neither on
+  its location. Then the mechanism on its own line: how it happens, who meets it and when, the
+  before and after (*Explain the mechanism*, SKILL.md § The floor), never the label restated.
+  Then the excerpt, its code, log or failing output, in a fenced block tagged with its
+  language: verbatim, about 15 lines in chat (cut longer ones, saying where in the block),
+  never a secret's value, personal data, or another party's private source (the
+  `decision-page` skill's `references/cards-schema.md` § An excerpt). A card carries one
+  finding; a set raised from several lists them as its What items.
 - **Context:** one or two sentences at the page's summary size, on every card each time it
   is shown: the terms the card uses, then the resume cue (§ Context). Read from the store
   when the caller keeps one.
@@ -421,6 +441,7 @@ Example:
   - a sub-bullet, two at most
 - …
 **What:** …
+**Finding:** … *(as on a card: its head line, its mechanism, its excerpt fenced)*
 
 ▾ Open questions — 1 open: what is not known yet
 - what is not known yet, one line
@@ -468,7 +489,7 @@ Example:
 - The block opens as a card does, in the page's order: the title, then **Context:** as a
   bullet list at the page's medium size, its first bullet the card's Context and the rest the
   context the reader may have lost (§ Context), shown on every block, warm reader or cold;
-  then **What:**, with a set's item bullets, as on a card.
+  then **What:**, with a set's item bullets, and **Finding:** when it has one, as on a card.
 - The folds above the Impact come next, open (`▾`, § Folds): ▸ Open questions when anything
   is open, then ▸ Assumptions with its **Basis:** line, the basis drill-down and each
   assumption with its tripwire. Then the card's **Impact:**
@@ -563,11 +584,11 @@ decision a rule requires above list level that the operator has not seen at that
 changed, or the reader went cold). Everything else is a list line.
 
 **Where the set goes.** A findings-style set — decisions raised from the findings of a
-review, an audit, a test run or a scan — goes to chat by default, not to an answer page:
-the operator decides a finding from what it is, where it lives, its code and how it fails,
-and the page cannot show those yet. Offer the page for such a set again once it shows
-findings. Other sets go on a page when the operator asks for one (the `decision-page`
-skill).
+review, an audit, a test run or a scan — goes to chat by default: the operator decides a
+finding from what it is, where it lives, its code and how it fails, which each card's
+**Finding:** shows. The answer page shows them too (each card's Finding part, its excerpt as a
+code block), so offer the page for such a set as for any other. Other sets go on a page when
+the operator asks for one (the `decision-page` skill).
 
 ## A bundle as a group
 
@@ -670,7 +691,7 @@ new numbered decision that names the line it reopens.
 
 When a decision comes back (a wake fired, a context reset, `tell me`, `dig into`), open it
 with what changed since the operator last saw it, then the card or block as usual — its
-stored **Context:**, its **What:**, any ▸ Open questions line, its ▸ Assumptions line and its
+stored **Context:**, its **What:**, any **Finding:**, any ▸ Open questions line, its ▸ Assumptions line and its
 Impact line (and a block's table), right after the *while it waited* line:
 
 **62 — back, as you asked ("until the load test finishes"):** move the job queue to the new
@@ -716,7 +737,7 @@ open decision the reader is cold on at card level or above, never as a line only
 paged (SKILL.md § Levels, the line-only rule), each opening with what changed while it
 waited (*nothing changed* is worth saying, and so is *impact unchanged*). Under it the card
 runs **Context:** (its stored Context, ending on where the operator left it), **What:**,
-any ▸ Open questions line, the ▸ Assumptions line, **Impact:**, the options, then the ▸ Background line from its
+any **Finding:**, any ▸ Open questions line, the ▸ Assumptions line, **Impact:**, the options, then the ▸ Background line from its
 stored *why now* (the fold holding its stored *why now* and *why ask*); a block's **Context:** bullets open with the same
 Context. A stored card in an earlier form is read, and revised where it lacks a floor field,
 by `references/legacy-cards.md`. A deferred decision whose

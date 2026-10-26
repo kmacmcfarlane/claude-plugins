@@ -227,8 +227,9 @@ alternative not taken, in case practice argues for it.
   chat with each finding first, were answered in one turn) — a set raised from the findings
   of a review, an audit, a test run or a scan goes to chat by default, until the answer page
   can show each finding (finding first, part of (a), lands with 265's confirmation); then the page is offered for such sets again. Other sets are as
-  before. Not taken: every set to chat until then (270 (b)); the page offered as before
-  (270 (c)).
+  before. Since F7 (*The finding after What*, below) the page shows each finding, so it is
+  offered for such a set again; chat stays the default. Not taken: every set to chat until
+  then (270 (b)); the page offered as before (270 (c)).
 - **Both surfaces** (2026-10-21, the operator's correction after the 2026-10-20 builds, as the
   librarian recorded it: "a decision-format change goes to both chat and the page unless there
   is an obvious reason; ask when unclear"; that the librarian's stored card follows where it
@@ -393,3 +394,22 @@ alternative not taken, in case practice argues for it.
   Not taken: a Subject part beside What (290's
   alternatives); the items in Context with item lines under the Impact; the What list under the
   TLDR, before Context.
+- **The finding after What, both surfaces** (2026-10-22, answer 337 (a), from the operator's
+  review where findings put on an answer page could not be decided and the same findings in
+  chat, each with its code, were; its worked findings card was shown first, as (a) asked, and
+  confirmed on item 9168: "337 confirm") — a card raised from a finding (of a review, an
+  audit, a test run or a scan) shows the finding inside the card, after the What part and
+  before the folds above the Impact, never folded: where it lives, how it happens, and its
+  code. It replaces 265 (a)'s provisional *finding first* (2026-10-20), which put it above the
+  card in chat and first on the page; *TLDR first* (2026-10-09) holds for findings cards too.
+  Designs made in planning and build, not the operator's: the record's `finding`, `{label,
+  title, where, mechanism, excerpt}`, the mechanism required in it and one paragraph; its
+  label the card's own when the card carries one (the page refuses another, so one label keeps
+  one short name); the chat head line, `**Finding:** label (short name): title — `where``, then
+  the mechanism, then the excerpt fenced with its language; the page's Finding part, its
+  excerpt drawn by the page's code-block renderer (escaped, never parsed); the pre-publish
+  runner reading the Finding's label, title, where and mechanism for ids, its title and
+  mechanism in the cold read, its mechanism in the `mech` lint, and none of its excerpt. Not
+  taken: the page card opening on the finding and chat showing it above the card (337 (b),
+  265 (a) as given), which would have reversed *TLDR first* for findings cards; the finding
+  right after the TLDR (337 (c)).

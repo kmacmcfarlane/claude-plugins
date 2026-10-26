@@ -905,7 +905,7 @@
     {
       "format": "decision-card/5",
       "n": 43,
-      "rev": "2026-10-26T12:00:00Z",
+      "rev": "2026-10-26T21:00:00Z",
       "L": "details",
       "t": "Theme colour",
       "label": {
@@ -914,6 +914,20 @@
       },
       "context": "Building in CI ([[41]], option b) applies the site's theme afresh, so the accent colour (the colour of links and headings) can change at no extra cost. The site is blue and the logo green, which the brand check listed as D3 (site colour off the logo); either colour is one line in the theme file.",
       "what": "Which blue the site uses for links and buttons.",
+      "finding": {
+        "label": {
+          "id": "D3",
+          "name": "site colour off the logo"
+        },
+        "title": "Links and headings keep the launch blue",
+        "where": "theme/colors.toml, lines 3 to 6",
+        "mechanism": "The theme file sets the accent colour, which every link and heading uses, to the blue the site launched with, while the logo was redrawn in green; so each page shows the logo beside a colour that is not its own.",
+        "excerpt": {
+          "text": "[accent]\nlink = \"#1f5fbf\"      # the launch blue\nheading = \"#1f5fbf\"\nlogo = \"#2e8b57\"      # the logo's green",
+          "lang": "toml",
+          "src": "theme/colors.toml lines 3-6, as published"
+        }
+      },
       "tldr": [
         "The move to CI can change the accent colour for free",
         "Keep the blue, or switch to the logo's green"

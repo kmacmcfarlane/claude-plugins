@@ -9,7 +9,7 @@ complete, invented example: three decisions, each opening on its TLDR, then its 
 its Open questions fold, then its Assumptions fold, then its Impact. Its levels scale with the decision: a wide card with
 every part a click from more detail, a ⚠ one-way card (every option with its reach, its
 one-way option flagged) levelled too, and a small call raised from a source's labelled item
-with no recommendation and no levels. One option carries the steps the operator takes to act
+with no recommendation and no levels, whose Finding shows its excerpt. One option carries the steps the operator takes to act
 on it, and one slug names a decision not on the page.
 
 **The page checks the data before it renders anything** and, when a check fails, shows *The
@@ -29,7 +29,10 @@ followed by a colon, a dash (a hyphen only with a space after it), a full stop, 
 nothing, unless *by* follows; or one that says `rec (b)`, I or we recommend, my or our
 recommendation, `(recommended)`, or `(b) is recommended`); an `impact` without its wait and
 reach as text, or with an undo or cost that is not text; an `open` that is not a list of text;
-an `assume` that is not a list of `{rests, tw}`, each non-empty text;
+an `assume` that is not a list of `{rests, tw}`, each non-empty text; a `finding` that is not
+an object, has no `mechanism` as text, or one holding a line break, a `title` or `where` that is
+not one line of text, a `label` that is not `{id, name}` or, on a card that carries a `label`, is
+not that same label, or an `excerpt` the excerpt rules refuse (§ An excerpt);
 an option but (z) with no effect; on a ⚠ card, an option but (z) with no reach; an option
 field that is not text; a `plan`, `pro` or `con` holding a line break (CR, LF, NEL, a line or
 paragraph separator, a vertical tab or form feed); a `pros` or `cons` that is not a list of
@@ -101,7 +104,10 @@ Each record field maps to a part of the `decisions` skill's card (its `reference
   what is decided in plain words, and for a set its `items`, every one listed, each its `name`, its
   `where` (muted), its `about`, and its `per` (its outcome under each option, in letter order, on a
   muted line under it; none when it fares the same under every option), the part labelled
-  *What · N items* (F6, answer 290 (a)); then `open` in a closed **Open questions**
+  *What · N items* (F6, answer 290 (a)); then, on a card raised from a finding, the **Finding**
+  part, never folded (F7, answer 337 (a)): its head, the `finding`'s `label` with its short name
+  and its `title` after a colon, then ` — ` and its `where` (mono), then its `mechanism`, then its
+  `excerpt` drawn as a code block (§ An excerpt); then `open` in a closed **Open questions**
   fold, its summary the count and the first question; then the closed **Assumptions** fold,
   on every card: its summary *basis:* and the `basis` word, then the count of `assume`
   (*basis: partial · 2 assumptions with tripwires*; *basis: strong* alone with none), and
@@ -165,8 +171,9 @@ to the flat part). Before publishing, list each noun phrase in the card's Impact
 option titles and one lines that refers to a specific thing: a count, a named mode, setting,
 review, plan or document, an item or a label. For each one, point to its gloss in
 `context`. A phrase with no gloss gets one before the page goes out. The pre-publish runner
-(SKILL.md step 2) lints counts and named things missing from `context` and the What part, and
-ids wherever they are (the What part and its items included); those lints are proxies, and plain-word terms stay the cold read's. The same holds for
+(SKILL.md step 2) lints counts and named things missing from `context` and the What part (the
+Finding's `title` and `mechanism` included), and ids wherever they are (the What part and its
+items, and the Finding but its excerpt, included); those lints are proxies, and plain-word terms stay the cold read's. The same holds for
 the medium and high renditions of the Impact and the TLDR, and each option's view (its `plan` and
 the points of its Pros | Cons table, which picking the option opens), checked against
 Context's **summary** only: each part steps alone, so the Context beside a TLDR at full
@@ -201,6 +208,7 @@ whitespace-split:
 | What | Size |
 |---|---|
 | The What part: `what`, one sentence; each item's `about` and `per`, a few words each | no cap: a set lists every item, and counts in the card in all |
+| The Finding: its `title`, `where` and `mechanism` (one to three sentences) | counts in the card in all; its `excerpt` does not, and has its own size (§ An excerpt) |
 | Background: `why` + `whyask`, each at its top level | ~150 |
 | Each option but `z`: its top `plan` (or older `text`) + its effect, reach, undo and cost | ~60–120 |
 | An option's `plan`, Plan in brief | 2–4 sentences, at most ~100 words |
@@ -241,7 +249,7 @@ its title, a count of its decisions and *What they share:* its note; a bundle ad
 is its Wait: the lede says so, and the runner's `process` lint catches a process phrase in an
 option's effect or reach, or the Impact's reach. A card with a `label` shows it after its title,
 muted, with its short name, in every view. It opens every card on its TLDR, then its Context,
-then its What, then its Open questions, then its Assumptions, then its Impact: a page is read away from the conversation, so its
+then its What, then its Finding when it has one, then its Open questions, then its Assumptions, then its Impact: a page is read away from the conversation, so its
 reader is treated as cold. Any part with `detail` toggles its level on a click, on its button
 or on its text (never on a link or a control, nor while text is selected, so it can be
 copied); the folds (Open questions and Assumptions above the Impact, Background and
@@ -262,7 +270,8 @@ answers are read back.
 don't display it*). A part, facet or field that is missing, blank, or says only `none`,
 `none.`, `n/a`, `n/a.` or a lone dash (trimmed, any case) is left off
 the page, by one test in the template: a `dep` (no Dependencies fold), an `open` list (no Open
-questions fold), a `what` and `items` (no What part), an item's `where`, `about` or `per` entry, an Impact `cost`, at every level, an option's effect, reach or cost, an
+questions fold), a `what` and `items` (no What part), a `finding`'s `mechanism` (no Finding part)
+and its `title` or `where`, an item's `where`, `about` or `per` entry, an Impact `cost`, at every level, an option's effect, reach or cost, an
 `evidence`, `ifleft`, `roundcosts`, `ifunanswered`, an option's one line, its `pro` or `con`
 (a none one has no row). A writer may simply
 leave such a field out; the optional ones were always optional. Shown whatever they say,
@@ -284,8 +293,9 @@ What each older era held, and what a republish writes into it, is the `decisions
 ## An excerpt
 
 An excerpt is verbatim multi-line text (code, a log, a diff, a config block, test output),
-shown as a code block. No card field the page shows carries one yet: the finding body and the
-excerpt attachment will, and each checks and draws it the same way.
+shown as a code block. The finding's `excerpt` carries one (F7); the excerpt attachment will,
+and each checks and draws it the same way. An excerpt is never read by the id lint or the cold
+read: it is the source's text as it stands.
 
 | Key | Type | Required | What |
 |---|---|---|---|

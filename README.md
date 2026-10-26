@@ -747,7 +747,8 @@ an agent writes text you will read, or when a skill that writes to you loads it 
 `decisions` floor does). Either loads explicitly with `/operator-interaction:decisions` or
 `/operator-interaction:plain-names`. `decision-page` loads when an agent has several decisions
 for you and you want to answer them on a page (`/operator-interaction:decision-page`); a set
-of review or audit findings goes to chat instead, until the page shows findings. The page
+of review or audit findings goes to chat by default, and the page, which shows each finding with
+its code, is offered for it too. The page
 publishes with the Artifact tool and the artifact's `db` capability, so your answers
 live in that artifact's database, writable by you alone, read back with ArtifactData; without those it falls back to
 a doc with tick boxes, or to the decisions in chat. The caller supplies the decisions and

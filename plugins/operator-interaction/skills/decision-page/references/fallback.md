@@ -22,7 +22,9 @@ first); this file sets only the layout.
 - In each section, the card's essentials as text: the TLDR bullets first, then **Context:**
   (the terms the card uses, then where the operator left it), then **What:** (`what`, and for a
   set a bullet per item: its name, where it lives, what it is, and its outcome under each
-  option where they differ, `(a) …; (b) …`), then ⚠ one-way when it is and
+  option where they differ, `(a) …; (b) …`), then, on a card raised from a finding,
+  **Finding:** (its label and short name, its title, where it lives, how it happens, and its
+  excerpt in a fenced block), then ⚠ one-way when it is and
   **Impact:**, across all the options, describing the system the work builds, never the review or
   the process (what waiting holds up is its `later:` line), one facet a line (`later: …`, `reach: …`,
   `⚠ undo: …` only when an option is one-way or costly, `cost: …` where given, each on its own

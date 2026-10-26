@@ -397,6 +397,7 @@ class SourceLabel(unittest.TestCase):
     def test_the_label_is_escaped(self):
         d = example()
         c43(d)["label"] = {"id": "<b>", "name": "<img src=x>"}
+        c43(d)["finding"]["label"] = {"id": "<b>", "name": "<img src=x>"}  # the finding keeps the card's label
         h = card(run_page(d), 43)["html"]
         self.assertNotIn("<img", h)
         self.assertIn('<span class="slab">&lt;b&gt;</span> <span class="slabn">(&lt;img src=x&gt;)</span>', h)
@@ -427,14 +428,15 @@ class SourceLabel(unittest.TestCase):
                 code, out, _ = runner(d)
                 self.assertEqual(code, 2, out)
                 self.assertIn("looks like an id (why)", out)
-        # without the label field, the context's own D3 is an id again
+        # without the label field (the card's and its finding's), the context's own D3 is an id again
         d = example()
-        del c43(d)["label"]
+        del c43(d)["label"], c43(d)["finding"]["label"]
         self.assertIn("lint: card 43: D3 looks like an id (context)", runner(d)[1])
 
     def test_a_long_short_name_is_linted(self):
         d = example()
         c43(d)["label"]["name"] = "the site colour does not match the logo"
+        c43(d)["finding"]["label"]["name"] = "the site colour does not match the logo"
         c43(d)["context"] = c43(d)["context"].replace("site colour off the logo",
                                                       "the site colour does not match the logo")
         out = runner(d)[1]
