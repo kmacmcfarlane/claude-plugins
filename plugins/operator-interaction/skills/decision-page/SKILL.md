@@ -100,8 +100,13 @@ The rules below are what the digest condenses:
   caller's stored What, its cue and the terms the card uses. The TLDR says what is decided, so
   Context does not repeat it. **Context introduces every specific thing the card names.** Two
   shapes need it most:
-  - **A count** ("four changes", "the three"). Context says what the things are, or lists
-    them: *the review asked for four changes: X, Y, Z and W*.
+  - **A count** ("four changes", "the three"). Where the card says what is decided (its `t`,
+    first TLDR bullet, an option's title or line but (z)'s), a count names a set: list every
+    item in `items`, the What part, one each (below); the runner refuses a set with no items or
+    too few (one the upgrader carried over, its `rev` kept, gets a lint until it is revised; a
+    count of 100 or more is linted only). A set named by a rule that picks out its members (*the pages that cite the retired setup guide*) keeps its count out of the checked places (the title, the first TLDR bullet, the option titles and lines), or lists its items.
+    Elsewhere, Context says what the things are, or lists them: *the review asked for four
+    changes: X, Y, Z and W*.
   - **A named mode, setting, review, plan or document** ("content mode", "the review").
     Context gives it a one-line gloss: what it is, and where it comes from.
 
@@ -109,7 +114,13 @@ The rules below are what the digest condenses:
   read): list each noun phrase in the card's Impact, TLDR, option titles and one lines that
   refers to a specific thing (a count, a named mode, setting, review, plan or document, an item
   or a label), and point to its gloss in `context`. A phrase with no gloss gets one before the
-  page goes out. Do not set `what`: it is older data only (`references/cards-schema.md`).
+  page goes out; and read the What part: could you name every item the card acts on?
+- Set `what`: what is decided, in plain words, one sentence, shown as the card's **What** part
+  after Context, never folded. For a set, `items` lists each item, `{name, where, about, per}`:
+  its plain name, where it lives when that helps, what it is in a few words, and `per`, its
+  outcome under each option keyed by letter, only where the options treat it differently (left
+  out, it reads the same under every option). The part is labelled *What · N items*
+  (`references/cards-schema.md`).
 - **No ids on the page.** The page is the operator's only context: refer to another decision
   by its slug, and to an item, a series, a branch or a commit by its short name or title, with
   no id after it, in every field, the page and layer titles included. A fact only an id
@@ -376,8 +387,9 @@ answer page*, and the card rules the page renders.
 - `assets/index.html` — the page template
 - `assets/cards.example.json` — invented example data
 - `scripts/check_cards.js` — the pre-publish check under node: the page's own refusals, then
-  lints for ids anywhere on the page, counts and named things a card's Context does not
-  introduce, the level shapes, a reach that reads as the recommendation's, an option's effect
+  the set refusal (a card that counts two or more things where it says what is decided, with
+  no `items` or too few; a lint on a card the upgrader carried over), then lints for ids anywhere on the page, counts and named
+  things a card's Context and What part do not introduce, the level shapes, a reach that reads as the recommendation's, an option's effect
   with no mechanism, and the depth lints (a level not longer than the one below, thin or long
   depth, an option with no reach, what a new card owes), and an option with no pro or con;
   `--record FILE` checks one record

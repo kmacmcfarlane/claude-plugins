@@ -97,7 +97,11 @@ Each record field maps to a part of the `decisions` skill's card (its `reference
 § Card); the floor is met by the card. Where a page shows each:
 
 - `t`, then `label` after it, muted, in every view: `t` · **F7** (oversize upload); a slug shows `t` alone;
-- `tldr` first on the open card; then `context`; then `open` in a closed **Open questions**
+- `tldr` first on the open card; then `context`; then the **What** part, never folded: `what`,
+  what is decided in plain words, and for a set its `items`, every one listed, each its `name`, its
+  `where` (muted), its `about`, and its `per` (its outcome under each option, in letter order, on a
+  muted line under it; none when it fares the same under every option), the part labelled
+  *What · N items* (F6, answer 290 (a)); then `open` in a closed **Open questions**
   fold, its summary the count and the first question; then the closed **Assumptions** fold,
   on every card: its summary *basis:* and the `basis` word, then the count of `assume`
   (*basis: partial · 2 assumptions with tripwires*; *basis: strong* alone with none), and
@@ -132,12 +136,24 @@ first, `→ (b) …`; with no recommendation, each option's in a few words, `(a)
 
 **Context introduces every specific thing the card names.** Every label, number, acronym,
 term of art or item that the flat part (`t`, the Impact, `tldr`, the option titles and one
-lines) uses is introduced in `context`, as the `decisions` floor requires: the
-flat part is what the operator reads, and an option's `plan` (or older `text`) sits in its view. Two shapes
-need it most:
+lines) uses is introduced in `context`, or in the What part after it, as the `decisions` floor
+requires: the flat part is what the operator reads, and an option's `plan` (or older `text`)
+sits in its view. Two shapes need it most:
 
-- **A count** ("four changes", "the three"). Context says what the things are, or lists them:
-  *the review asked for four changes: X, Y, Z and W*.
+- **A count** ("four changes", "the three"). Where the card says what is decided (`t`, the
+  TLDR's first bullet, an option's title or line but (z)'s), a count names a set: list every
+  item in `items`, the What part, one each with its name (*the four changes*: four items). The
+  pre-publish runner **refuses** a card that counts two or more things there with no `items`,
+  or fewer than the largest count (the set refusal; the page's `check()` never does, so an
+  older published page still renders); a list of another length is the `set` lint. **A card the
+  upgrader carried over**, its `upgraded` marker naming the `rev` it still has, gets the set
+  check as the `set` lint, never a refusal: the upgrade is lazy and seamless, and every `rev` is
+  kept. Once a writer revises it, with a new `rev`, it is refused like any card until its items
+  are listed. A count of 100 or more is the `set` lint, never a refusal. A set named by a rule that picks out its members (*the pages that cite the retired setup guide*) keeps its count out of the checked places (the title, the first TLDR bullet, the option titles and lines), or lists its items.
+  Not a set's count: a four-digit year; a numeral right after a capitalised word inside the text (*Python 2*, *Node 22*, *HTTP 404*; a text that opens on the name counts it, so write *Support Python 3 only*); a date (*26 October*); a list of labels (*findings 3, 4 and 7*); a numeral right after a singular label noun from a closed list (principle, step, tier, option, rule, finding, item, section, …), or after a plural one before the text's end, punctuation, a function word or a verb and its object (*principle 3*, *step 2 of the guide*, *tier three*); after a verb or any other word it counts (*Retire 3 plugins this quarter*), *N
+  times*, a range, a number after a slash, a sum of money (*$30*), a count of rounds, a setting's value after *to* or *at* (*set the timeout to 30*), *N of the …* (but not after *all*, *both* or *each*), a quantity of a unit (*600 words*),
+  and the options themselves counted (*choose between the two options*). Elsewhere, Context says what the things are, or lists them: *the review asked for four
+  changes: X, Y, Z and W*.
 - **A named mode, setting, review, plan or document** ("content mode", "the review"). Context
   gives it a one-line gloss: what it is, and where it comes from.
 
@@ -149,8 +165,8 @@ to the flat part). Before publishing, list each noun phrase in the card's Impact
 option titles and one lines that refers to a specific thing: a count, a named mode, setting,
 review, plan or document, an item or a label. For each one, point to its gloss in
 `context`. A phrase with no gloss gets one before the page goes out. The pre-publish runner
-(SKILL.md step 2) lints counts and named things missing from `context`, and ids wherever they
-are; those lints are proxies, and plain-word terms stay the cold read's. The same holds for
+(SKILL.md step 2) lints counts and named things missing from `context` and the What part, and
+ids wherever they are (the What part and its items included); those lints are proxies, and plain-word terms stay the cold read's. The same holds for
 the medium and high renditions of the Impact and the TLDR, and each option's view (its `plan` and
 the points of its Pros | Cons table, which picking the option opens), checked against
 Context's **summary** only: each part steps alone, so the Context beside a TLDR at full
@@ -184,6 +200,7 @@ whitespace-split:
 
 | What | Size |
 |---|---|
+| The What part: `what`, one sentence; each item's `about` and `per`, a few words each | no cap: a set lists every item, and counts in the card in all |
 | Background: `why` + `whyask`, each at its top level | ~150 |
 | Each option but `z`: its top `plan` (or older `text`) + its effect, reach, undo and cost | ~60–120 |
 | An option's `plan`, Plan in brief | 2–4 sentences, at most ~100 words |
@@ -224,7 +241,7 @@ its title, a count of its decisions and *What they share:* its note; a bundle ad
 is its Wait: the lede says so, and the runner's `process` lint catches a process phrase in an
 option's effect or reach, or the Impact's reach. A card with a `label` shows it after its title,
 muted, with its short name, in every view. It opens every card on its TLDR, then its Context,
-then its Open questions, then its Assumptions, then its Impact: a page is read away from the conversation, so its
+then its What, then its Open questions, then its Assumptions, then its Impact: a page is read away from the conversation, so its
 reader is treated as cold. Any part with `detail` toggles its level on a click, on its button
 or on its text (never on a link or a control, nor while text is selected, so it can be
 copied); the folds (Open questions and Assumptions above the Impact, Background and
@@ -245,7 +262,7 @@ answers are read back.
 don't display it*). A part, facet or field that is missing, blank, or says only `none`,
 `none.`, `n/a`, `n/a.` or a lone dash (trimmed, any case) is left off
 the page, by one test in the template: a `dep` (no Dependencies fold), an `open` list (no Open
-questions fold), an Impact `cost`, at every level, an option's effect, reach or cost, an
+questions fold), a `what` and `items` (no What part), an item's `where`, `about` or `per` entry, an Impact `cost`, at every level, an option's effect, reach or cost, an
 `evidence`, `ifleft`, `roundcosts`, `ifunanswered`, an option's one line, its `pro` or `con`
 (a none one has no row). A writer may simply
 leave such a field out; the optional ones were always optional. Shown whatever they say,

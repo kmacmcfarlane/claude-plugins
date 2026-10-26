@@ -112,8 +112,8 @@ after a dash on the option's own line, a plain `undo:` — is read by
 
 Every card and block carries a **Context** section, shaped like the answer page's `context`
 field (the `decision-page` skill's `references/cards-schema.md`), in the page's order: the
-decision line first — the title and **What:**, which do the page TLDR's work — then
-**Context:**, then the folds above the Impact (▸ Open questions when anything is open, then
+title first, which does the page TLDR's work, then **Context:**, then **What:** (what is
+decided, and for a set each item, § Card), then the folds above the Impact (▸ Open questions when anything is open, then
 ▸ Assumptions, § Folds), then the Impact and the options. A list line and a tag-size mention
 carry no Context: a line stays a line.
 
@@ -129,7 +129,8 @@ What it holds, in this order:
   when the audit you asked for turned it up*. Never what changed
   since: that is *while it waited*, which opens a re-show (§ Re-show with what changed).
 
-It does not restate what is decided: **What:** says that, as the page's TLDR does.
+It does not restate what is decided: **What:**, right after it, says that, and lists a set's
+items.
 
 Its size follows the page's detail levels:
 
@@ -291,8 +292,9 @@ Example:
 
 ```
 **N — Title as a question?**
-**What:** what is decided, in plain words; items by plain name, the id as a trailing tag; other ids glossed.
 **Context:** the terms, items and counts the card uses, each in plain words; then where you left it · what you decide now.
+**What:** what is decided, in plain words; items by plain name, the id as a trailing tag; other ids glossed.
+- an item's plain name, where it lives — what it is, in a few words · *(a) its outcome; (b) its outcome*
 ▸ Open questions — 2 open: what is not known yet, cut at about 12 words
 ▸ Assumptions — basis: **partial** · 2 assumptions with tripwires
 **Impact:** later: wait · reach: who or what · ⚠ undo: (a) how, at what cost, or why not
@@ -313,15 +315,22 @@ Example:
 ▸ Background — why now: the first sentence of why it is up now, about 25 words at most
 ```
 
-- **The order is the page's**: the decision line (the title, then **What:**), then
-  **Context:**, then the ▸ Open questions line when anything is open, then the
+- **The order is the page's**: the title, then **Context:**, then **What:** with a set's
+  item bullets, then the ▸ Open questions line when anything is open, then the
   ▸ Assumptions line (§ Folds), then **Impact:** — and under them the options, any **To act
   on (x):** part, a round ask's **If left:** and **A round costs:**, any **If unanswered:**,
   then the ▸ Background line (§ Context, § Folds). There is no Rec line.
 - **Title:** the question. A decision raised from one labelled item of a source opens its
   title on the label and its short name: **41 — F7 (oversize upload) · Cap the upload
   size?** (§ Source labels).
-- **What:** the decision line: what is decided, in plain words — the page's TLDR in chat.
+- **What:** after **Context:**, what is decided, in plain words (the record's `what`; the
+  operator's v4 layout, answer 290 (a): *Context above What*). **For a set**, every item it
+  acts on, one bullet each under it, never a count alone (the record's `items`): the item's
+  plain name, where it lives when that helps, then ` — ` and what it is in a few words, then,
+  only where the options treat it differently, ` · ` and its outcome under each, in letter
+  order, *(a) …; (b) …* (the record's `per`). An item that fares the same under every option
+  carries no outcome: its option's effect says it once. A bullet never opens on an option's
+  letter. A card about one thing has no bullets.
 - **Context:** one or two sentences at the page's summary size, on every card each time it
   is shown: the terms the card uses, then the resume cue (§ Context). Read from the store
   when the caller keeps one.
@@ -406,12 +415,12 @@ Example:
 
 ```
 **N — Title as a question?** ⚠ one-way
-**What:** …
 **Context:**
 - the card's Context: the terms the block uses, then where you left it · what you decide now
 - a fact the reader may have lost: what was tried, what was answered before
   - a sub-bullet, two at most
 - …
+**What:** …
 
 ▾ Open questions — 1 open: what is not known yet
 - what is not known yet, one line
@@ -456,10 +465,10 @@ Example:
 *If you pick (a), I'll repeat it back and act only once you confirm: it can't be undone.*
 ```
 
-- The block opens as a card does, in the page's order: the title, **What:**, then
-  **Context:** as a bullet list at the page's medium size, its first bullet the card's
-  Context and the rest the context the reader may have lost (§ Context). It is shown on
-  every block, warm reader or cold.
+- The block opens as a card does, in the page's order: the title, then **Context:** as a
+  bullet list at the page's medium size, its first bullet the card's Context and the rest the
+  context the reader may have lost (§ Context), shown on every block, warm reader or cold;
+  then **What:**, with a set's item bullets, as on a card.
 - The folds above the Impact come next, open (`▾`, § Folds): ▸ Open questions when anything
   is open, then ▸ Assumptions with its **Basis:** line, the basis drill-down and each
   assumption with its tripwire. Then the card's **Impact:**
@@ -567,7 +576,7 @@ endpoints. A card that names only their category (*housekeeping*, *the review's 
 does not say what is decided (SKILL.md § The floor, item 1).
 
 - **The items need different answers: a group.** One card per item, each whole: its own
-  number, What, Context, ▸ Assumptions line, Impact, options and ▸ Background line, as any card
+  number, Context, What, ▸ Assumptions line, Impact, options and ▸ Background line, as any card
   (SKILL.md § Critical, each one whole). An item card's Context may be short and lean on
   the heading for shared terms; it still ends on its cue. The cards sit under one heading:
 
@@ -581,9 +590,9 @@ does not say what is decided (SKILL.md § The floor, item 1).
   the order's rules (SKILL.md § Order): placed by its most pressing member, kept together.
   Each card has its own list line, and `ok 51-53` takes every recommendation in it, ⚠ cards
   skipped as in any batch.
-- **One answer fits every item** (*fix all three now*): one card. Its Context names every
-  item — a count is always listed, never left bare — and each option's effect says what that
-  answer does to them.
+- **One answer fits every item** (*fix all three now*): one card. Its **What:** lists every
+  item, one bullet each (§ Card) — a count is always listed, never left bare — and each
+  option's effect says what that answer does to them.
 
 A group is never one card holding a pick per item (`41: F3 a, F7 z`): its picks would be
 lettered sub-decisions (SKILL.md § Critical, plain integers), and their recommendations
@@ -661,15 +670,15 @@ new numbered decision that names the line it reopens.
 
 When a decision comes back (a wake fired, a context reset, `tell me`, `dig into`), open it
 with what changed since the operator last saw it, then the card or block as usual — its
-**What:**, its stored **Context:**, any ▸ Open questions line, its ▸ Assumptions line and its
+stored **Context:**, its **What:**, any ▸ Open questions line, its ▸ Assumptions line and its
 Impact line (and a block's table), right after the *while it waited* line:
 
 **62 — back, as you asked ("until the load test finishes"):** move the job queue to the new
 message broker?
 *While it waited (1 day): the load test finished with no lost messages; nothing else changed.
 Options and recommendation unchanged; impact unchanged.*
-**What:** switch every worker service from the old job queue to the new message broker.
 **Context:** the new broker has carried the email worker alone for two weeks as a trial, and the load test was the last check before the rest move. You left it at that trial · you decide whether every worker moves now or one goes first.
+**What:** switch every worker service from the old job queue to the new message broker.
 ▸ Open questions — 1 open: whether the two workers not read rely on the old queue's ordering
 ▸ Assumptions — basis: **partial** · 1 assumption with its tripwire
 **Impact:** later: the worker rollout stays paused · reach: every worker service and its on-call · ⚠ undo: (a) switch each config back within the week; after that the old queue is gone
@@ -706,7 +715,7 @@ the caller stores the new card.
 open decision the reader is cold on at card level or above, never as a line only except as
 paged (SKILL.md § Levels, the line-only rule), each opening with what changed while it
 waited (*nothing changed* is worth saying, and so is *impact unchanged*). Under it the card
-runs **What:**, **Context:** (its stored Context, ending on where the operator left it),
+runs **Context:** (its stored Context, ending on where the operator left it), **What:**,
 any ▸ Open questions line, the ▸ Assumptions line, **Impact:**, the options, then the ▸ Background line from its
 stored *why now* (the fold holding its stored *why now* and *why ask*); a block's **Context:** bullets open with the same
 Context. A stored card in an earlier form is read, and revised where it lacks a floor field,

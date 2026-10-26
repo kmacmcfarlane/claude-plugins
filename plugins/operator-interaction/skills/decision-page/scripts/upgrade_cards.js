@@ -265,7 +265,10 @@ function upgradeCard(c, qmap) {
     if (isStr(q) && q.trim() && !/[\r\n]/.test(q)) out.q = q.trim();
     else bad.push("no q: give its question in --questions");
   }
-  const card = Object.assign({format: CARD_FORMAT, n: out.n, rev: upgradeRev(c.rev, note)}, out);
+  const rev = upgradeRev(c.rev, note);
+  /* the carried-over marker: the shape it came from and the rev it kept, beside rev and never touching it. A writer
+     who revises the card gives it a new rev, so the marker no longer matches and the card is checked as new */
+  const card = Object.assign({format: CARD_FORMAT, n: out.n, rev, upgraded: {from: note.shape, rev}}, out);
   card.n = c.n;
   return {card, bad, note};
 }

@@ -132,7 +132,7 @@ def check_undo_marked(test, where, body):
 class Templates(unittest.TestCase):
 
     def test_the_card_template_puts_each_options_impact_under_it(self):
-        card = fenced(RENDERING.read_text(), "**N — Title as a question?**\n**What:**")
+        card = fenced(RENDERING.read_text(), "**N — Title as a question?**\n**Context:**")
         self.assertGreaterEqual(check_options(self, "rendering.md card", card), 2)
         lines = [facets(x) for x in card if facets(x)]
         # the template shows every facet once, in order, the undo marked
@@ -142,7 +142,7 @@ class Templates(unittest.TestCase):
 
     def test_the_card_and_block_templates_carry_no_card_level_effect(self):
         text = RENDERING.read_text()
-        for opener in ("**N — Title as a question?**\n**What:**",
+        for opener in ("**N — Title as a question?**\n**Context:**",
                        "**N — Title as a question?** ⚠ one-way"):
             body = fenced(text, opener)
             imp = next(x for x in body if x.startswith("**Impact:**"))

@@ -66,7 +66,8 @@ alternative not taken, in case practice argues for it.
   Impact line, TLDR and options use, and its TLDR carries no recommendation, which the options
   mark. Not taken: definitions left to What in the Background fold; a Rec bullet in the TLDR.
   Background not auto-expanded; Context absorbs What (decision 197 (a), the operator's answer
-  2026-10-08). Not taken: Background open on load.
+  2026-10-08; reversed on the page by answer 290 (a), *The What part after Context*, below).
+  Not taken: Background open on load.
 - **Block depth on an answer page, by detail level** (levels optional since 201) (2026-10-08,
   decision 198, the operator's (a) with changes, and the operator's label **More** for the
   option button; the field shape, the sizes for the visible parts' levels and the lints,
@@ -123,7 +124,8 @@ alternative not taken, in case practice argues for it.
   stay true after it is seen), older stored cards with no Context keeping the old order, and
   the stored line's reading, designs made in build, not the operator's) — every card and
   block in chat carries a **Context:** section shaped like the page's `context`, in the
-  page's order: the decision line, then Context, then the Impact and the options; a card's
+  page's order: the decision line, then Context, then the Impact and the options (the What
+  line's place before Context reversed by answer 290 (a), *The What part after Context*, below); a card's
   at the page's summary size, a block's at its medium; written when raised, stored with the
   card, shown every time; a list line carries none. Not taken: the cue alone, shown to a
   cold reader only (2026-09-30); the cue on a line of its own above Context; a block's
@@ -363,3 +365,31 @@ alternative not taken, in case practice argues for it.
   earlier staying closed on a reload, the plan on one line, the Pros | Cons columns stacked at
   phone width, a lint on an option with both plan and text, and `tell me (x)` as a showing, not a revision. Not taken: the facets
   before the table (v4's first order); a ⚠ card's options open from the start.
+- **The What part after Context, listing a set, both surfaces** (2026-10-21, answer 290 (a):
+  one What part that lists the set's items; then the operator's v4 prototype feedback,
+  2026-10-22: "Hoist the "Context" section above the "What" section"; raised from a card
+  that counted a set of proposed items and listed none) — every card says what is decided in a **What** part right
+  after Context, never folded: in chat the **What:** line after **Context:**, on the answer page
+  the record's `what` (no longer older data). For a set, every item it acts on is listed under
+  it, one each with its plain name, where it lives and what it is, and its outcome under each
+  option where the options treat it differently (the record's `items`, `[{name, where, about,
+  per}]`); a count is never left bare. It reverses the 2026-10-12 chat order's *decision line,
+  then Context* for What (the What line no longer does the TLDR's work there; the title does),
+  and decision 197 (a)'s *Context absorbs What* on the page; *TLDR first* (2026-10-09) holds.
+  Designs made in planning and build, not the operator's: the field shapes, `per` keyed by
+  option letter and left out when every option treats the item the same, the page's *What · N
+  items* label, the pre-publish runner's **set refusal** (a card whose title, first TLDR
+  bullet, or an option's title or line but (z)'s counts two or more things with no `items`,
+  or fewer than the largest count, is refused; a list of another length is the `set` lint; the
+  page's own check never refuses it, so an older published page still renders; the numerals
+  and quantities that count no set are left out: a numeral after a label noun from a closed list (principle, step, tier, …), never after a verb, versions, years, dates, label lists, units, ranges, the options themselves; a count of 100 or more linted only), the `count` lint's fix pointing to `items`
+  there, the `rec-only` lint on a `per` naming the recommended option alone, the chat item
+  bullet's form (`- name, where — about · *(a) …; (b) …*`), and the cold read's question,
+  *could you name every item it acts on?* (a set named by a rule that picks out its members
+  passes it). Then the operator's ruling on the lazy upgrade (relayed in the F6 fix round:
+  a lazy, seamless migration that keeps every `rev`): a card the upgrader carried
+  over, its `upgraded` marker naming the `rev` it kept, gets the set check as a lint, never a
+  refusal, until a writer revises it with a new `rev`; the marker is a design made in build.
+  Not taken: a Subject part beside What (290's
+  alternatives); the items in Context with item lines under the Impact; the What list under the
+  TLDR, before Context.

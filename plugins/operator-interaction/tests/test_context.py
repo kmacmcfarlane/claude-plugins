@@ -3,8 +3,9 @@
 Three parts:
 
 - the decision page (`decision-page` skill): its required `context` field, the refusal of a
-  TLDR bullet that carries the recommendation, `contextBlock` (which renders Context, and an
-  older card's `what` after it) and the render order (TLDR, then Context, then Impact), loaded
+  TLDR bullet that carries the recommendation, `contextBlock` (which renders Context alone; a
+  card's `what` is its What part, after it, F6) and the render order (TLDR, then Context, then
+  What, then Impact), loaded
   from `assets/index.html` and run under node against `assets/cards.example.json` and broken
   copies of it; a decision reference and its tooltip, and the reference rule (an open decision
   a card names goes on the page as a card; every `[[N]]` is a card or a ref);
@@ -64,7 +65,7 @@ const out = ds.map(d => {
     byN = new Map(CARDS.map(c => [String(c.n), c])); FOLLOW_KEYS = new Set(FOLLOW.map(f => f[0]));
     answers = d._answers || {};
     blocks = CARDS.map(c => ({n: c.n, open: contextBlock(c), tip: tipHtml(String(c.n)),
-                              why: fmtD(c.why), what: fmt(c.what || ""), card: cardHtml(c)}));
+                              why: fmtD(c.why), what: fmt(c.what || ""), whatp: whatPart(c), card: cardHtml(c)}));
     blocks.refTips = Object.fromEntries(Object.keys(REFS).map(k => [k, tipHtml(k)]));
     blocks.slugs = {on: slug("41"), ref: slug("38")};
   }
@@ -136,7 +137,8 @@ class DecisionPageContext(unittest.TestCase):
         d = example()
         for c in d["cards"]:
             self.assertTrue(c["context"].strip(), c["n"])
-            self.assertNotIn("what", c, c["n"])
+            # each card says what is decided, its What part (F6)
+            self.assertTrue(c["what"].strip(), c["n"])
         self.assertEqual(run_page(d)["bad"], [])
 
     def test_a_missing_blank_or_non_text_context_is_refused(self):
@@ -197,17 +199,18 @@ class DecisionPageContext(unittest.TestCase):
             tl = [b for b in res["bad"] if "tldr" in b]
             self.assertEqual(tl, ["card 41: tldr must be a list of text"])
 
-    def test_context_block_renders_context_then_an_older_what(self):
+    def test_context_block_renders_context_alone_and_what_its_own_part(self):
         d = example()
         d["cards"][0]["context"] = "the cue ([[38]])"
         d["cards"][0]["what"] = "the old what"
         res = run_page(d)
         self.assertEqual(res["bad"], [])
         b41 = res["blocks"][0]["open"]
-        self.assertEqual(b41.count("<p>"), 2)
-        self.assertLess(b41.index("the cue"), b41.index("the old what"))
-        # without what, one paragraph
-        self.assertEqual(res["blocks"][1]["open"].count("<p>"), 1)
+        # an older card's what is the What part now (F6), never the end of Context
+        self.assertEqual(b41.count("<p>"), 1)
+        self.assertNotIn("the old what", b41)
+        self.assertIn("the old what", res["blocks"][0]["whatp"])
+        self.assertTrue(res["blocks"][0]["whatp"].startswith('<div class="what"><span class="lbl">What</span>'))
         self.assertIn('<span class="lbl">Context</span>', res["blocks"][1]["open"])
 
     def test_context_block_escapes_and_marks_up(self):
@@ -215,6 +218,9 @@ class DecisionPageContext(unittest.TestCase):
         d["cards"][0]["context"] = '<img src=x onerror="alert(1)" > the `main` branch ([[38]])'
         d["cards"][0]["what"] = "<script >x</script >"
         blk = run_page(d)["blocks"][0]
+        # the What part escapes it: the card renders no script (F6)
+        self.assertNotIn("<script", blk["card"])
+        self.assertIn("&lt;script &gt;x&lt;/script &gt;", blk["whatp"])
         h = blk["open"]
         self.assertNotIn("<img", h)
         self.assertNotIn("<script", h)
@@ -233,6 +239,9 @@ class DecisionPageContext(unittest.TestCase):
             card = blk["card"]
             self.assertLess(card.index('class="tldr"'), card.index('class="ctx"'), blk["n"])
             self.assertLess(card.index('class="ctx"'), card.index('class="impline"'), blk["n"])
+            # the What part sits between Context and the Impact (F6), before the folds above it
+            self.assertLess(card.index('class="ctx"'), card.index('<div class="what">'), blk["n"])
+            self.assertLess(card.index('<div class="what">'), card.index('class="gfold afold"'), blk["n"])
             # Context's summary rendition, once; its levels repeat the labelled wrapper only
             self.assertEqual(card.count(blk["open"]), 1, blk["n"])
             # under decision 197 (a) the Background fold holds Why now and Why ask only
@@ -241,7 +250,10 @@ class DecisionPageContext(unittest.TestCase):
             self.assertIn(blk["why"], bg, blk["n"])
             if blk["n"] == 42:
                 self.assertNotIn(blk["what"], bg)
-                self.assertIn(blk["what"], blk["open"])
+                # card 42's what is in its What part, after Context and not in it
+                self.assertNotIn(blk["what"], blk["open"])
+                self.assertIn(blk["what"], blk["whatp"])
+                self.assertLess(card.index(blk["open"]), card.index(blk["whatp"]))
         # the on-page popup is gone (answer 335's feedback): a reference's tooltip shows no
         # Context block and no Impact, only its peek (ReferenceTooltip)
         html = PAGE.read_text()
@@ -762,13 +774,24 @@ class DecisionPageRunner(unittest.TestCase):
                 self.assert_lint(d, "lint: card 41: " + t + " looks like an id")
 
     def test_a_count_its_context_does_not_name_is_linted(self):
-        d = with_tldr("Start the three now")
+        # outside the places that say what is decided: the Impact's wait
+        d = example()
+        d["cards"][0]["impact"]["wait"] = "the three wait"
         self.assert_lint(d, '"three" counts things its context does not name: say what the '
                             "three things are, or list them")
         # spliced in as a clause: Context's summary stays two sentences
         d["cards"][0]["context"] = (d["cards"][0]["context"][:-1]
                                     + "; the three are the build, the cache and the publish step.")
         self.assert_clean(d)
+        # in the TLDR's second bullet, the count lint
+        self.assert_lint(with_tldr("Start the three now"), '"three" counts things its context does not name')
+        # in its first, where it says what is decided, it names a set: refused until its items are listed (F6;
+        # test_items.py)
+        d = example()
+        d["cards"][0]["tldr"][0] = "Start the three now"
+        code, out, _ = runner(d)
+        self.assertEqual(code, 1, out)
+        self.assertIn("card 41: a set not listed in items: it counts 3 things", out)
 
     def test_numbers_that_are_not_counts_are_not_linted(self):
         d = example()
@@ -807,11 +830,24 @@ class DecisionPageRunner(unittest.TestCase):
             with self.subTest(bullet=b):
                 self.assert_clean(with_tldr(b))
 
-    def test_a_leftover_what_is_linted(self):
+    def test_a_what_is_clean(self):
+        # what is the What part (F6): the leftover-what lint is gone
         d = example()
         d["cards"][0]["what"] = "Where the documentation site is built and published from."
-        self.assert_lint(d, "lint: card 41: what present: move it into context (after the "
-                            "terms, before the cue) and delete it")
+        self.assert_clean(d)
+        # mutant: the lint restored
+        with tempfile.TemporaryDirectory() as tmp:
+            root = pathlib.Path(tmp)
+            (root / "scripts").mkdir()
+            shutil.copytree(SKILL / "assets", root / "assets")
+            js = RUNNER.read_text()
+            hook = "  shapes(c, say);\n"
+            self.assertEqual(js.count(hook), 1)
+            (root / "scripts" / "check_cards.js").write_text(js.replace(
+                hook, '  if (c.what) say("what", "what present: move it into context");\n' + hook))
+            code, out, _ = runner(d, script=root / "scripts" / "check_cards.js")
+        self.assertEqual(code, 2, out)
+        self.assertIn("what present", out)
 
 
 class RevRule(unittest.TestCase):

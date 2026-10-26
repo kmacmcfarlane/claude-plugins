@@ -153,7 +153,8 @@ and F, in plain words for the operator:
 | Lost context (a block only) | the facts a reader coming back cold needs: what was tried, what was answered before, where a list or number came from | you, from the source and the record |
 
 A card's Context is the first three, in that order, in one or two sentences (about 30–60
-words); it does not restate **What:**. A block's adds the lost context, as bullets. Write it
+words); it does not restate **What:**, which follows it and lists a set's items. A block's
+adds the lost context, as bullets. Write it
 when the decision is raised, and store it with the card where the caller keeps one, so every
 later showing — a re-show after a reset included — reads it instead of composing it again.
 
@@ -210,6 +211,11 @@ only the card, as someone who has seen nothing else, and for each option ask:
 4. If it is one-way or costly to undo, does it carry `⚠ undo:`; if it carries one, is it?
 5. If the option is the operator's to carry out, does the card meet SKILL.md § The floor,
    what it takes to act, from the card alone?
+
+Then, for the card as a whole: if it decides on a set, could you name every item it acts on,
+from its **What:** bullets alone? A count with no list under it fails, unless the card names
+the set by a rule that picks out its members (*the pages that cite the retired setup guide*):
+that passes, since the reader can name each one from it.
 
 Then check every label, number or acronym on it against SKILL.md § The floor, item 1: defined
 where it first appears — in its **Context:** — or replaced by its words; a source label

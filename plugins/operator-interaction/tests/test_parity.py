@@ -388,7 +388,8 @@ class BundleRunner(unittest.TestCase):
     def test_a_count_glossed_only_in_the_shared_context(self):
         d = bundle()
         d["layers"][1][3] = SHARED + " The three are the build, the cache and the publish step."
-        d["cards"][2]["tldr"][-1] = "Start the three now"
+        # in the Impact's wait: a count in the TLDR says what is decided, and names a set (F6's set refusal)
+        d["cards"][2]["impact"]["wait"] = "the three wait for the move"
         self.assertEqual(runner(d)[:2], (0, ""))
         # the same card in a plain layer: its Context alone does not name the three
         d["layers"][1].pop()

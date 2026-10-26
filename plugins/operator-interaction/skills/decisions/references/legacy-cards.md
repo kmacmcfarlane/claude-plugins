@@ -35,7 +35,14 @@ The `decision-page` skill's `scripts/upgrade_cards.js` moves a `cards.json` to
 that is no UTC time at all gets a new one, reported *new rev*). It tells the shapes apart card by card and refuses, all or nothing, any card it
 cannot fully map: no question (`--questions`), a field the shape does not have, an unknown
 scope level, unequal assumption lists, a writer marker, a newer stamp. `--only` limits it to a
-set of decisions; `--records` also writes one record per card, without `L` and `dep`.
+set of decisions; `--records` also writes one record per card, without `L` and `dep`. Each card
+it writes carries `upgraded`, `{from, rev}`: the shape it came from and the `rev` it kept. Beside
+`rev`, never touching it, it marks the card as carried over: until a writer revises it with a new
+`rev`, the pre-publish runner lints its set check rather than refusing it. **A gap:** data
+upgraded by an earlier upgrader, before the marker, carries none, so its set check is a
+refusal. Re-upgrade it from its kit or legacy source, which this upgrader marks, or list its
+items. The live answer page is still in the kit shape, so the migration pass runs this
+upgrader and its cards carry the marker.
 
 ## Legacy shipped → `decision-card/5`
 
@@ -91,7 +98,8 @@ A card the operator has answered stays as it is, its lints left knowingly.
 - **A `cards.json` written before Context came first** has either no `context` or a cue-only
   one with its `what` after the cue. The one-time Context migration kept its `rev`: a card
   whose own `what` and resume cue moved into `context`, its terms glossed from its own folds
-  alone. A gloss drawn from outside the card was new information: a new `rev`.
+  alone. A gloss drawn from outside the card was new information: a new `rev`. A `what` such a
+  card still holds shows as its What part, after Context (F6), never at the end of Context.
 - **A `cards.json` written before `detail` existed** renders with **More** buttons and no
   toggles; it is thin until rewritten. A card that gets `detail` gets a new `rev`.
 - **A `cards.json` written before undo went optional** (answer 260, 2026-10-20) carries

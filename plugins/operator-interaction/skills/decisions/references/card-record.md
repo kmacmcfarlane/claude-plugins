@@ -29,8 +29,9 @@ Two kinds of required:
 |---|---|---|---|
 | `format` | `"decision-card/5"` | to render | the stamp. A reader refuses a newer number, naming it, and never downgrades it |
 | `n` | integer | to render | the decision number, 1 or more: the caller's own, never reused |
-| `rev` | `YYYY-MM-DDTHH:MM:SSZ` | to render | the card's revision. Any change to a card gets a new `rev`, Context included: an **Added:** line after `tell me`, more detail after `expand`, a `dig into` finding, a corrected fact, a re-ask. Only a format-only upgrade keeps it: an older card moved to `decision-card/5` by the `decision-page` skill's `scripts/upgrade_cards.js`, its fields moved and none added. A fact drawn from anywhere outside the card is new information: a new `rev`. A new card writes it to the second; a minute-form `rev` (`…T09:30Z`) from older data is read, and an upgrade keeps it byte for byte, since an answer counts only when its `rev` equals the card's exactly. It is compared only for equality, never as a time |
+| `rev` | `YYYY-MM-DDTHH:MM:SSZ` | to render | the card's revision. Any change to a card gets a new `rev`, Context included: an **Added:** line after `tell me`, more detail after `expand`, a `dig into` finding, a corrected fact, a re-ask. Only a format-only upgrade keeps it: an older card moved to `decision-card/5` by the `decision-page` skill's `scripts/upgrade_cards.js`, its fields moved and none added. A fact drawn from anywhere outside the card is new information: a new `rev`. A new card writes it to the second; a minute-form `rev` (`…T09:30Z`) from older data is read, and an upgrade keeps it byte for byte, since an answer counts only when its `rev` equals the card's exactly. It is compared only for equality, never as a time. The upgrader's `upgraded` marker, beside it, is allowed on a format-only upgrade: it adds nothing the card shows |
 | `raised` | `YYYY-MM-DDTHH:MM:SSZ` | optional | when the decision was first raised |
+| `upgraded` | `{from, rev}` | optional; written by the upgrader only | the carried-over marker: the shape the upgrader read (`legacy`, `kit`, `kit (v4)`; the page refuses any other) and the `rev` the card carries after the upgrade, which equals the old one byte for byte unless that one was not a UTC time (then the upgrader gave it a new one). While `upgraded.rev` equals `rev`, the card is a format-only upgrade, and the pre-publish runner gives it the set check as a lint, never a refusal; a writer who revises it gives it a new `rev`, so the marker no longer matches. A writer never writes it. **The trust boundary:** the pre-publish runner is the writer's self-check, not a gate, and the marker is the upgrader's alone; a writer who forged it would only skip their own check |
 | `t` | text | to render | the short name, 2–6 words, a noun phrase: what a slug shows |
 | `q` | text, one line | to render | the question as asked, the headline's |
 | `label` | `{id, name}` | optional | the source label, when raised from one labelled item of a source (a review's finding, a plan's question): `id` one word (`F7`), `name` its short name, 2–6 plain words (the `plain-names` skill's § Source labels) |
@@ -38,6 +39,8 @@ Two kinds of required:
 | `class` | text | optional | the why-ask class, when the caller names classes: shown first in Why ask |
 | `tldr` | list of text | to render | one or two terse bullets: what is decided and what rides on it, never the recommendation (the options mark it) |
 | `context` | text | to render | **Context:** one or two sentences introducing every term, item, count and named thing the card uses, by name, never by id; then where the operator left it |
+| `what` | text | optional | **What:** what is decided, in plain words, one sentence: the What part, after Context and never folded, on both surfaces (F6, answer 290 (a)) |
+| `items` | list of `{name, where?, about?, per?}` | optional; a card that counts a set where it says what is decided is refused with none, or too few | **What:** for a set, every item it acts on, one each, never a count alone: `name` its plain name (never an id), `where` where it lives when that helps, `about` what it is in a few words, `per` its outcome under each option, keyed by the card's option letters (`{"a": "…", "b": "…"}`), only where the options treat it differently (left out, it reads the same under every option). In chat a bullet each under **What:**; on the page the part reads *What · N items*. The pre-publish runner refuses a card whose title, first TLDR bullet, or an option's title or line (but (z)'s) counts two or more things with no `items`, or fewer than the largest count; a list of another length, or a card the upgrader carried over with its `rev`, is linted |
 | `open` | list of text | optional | **Open questions**: what is not known yet, one question each (it was `unknown`). Empty or none: no fold |
 | `impact` | `{wait, reach, undo?, cost?}` | to render | the **Impact**, across all the options, favouring none: `wait` (what waiting costs, what it holds up) and `reach` (who or what any option reaches), each non-empty text; `undo` only when some option is one-way or costly to undo, naming that option (*(b) none — lost search ranking does not come back*); `cost` when it is what the operator weighs. There is **no card-level effect**: each option carries its own (the operator's v5 ruling, 2026-10-22). Effect and Reach describe the system the work builds, never the process, which is the Wait |
 | `options` | list of options | to render | the options in letter order, (z) decide later last, each letter once (§ An option) |
@@ -53,7 +56,6 @@ Two kinds of required:
 | `roundcosts` | text | optional | **A round costs:** on an ask for another round |
 | `ifunanswered` | text | optional | **If unanswered:** a status-quo default |
 | `detail` | object | optional | the card parts' fuller renditions, `[medium, high]` each (§ Levels) |
-| `what` | text | optional | older data: shown at the end of Context; a new card does not set it (the runner lints it) |
 
 ## An option
 
@@ -95,12 +97,11 @@ shapes.
 ## Fields an upgraded card may already carry
 
 The upgrader maps the answer page's working kit into the record, and some of the kit's parts
-have no row above yet: `what` as the What part with its `items`
-(`[{name, where?, about?, per?}]`), `finding` (`{label?, title?, where?, mechanism, excerpt?}`),
+have no row above yet: `finding` (`{label?, title?, where?, mechanism, excerpt?}`),
 `scope` (`{level, says}`), `likelihood` (`{kind, seen}`) and `best`, `attached`, `rejected`
 (`[{t, why}]`). A reader keeps them as
 data and does not show them; each joins the tables above when the page and the chat card show
-it. In the kit, `pros` and `cons` were the one-line texts and `prosT` and `consT` the table's
+it, as the kit's `what` has: it maps to `what` and `items`, above. In the kit, `pros` and `cons` were the one-line texts and `prosT` and `consT` the table's
 rows; the record names the one-line texts `pro` and `con` and the rows `pros` and `cons`. The
 kit's `plan` is the option's `plan`, above. The
 kit's `evidence` attachments become the record's `evidence`, a flat list of text: their ids are
