@@ -382,7 +382,7 @@ alternative not taken, in case practice argues for it.
   bullet, or an option's title or line but (z)'s counts two or more things with no `items`,
   or fewer than the largest count, is refused; a list of another length is the `set` lint; the
   page's own check never refuses it, so an older published page still renders; the numerals
-  and quantities that count no set are left out: labels, versions, years, dates, label lists, units, ranges, the options themselves; a count of 100 or more linted only), the `count` lint's fix pointing to `items`
+  and quantities that count no set are left out: a numeral after a label noun from a closed list (principle, step, tier, …), never after a verb, versions, years, dates, label lists, units, ranges, the options themselves; a count of 100 or more linted only), the `count` lint's fix pointing to `items`
   there, the `rec-only` lint on a `per` naming the recommended option alone, the chat item
   bullet's form (`- name, where — about · *(a) …; (b) …*`), and the cold read's question,
   *could you name every item it acts on?* (a set named by a rule that picks out its members

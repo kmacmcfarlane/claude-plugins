@@ -531,16 +531,15 @@ function lint(d) {
    its rev: format only, rev kept) gets the lint in place of the refusal, so a lazy upgrade stays seamless; once a
    writer revises it with a new rev, it is refused like any card. The runner's alone: the page's check() never
    refuses it, so an older published page still renders ---- */
-/* a numeral (digits or a word) labels one thing, never counts a set, when a word that is no determiner comes right
-   before it and it ends the text, comes before punctuation, or comes before a function word: principle 3, step 2 of
-   the guide, Python 3 only, tier three, Option two first; or before a verb and its object (principle 3 implies the
-   change). "Fix 3 broken links" and "the three pages" count. The text's first word, when it is a common imperative
-   verb, heads no label: "Ship 3 now", "Close 5" and "Fix 3 in this round" count */
+/* a numeral (digits or a word) labels one thing, never counts a set, only right after a label noun (LABEL_HEAD, a
+   closed list: principle, step, tier, option, …), and only when it ends the text, comes before punctuation or a
+   function word, or before a verb and its object: principle 3, step 2 of the guide, tier three, Option two first,
+   principle 3 implies the change. After any other word it counts: "Retire 3 plugins this quarter", "Delete three",
+   "Archive 5 in this round", "the three pages" */
 const LABEL_NUM = /([A-Za-z]+)\s+$/;
+const LABEL_HEAD = /^(?:principle|step|tier|option|phase|stage|rule|finding|item|issue|answer|decision|question|section|chapter|part|level|round|wave|track|version|row|line|card|page|figure|table|note|point|criterion|requirement|ticket|case|test|example|layer|group|slot|lane|sprint|milestone)s?$/i;
 const COUNT_DET = new Set([...DET, "all", "both", "only", "first", "last", "other", "of", "between", "on", "in", "at",
-  "to", "for", "from", "with", "after", "before", "by", "over", "under", "up"]);
-const IMPERATIVE = new Set(["ship", "close", "fix", "keep", "drop", "move", "file", "add", "remove", "pick", "merge", "cut",
-  "run", "build", "write", "open"]);
+  "to", "for", "from", "with", "after", "before", "by", "over", "under", "up", "top", "remaining", "next", "final"]);
 const OBJ_DET = new Set(["the", "a", "an", "this", "that", "these", "those", "its", "their", "our", "your", "his", "her"]);
 const FUNC_AFTER = new Set(["of", "and", "or", "nor", "to", "in", "on", "at", "by", "for", "from", "with", "into", "onto", "per",
   "via", "as", "if", "but", "not", "so", "than", "then", "now", "only", "first", "already", "also", "again", "still",
@@ -548,9 +547,7 @@ const FUNC_AFTER = new Set(["of", "and", "or", "nor", "to", "in", "on", "at", "b
   "would", "can", "could", "may", "might", "must", "should", "which", "that", "this", "these", "those", "it", "its",
   "the", "a", "an", "when", "while", "before", "after", "under", "over", "until", "since"]);
 const isLabelNum = (t, m) => { const p = t.slice(0, m.index).match(LABEL_NUM);
-  if (!p || COUNT_DET.has(p[1].toLowerCase())) return false;
-  /* the first word an imperative verb: "Fix 3 …", "Close 5" */
-  if (!t.slice(0, p.index).trim() && IMPERATIVE.has(p[1].toLowerCase())) return false;
+  if (!p || COUNT_DET.has(p[1].toLowerCase()) || !LABEL_HEAD.test(p[1])) return false;
   const rest = t.slice(m.index + m[1].length), nx = rest.match(/^\s+([A-Za-z]+)(?:\s+([A-Za-z]+))?/);
   return !rest.trim() || /^\s*[.,;:!?)\]—–]/.test(rest) || (!!nx && FUNC_AFTER.has(nx[1].toLowerCase()))
     || (!!nx && /s$/i.test(nx[1]) && !!nx[2] && OBJ_DET.has(nx[2].toLowerCase())); };
@@ -570,8 +567,11 @@ const inNumList = (t, m) => /^[0-9]+$/.test(m[1]) && (/^\s*(?:,|and|or)\s*[0-9]+
 const SET_UNIT = "(?:spaces?|words?|characters?|chars?|lines?|columns?|bytes?|tokens?|sentences?|bullets?|px|em|rem|pt|times)";
 const notSetCount = (t, m) => { const before = t.slice(0, m.index), after = t.slice(m.index + m[1].length);
   return /[-–/]\s*$/.test(before) || /\b(?:to|and)\s+$/.test(before) && /\d\s*$/.test(before.replace(/\s*(?:to|and)\s+$/, ""))
-    || /^\s*[-–]\s*\w/.test(after) || new RegExp("^(?:\\s*(?:to|and|-|–)\\s*[0-9a-z]+)?\\s+" + SET_UNIT + "\\b", "i").test(after)
-    || /^\s+of\s+(?:the|these|those|its|our|your|their|them)\b/i.test(after); };
+    || /^\s*[-–]\s*\w/.test(after) || /^\s+to\s+[0-9]+\b/.test(after) || new RegExp("^(?:\\s*(?:to|and|-|–)\\s*[0-9a-z]+)?\\s+" + SET_UNIT + "\\b", "i").test(after)
+    || /^\s+of\s+(?:the|these|those|its|our|your|their|them)\b/i.test(after) && !/\b(?:all|both|each)\s+$/i.test(before); };
+/* "both" before a plural noun counts two (Retire both plugins); "both" alone, "both options", or "both" before a
+   function word ending in s (Treat both as …) does not */
+const BOTH = /\bboth\s+([A-Za-z]+s)\b/gi;
 /* a sentence about the options themselves: a count equal to the real options' is the options, not a set */
 const ABOUT_OPTIONS = /\b(?:options?|which of|which one|between|one of|either)\b/i;
 /* a count of 100 or more (a status code, a size) is never refused: SET_BIG and over is linted only */
@@ -579,7 +579,9 @@ const SET_BIG = 100;
 const setCounts = (s, nOpts) => { const t = unId(s);
   return [...t.matchAll(COUNT)].filter(m => !(/^[0-9]+$/.test(m[1]) && YEAR.test(m[1])) && !isLabelNum(t, m)
     && !afterName(t, m) && !nearMonth(t, m) && !inNumList(t, m) && !notSetCount(t, m))
-    .map(m => W[m[1].toLowerCase()] || Number(m[1])).filter(x => !(x === nOpts && ABOUT_OPTIONS.test(t))); };
+    .map(m => W[m[1].toLowerCase()] || Number(m[1]))
+    .concat([...t.matchAll(BOTH)].filter(m => !/^options$/i.test(m[1]) && !FUNC_AFTER.has(m[1].toLowerCase())).map(() => 2))
+    .filter(x => !(x === nOpts && ABOUT_OPTIONS.test(t))); };
 /* a card the upgrader carried over, format only: its marker names the rev it kept */
 const carried = c => !!c.upgraded && typeof c.upgraded === "object" && c.upgraded.rev === c.rev;
 /* the set check on one card: null, or {refuse, text} */

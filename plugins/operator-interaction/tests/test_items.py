@@ -257,15 +257,25 @@ class WhatPartRunner(unittest.TestCase):
             self.assertNotIn(SET_REFUSAL, out)
 
     def refused(self, line):
+        """Whether the line, as card 41's option (a) line, is refused as a set; a line not refused never exits 1."""
         d = example()
         d["cards"][0]["options"][0]["line"] = line
-        return refusal_in(runner(d)[1])
+        code, out, _ = runner(d)
+        r = refusal_in(out)
+        if not r:
+            self.assertNotEqual(code, 1, line + ": " + out)
+        return r
 
     def test_a_numbered_label_is_not_a_set(self):
-        # a numeral labels one thing when a word comes before it and it ends the text, comes before punctuation,
-        # or before a function word; before a noun or an adjective it counts
+        # a numeral labels one thing only after a label noun (LABEL_HEAD, a closed list), and only when it ends the
+        # text, comes before punctuation, a function word, or a verb and its object; after any other word it counts
         for t in ("File 9 proposed work items", "Fix 3 broken links", "Move 12 old pages", "Ship 4 new skills",
-                  "Fix 3 bugs", "Fix the 3 failing tests"):
+                  "Fix 3 bugs", "Fix the 3 failing tests",
+                  # fix round 3: a verb before the numeral heads no label
+                  "Retire 3 plugins this quarter", "Archive 5 repos this month",
+                  "Delete 4 files the build no longer needs", "This deletes 4 files the build no longer needs",
+                  "The move retires three plugins the hub no longer loads", "Delete three", "Retire 3 now",
+                  "Archive 5 in this round"):
             with self.subTest(t):
                 self.assertTrue(self.refused(t))
         for t in ("Clarify principle 3", "as step 2 of the guide says", "runs on Python 3 only", "Clarify principle 3.",
@@ -278,12 +288,17 @@ class WhatPartRunner(unittest.TestCase):
         d["cards"][0]["options"][0]["line"] = "Clarify principle 3"
         self.assertIn(SET_REFUSAL, runner(d, script=script)[1])
         script = mutant_runner('|| (!!nx && FUNC_AFTER.has(nx[1].toLowerCase()))', "|| !!nx")
-        d["cards"][0]["options"][0]["line"] = "keeps 3 broken links local"
+        d["cards"][0]["options"][0]["line"] = "fix item 3 broken links"
+        self.assertTrue(refusal_in(runner(d)[1]))
         self.assertNotIn(SET_REFUSAL, runner(d, script=script)[1])
+        # mutant: any word a label head again, so a verb on no list ("Retire") heads a label
+        d["cards"][0]["options"][0]["line"] = "Retire 3 now"
+        script = mutant_runner(" || !LABEL_HEAD.test(p[1])) return false;", ") return false;")
+        self.assertFalse(refusal_in(runner(d, script=script)[1]))
 
     def test_numbers_that_count_no_set_are_not_refused(self):
         for t in ("retries 3 times", "pages 3-5 move", "move 3-5 of them", "serves HTTP/2 clients",
-                  "keeps 2 of the pages", "indents 2 spaces", "cuts it to 600 words", "trims 1350 to 900 words", "Ship all three of the skills", "moves 3 to 5 pages",
+                  "keeps 2 of the pages", "indents 2 spaces", "cuts it to 600 words", "trims 1350 to 900 words", "moves 3 to 5 pages",
                   "Which of the two hosts stays",
                   # versions, codes, years, dates and label lists (fix round 2, M1)
                   "Drop Python 2 support", "Keep the Python 3 build", "Use Node 22 everywhere", "Plan the 2027 roadmap",
@@ -333,8 +348,8 @@ class WhatPartRunner(unittest.TestCase):
                 # a year of 100 or more comes back as the set lint; the rest as the refusal
                 self.assertTrue(SET_REFUSAL in out if phrase == "Plan the 2027 roadmap" else refusal_in(out), out)
 
-    def test_an_imperative_first_word_heads_no_label(self):
-        # fix round 2, L2: these count
+    def test_a_verb_heads_no_label(self):
+        # fix round 2, L2, and fix round 3: a verb is no label noun, so these count
         for t in ("Ship 3 now", "Close 5", "Fix 3 in this round", "Keep three and drop two"):
             with self.subTest(t):
                 self.assertTrue(self.refused(t))
@@ -343,13 +358,37 @@ class WhatPartRunner(unittest.TestCase):
         # on a two-option card, "Pick 2 hosts" names no options, so it counts
         self.assertTrue(self.refused("Pick 2 hosts"))
         self.assertFalse(self.refused("Pick one of two layouts"))
-        # mutants: the verb list gone; pick back among the options words
+        # mutant: pick back among the options words
         d = example()
-        d["cards"][0]["options"][0]["line"] = "Ship 3 now"
-        script = mutant_runner("if (!t.slice(0, p.index).trim() && IMPERATIVE.has(p[1].toLowerCase())) return false;", "")
-        self.assertFalse(refusal_in(runner(d, script=script)[1]))
         d["cards"][0]["options"][0]["line"] = "Pick 2 hosts"
         script = mutant_runner("|which of|which one|between|one of|either)", "|which of|which one|between|one of|either|pick)")
+        self.assertFalse(refusal_in(runner(d, script=script)[1]))
+
+    def test_top_remaining_both_and_all_of_the_count(self):
+        # fix round 3: a count after top, remaining, next or final; "both" before a plural noun is two; the
+        # "N of the" exception does not hold after all, both or each
+        for t in ("Keep the top three", "Retire the remaining three", "Keep the next four", "Ship the final five",
+                  "Retire both plugins", "Ship all three of the skills", "Close each three of the tickets"):
+            with self.subTest(t):
+                self.assertTrue(self.refused(t))
+        for t in ("Do both", "Keep both options", "keeps 2 of the pages", "Treat both as out of scope", "Keep both, this time"):
+            with self.subTest(t):
+                self.assertFalse(self.refused(t))
+        # "Keep the top two" on this two-option card names no options: refused, at least a lint
+        self.assertTrue(self.refused("Keep the top two"))
+        # mutants: both read as nothing; the of-the exception after all again
+        d = example()
+        d["cards"][0]["options"][0]["line"] = "Retire both plugins"
+        script = mutant_runner(".concat([...t.matchAll(BOTH)].filter(m => !/^options$/i.test(m[1]) && !FUNC_AFTER.has(m[1].toLowerCase())).map(() => 2))", "")
+        self.assertFalse(refusal_in(runner(d, script=script)[1]))
+        d["cards"][0]["options"][0]["line"] = "Treat both as out of scope"
+        script = mutant_runner(" && !FUNC_AFTER.has(m[1].toLowerCase())).map(() => 2))", ").map(() => 2))")
+        self.assertTrue(refusal_in(runner(d, script=script)[1]))
+        d["cards"][0]["options"][0]["line"] = "Retire both plugins"
+        script = mutant_runner(".concat([...t.matchAll(BOTH)].filter(m => !/^options$/i.test(m[1]) && !FUNC_AFTER.has(m[1].toLowerCase())).map(() => 2))", "")
+        self.assertFalse(refusal_in(runner(d, script=script)[1]))
+        d["cards"][0]["options"][0]["line"] = "Ship all three of the skills"
+        script = mutant_runner(" && !/\\b(?:all|both|each)\\s+$/i.test(before)", "")
         self.assertFalse(refusal_in(runner(d, script=script)[1]))
 
     def test_a_count_in_what_without_its_items_is_linted(self):
@@ -576,6 +615,11 @@ class WhatPartChat(unittest.TestCase):
                 "or lists its items.")
         for f in (page / "cards-schema.md", page / "writer-digest.md", SKILL / "SKILL.md"):
             self.assertIn(rule, " ".join(f.read_text().split()), f.name)
+        # fix round 3: the label rule by its closed noun list, in one clause
+        for f in (page / "cards-schema.md", page / "writer-digest.md"):
+            self.assertIn("a numeral right after a label noun from a closed list", " ".join(f.read_text().split()), f.name)
+        self.assertIn("a numeral after a label noun from a closed list (principle, step, tier, …), never after a verb",
+                      " ".join((REFS / "rulings.md").read_text().split()))
         trust = "is the writer's self-check, not a gate, and the marker is the upgrader's alone"
         for f in (page / "writer-digest.md", REFS / "card-record.md"):
             self.assertIn(trust, " ".join(f.read_text().split()), f.name)
