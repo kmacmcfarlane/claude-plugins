@@ -311,7 +311,8 @@ bidirectional character (a zero-width space, a right-to-left override) shows as 
 tag naming it, `U+202E`, so the text cannot read other than it is. `src` is plain text the
 same way.
 
-**The page refuses**, wherever a field carries one, an excerpt that is not an object, with blank `text`, a `lang` outside its
+**The page refuses**, wherever a field carries one, an excerpt that is not an object, one holding a key
+other than `text`, `lang` and `src`, with blank `text`, a `lang` outside its
 label shape, or a `src` that is not one line of text.
 
 **Size.** About 80 lines or 4 KB. Cut a longer one and say so where the cut is, in the text

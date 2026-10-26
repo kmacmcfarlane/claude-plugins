@@ -340,8 +340,11 @@ how it happens, who meets it and when, the before and after, in one to three sen
   after **What:** and its item bullets, before the folds and the Impact, never folded (the
   record's `finding`; answer 337 (a), its worked findings card confirmed on item 9168). Its
   head line: `**Finding:**`, the source label with its short name, a colon and the finding's
-  own title, then ` — ` and where it lives in `code` (a path and line range): **Finding:** F7
-  (oversize upload): the handler reads before it checks — `upload/handler.go:40-52`. The label
+  own title, then ` — ` and where it lives in `code` (a path and line range), then the
+  excerpt's `src` when it is given: the rest of it after the location when it opens on the
+  location (*`templates/welcome.html:14-16` at 3f2a9c1*), else ` · from ` and the whole `src`
+  in `code`: **Finding:** F7 (oversize upload): the handler reads before it checks —
+  `upload/handler.go:40-52` at 3f2a9c1. The label
   is the one the title carries, with the same short name (§ Source labels); a part the
   finding lacks is left out, so one with no label opens on its title, and one with neither on
   its location. Then the mechanism on its own line: how it happens, who meets it and when, the
@@ -349,8 +352,16 @@ how it happens, who meets it and when, the before and after, in one to three sen
   Then the excerpt, its code, log or failing output, in a fenced block tagged with its
   language: verbatim, about 15 lines in chat (cut longer ones, saying where in the block),
   never a secret's value, personal data, or another party's private source (the
-  `decision-page` skill's `references/cards-schema.md` § An excerpt). A card carries one
-  finding; a set raised from several lists them as its What items.
+  `decision-page` skill's `references/cards-schema.md` § An excerpt). **The fence is safe
+  for the text:** longer than the longest run of backticks in it, three at least (a text
+  holding ```` ``` ```` takes ````` ```` `````), or `~~~` when the text holds backticks and no
+  tildes, so no line of the excerpt can close it; and each control or bidirectional
+  character in it (a zero-width space, a right-to-left override) is written as its tag,
+  `U+200B`, `U+202E`, as the page shows it, so the text cannot read other than it is. A card
+  carries one Finding part. A set raised from several findings lists them as its What items,
+  and its one Finding may cover the set, naming each by its label with its location (*F2
+  `app/middleware/log.py:22-25` · F1 `config/production.yaml:7`*), then how each happens,
+  and the excerpt the choice turns on.
 - **Context:** one or two sentences at the page's summary size, on every card each time it
   is shown: the terms the card uses, then the resume cue (§ Context). Read from the store
   when the caller keeps one.

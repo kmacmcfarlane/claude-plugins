@@ -446,7 +446,7 @@ const whatPart=c=>{const w=isTxt(c.what)&&shown(c.what),its=itemsOf(c);if(!w&&!i
    shown (none is not shown). The runner reads the same finding */
 const findingOf=c=>isObj(c.finding)&&isTxt(c.finding.mechanism)&&shown(c.finding.mechanism)?c.finding:null;
 /* its head: the label with its short name, then the title after a colon; "" when it has neither */
-const findingHead=f=>{const l=isLabel(f.label)?'<span class="slab">'+esc(f.label.id)+'</span> ('+fmt(f.label.name)+')':'',
+const findingHead=f=>{const l=isLabel(f.label)?'<span class="slab">'+esc(f.label.id)+'</span> ('+esc(f.label.name)+')':'',
   t=isTxt(f.title)&&shown(f.title)?fmt(f.title):'';return l&&t?l+': '+t:l||t};
 const findingPart=c=>{const f=findingOf(c);if(!f)return "";
   const h=findingHead(f),wh=isTxt(f.where)&&shown(f.where)?'<span class="fwhere">'+fmt(f.where)+'</span>':'';
@@ -552,7 +552,7 @@ function cardProblems(c,w,keys){
       else if(LINE_BREAK.test(f.mechanism))bad.push(at+" mechanism must be one paragraph, with no line break: the code goes in its excerpt");
       for(const k of ["title","where"])if(f[k]!=null&&!(isStr(f[k])&&!LINE_BREAK.test(f[k])))bad.push(at+" "+k+" must be one line of text");
       if(f.label!=null){if(!isLabel(f.label))bad.push(at+" label must be {id, name}: the source's label as one word (F7), and its short name in plain words on one line");
-        else if(isLabel(c.label)&&(f.label.id!==c.label.id||f.label.name!==c.label.name))bad.push(at+" label must be the card's own label, "+c.label.id+" ("+c.label.name+"): one label keeps one short name");}
+        else if(isLabel(c.label)&&(f.label.id!==c.label.id||f.label.name!==c.label.name))bad.push(at+" label "+f.label.id+" ("+f.label.name+") must be the card's own label, "+c.label.id+" ("+c.label.name+"): one label keeps one short name");}
       if(f.excerpt!=null){const p=excerptProblem(f.excerpt);if(p)bad.push(at+" excerpt: "+p)}
     }}
   if(c.assume!=null&&!(Array.isArray(c.assume)&&c.assume.every(a=>isObj(a)&&isTxt(a.rests)&&isTxt(a.tw))))bad.push(w+": assume must be a list of {rests, tw}: each assumption the call rests on and its tripwire, both text");
@@ -709,6 +709,8 @@ const xcText=t=>esc(xcLines(t).join("\n")).replace(XC_CTRL,ch=>{const u="U+"+ch.
 /* why an excerpt is refused, or "" when it is sound */
 const excerptProblem=x=>{
   if(!isObj(x))return "an excerpt must be {text, lang, src}";
+  /* only its three keys, so it is exactly what the reference scan skips as an excerpt (isExcerpt in check) */
+  {const k=Object.keys(x).find(k=>!["text","lang","src"].includes(k));if(k!=null)return "an excerpt holds only text, lang and src: "+k+" is not one of them";}
   if(!isTxt(x.text))return "an excerpt needs text, the verbatim lines";
   if(x.lang!=null&&!(typeof x.lang==="string"&&XC_LANG.test(x.lang)))return "an excerpt's lang must be a short label: letters, digits and + # . _ -, at most 24";
   if(x.src!=null&&!(isTxt(x.src)&&!/[\r\n]/.test(x.src)))return "an excerpt's src must be one line of text: where it came from";

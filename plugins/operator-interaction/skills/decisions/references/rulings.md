@@ -226,7 +226,8 @@ alternative not taken, in case practice argues for it.
   where seven findings put on an answer page could not be decided and the same seven, in
   chat with each finding first, were answered in one turn) — a set raised from the findings
   of a review, an audit, a test run or a scan goes to chat by default, until the answer page
-  can show each finding (finding first, part of (a), lands with 265's confirmation); then the page is offered for such sets again. Other sets are as
+  can show each finding (how it shows it, 265's finding first, was replaced by 337 (a), *The
+  finding after What*, below); then the page is offered for such sets again. Other sets are as
   before. Since F7 (*The finding after What*, below) the page shows each finding, so it is
   offered for such a set again; chat stays the default. Not taken: every set to chat until
   then (270 (b)); the page offered as before (270 (c)).

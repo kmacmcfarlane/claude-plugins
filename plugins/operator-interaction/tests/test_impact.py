@@ -329,15 +329,22 @@ LIST_LINE = re.compile(r"^- \*\*\d+ .+\?\*\* — ")
 CARD_HEAD = re.compile(r"^\*\*\d+ — [^*]+\?\*\*")
 
 
+FENCE_OPEN = re.compile(r"^(`{3,}|~{3,})")
+
+
 def finding_end(lines, j):
     """The index after a card's Finding part (F7, answer 337 (a)), which opens at lines[j] on
-    **Finding:**: its head line, its mechanism on the next line, then any fenced excerpt."""
+    **Finding:**: its head line, its mechanism on the next line, then any fenced excerpt, its
+    fence of three or more backticks or tildes closed by a run of the same mark at least as long."""
     j += 1
-    if j < len(lines) and lines[j].strip() and not lines[j].startswith(("```", "▸ ", "▾ ", "**")):
+    if j < len(lines) and lines[j].strip() and not lines[j].startswith(("```", "~~~", "▸ ", "▾ ", "**")):
         j += 1  # the mechanism
-    if j < len(lines) and lines[j].startswith("```"):
+    m = FENCE_OPEN.match(lines[j]) if j < len(lines) else None
+    if m:
+        fence = m.group(1)
+        close = re.compile("^" + re.escape(fence[0]) + "{%d,}\\s*$" % len(fence))
         j += 1
-        while j < len(lines) and not lines[j].startswith("```"):
+        while j < len(lines) and not close.match(lines[j]):
             j += 1
         j += 1  # the closing fence
     return j

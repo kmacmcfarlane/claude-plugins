@@ -179,8 +179,8 @@ Smallest to largest, each showing more of the impact in facet order (templates i
   why ask.
 - **Card** — in the answer page's order: the title, then **Context:**, then **What:** (what
   is decided, and a set's items one bullet each), then, on a decision raised from a finding,
-  **Finding:** (its label and short name, where it lives, how it happens, and its excerpt in a
-  fenced block), then the ▸ Open questions fold line when anything is open,
+  **Finding:** (its label and short name, its title, where it lives, how it happens, and its
+  excerpt in a fenced block), then the ▸ Open questions fold line when anything is open,
   then the ▸ Assumptions fold line (the basis word and the assumptions with their
   tripwires), then an **Impact:** line, with no effect of its own; then the options, each with its
   own impact (effect, reach, a one-way or costly option's `⚠ undo:`, cost) on an italic line

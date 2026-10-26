@@ -161,8 +161,10 @@ feedback, relayed from that session and confirmed as answers 259–270, shaped t
 - **Labels first.** The operator answered by the review's labels, not the decision numbers.
   Putting the label first in the title, with a short name so it reads to someone who never
   opened the review, makes either handle work.
-- **Chat for findings.** The page has nowhere to put a finding's code and failure, which the
-  operator needed to decide; chat does, so findings-style sets go there until the page can.
+- **Chat for findings.** The operator needed a finding's code and failure to decide, and the
+  page then had nowhere to put them; chat did, so findings-style sets went to chat. The page
+  now shows each finding, after What (F7, answer 337 (a)), so it is offered for such a set
+  too; chat stays the default.
 
 ## Who is reading: events, not the clock
 

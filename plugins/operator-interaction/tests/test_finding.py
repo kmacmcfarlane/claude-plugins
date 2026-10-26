@@ -27,11 +27,27 @@ import subprocess
 import sys
 import unittest
 
-from test_impact import NODE, PAGE, CARD_HEAD, example, page_free_script, finding_end
+from test_impact import NODE, PAGE, CARD_HEAD, example, page_free_script, finding_end, FENCE_OPEN
 from test_context import runner, RUNNER, SKILL
 from test_record import run_record, record_of
 from test_items import mutant_runner
 from test_chat_context import fenced, views, heads, GALLERY, RENDERING, SKILL_MD, REFS
+
+
+DESCRIPTION_MAX = 1024
+
+
+def description(skill_md):
+    """A SKILL.md's frontmatter description, its quotes off."""
+    m = re.search(r'^description: "(.*)"$', skill_md, re.M)
+    assert m, "no description"
+    return m.group(1)
+
+
+def src_shown(head, src_rest):
+    """Whether a Finding head ends on its excerpt's src (the part after the location)."""
+    m = FINDING_HEAD.match(head)
+    return bool(m and m.group("src") and src_rest in m.group("src"))
 
 
 def setUpModule():
@@ -155,6 +171,16 @@ class FindingPage(unittest.TestCase):
         self.assertTrue(problems(mutant_page("?codeBlock(f.excerpt):''", "?'<pre>'+fmtD(f.excerpt.text)+'</pre>':''")))
         self.assertTrue(problems(mutant_page("<span class=\"fwhere\">'+fmt(f.where)", "<span class=\"fwhere\">'+f.where")))
 
+    def test_the_heads_short_name_is_plain_text(self):
+        # drawn with esc, as the title's label is: no code mark, no slug
+        d = example()
+        c43(d)["label"] = c43(d)["finding"]["label"] = {"id": "D3", "name": "`blue` off [[41]]"}
+        h = one(d)["cards"]["43"]["fnd"]
+        self.assertIn("(`blue` off [[41]])", h)
+        h = one(d, mutant_page("+'</span> ('+esc(f.label.name)+')'",
+                               "+'</span> ('+fmt(f.label.name)+')'"))["cards"]["43"]["fnd"]
+        self.assertNotIn("(`blue` off [[41]])", h)
+
     def test_check_refuses_a_malformed_finding(self):
         cases = {
             "finding must be {label, title, where, mechanism, excerpt}": lambda c: c.__setitem__("finding", "x"),
@@ -163,7 +189,7 @@ class FindingPage(unittest.TestCase):
             "finding title must be one line of text": lambda c: c["finding"].__setitem__("title", "a\nb"),
             "finding where must be one line of text": lambda c: c["finding"].__setitem__("where", 3),
             "finding label must be {id, name}": lambda c: c["finding"].__setitem__("label", "D3"),
-            "finding label must be the card's own label, D3 (site colour off the logo)":
+            "finding label D4 (site colour off the logo) must be the card's own label, D3 (site colour off the logo)":
                 lambda c: c["finding"].__setitem__("label", {"id": "D4", "name": "site colour off the logo"}),
             "finding excerpt: an excerpt's lang must be a short label":
                 lambda c: c["finding"]["excerpt"].__setitem__("lang", "<b>"),
@@ -196,6 +222,20 @@ class FindingPage(unittest.TestCase):
         # a none mechanism: no part at all
         f["mechanism"] = "none"
         self.assertEqual(one(d)["cards"]["43"]["fnd"], "")
+
+    def test_an_excerpt_holds_only_text_lang_and_src(self):
+        # an excerpt with another key is refused, so the reference scan's excerpt (isExcerpt) and the
+        # check's are the same object, and an excerpt's text is never scanned as text
+        d = example()
+        c43(d)["finding"]["excerpt"] = {"text": "see [[99]]", "lang": "toml", "src": "theme/colors.toml", "note": "x"}
+        bad = one(d)["bad"]
+        self.assertTrue(any("finding excerpt: an excerpt holds only text, lang and src: note" in b for b in bad), bad)
+        old = '{const k=Object.keys(x).find(k=>!["text","lang","src"].includes(k));if(k!=null)return'
+        bad = one(d, mutant_page(old, '{const k=null;if(k!=null)return'))["bad"]
+        self.assertFalse(any("holds only text, lang and src" in b for b in bad), bad)
+        # the three keys alone: the text is not scanned, and passes
+        del c43(d)["finding"]["excerpt"]["note"]
+        self.assertEqual(one(d)["bad"], [])
 
     def test_a_slug_in_the_finding_is_checked_and_one_in_its_excerpt_is_not(self):
         d = example()
@@ -281,9 +321,12 @@ class FindingRunner(unittest.TestCase):
 
 # the gallery's cards raised from a finding: a review's (51-53, 97) and an audit's (88)
 FINDING_CARDS = {51, 52, 53, 88, 97}
-# **Finding:** label (short name)[: title] — `where`, or a head with no label
+# **Finding:** label (short name)[: title] — `where`[ <the rest of src> | · from `src`], or a head with no label
 FINDING_HEAD = re.compile(r"^\*\*Finding:\*\* (?:(?P<id>\S+) \((?P<name>[^)]+)\)(?:: (?P<t1>.+?))?|(?P<t2>[^`]+?))"
-                          r" — `[^`]+`$")
+                          r" — `[^`]+`(?P<src> [^`·]+| · from `[^`]+`)?$")
+# a control or bidirectional character an excerpt writes as its U+ tag in chat (the page's own class, in short)
+RAW_CTRL = re.compile("[\u0000-\u0008\u000b-\u001f\u007f-\u009f\u00ad\u061c\u180e\u200b-\u200f"
+                      "\u2028-\u202e\u2060-\u2069\ufeff]")
 TITLE_LABEL = re.compile(r"^\*\*\d+ — (\S+) \(([^)]+)\) · ")
 
 
@@ -318,11 +361,32 @@ def finding_problems(where, body, raised):
         out.append(where + ": no mechanism line under the Finding's head")
     elif len(mech.split()) <= 4:
         out.append(where + ": the mechanism is a bare label")
-    if k + 2 < len(body) and body[k + 2].startswith("```"):
-        if not re.match(r"^```[A-Za-z0-9][A-Za-z0-9+#._-]*$", body[k + 2]):
-            out.append(where + ": the excerpt's fence has no language")
-        if finding_end(body, k) > len(body):
-            out.append(where + ": the excerpt's fence is not closed")
+    if k + 2 < len(body) and FENCE_OPEN.match(body[k + 2]):
+        out += fence_problems(where, body[k + 2:finding_end(body, k)], finding_end(body, k) > len(body))
+    return out
+
+
+def fence_problems(where, block, unclosed=False):
+    """An excerpt's fenced block against the chat rules: a language on the opener; a fence no line
+    of the text can close (longer than any backtick run in it, or tildes over a text with none at
+    a line's start); every control or bidirectional character written as its U+ tag."""
+    out = []
+    m = re.match(r"^(`{3,}|~{3,})([A-Za-z0-9][A-Za-z0-9+#._-]*)$", block[0])
+    if not m:
+        return [where + ": the excerpt's fence has no language"]
+    fence, text = m.group(1), block[1:-1]
+    if unclosed or block[-1].strip() != fence:
+        out.append(where + ": the excerpt's fence is not closed by its own fence")
+    if fence[0] == "`":
+        run = max([len(r) for x in text for r in re.findall(r"`+", x)] or [0])
+        if run >= len(fence):
+            out.append(where + ": a run of %d backticks in the excerpt, inside a fence of %d" % (run, len(fence)))
+    elif any(x.startswith("~~~") for x in text):
+        out.append(where + ": a line of the excerpt opens on ~~~, inside a ~~~ fence")
+    for x in text:
+        c = RAW_CTRL.search(x)
+        if c:
+            out.append(where + ": a raw U+%04X in the excerpt: write it as its tag" % ord(c.group(0)))
     return out
 
 
@@ -374,12 +438,52 @@ class FindingChat(unittest.TestCase):
         n, kind, body = next(v for v in views(GALLERY) if v[2][0].startswith("**97 — "))
         k = next(i for i, x in enumerate(body) if x.startswith("**Finding:**"))
         self.assertEqual(body[k + 2], "```jinja")
+        # its head ends on the excerpt's src, the rest after the location (M1)
+        m = FINDING_HEAD.match(body[k])
+        self.assertEqual(m.group("src"), " at 3f2a9c1")
+        mutant = [body[k].replace(" at 3f2a9c1", " at")] + body[k + 1:]
+        self.assertFalse(src_shown(body[k].split(" at 3f2a9c1")[0], "3f2a9c1"))
+        self.assertTrue(src_shown(body[k], "3f2a9c1"))
+        self.assertTrue(mutant)
+
+    def test_the_rendering_shows_the_src_and_a_fence_safe_excerpt(self):
+        text = " ".join(RENDERING.read_text().split())
+        self.assertIn("then the excerpt's `src` when it is given", text)
+        self.assertIn("longer than the longest run of backticks in it", text)
+        self.assertIn("is written as its tag, `U+200B`, `U+202E`, as the page shows it", text)
+        self.assertIn("its one Finding may cover the set", text)
+
+    def test_the_gallery_fences_are_safe_and_the_checks_fail_on_unsafe_ones(self):
+        n, kind, body = next(v for v in views(GALLERY) if v[2][0].startswith("**52 — "))
+        k = next(i for i, x in enumerate(body) if x.startswith("**Finding:**"))
+        block = body[k + 2:finding_end(body, k)]
+        self.assertEqual(block[0], "````go")  # its text holds a run of three backticks
+        self.assertEqual(fence_problems("52", block), [])
+        mutants = {
+            "a three-backtick fence": ["```go"] + block[1:-1] + ["```"],
+            "a raw right-to-left override": block[:2] + ["\u202e" + block[2]] + block[3:],
+            "a raw zero-width space": block[:2] + [block[2] + "\u200b"] + block[3:],
+            "a tilde line in a tilde fence": ["~~~go", "~~~", "x", "~~~"],
+            "no language": ["````"] + block[1:],
+        }
+        for name, b in mutants.items():
+            with self.subTest(name):
+                self.assertTrue(fence_problems("mutant", b), name)
+        # a tilde fence over backticks is safe
+        self.assertEqual(fence_problems("ok", ["~~~go"] + block[1:-1] + ["~~~"]), [])
 
     def test_a_findings_set_is_offered_the_page(self):
         page = (SKILL / "SKILL.md").read_text()
-        for text in (SKILL_MD.read_text(), RENDERING.read_text(), page):
+        rationale = (REFS / "rationale.md").read_text()
+        for text in (SKILL_MD.read_text(), RENDERING.read_text(), page, rationale):
             self.assertNotIn("until the page can show each finding", text)
             self.assertNotIn("until the page shows findings", text)
+            self.assertNotIn("findings-style sets go there until the page can", text)
+        self.assertIn("The page\n  now shows each finding, after What (F7, answer 337 (a))", rationale)
+        # each skill's description within the 1024-character limit
+        for path in (page, SKILL_MD.read_text()):
+            self.assertLessEqual(len(description(path)), DESCRIPTION_MAX)
+        self.assertGreater(len(description(page) + ", each card showing its finding"), 1000)
         self.assertIn("a set of review or audit findings goes to chat by default, and the page is offered for it too",
                       page.split("\n---\n")[0])
         self.assertIn("so offer the page for such a set as for any other", RENDERING.read_text())

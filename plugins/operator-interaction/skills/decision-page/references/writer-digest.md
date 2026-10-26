@@ -226,7 +226,7 @@ step with a fill-in placeholder (an angle-bracketed word with no spaces) or a li
 `label` not `{id, name}`; a layer's `shared` not text; a `refs` entry still open (`when`
 `open`, or `a` not yet answered) or for a card on the page; a `[[N]]` neither a card nor a
 `refs` entry (an excerpt is not read); a `basis` outside the four; a `follow` other than the
-six; a non-number `refs` key; an excerpt not `{text, lang, src}`,
+six; a non-number `refs` key; an excerpt not `{text, lang, src}` or holding any other key,
 with blank `text`, a `lang` off its label shape or a `src` of more than one line; `evidence`
 neither text nor a non-empty list of text; a malformed `detail` (a bullet neither text nor
 `{t, sub}`, a section not `{h, b}`, both `t` and `h`, bullets and sections mixed, an Impact

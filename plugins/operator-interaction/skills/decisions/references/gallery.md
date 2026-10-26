@@ -894,6 +894,12 @@ func (h *Handler) Upload(w http.ResponseWriter, r *http.Request) {
 **What:** whether a failed write to disk waits before it is tried again, in the upload service's storage writer.
 **Finding:** F7 (retry storm): a failed write is tried again at once — `storage/writer.go:88-95`
 When a write to disk fails, the writer tries it again in the same loop with no pause, so a disk that fails every write draws hundreds of writes a second until someone takes it out of service.
+````go
+const retryMsg = `write failed: retrying, see ``storage`` docs`
+for err := w.write(b); err != nil; err = w.write(b) {
+	log.Print(retryMsg) // the docs quote it in a ```text``` block; no wait before the next try
+}
+````
 ▸ Open questions — 1 open: how long a busy disk stays busy
 ▸ Assumptions — basis: **partial** · 2 assumptions with tripwires
 **Impact:** later: the merge waits on this finding · reach: the upload service and the disks it writes to
@@ -1037,7 +1043,7 @@ happens, then its code — and before the folds and the Impact (answer 337 (a)).
 **97 — F3 (unescaped display name) · Escape the display name in the welcome email?**
 **Context:** the parcel tracker sends a welcome email built from an HTML template, and the display name is what a user types at signup. Today's code review of the signup change numbered its findings, and F3 (unescaped display name) is the one left for you · you decide how the template shows the name.
 **What:** whether the welcome email's template escapes the display name, so any tags in it show as plain text, and whether names already stored are cleaned too.
-**Finding:** F3 (unescaped display name): the template turns escaping off for the name — `templates/welcome.html:14-16`
+**Finding:** F3 (unescaped display name): the template turns escaping off for the name — `templates/welcome.html:14-16` at 3f2a9c1
 The template marks the display name as safe, which turns escaping off, so a name typed as a link to another site becomes a real link inside an email that comes from us, sent to the new user and to anyone they forward it to.
 ```jinja
 <h1>Welcome aboard</h1>
@@ -1061,7 +1067,10 @@ The template marks the display name as safe, which turns escaping off, so a name
 *The finding sits inside the card, after **What:**, so the card reads in the one order every card
 has: what is decided, then the problem it is decided about. Its head repeats the title's label
 with the same short name, so it reads alone; its mechanism says how a typed name turns into a
-live link, and for whom; the excerpt is the source's text, verbatim, fenced with its language.
+live link, and for whom; the excerpt is the source's text, verbatim, fenced with its language,
+and the head ends on the commit the excerpt came from (its `src`). A text holding backticks
+takes a longer fence, as 52's does, and a control character in one is written as its tag,
+`U+202E`.
 On an answer page the same card shows a Finding part in the same place, its code drawn as a
 block that shows every character as typed. Not this: the finding above the card, before the
 title (265 (a)'s provisional reading, replaced by 337 (a)); nor a Finding of "F3: XSS in the
