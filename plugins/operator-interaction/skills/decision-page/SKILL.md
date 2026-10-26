@@ -347,8 +347,11 @@ In one message, per the `decisions` skill's `references/replies.md`:
 
 Then give your caller each new answer verbatim for its record: number, choice, kind, words
 quoted exactly, `rev`, `at` (the page's clock, kept as given), and the source (*answer
-page*), with your reading beside it, never in place of it. The caller acts on the echoed
-readings; you act on none yourself unless the caller is you.
+page*), with your reading beside it, never in place of it. A follow-up (`later`, `tell me`,
+`expand`, `dig into`) is handed over as one, `kind: follow-up`, and is not an answer: a
+caller that keeps a store records it by its own follow-up rule (a wake line), never as an
+answer line (`you decide` and `drop` carry the same kind and are final answers). The caller
+acts on the echoed readings; you act on none yourself unless the caller is you.
 
 With each **new** answer, also hand over when it was seen: its number, the time of this
 hand-over (UTC, your clock, never the page's `at`) and the word *page*. An **unchanged** or

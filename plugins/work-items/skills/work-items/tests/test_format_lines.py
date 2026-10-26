@@ -124,5 +124,29 @@ class DecisionLineKinds(unittest.TestCase):
         self.assertIn("**`card:` in two places.**", sec)
 
 
+class FollowUpsAreNeverAnswers(unittest.TestCase):
+    """L1: `wi` reads any `answer N:` line as answered, so a follow-up written as one hides
+    an open decision; the format says so, and how a line stored that way is rewritten."""
+
+    def setUp(self):
+        text = flat(FORMAT.read_text())
+        start = text.index("## Operator questions")
+        self.ops = text[start:text.index("## Allocating a decision number", start)]
+        self.table = {row["kind"]: row for row in rows(section(FORMAT.read_text()))}
+
+    def test_the_operator_questions_rule(self):
+        self.assertIn("**A follow-up is never an answer line.** An `answer N:` line holds a "
+                      "final answer only", self.ops)
+        self.assertIn("`later`, `hold` and `dig into` write a `wake N:` line", self.ops)
+        self.assertIn("`tell me` and `expand` write none", self.ops)
+        self.assertIn("`wi` reads any `answer N:` line as answered", self.ops)
+        self.assertIn("`verbatim N (moved <UTC>, from its answer line): <the original line>`",
+                      self.ops)
+
+    def test_the_table_rows(self):
+        self.assertIn("a final answer only, never a follow-up", self.table["answer"]["state"])
+        self.assertIn("(moved <UTC>, from its answer line)", self.table["verbatim"]["form"])
+
+
 if __name__ == "__main__":
     unittest.main()

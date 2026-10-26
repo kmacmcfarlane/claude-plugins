@@ -901,6 +901,16 @@ reply that opens with such a form word is written in double quotes. A reply
 recorded after the fact goes on an indented `verbatim N …` line under the
 answer, which, indented, matches neither marker.
 
+**A follow-up is never an answer line.** An `answer N:` line holds a final
+answer only: an option, words, `you decide`, `drop`, a reframe. `later`,
+`hold` and `dig into` write a `wake N:` line (`wake N: <time | event | next
+Report>`; § Decision line kinds, or the caller's rules); `tell me` and
+`expand` write none. `wi` reads any `answer N:` line as answered, so a
+follow-up stored as one hides an open decision from `needs-input`. A line
+stored that way before this rule is rewritten as a `wake N:` line, the
+original kept whole on an indented `verbatim N (moved <UTC>, from its
+answer line): <the original line>` line under it.
+
 **One counter.** Every question a caller puts to the operator takes its N
 from the store's one counter, the `counters:` block in `store.yaml` that
 `wi raise` advances under the store's lock (§ Allocating a decision
@@ -1385,10 +1395,10 @@ kind's rules; this table is where a reader finds them all.
 | card | `card: cards/<id>/<N>/<file> rev <rev> · decision-card/<k> — …` | indented, under its headline | `wi raise --record` | `CARD_RE` | landed |
 | machine card lines | `delegation: <id>`, `terms: …` (the answer-changes plan); `act: …`, `grant: <id>` (the signed-grants plan) | indented, under the current `card:` block | `wi raise --lines` (at the raise, or `--revise N --lines` alone) | the keys only; each plan's own patterns | planned (their grammar; `wi` writes the keys today) |
 | legacy card lines | `what:`, `why now:`, `why ask:`, `context:`, `impact:`, option lines, `to act (x):`, `rec:`, `basis:`, `unknown:`, … | indented, under its headline | the caller, before v5 cards | no (only `raised:`) | legacy: read by the decisions skill's legacy reference |
-| answer | `answer N: <reply> [(read as: …)]` | 0 | the caller | `ANSWER_RE` | landed |
-| verbatim | `verbatim N (added <UTC>, from <source>): "<the reply>"` | indented, under its answer line | the caller | no | landed |
+| answer | `answer N: <reply> [(read as: …)]` | 0 | the caller | `ANSWER_RE` | landed; a final answer only, never a follow-up (§ Operator questions) |
+| verbatim | `verbatim N (added <UTC>, from <source>): "<the reply>"`; `verbatim N (moved <UTC>, from its answer line): <the original line>` | indented, under its answer or wake line | the caller | no | landed |
 | given | `given: <UTC> · by: … · session: … · via: … [· delegation: <id>] [· why: …]` | indented, under its answer line | the caller | the answer-changes plan's pattern | planned (the answer-changes plan) |
-| wake | `wake N: <time \| event \| next Report>` | 0 | the caller | no | landed |
+| wake | `wake N: <time \| event \| next Report>` | 0 | the caller, for `later`, `hold` and `dig into` | no | landed |
 | closed | `closed N: acted <sha \| id>`, `closed N: rule <path>`, `closed N: superseded by <M \| <repo>#M>` | 0 | the caller | no (§ Closed gives a reader's split) | landed |
 | withdrawn | `withdrawn N: reframed as M …` | 0 | written by some callers, with no grammar of its own | no | legacy |
 | shown | `shown N: <UTC> <chat \| page \| doc>` | 0 | the session that displays the decision | `SHOWN_RE` | landed |

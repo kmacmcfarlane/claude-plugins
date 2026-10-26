@@ -248,8 +248,7 @@ renders what the operator read instead of composing it again.
     left as they are.
   - **The forms below** that open with their own wording (`you decide`, `drop`, a
     reframe) append ` — "<the reply>"` after that wording. A redirect is a plain
-    answer. A hold reply waits on OQ6 of the decision-lifecycle investigation (5140),
-    which settles its form.
+    answer. A hold is a follow-up, never an answer line (**`hold`**, below).
   - **On a ⚠ read-back** (below), the choice's words are the verbatim reply, and the
     confirmation appends ` — confirmed "<reply>"`.
   - **The read-as stays**, last on the line; a reader splits it off at the last
@@ -266,21 +265,34 @@ renders what the operator read instead of composing it again.
     Indented, it matches neither `^decision` nor `^answer`. Interim `verbatim N` lines
     written before this rule, in other shapes, are left as written; this shape applies
     from now on.
+  - **A follow-up stored as an answer line** before the follow-up rule (below) is
+    rewritten as its `wake N:` line, the original kept whole on one indented line under
+    it: `  verbatim N (moved <UTC time>, from its answer line): <the original line>`.
 - **A one-way choice on a ⚠ decision** (the chosen option's line carries `⚠ undo:`, or, on
   a card stored before the marker, a plain `undo:` saying it cannot be undone, or only at
   real cost): repeat the choice back first. Record `answer N:` only when the operator confirms
   (`answer N: <the choice's words> — confirmed "<reply>" (read as: …)`).
   Nothing acts before that. A reversible choice on a ⚠ decision is echoed and recorded
   at once.
+- **A follow-up is never an answer line.** An `answer N:` line holds a final answer only
+  (an option, words, `you decide`, `drop`, a reframe); `later`, `hold`, `dig into`, `tell
+  me` and `expand` are recorded as the bullets below give, never as `answer N:`. `wi` reads
+  any `answer N:` line as answered, so a follow-up stored as one drops the decision from
+  `wi needs-input` while it is still open. A follow-up from an answer page or a tick-box
+  doc is recorded by the same rule: the read-back hands it over as `kind: follow-up`, and
+  it becomes a `wake N:` line, never an answer line.
 - **`later [when]`:** `wake N: <time | event | next Report>`. There is no `answer N:`, so the
   decision stays open and `wi needs-input` keeps listing it. Deferred again, it gets another
   `wake N:`; the last one wins (`grep -n '^wake N:'`, last hit). At the wake, re-show it
   with what changed.
+- **`hold`:** `wake N: <what it waits on>`, and no `answer N:`. Its form beyond that waits
+  on OQ6 of the decision-lifecycle investigation (5140), which settles it.
 - **`tell me`:** an `Added:` fact that changes an option's impact or the rec is a revision
   (above); otherwise nothing new in the store. **`expand`:** nothing new; the same number is
-  shown a level higher next round.
+  shown a level higher next round. Neither writes an `answer N:` line.
 - **`dig into [what]`:** a bounded investigation, dispatched like any other (a `dispatch:`
-  line, routing and the quota sense apply); its result comes back on the same number.
+  line, routing and the quota sense apply), and `wake N: when the dig into returns
+  (<what>)`, no `answer N:`; its result comes back on the same number.
 - **`you decide`:** `answer N: you decide — chose (x), because … — "<the reply>"`. On ⚠,
   only a reversible option; when the only good answer is the one-way option, it is
   re-asked, as the skill says.
