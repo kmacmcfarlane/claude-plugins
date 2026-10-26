@@ -11,6 +11,10 @@ W3: `wi show <id> --card N [--all] [--json]` reads the current record (or
 every revision) back with the sha256 of its exact bytes, refusing a
 symlinked level and a missing or mismatched file.
 
+W4: `wi lint` pairs `card:` lines and record files across items/ and
+archive/, checks the shape under cards/ by the level walk (a link reported,
+never followed), runs both secret scans over cards/, and escapes names.
+
 Each check here was proved against a mutant of wi.py (the mutant named in
 the test's docstring makes it fail). Temporary stores only; git runs with a
 temp HOME and global config, and never sees a repo around the temp dir.
@@ -1501,6 +1505,367 @@ class TestShowCardSafety(CardCase):
                 self.assertFalse(t.is_alive(), "the open hung")
                 self.assertEqual(box["err"].code, 3)
                 self.assertIn("not a regular file", str(box["err"]))
+
+
+
+class TestLintCards(CardCase):
+    """W4: `wi lint` pairs `card:` lines and their files across items/ and
+    archive/, checks the shape under cards/ by the level walk (a link is
+    reported, never followed or read), runs both secret scans over every
+    file there, and prints no name raw. Every finding is a problem, exit 3,
+    named by path and key or JSON path, never by value."""
+
+    def lint(self):
+        r = self.wi("lint", timeout=60)
+        return r.returncode, r.stdout
+
+    def assert_clean(self):
+        code, out = self.lint()
+        self.assertEqual(code, 0, out)
+        self.assertIn("lint clean", out)
+
+    def assert_problem(self, *needles):
+        code, out = self.lint()
+        self.assertEqual(code, 3, out)
+        for needle in needles:
+            self.assertIn(needle, out)
+        return out
+
+    def rel(self, rec=None, iid=IID, n=1):
+        rec = rec or record()
+        return (f"cards/{iid}/{n}/{rec['rev'].replace(':', '-')}"
+                f".card{rec['format'].split('/')[1]}.json")
+
+    def place(self, rec=None, iid=IID, n=1, line=True):
+        """A record file put in cards/ by hand, and with `line` an item
+        whose decision N carries its `card:` line."""
+        rec = dict(rec or record(), n=n)
+        rel = self.rel(rec, iid, n)
+        path = self.root / rel
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes((json.dumps(rec, ensure_ascii=False, indent=2)
+                          + "\n").encode())
+        if line:
+            self.item(iid, notes=f"decision {n}: q? — options: (a) x\n"
+                                 f"  card: {rel} rev {rec['rev']} · "
+                                 f"{rec['format']}")
+        return path
+
+    # -- clean -----------------------------------------------------------
+
+    def test_clean_after_raise_and_revise(self):
+        self.raise_rec()
+        self.ok("raise", IID, "--revise", "1", "--why", "reworded",
+                "--record", self.write_rec(record(n=1, rev=REV2)))
+        self.assert_clean()
+
+    def test_archive_leaves_cards_and_lint_clean(self):
+        """`wi archive` of a carded item: cards/ byte for byte unchanged,
+        lint clean. Mutant: the archive half of the pairing dropped
+        (_store_texts reading items/ only): the file reported orphan."""
+        self.raise_rec()
+        before = {p: p.read_bytes() for p in (self.root / "cards").rglob("*")
+                  if p.is_file()}
+        path = self.root / "items" / f"{IID}.md"
+        path.write_text(path.read_text().replace(
+            "status: todo", "status: done\nclosed: 2020-01-02"))
+        self.ok("archive", "--older-than", "0d")
+        self.assertTrue((self.root / "archive" / "2020" / f"{IID}.md")
+                        .is_file())
+        after = {p: p.read_bytes() for p in (self.root / "cards").rglob("*")
+                 if p.is_file()}
+        self.assertEqual(before, after)
+        self.assert_clean()
+
+    # -- pairing ---------------------------------------------------------
+
+    def test_malformed_card_line(self):
+        """Named by the item's path and file line, never quoted. Mutant:
+        the malformed branch dropped (the line passes)."""
+        self.item(IID, notes="decision 1: q? — options: (a) x\n"
+                             "  card: cards/x/1/whatever.json")
+        out = self.assert_problem(f"{IID}.md:15: malformed card: line")
+        self.assertNotIn("whatever", out)
+
+    def test_orphan_card_line(self):
+        """A `card:` line under no decision block. Mutant: the orphan-line
+        branch dropped."""
+        rel = self.rel()
+        self.place(line=False)
+        self.item(IID, notes=f"plain text\n  card: {rel} rev {REV} · "
+                             "decision-card/5")
+        self.assert_problem("orphan card: line, under no `decision N:`")
+
+    def test_line_whose_file_is_missing(self):
+        """Mutant: the line side not reading the file (read_card_record
+        not called)."""
+        path = self.place()
+        path.unlink()
+        self.assert_problem("decision 1: card record missing")
+
+    def test_file_that_does_not_match_its_line(self):
+        """The file's rev differs from the line's (the file name kept)."""
+        path = self.place()
+        rec = json.loads(path.read_text())
+        rec["rev"] = REV2
+        path.write_text(json.dumps(rec, indent=2) + "\n")
+        self.assert_problem("decision 1: card record changed")
+
+    def test_line_under_another_decision(self):
+        """A line naming decision 1's file under decision 2's block."""
+        rel = self.rel()
+        self.place(line=False)
+        self.item(IID, notes=f"decision 2: q? — options: (a) x\n  card: "
+                             f"{rel} rev {REV} · decision-card/5")
+        self.assert_problem("not this decision's record path")
+
+    def test_orphan_file(self):
+        """A file no `card:` line names gets the stopped-raise fix.
+        Mutant: the named check dropped."""
+        path = self.place(line=False)
+        self.assert_problem(f"{path}: orphan card record",
+                            "run the same raise again",
+                            "delete it (an orphan from a stopped write)")
+
+    def test_fenced_line_names_nothing(self):
+        """A `card:` line inside a fence is text: the file is an orphan."""
+        rel = self.rel()
+        self.place(line=False)
+        self.item(IID, notes=f"decision 1: q?\n```\n  card: {rel} rev {REV} "
+                             "· decision-card/5\n```")
+        self.assert_problem("orphan card record")
+
+    # -- shape -----------------------------------------------------------
+
+    def test_stray_entries(self):
+        """A dotted file, a non-record name, a dotted directory, a level
+        too deep and a FIFO: each named, none quoted (the FIFO never hangs
+        lint). Mutant: the shape check dropped."""
+        self.raise_rec()
+        d = self.root / "cards" / IID / "1"
+        (d / ".hidden.json").write_text("{}\n")
+        (d / "notes.txt").write_text("hello\n")
+        (self.root / "cards" / ".git-x").mkdir()
+        (d / "deeper").mkdir()
+        os.mkfifo(d / "pipe.json")
+        out = self.assert_problem(
+            f"{d / '.hidden.json'}: not a card record file",
+            f"{d / 'notes.txt'}: not a card record file",
+            f"{self.root / 'cards' / '.git-x'}: not a card record directory",
+            f"{d / 'deeper'}: not a card record directory",
+            f"{d / 'pipe.json'}: not a regular file")
+        self.assertNotIn("hello", out)
+
+    def test_cards_not_a_directory(self):
+        (self.root / "cards").write_text("x\n")
+        self.assert_problem("cards: not a directory")
+
+    # -- links -----------------------------------------------------------
+
+    def outside_secret(self):
+        """A directory outside the store holding a record-shaped file and
+        a loose file, each with a secret: lint must never read them."""
+        out = self.tmp / "outside"
+        (out / "1").mkdir(parents=True)
+        rec = dict(record(context=SECRET), n=1)
+        (out / "1" / self.rel().split("/")[-1]).write_text(
+            json.dumps(rec, indent=2) + "\n")
+        (out / "loose.json").write_text(json.dumps({"c": SECRET}) + "\n")
+        return out
+
+    def test_symlinked_item_level(self):
+        """cards/<id> a link out of the store: reported, its target not
+        read. Mutant: the walk by stat rather than lstat (the link
+        followed: the outside secrets reported)."""
+        out = self.outside_secret()
+        (self.root / "cards").mkdir()
+        os.symlink(out, self.root / "cards" / IID)
+        found = self.assert_problem(
+            f"{self.root / 'cards' / IID} is a symbolic link")
+        self.assertNotIn("likely", found)
+        self.assertNotIn("hunter2", found)
+
+    def test_symlinked_cards_and_file(self):
+        """cards itself a link, and a record file a link: each reported,
+        neither followed. Mutant: the link branch dropped."""
+        out = self.outside_secret()
+        os.symlink(out, self.root / "cards")
+        found = self.assert_problem(f"{self.root / 'cards'} is a symbolic "
+                                    "link")
+        self.assertNotIn("likely", found)
+        os.unlink(self.root / "cards")
+        d = self.root / "cards" / IID / "1"
+        d.mkdir(parents=True)
+        name = self.rel().split("/")[-1]
+        os.symlink(out / "1" / name, d / name)
+        self.item(IID, notes=f"decision 1: q?\n  card: {self.rel()} rev "
+                             f"{REV} · decision-card/5")
+        found = self.assert_problem(f"{d / name} is a symbolic link")
+        self.assertNotIn("likely", found)
+
+    # -- secrets ---------------------------------------------------------
+
+    def test_line_scan_over_cards(self):
+        """A secret in a record placed by hand: named by path and line,
+        the value never printed. Mutant: the line scan not run over
+        cards/."""
+        path = self.place(record(context=SECRET))
+        out = self.assert_problem(f"{path}:")
+        self.assertRegex(out, re.escape(str(path)) + r":\d+: ")
+        self.assertNotIn("hunter2", out)
+
+    def test_decoded_scan_by_json_path(self):
+        """A YAML block scalar inside one value, which the line scan of
+        the dumped JSON misses: named by JSON path and line, the value
+        never printed. Mutant: W4's decoded scan removed."""
+        rec = record()
+        rec["options"][0]["plan"] = f"api_key: |\n  {KEYISH}"
+        path = self.place(rec)
+        out = self.assert_problem(f"{path}: options[0].plan line 2: ")
+        self.assertNotIn(KEYISH, out)
+
+    def test_secret_in_a_stray_file(self):
+        """Every regular file under cards/ is scanned, a stray one too."""
+        self.raise_rec()
+        stray = self.root / "cards" / IID / "1" / "notes.txt"
+        stray.write_text(SECRET + "\n")
+        out = self.assert_problem(f"{stray}:1: ")
+        self.assertNotIn("hunter2", out)
+
+    def test_prose_token_clean(self):
+        self.raise_rec(record(context="the token count is fine here"))
+        self.assert_clean()
+
+    # -- names -----------------------------------------------------------
+
+    def test_hostile_names_escaped(self):
+        """A file name holding ESC, CSI, a newline, a bidi override and a
+        byte that is not UTF-8: each escaped, the output one line per
+        finding. Mutant: card_problems without _name_safe (the name raw;
+        the undecodable byte a crash)."""
+        self.raise_rec()
+        d = self.root / "cards" / IID / "1"
+        raw = b"a\x1b[2Jb\xc2\x9b\nc\xe2\x80\xaed\xff.json"
+        with open(os.path.join(os.fsencode(d), raw), "wb") as fh:
+            fh.write(b"{}\n")
+        r = subprocess.run([sys.executable, str(WI), "lint"],
+                           env=dict(self.env, WORK_ITEMS_ROOT=str(self.root)),
+                           capture_output=True, timeout=60)
+        self.assertEqual(r.returncode, 3, r.stdout + r.stderr)
+        for bad in (b"\x1b", b"\xc2\x9b", b"\xe2\x80\xae", b"\xff"):
+            self.assertNotIn(bad, r.stdout)
+        for shown in (b"a\\u001b[2Jb\\u009b\\u000ac\\u202ed\\xff.json",):
+            self.assertIn(shown, r.stdout)
+        lines = r.stdout.decode().splitlines()
+        self.assertTrue(all(ln.startswith(str(self.root)) for ln in lines),
+                        lines)
+
+    def test_level_walked_again_before_a_read(self):
+        """A level swapped for a link after the tree walk listed it: the
+        file check walks the levels again (_card_dir) and reads nothing
+        through the link. Mutant: the re-walk dropped (the outside secret
+        read and reported)."""
+        out = self.outside_secret()
+        (self.root / "cards").mkdir()
+        os.symlink(out, self.root / "cards" / IID)
+        rel = self.rel()
+        found = wi._lint_card_file(self.root, self.root / rel, rel, True)
+        self.assertEqual(len(found), 1, found)
+        self.assertIn("is a symbolic link", found[0])
+        self.assertNotIn("likely", found[0])
+
+    # -- finish round ----------------------------------------------------
+
+    def test_unencodable_name_on_an_ascii_stdout(self):
+        """A stray café.txt with stdout ASCII: exit 3, the name written
+        caf\\xe9, no encoding error. Mutant: the problems printed without
+        backslashreplace."""
+        self.raise_rec()
+        (self.root / "cards" / IID / "1" / "café.txt").write_text("x\n")
+        r = subprocess.run([sys.executable, str(WI), "lint"],
+                           env=dict(self.env, WORK_ITEMS_ROOT=str(self.root),
+                                    PYTHONIOENCODING="ascii"),
+                           capture_output=True, text=True, timeout=60)
+        self.assertEqual(r.returncode, 3, r.stdout + r.stderr)
+        self.assertIn("caf\\xe9.txt: not a card record file", r.stdout)
+
+    def test_secret_in_a_stray_directory(self):
+        """A stray directory is still walked for the scans. Mutant: stray
+        directories not walked."""
+        self.raise_rec()
+        deeper = self.root / "cards" / IID / "1" / "deeper"
+        deeper.mkdir()
+        (deeper / "x.txt").write_text(SECRET + "\n")
+        out = self.assert_problem("deeper/x.txt:1: ")
+        self.assertNotIn("hunter2", out)
+
+    def test_over_cap_stray_file(self):
+        """A stray file one byte over 256 KB: the over-256 KB line with its
+        next step, a secret before the cap still named, and the byte past
+        the cap not scanned. Mutants: the message removed; the truncation
+        removed (the last line's value then reaches the flagged length)."""
+        self.raise_rec()
+        big = self.root / "cards" / IID / "1" / "big.json"
+        # the last line's value reaches 8 characters, the length the scan
+        # flags, only with the byte past the cap: a file of the cap plus
+        # one byte, its last line flagged only if that byte is scanned
+        head = (SECRET + "\n").encode()
+        tail = b"\nDB_PASS=hunter2h"
+        fill = wi.RECORD_CAP + 1 - len(head) - len(tail)
+        data = head + (b"x" * 99 + b"\n") * (fill // 100) + \
+            b"y" * (fill % 100) + tail
+        self.assertEqual(len(data), wi.RECORD_CAP + 1)
+        big.write_bytes(data)
+        last = data.count(b"\n") + 1
+        out = self.assert_problem(
+            f"{big}: over 256 KB, which no card record is; only its first "
+            "256 KB were scanned for secrets; no card record is this size: "
+            "delete it or move it out of cards/",
+            f"{big}:1: ")
+        self.assertNotIn("hunter2", out)
+        self.assertNotIn(f"{big}: not a card record (", out)
+        self.assertNotIn(f"{big}:{last}: ", out)
+
+    def test_decoded_scan_in_an_unshaped_file(self):
+        """A record-shaped JSON file at cards/.x/foo.json, outside the
+        shape: its values are still scanned by JSON path. Mutant: the
+        decoded scan only for shaped files (`or not shaped`)."""
+        d = self.root / "cards" / ".x"
+        d.mkdir(parents=True)
+        (d / "foo.json").write_text(json.dumps(
+            {"plan": f"api_key: |\n  {KEYISH}"}, indent=2) + "\n")
+        out = self.assert_problem(f"{d / 'foo.json'}: plan line 2: ")
+        self.assertNotIn(KEYISH, out)
+
+    def test_n_level_must_be_digits(self):
+        """Mutant: the <N> segment loosened to `.+`."""
+        (self.root / "cards" / IID / "abc").mkdir(parents=True)
+        self.assert_problem(f"{self.root / 'cards' / IID / 'abc'}: not a "
+                            "card record directory")
+
+    def test_tab_in_a_name_escaped(self):
+        """Mutant: tab escaping dropped from _name_safe."""
+        self.raise_rec()
+        (self.root / "cards" / IID / "1" / "a\tb.txt").write_text("x\n")
+        out = self.assert_problem("a\\u0009b.txt: not a card record file")
+        self.assertNotIn("a\tb", out)
+
+    def test_json_file_that_is_not_json(self):
+        """Mutant: the not-a-card-record message removed."""
+        self.raise_rec()
+        bad = self.root / "cards" / IID / "1" / "bad.json"
+        bad.write_text("not json\n")
+        self.assert_problem(f"{bad}: not a card record (not one strict JSON "
+                            "object in UTF-8)")
+
+    def test_odd_whitespace_card_line_is_malformed(self):
+        """A `card:` line indented by a no-break space or a form feed is
+        reported malformed. Mutant: the open pattern back to `[ \\t]+`."""
+        for ws in (" ", "\f"):
+            with self.subTest(ws=repr(ws)):
+                self.item(IID, notes="decision 1: q? — options: (a) x\n"
+                                     f"{ws}card: cards/x/1/whatever.json")
+                self.assert_problem(f"{IID}.md:15: malformed card: line")
 
 
 if __name__ == "__main__":

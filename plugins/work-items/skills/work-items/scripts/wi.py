@@ -217,11 +217,18 @@ CARD_RE = re.compile(
     r"[1-9][0-9]{0,3})(?: — .*)?")
 
 
-def _card_scan(item):
+# an indented line that opens `card:` (any whitespace, a no-break space or
+# form feed too), read by lint whether or not it matches CARD_RE (3b51 W4)
+_CARD_OPEN_RE = re.compile(r"\s+card:")
+
+
+def _card_scan(item, every=False):
     """[(N, line index, (path, rev, format))] for every `card:` line in
     the block of a `decision N:` headline, in file order. Same fence and
     block rules as decision_raised: a block ends at the first line that is
-    not indented; a fenced line is text."""
+    not indented; a fenced line is text. With `every` (lint), also each
+    unfenced indented line opening `card:` that is outside any block (N
+    None) or does not match CARD_RE (groups None)."""
     lines = item.body.replace("\r\n", "\n").split("\n")
     fenced = set()
     for i, j in _fence_spans(lines):
@@ -235,14 +242,16 @@ def _card_scan(item):
         if m:
             current = int(m.group(1))
             continue
-        if current is None:
+        if current is None and not every:
             continue
         if not line[:1].isspace():
             current = None
             continue
         m = CARD_RE.fullmatch(line)
-        if m:
+        if m and current is not None:
             out.append((current, i, m.groups()))
+        elif every and _CARD_OPEN_RE.match(line):
+            out.append((current, i, m.groups() if m else None))
     return out
 
 
@@ -4394,6 +4403,27 @@ def _existing_record(root, rel, path, data):
     return "adopt"
 
 
+class _NotRegular(Exception):
+    pass
+
+
+def _read_regular(path):
+    """At most RECORD_CAP + 1 bytes of the regular file at `path`, never
+    through a link. O_NOFOLLOW: a link swapped in since the caller's lstat
+    is refused, not read; O_NONBLOCK: a FIFO swapped in never hangs the
+    open, and fstat on the open file is what is read. Raises _NotRegular
+    or OSError."""
+    fd = os.open(path, os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0)
+                 | getattr(os, "O_NONBLOCK", 0))
+    try:
+        if not stat.S_ISREG(os.fstat(fd).st_mode):
+            raise _NotRegular()
+        with open(fd, "rb", closefd=False) as fh:
+            return fh.read(RECORD_CAP + 1)
+    finally:
+        os.close(fd)
+
+
 def read_card_record(root, iid, n, rel, rev, fmt):
     """(bytes, record) of the card record a `card:` line names (3b51 W3,
     format.md § Card records, Reading a record): the path's segments are
@@ -4426,22 +4456,11 @@ def read_card_record(root, iid, n, rel, rev, fmt):
     if not stat.S_ISREG(st.st_mode):
         raise changed("not a regular file")
     try:
-        # O_NOFOLLOW: a link swapped in since the lstat is refused, not
-        # read; O_NONBLOCK: a FIFO swapped in never hangs the open, and
-        # fstat on the open file is what is read
-        fd = os.open(path, os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0)
-                     | getattr(os, "O_NONBLOCK", 0))
+        data = _read_regular(path)
+    except _NotRegular:
+        raise changed("not a regular file") from None
     except OSError:
         raise changed("unreadable") from None
-    try:
-        if not stat.S_ISREG(os.fstat(fd).st_mode):
-            raise changed("not a regular file")
-        with open(fd, "rb", closefd=False) as fh:
-            data = fh.read(RECORD_CAP + 1)
-    except OSError:
-        raise changed("unreadable") from None
-    finally:
-        os.close(fd)
     if len(data) > RECORD_CAP:
         raise changed("changed")
     try:
@@ -7032,6 +7051,175 @@ def secret_findings(text):
     return out
 
 
+# ── Card records in lint (3b51 W4) ─────────────────────────────────────────
+# format.md § Card records, Lint. Read-only: nothing is locked or written, no
+# link is followed, and a finding names a path and a key or JSON path, never
+# a value.
+
+_CARD_LINK = ("is a symbolic link; a card record is never written or read "
+              "through one; not read")
+_CARD_DIR_SEG = (re.compile(r"[^/.][^/]*"), re.compile(r"[0-9]+"))
+
+
+def _name_safe(text):
+    """A lint line that names a path: _terminal_safe, with newline and tab
+    escaped too (a name never splits a line), and a byte that was not
+    UTF-8 (held as a surrogate) written as \\xNN."""
+    out = []
+    for ch in _terminal_safe(text):
+        o = ord(ch)
+        if ch in "\n\t":
+            out.append(f"\\u{o:04x}")
+        elif 0xDC80 <= o <= 0xDCFF:
+            out.append(f"\\x{o - 0xDC00:02x}")
+        elif 0xD800 <= o <= 0xDFFF:
+            out.append(f"\\u{o:04x}")
+        else:
+            out.append(ch)
+    return "".join(out)
+
+
+def _lint_card_lines(root, items, texts):
+    """Pairing, line side: every unfenced indented `card:` line matches
+    CARD_RE, sits under a `decision N:` block, and names this item's and
+    this block's record, which read_card_record finds (the level walk, no
+    link followed), parses and matches by n, rev and format."""
+    out = []
+    for it in items:
+        text = texts.get(it.path, "")
+        # the body follows the front matter; its line i is the file's
+        # line off + i + 1
+        off = text[:len(text) - len(it.body)].count("\n")
+        for n, i, groups in _card_scan(it, every=True):
+            where = f"{it.path}:{off + i + 1}"
+            if groups is None:
+                out.append(f"{where}: malformed card: line; it reads `  card: "
+                           "cards/<id>/<N>/<rev>.card<k>.json rev <rev> · "
+                           "decision-card/<k>`, as `wi raise --record` "
+                           "writes it")
+            elif n is None:
+                out.append(f"{where}: orphan card: line, under no "
+                           "`decision N:` headline")
+            else:
+                try:
+                    read_card_record(root, it.id, n, *groups)
+                except WiError as e:
+                    out.append(f"{where}: decision {n}: {e}")
+    return out
+
+
+def _lint_card_file(root, path, rel, shaped):
+    """Both secret scans over one file under cards/: every line, then (a
+    .json file that parses as a record) every decoded string value whole,
+    by JSON path and the line within it. A record's directory is walked
+    again first (the level walk) when `shaped`."""
+    if shaped:
+        parts = rel.split("/")
+        try:
+            _card_dir(root, parts[1], parts[2], make=False, tail="not read")
+        except WiError as e:
+            return [str(e)]
+    try:
+        data = _read_regular(path)
+    except _NotRegular:
+        return [f"{path}: not a regular file; not read"]
+    except OSError as e:
+        return [f"{path}: cannot read: {e.strerror}"]
+    out = []
+    over = len(data) > RECORD_CAP
+    if over:
+        out.append(f"{path}: over 256 KB, which no card record is; only its "
+                   "first 256 KB were scanned for secrets; no card record is "
+                   "this size: delete it or move it out of cards/")
+        data = data[:RECORD_CAP]
+    for k, why in secret_findings(data.decode("utf-8", "replace")):
+        out.append(f"{path}:{k}: {why}")
+    if over or not rel.endswith(".json"):
+        return out
+    try:
+        rec = _parse_record(data.decode("utf-8"))
+    except (UnicodeDecodeError, WiError):
+        out.append(f"{path}: not a card record (not one strict JSON object "
+                   "in UTF-8); its values were scanned by line only")
+        return out
+    for jpath, val in _json_strings(rec):
+        for k, why in secret_findings(val):
+            out.append(f"{path}: {jpath} line {k}: {why}")
+    return out
+
+
+def _lint_cards_tree(root):
+    """Pairing, file side, and shape: every entry under cards/ is
+    cards/<id>/<N>/<name>.json as the commit journal reads it, a real
+    directory or regular file, never a link (reported, never followed or
+    read); every record file is named by a `card:` line in items/ or
+    archive/; and every regular file passes both secret scans."""
+    top = root / "cards"
+    try:
+        st = os.lstat(top)
+    except FileNotFoundError:
+        return []
+    except OSError as e:
+        return [f"{top}: cannot read: {e.strerror}"]
+    if stat.S_ISLNK(st.st_mode):
+        return [f"{top} {_CARD_LINK}"]
+    if not stat.S_ISDIR(st.st_mode):
+        return [f"{top}: not a directory; cards/ holds the card records"]
+    named = _named_records(root)
+    out, stack = [], [(top, "cards", 0, True)]
+    while stack:
+        d, rel, depth, shaped = stack.pop()
+        try:
+            with os.scandir(d) as it:
+                names = sorted(e.name for e in it)
+        except OSError as e:
+            out.append(f"{d}: cannot read: {e.strerror}")
+            continue
+        for name in names:
+            path, erel = d / name, f"{rel}/{name}"
+            try:
+                mode = os.lstat(path).st_mode
+            except OSError as e:
+                out.append(f"{path}: cannot read: {e.strerror}")
+                continue
+            if stat.S_ISLNK(mode):
+                out.append(f"{path} {_CARD_LINK}")
+            elif stat.S_ISDIR(mode):
+                ok = shaped and depth < 2 and \
+                    bool(_CARD_DIR_SEG[depth].fullmatch(name))
+                if shaped and not ok:
+                    out.append(f"{path}: not a card record directory "
+                               "(cards/<id>/<N>/ holds the records)")
+                # a stray directory is still walked, for the secret scans
+                stack.append((path, erel, depth + 1, ok))
+            elif not stat.S_ISREG(mode):
+                out.append(f"{path}: not a regular file, so not a card "
+                           "record file; not read")
+            else:
+                record = shaped and depth == 2 and \
+                    bool(_JOURNAL_ITEM.fullmatch(erel))
+                if shaped and not record:
+                    out.append(f"{path}: not a card record file (cards/<id>/"
+                               "<N>/<rev>.card<k>.json)")
+                elif record and erel not in named:
+                    out.append(
+                        f"{path}: orphan card record, named by no card: line "
+                        "in items/ or archive/ (a raise that stopped between "
+                        "the file and its line): run the same raise again, "
+                        "which adopts a file with its exact bytes; else "
+                        "delete it (an orphan from a stopped write), then "
+                        "run the raise again")
+                out.extend(_lint_card_file(root, path, erel, record))
+    return out
+
+
+def card_problems(root, items, texts):
+    """Every card-record finding of lint (3b51 W4), each a problem,
+    escaped so no name reaches the terminal raw."""
+    return [_name_safe(p) for p in
+            _lint_card_lines(root, items, texts) + _lint_cards_tree(root)]
+
+
 def cmd_lint(args):
     # a deprecated name is a migration state, not a defect: stderr, and the
     # exit is unchanged
@@ -7105,6 +7293,9 @@ def cmd_lint(args):
                     f" fix it with `wi set {it.id} {key} ...`")
         for n, why in secret_findings(texts[it.path]):
             problems.append(f"{it.path}:{n}: {why}")
+    # 3b51 W4: card records, paired across items/ and archive/, shaped
+    # and secret-scanned under cards/
+    problems.extend(card_problems(root, items, texts))
     # cycle detection over deps
     state = {}
 
@@ -7154,8 +7345,11 @@ def cmd_lint(args):
             problems.append(line)
         else:
             print(line, file=sys.stderr)
+    # a name or message the terminal's encoding cannot carry is written
+    # \xNN, never an encoding error
+    enc = sys.stdout.encoding or "utf-8"
     for p in problems:
-        print(p)
+        print(p.encode(enc, "backslashreplace").decode(enc))
     if problems:
         return 3
     print(f"lint clean: {len(items)} items")
