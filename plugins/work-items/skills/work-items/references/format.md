@@ -1177,7 +1177,7 @@ with its exact bytes, named by no `card:` line in `items/` or `archive/`, and ad
 writing only the item's lines. A file named by a `card:` line is immutable (exit 3: give the
 revision a new `rev`); an unnamed one with other bytes, or anything at that path that is not
 a regular file, is refused (exit 3), with the fix: delete the orphan, then run the raise
-again.
+again. `wi lint` names such a file (*Lint*, below).
 
 **The commit.** A store that is its own repo gets one commit holding the file, the item and
 `store.yaml`; in a store the repo around it tracks, `$WI commit` commits them.
@@ -1226,6 +1226,38 @@ symbolic link. An older `wi` also exits 2 on `--card`, from its argument parser:
 tells them apart by the message, `show --card`'s opening *decision N has no card record*, the parser's
 holding *unrecognized arguments*. An id that matches no item, or more than one, exits 2 as every
 `show` does (*no item matching*, *ambiguous id*).
+
+**Lint.** `wi lint` checks card records three ways, read-only (no lock, nothing written),
+over every item in `items/` and `archive/` and every entry under `cards/`:
+
+- **Pairing.** Every indented line opening `card:` outside a fence is a full match of the
+  `card:` line's form (else *malformed card: line*, named by the item's path and line, never
+  quoted) and sits in a `decision N:` block (else *orphan card: line*). The file it names is
+  checked as *Reading a record* checks it: the path is this item's and this block's, no level
+  and not the file is a symbolic link, the file is a regular file of at most 256 KB, parses,
+  and its `n`, `rev` and `format` are the line's. Every record file under `cards/` is named
+  by at least one `card:` line in `items/` or `archive/`, so an archived item's records pair
+  as they did before the move; an unnamed one is an *orphan card record*, with the fix: run
+  the same raise again, which adopts a file with its exact bytes (*A stopped raise*), else
+  delete it, then run the raise again.
+- **Shape.** Every entry under `cards/` is `cards/<id>/<N>/<name>.json` as the store's commit
+  reads it: `cards`, `<id>` and `<N>` real directories, `<id>` not starting with a dot, `<N>`
+  digits, and the file a regular file whose name does not start with a dot. A symbolic link
+  at any level is reported and never followed: its target is not read. Any other entry (a
+  dotted name, a deeper level, a non-JSON file, a FIFO or other non-regular file) is *not a
+  card record file* (or *directory*); a stray directory is still walked for the secret scans.
+  Before a record file is read, its three levels are walked again, each lstat-ed.
+- **Secrets.** Both scans of a raise run over every regular file under `cards/`: every line
+  (§ Secret rule), reported `<path>:<line>: <why>` as items are; and, for a `.json` file that
+  parses as one strict JSON object, every decoded string value whole, keys too (the list
+  items under a key as a raise scans them), reported `<path>: <JSON path> line <k>: <why>`
+  (`options[1].plan line 2`). A finding names the path and the key or JSON path, never the
+  value. A file over 256 KB is a problem, and only its first 256 KB are scanned.
+
+Each finding is a problem (exit 3), as every `lint` finding is. A path or name in a finding
+is printed escaped, so no file name reaches the terminal raw: control and format characters,
+the line and paragraph separators, newline and tab as `\uXXXX`, and a byte that is not UTF-8
+as `\xNN`.
 
 ## Closed: `closed N:`
 
@@ -1568,6 +1600,9 @@ The `=` forms take a kebab-case key (`db-pass=…`) and `pw` (`pw=…`).
   `Token`; and, in a plain path, a long one-case letter segment
   (`/opt/FAKESECRETVALUEXYZ`) or a short lowercase-and-digit one
   (`/usr/bin:/hunter22`), which pass as directory names.
+
+`wi lint` runs the same scans over every file under `cards/`, and over each decoded string
+value of a record (§ Card records, *Lint*).
 
 `wi note` refuses, writing nothing, a line lint would flag. Lint's shapes
 are a floor, not every secret: the path-and-key rule is the guard.
