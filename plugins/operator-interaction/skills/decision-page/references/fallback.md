@@ -27,7 +27,8 @@ first); this file sets only the layout.
   line; there is no card-level effect). There is no Rec line: the recommended option is the
   bold one.
   Each card also gets its options' table: a row per option, then the Wait row; Effect, Reach,
-  Undo, Cost, each option's own.
+  Undo, Cost, each option's own, then Pros and Cons, its one-line `pro` and `con` (as the
+  page's rows under each option).
 - A doc cannot toggle a level, so each part shows one rendition. **Context** is at its top
   level, its high in `detail` when it has one: that high holds the facts a cold reader has
   lost (the `decisions` skill's `references/card-record.md` § Levels), and a doc reader has no

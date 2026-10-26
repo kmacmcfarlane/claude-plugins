@@ -31,7 +31,9 @@ recommendation, `(recommended)`, or `(b) is recommended`); an `impact` without i
 reach as text, or with an undo or cost that is not text; an `open` that is not a list of text;
 an `assume` that is not a list of `{rests, tw}`, each non-empty text;
 an option but (z) with no effect; on a ⚠ card, an option but (z) with no reach; an option
-field that is not text; a `oneway` that is not true or false; an option flagged `oneway: true`
+field that is not text; a `pro` or `con` on more than one line; a `pros` or `cons` that is not a
+list of text, holds more than five points or a point that is not text, or is empty on an option
+but (z); a `oneway` that is not true or false; an option flagged `oneway: true`
 without its undo; an `act` on (z), or one that is not a non-empty list of steps as text, a step
 holding a fill-in placeholder (an angle-bracketed word with no spaces, such as `<dir>` or
 `<path>`), or a step holding a line break; a `label` that is not `{id, name}`, the id one word
@@ -104,8 +106,11 @@ Each record field maps to a part of the `decisions` skill's card (its `reference
   (*later:*, *reach:*, *undo:* marked *⚠ undo:* when an option is flagged one-way, *cost:*);
   then `ifleft`, `roundcosts` and `ifunanswered`;
 - the options, each its letter and `title`, the recommended one bold with a *recommended*
-  pill, its `line` after the page's label, its `act` as **To act on (x):** under it, and its
-  **More**: its `text` at its fullest level, then its Effect, Reach, Undo and Cost ((z)'s
+  pill, its `line` after the page's label (*because:* on the recommended option, *if chosen:*
+  on every other but (z), *if left:* on (z)), then its `pro` and `con` as two rows under it,
+  always visible, labelled **Pros** and **Cons** in the facet label's style (as Effect and
+  Reach are labelled), each in the label column with its text after it and no colon; then its
+  `act` as **To act on (x):** under it, and its **More**: its `text` at its fullest level, then its Effect, Reach, Undo and Cost ((z)'s
   effect is its Wait). On a ⚠ card the facets come first and every option's **More** but (z)'s
   starts open;
 - the recommendation is marked on its option (bold, the *recommended* pill and *because:*)
@@ -155,7 +160,8 @@ from). The page ignores a `detail` key it does not know; the runner lints it.
 
 **Size.** The flat part of a card (title, Impact, TLDR, option titles and one-liners) stays
 near 150 words; the basis reason sits in the closed Assumptions fold, so it is a fold part,
-counted in the card in all at its top level and not in the flat part; the folds carry the rest. `context` and an option's `act` are
+counted in the card in all at its top level and not in the flat part; each option's Pros and
+Cons rows count in the card in all too, not in the flat part; the folds carry the rest. `context` and an option's `act` are
 outside that budget: what the operator needs to read the card, and to act on it, is never
 folded away. Context's summary is one or two sentences, typically 30–60 words (the runner
 lints past ~60); a term that needs a paragraph has its detail in its levels or a fold, with
@@ -213,8 +219,8 @@ or on its text (never on a link or a control, nor while text is selected, so it 
 copied); the folds (Open questions and Assumptions above the Impact, Background and
 Dependencies after the answer) keep their order and stay closed; each option has a **More** button at its right, outside its label, which shows the
 option in full. There is no Options in full fold: it repeated each option's **More** (the
-operator, 2026-10-14). The basis word, the titles, the one lines, `act`, and the round and
-default lines are static. A `⚠ one-way` card is the decisions skill's block: the card's
+operator, 2026-10-14). The basis word, the titles, the one lines, the Pros and Cons rows,
+`act`, and the round and default lines are static. A `⚠ one-way` card is the decisions skill's block: the card's
 essentials plus each option's facets, unfolded, so its options' **More** open from the start.
 It gets no special control: the read-back of a one-way pick happens in chat, when the answers
 are read back.
@@ -224,7 +230,8 @@ don't display it*). A part, facet or field that is missing, blank, or says only 
 `none.`, `n/a`, `n/a.` or a lone dash (trimmed, any case) is left off
 the page, by one test in the template: a `dep` (no Dependencies fold), an `open` list (no Open
 questions fold), an Impact `cost`, at every level, an option's effect, reach or cost, an
-`evidence`, `ifleft`, `roundcosts`, `ifunanswered`, an option's one line. A writer may simply
+`evidence`, `ifleft`, `roundcosts`, `ifunanswered`, an option's one line, its `pro` or `con`
+(a none one has no row). A writer may simply
 leave such a field out; the optional ones were always optional. Shown whatever they say,
 because their none is a statement: the required Impact facets (`wait`, `reach`) and an `undo`
 when given (*undo: none* says an option is one-way), each option's Undo when given, and the

@@ -169,7 +169,7 @@ class WriterDigest(unittest.TestCase):
         self.assertEqual(required_problems(self.record, self.digest, "A card"), [])
         self.assertGreaterEqual(len(keyed(section(self.record, "A card"), 2)), 26)
         self.assertEqual(required_problems(self.record, self.digest, "An option"), [])
-        self.assertGreaterEqual(len(keyed(section(self.record, "An option"), 2)), 11)
+        self.assertGreaterEqual(len(keyed(section(self.record, "An option"), 2)), 15)
 
     def test_the_v5_fields_are_listed(self):
         card = keyed(section(self.digest, "A card"), 1)
@@ -192,6 +192,19 @@ class WriterDigest(unittest.TestCase):
             self.assertNotIn("costly but reversible", text)
         gone = self.digest.replace("| `label` | optional |", "| label | optional |")
         self.assertIn("A card: `label` missing", required_problems(self.record, gone, "A card"))
+        # the option's inline Pros and Cons (F4), owed by a new card but on (z), and the points in full
+        option = keyed(section(self.digest, "An option"), 1)
+        for k in ("pro", "con"):
+            self.assertEqual(option.get(k), "of a new card, but on (z)")
+        for k in ("pros", "cons"):
+            self.assertEqual(option.get(k), "optional")
+        gone = self.digest.replace("| `con` | of a new card, but on (z) |", "| con | of a new card, but on (z) |")
+        self.assertIn("An option: `con` missing", required_problems(self.record, gone, "An option"))
+        req = self.digest.replace("| `pro` | of a new card, but on (z) |", "| `pro` | optional |")
+        self.assertTrue(required_problems(self.record, req, "An option"))
+        # the page's label before a non-recommended option's line is if chosen: in both
+        for text in (self.digest, self.record):
+            self.assertNotIn("not recommended because:", text)
 
     def test_card_field_mutations(self):
         gone = self.digest.replace("| `basis` | to render |", "| basis | to render |")
@@ -256,6 +269,12 @@ class WriterDigest(unittest.TestCase):
         gone = self.digest.replace("| `assume` | `depth:` |", "| assume | `depth:` |")
         self.assertIn("lint `assume` missing", lint_problems(self.js, gone))
         moved = self.digest.replace("| `assume` | `depth:` |", "| `assume` | `shape:` |")
+        self.assertTrue(lint_problems(self.js, moved))
+        # the trade-offs lint (F4): its row, and its start
+        self.assertEqual(runner_lints(self.js)["tradeoffs"], {"shape:"})
+        gone = self.digest.replace("| `tradeoffs` | `shape:` |", "| tradeoffs | `shape:` |")
+        self.assertIn("lint `tradeoffs` missing", lint_problems(self.js, gone))
+        moved = self.digest.replace("| `tradeoffs` | `shape:` |", "| `tradeoffs` | `depth:` |")
         self.assertTrue(lint_problems(self.js, moved))
 
     def test_thresholds(self):

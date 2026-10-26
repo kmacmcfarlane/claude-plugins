@@ -101,6 +101,17 @@
           "effect": "Nothing changes; the maintainer publishes by hand.",
           "reach": "The maintainer who publishes.",
           "cost": "About two failed publishes a month.",
+          "pro": "no setup, and the maintainer keeps full control of each publish",
+          "con": "publishing still waits on one laptop and one person",
+          "pros": [
+            "Nothing to set up or learn",
+            "The maintainer checks every page before it goes out"
+          ],
+          "cons": [
+            "Stale-cache failures stay at about two a month",
+            "Publishing stops when the maintainer is away",
+            "A broken page is found by readers, not by a build"
+          ],
           "detail": [
             [
               "Keep building on the maintainer's laptop, publishing by hand",
@@ -132,6 +143,18 @@
           "effect": "Every merge to main builds and publishes the site from CI.",
           "reach": "Every docs contributor.",
           "cost": "About 4 minutes of CI per merge.",
+          "pro": "every merge publishes within minutes, with no one's laptop involved",
+          "con": "a deploy token to set up, and about 4 minutes of CI per merge",
+          "pros": [
+            "Publishing no longer waits for one person",
+            "A failed build stops the publish instead of shipping a broken page",
+            "Every contributor's merge goes live the same way"
+          ],
+          "cons": [
+            "A deploy token has to be created and kept in CI",
+            "About 4 minutes of CI per merge",
+            "The pages move to new addresses, which [[42]] settles"
+          ],
           "act": [
             "Open `https://ci.example.com/docs-site/settings/secrets` and add a secret named `DOCS_DEPLOY_TOKEN`, holding the deploy token from the docs host's account page. The token goes there only, never into chat or this page.",
             "Pick (b) here and write done in your words, or say done in chat: I switch publishing to CI and tell you when the first CI publish is live."
@@ -169,7 +192,16 @@
           "title": "Decide later",
           "line": "[[42]] and [[43]] wait",
           "text": "Decide later.",
-          "effect": "The local build stays until you answer; [[42]] and [[43]] wait."
+          "effect": "The local build stays until you answer; [[42]] and [[43]] wait.",
+          "pro": "nothing changes while the other two questions are thought through",
+          "con": "the cache failures continue, and [[42]] and [[43]] stay blocked",
+          "pros": [
+            "No setup work this week"
+          ],
+          "cons": [
+            "The stale-cache failures continue meanwhile",
+            "[[42]] and [[43]] cannot be answered"
+          ]
         }
       ],
       "detail": {
@@ -485,6 +517,16 @@
           "effect": "Twelve redirects are added to the site config before the first CI publish.",
           "reach": "Readers following old links, who land on the new pages.",
           "cost": "Twelve lines of redirect config to keep.",
+          "pro": "every old link and bookmark still lands on the right page",
+          "con": "twelve lines of redirect config to keep for as long as the old links matter",
+          "pros": [
+            "Readers following old links land on the new pages",
+            "Search engines carry the old pages' ranking over to the new ones"
+          ],
+          "cons": [
+            "Twelve more lines of site config to maintain",
+            "A later page move has to update the redirects too"
+          ],
           "detail": [
             [
               "Add a redirect for each of the twelve old URLs",
@@ -516,6 +558,16 @@
           "reach": "External readers and every site linking to the old pages.",
           "undo": "Cannot be fully undone: once search engines drop the old URLs, redirects added later do not win the ranking back.",
           "cost": "Nothing now.",
+          "pro": "no extra config to write or keep",
+          "con": "old links break for good, and the lost search ranking does not come back",
+          "pros": [
+            "The site config stays as it is"
+          ],
+          "cons": [
+            "Every external link to the twelve pages returns not found",
+            "Search engines drop the old addresses, and their ranking with them",
+            "Redirects added later do not win the ranking back"
+          ],
           "oneway": true,
           "detail": [
             [
@@ -550,7 +602,12 @@
           "title": "Decide later",
           "line": "the first CI publish waits",
           "text": "Decide later.",
-          "effect": "The first CI publish waits for this answer."
+          "effect": "The first CI publish waits for this answer.",
+          "pro": "the old addresses keep working while the laptop build stays",
+          "con": "the first CI publish cannot go out until this is answered",
+          "cons": [
+            "The move to CI publishing waits on this answer"
+          ]
         }
       ],
       "detail": {
@@ -811,7 +868,16 @@
           "text": "Keep the current blue for links and headings. Nothing changes for readers, and the screenshots in the guides stay accurate. The site stays a different colour from the logo, as it has been since launch.",
           "effect": "No visual change; the site stays blue.",
           "reach": "Readers of the docs site.",
-          "cost": "Nothing."
+          "cost": "Nothing.",
+          "pro": "no visual change, and no screenshots to retake",
+          "con": "the site stays off the logo's colour",
+          "pros": [
+            "Readers see the site they know",
+            "The guide screenshots stay current"
+          ],
+          "cons": [
+            "The site and the logo keep different colours"
+          ]
         },
         {
           "k": "b",
@@ -820,14 +886,26 @@
           "text": "Switch links and headings to the logo's green at the first CI publish. The site matches the logo and the product's other sites. The screenshots in the guides still show the blue until they are retaken, which reads as dated to a careful reader.",
           "effect": "Links and headings turn the logo's green from the first CI publish.",
           "reach": "Readers of the docs site, and the guide screenshots.",
-          "cost": "The guide screenshots look dated until they are retaken, about an hour."
+          "cost": "The guide screenshots look dated until they are retaken, about an hour.",
+          "pro": "the site matches the logo from the first CI publish",
+          "con": "the guide screenshots look dated until they are retaken, about an hour",
+          "pros": [
+            "Links and headings match the logo",
+            "It costs nothing extra while CI applies the theme"
+          ],
+          "cons": [
+            "The guide screenshots show the old blue until retaken",
+            "Readers used to the blue see a change"
+          ]
         },
         {
           "k": "z",
           "title": "Decide later",
           "line": "the blue stays",
           "text": "Decide later.",
-          "effect": "The site keeps the blue meanwhile."
+          "effect": "The site keeps the blue meanwhile.",
+          "pro": "the colour can be chosen once the CI build is settled",
+          "con": "the site keeps the blue, off the logo, meanwhile"
         }
       ],
       "q": "Which accent colour should the docs site use?"

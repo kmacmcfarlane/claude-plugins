@@ -22,8 +22,12 @@ today.*
 **Impact:** later: at 17:45 the lease lapses, the snapshot is lost and the backup starts over (about 3 hours) · reach: tonight's backup, and shared storage the reporting team writes to · ⚠ undo: (b) start the backup again, about 3 hours
 - **(a) Resume now**
   *→ the snapshot finishes in about 15 minutes · reach: shared storage, 40% free*
+  *pros: the backup completes tonight, with no restart*
+  *cons: shared storage stays tight, 40% free, while it finishes*
 - (b) Abort the backup
   *→ releases the lease; no backup tonight unless it is started again · reach: tonight's backup only · ⚠ undo: start it again, about 3 hours*
+  *pros: the lease and its storage are freed at once*
+  *cons: no backup tonight, and a restart costs about 3 hours*
 - (z) Decide later — *it waits; at 17:45 the lease lapses and the snapshot is lost*
 
 ▸ Background — why now: the storage lease lapses at ~17:45 (90 min from 16:15), and the snapshot is lost with it.
@@ -69,8 +73,12 @@ today.*
 **Impact:** later: the dashboard keeps its placeholder units · reach: the dashboard's readers
 - (a) MiB
   *→ sizes match what the operating system's tools report*
+  *pros: sizes agree with what the operating system's tools show*
+  *cons: the dashboard and the bill differ by about 5%*
 - (b) MB
   *→ sizes match the storage provider's bill*
+  *pros: sizes agree with the storage provider's bill*
+  *cons: sizes read about 5% above the operating system's tools*
 - (z) Decide later — *it waits; the dashboard keeps its placeholder units until you choose (one config line)*
 
 ▸ Background — why now: the new dashboard needs one unit before it ships.
@@ -98,11 +106,17 @@ today.*
 **Impact:** later: no preview for this afternoon's design review · reach: the preview site only
 - **(a) Retry now**
   *→ the preview shows the change in about 4 minutes if it succeeds; if it fails, no preview yet · cost: about 4 minutes*
+  *pros: the design review sees the change itself*
+  *cons: if the registry is still slow, 4 minutes go and there is no preview*
 - (b) Deploy yesterday's build instead
   *→ the preview shows the old page, without the search-page change*
+  *pros: a preview is certain within minutes*
+  *cons: the design review sees the old page, not the change*
 - (z) Decide later — *it waits; no preview until someone deploys*
 
 ▸ Background — why now: the design review is this afternoon, and it needs a preview.
+
+*Gallery note — pros and cons: under each option's impact line sit its `*pros:*` and `*cons:*` lines, labelled as its facets are, one line each: what the option gains, and what it costs or risks. The recommended (a) gives its con too, since a recommendation with no downside is not weighed; (b)'s con is its own cost, not "(a) is better". (z) stays one line. On the answer page the same two lines are each option's **Pros** and **Cons** rows.*
 
 ---
 
@@ -115,8 +129,12 @@ today.*
 **Impact:** later: storage keeps filling, about 2% a day · reach: staging only; nothing restores from it · ⚠ undo: (a) none — a deleted snapshot cannot be recovered
 - **(a) Delete it**
   *→ frees 120 GB of staging storage · reach: staging only · ⚠ undo: none, it cannot be recovered*
+  *pros: frees 120 GB, so staging stops nearing its quota*
+  *cons: the snapshot is gone for good, should anyone need it*
 - (b) Keep it
   *→ storage stays at 85%; a later snapshot may fail when it fills*
+  *pros: the snapshot stays, should the migration test need running again*
+  *cons: storage keeps filling, and a later snapshot may fail*
 - (z) Decide later — *it waits; storage keeps filling by about 2% a day*
 
 ▸ Background — why now: staging storage is at 85% of its quota and fills about 2% a day.
@@ -161,10 +179,16 @@ costs change every time. The first time in a session, a card:*
 **Impact:** later: the change stays unmerged · reach: every job the scheduler retries · cost: (a) up to $9 more, about two rounds
 - **(a) Raise to $30, about two rounds here**
   *→ the counter is saved with the job, so a failing job stops after five tries even across a restart · cost: about $4 a round, up to $9 more*
+  *pros: the restart bug is fixed before the change ships*
+  *cons: up to $9 more, and the change lands a round later*
 - (b) Ship as is
   *→ it lands now; after a restart the counter starts from zero, so a job that fails on every run is retried forever · reach: every job that fails on every run*
+  *pros: it lands now, with no more spend*
+  *cons: a job that fails on every run is retried forever after a restart*
 - (c) Park it
   *→ the retry policy stays as it is until someone takes the change up*
+  *pros: no spend and no risk now*
+  *cons: the retry policy keeps its flaws until someone takes it up*
 - (z) Decide later — *it waits, unmerged; nothing lands*
 
 **If left:** *one medium finding: after a restart the retry counter starts again from zero, so a job that fails on every run is retried forever instead of stopping after five tries. The review names the cause but not the fix: the count has to be saved with the job.*
@@ -200,10 +224,16 @@ line (no effect), options, their impacts, the label, and no recommendation.
 **Impact:** later: the release slips past Friday if undecided by Thursday noon · reach: every user of the report · ⚠ undo: (a) a follow-up release removes the section, after users have seen it
 - (a) Ship it
   *→ users see the report on Friday, with the waived section as is · reach: every user of the report · ⚠ undo: a follow-up release, after users have seen it*
+  *pros: users get the report on Friday, as planned*
+  *cons: users read the waived section unchecked; a fix reaches them only after*
 - (b) Hold it
   *→ the report reaches users once the check passes, about a day later · cost: about a day's work*
+  *pros: users get only a checked report*
+  *cons: the report reaches users about a day late*
 - (c) Ship without the waived section
   *→ users get a shorter report · reach: every user of the report · cost: about an hour's work*
+  *pros: users get it on Friday, with nothing unchecked in it*
+  *cons: users miss the waived section, and it costs about an hour*
 - (z) Decide later — *it waits; the release slips past Friday if undecided by Thursday noon*
 
 ▸ Background — why now: the release is Friday, and it slips if this is undecided by Thursday noon.
@@ -243,8 +273,12 @@ line (no effect), options, their impacts, the label, and no recommendation.
 **Impact:** later: the listing page stays slow · reach: the listing page and its readers
 - **(a) Fix the query first**
   *→ an index lets the database find the listed products without reading every row; the page may load fast with no cache · cost: about half a day*
+  *pros: the page may be fast with no cache to keep fresh*
+  *cons: about half a day before anything is faster*
 - (b) Add the cache now
   *→ repeat reads are fast this week; the first read of each listing, and every read after a change, still takes about 2 seconds*
+  *pros: repeat reads are fast this week*
+  *cons: the slow query stays, and first reads still take about 2 seconds*
 - (z) Decide later — *it waits; reads stay slow*
 
 ▸ Background — why now: the listing page loads in about 2 seconds, and the performance review is next week.
@@ -282,8 +316,12 @@ the list: 41, 43 and 45 are unchanged, so they are not rendered again and their 
 **Impact:** later: no notice is published until you choose · reach: the two partners still on `/v1`, through the header and the release notes
 - **(a) "deprecated"**
   *→ the notice matches the three before it*
+  *pros: the notice reads like the three before it*
+  *cons: it says less plainly that the endpoint will go*
 - (b) "scheduled for removal"
   *→ says more plainly that it will go; the only notice worded this way*
+  *pros: partners read plainly that the endpoint will go*
+  *cons: the only notice worded unlike the rest*
 - (z) Decide later — *it waits; no notice is published until you choose*
 
 ▸ Background — why now: the notice goes out with the API cleanup release on Thursday.
@@ -396,8 +434,12 @@ status page (a preference). The operator replies "ok 51-55".*
 **Impact:** later: the branch stays unopened; nothing is lost · reach: every job the scheduler retries
 - (a) Open it now
   *→ a slowdown the benchmark would show could be approved before the result arrives · reach: every job the scheduler retries*
+  *pros: review starts about 25 minutes sooner*
+  *cons: a slowdown could be approved before the benchmark shows it*
 - **(b) Wait for the benchmark**
   *→ the change merges only with its speed known · cost: about 25 minutes*
+  *pros: the change is reviewed with its speed known*
+  *cons: the pull request opens about 25 minutes later*
 - (z) Decide later — *it waits*
 
 **If unanswered:** *I leave the branch as it is, unopened, and carry on with the next task. Nothing is lost.*
@@ -460,8 +502,12 @@ waited* says whether the impact changed.*
 **Impact:** later: the docs site build stays on hold · reach: the docs site's readers
 - (a) Vendor it
   *→ adds 400 KB to the repo; the font still loads if the CDN goes down again*
+  *pros: the font loads even when the CDN is down*
+  *cons: 400 KB more in the repo, and font updates by hand*
 - **(b) Fetch it**
   *→ no growth in the repo; when the CDN is down, pages fall back to a system font · reach: the docs site's readers, whenever the CDN is down*
+  *pros: the repo stays small, and the CDN keeps the font current*
+  *cons: pages show a system font whenever the CDN is down*
 - (z) Decide later — *it waits; the build stays on hold*
 
 ▸ Background — why now: the docs site build is on hold until the font's source is settled.
@@ -474,8 +520,12 @@ waited* says whether the impact changed.*
 **Impact:** later: loosely typed code keeps growing · reach: everyone writing code in the repo
 - **(a) Turn it on**
   *→ 31 warnings fixed, strict checks from now on · reach: everyone writing code here · cost: about an hour of my time*
+  *pros: type errors are caught before they merge*
+  *cons: about an hour now, and stricter checks on every change after*
 - (b) Leave it off
   *→ no work now; the loosely typed code keeps growing*
+  *pros: no work and no new checks now*
+  *cons: the loosely typed code keeps growing, and so does the later fix*
 - (z) Decide later — *it waits; the setting stays off*
 
 ▸ Background — why now: each week on the loose setting adds more loosely typed code to fix.
@@ -553,8 +603,12 @@ those records. The decisions block stays last.*
 **Impact:** later: the install section says "coming soon" · reach: everyone installing the command-line tool
 - **(a) One file**
   *→ users download and run it; each new version is downloaded again by hand*
+  *pros: nothing to publish, and no package manager needed*
+  *cons: users fetch each new version by hand*
 - (b) A package
   *→ users install it with the package manager, and updates come with it · reach: users who have the package manager · cost: about a day to publish*
+  *pros: users get updates with their other packages*
+  *cons: about a day to publish, and only for users with the package manager*
 - (z) Decide later — *it waits; the install section says "coming soon"*
 
 ▸ Background — why now: the command-line guide's install section waits on it.
@@ -668,8 +722,12 @@ card, in its **To act on (a):** part.*
 **Impact:** later: the sign-in fix stays unreleased · reach: (a) the staging site only; (b) everyone who signs in, if the fix is wrong
 - **(a) Run it now**
   *→ the fix goes out today if it passes · reach: the staging site only · cost: about 5 minutes of your time*
+  *pros: a real sign-in proves the fix before it ships*
+  *cons: about 5 minutes of your time*
 - (b) Release on the automated tests alone
   *→ the fix goes out unchecked for a real account; if it is wrong, real users cannot sign in until a revert release · reach: everyone who signs in, if the fix is wrong*
+  *pros: the fix ships without waiting on you*
+  *cons: if it is wrong, real users cannot sign in until a revert*
 - (z) Decide later — *it waits; the fix stays unreleased*
 
 **To act on (a):**
@@ -704,8 +762,12 @@ the operator opens the plan.*
 **Impact:** later: the link checker keeps failing the docs build · reach: the docs site and its readers
 - **(a) Remove the broken links and the unused images** (level 1 in the cleanup plan)
   *→ the docs build passes again · reach: 40 pages, no wording changed*
+  *pros: the docs build passes this week, with no wording changed*
+  *cons: the 12 pages still send readers to steps that no longer work*
 - (b) Also rewrite the pages that cite the retired guide (level 2 in the plan)
   *→ those 12 pages point readers at the current guide instead of steps that no longer work · reach: three teams' pages · cost: about a day*
+  *pros: readers of those 12 pages get steps that work*
+  *cons: about a day more, and three teams' pages change*
 - (z) Decide later — *it waits; the docs build keeps failing on the broken links*
 
 ▸ Background — why now: the link checker fails the docs build until the cleanup lands.
@@ -737,8 +799,12 @@ since the operator answers by the review's labels; the number stays the handle.*
 **Impact:** later: the merge waits on this finding · reach: the upload service and every client that uploads
 - **(a) Check the declared size first**
   *→ a 2 GB upload is refused at once; before, one such upload filled the server's memory and stalled every other upload on it · cost: about an hour*
+  *pros: one oversize upload can no longer stall the server*
+  *cons: about an hour more before the change merges*
 - (b) Leave it for a follow-up
   *→ the change merges reading first and checking after; an oversize upload still stalls the server until the follow-up lands*
+  *pros: the change merges now*
+  *cons: an oversize upload still stalls the server until the follow-up lands*
 - (z) Decide later — *it waits; the merge waits on this finding*
 
 ▸ Background — why now: the merge waits on this finding.
@@ -751,8 +817,12 @@ since the operator answers by the review's labels; the number stays the handle.*
 **Impact:** later: the merge waits on this finding · reach: the upload service and the disks it writes to
 - **(a) Add a backoff, doubling to 30 seconds**
   *→ each retry waits twice as long as the last; before, a disk that failed every write drew hundreds of writes a second until it was taken out · cost: about two hours*
+  *pros: a failing disk draws a few writes a minute, not hundreds a second*
+  *cons: an upload may wait up to 30 seconds between tries*
 - (b) Cap the retries at five, no wait
   *→ the storm stops after five tries in a few milliseconds, and the upload fails · reach: clients whose upload meets a briefly busy disk*
+  *pros: the storm stops within milliseconds*
+  *cons: an upload fails on a disk that was only briefly busy*
 - (z) Decide later — *it waits; the merge waits on this finding*
 
 ▸ Background — why now: the merge waits on this finding, and a failing disk still draws a retry storm until then.
@@ -764,8 +834,12 @@ since the operator answers by the review's labels; the number stays the handle.*
 **Impact:** later: the temp directory keeps growing, about 40 GB a week, until the disk fills · reach: the upload servers' disks
 - **(a) Delete it when the upload aborts**
   *→ the temp directory holds only uploads in progress · cost: about an hour*
+  *pros: no temp file outlives its upload*
+  *cons: a crash during the abort can still leave a file behind*
 - (b) A nightly sweep of files older than a day
   *→ the directory still grows through each day, by at most a day's aborted uploads · cost: about an hour*
+  *pros: one sweep catches every leftover, crashes included*
+  *cons: aborted files pile up for up to a day*
 - (z) Decide later — *it waits; the temp directory keeps growing until the disk fills*
 
 ▸ Background — why now: the merge waits on this finding, and the temp directory grows about 40 GB a week.
@@ -811,8 +885,12 @@ Impact names, with the mechanism spelled out and the term glossed.*
 **Impact:** later: the next major release keeps the archived types · reach: every partner app that imports the client, and its build
 - **(a) Switch to the standard types in the next major release**
   *→ an app no longer installs the archived library to call the client; before, it had to, at the exact version the client pins, and could install no other · reach: every partner app, one change each at upgrade · cost: about a day*
+  *pros: apps stop depending on a library that gets no security fixes*
+  *cons: every partner app makes one change when it upgrades*
 - (b) Keep the archived types
   *→ every app keeps installing the archived library at the client's pinned version; a security fix for it never comes, and an app that needs another version of it cannot build · reach: every partner app*
+  *pros: no partner app changes anything now*
+  *cons: the archived library never gets a security fix, and version clashes stay*
 - (z) Decide later — *it waits; the next major release keeps the archived types*
 
 ▸ Background — why now: the next major release is being planned, and only a major release allows this change.

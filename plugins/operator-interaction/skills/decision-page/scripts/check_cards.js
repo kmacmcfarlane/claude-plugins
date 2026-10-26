@@ -36,7 +36,9 @@
         page does not show; what a new card owes (why, whyask, reason) missing; a card with a
         recommendation and no assumptions (assume);
       - one-way options: a ⚠ card with no option flagged oneway; a flagged option while the
-        Impact carries no undo.
+        Impact carries no undo;
+      - trade-offs: an option but (z) with no one-line pro or con (the inline Pros and Cons rows);
+        a recommended option with no con; a card with two or more real options and none.
       Lints are proxies.
 
    Prints one line per problem. Exit 0 clean; 1 on a refusal, or on a file or template that
@@ -56,9 +58,9 @@ function loadPage() {
   const start = html.indexOf("<script>"), end = html.indexOf(END_MARK);
   if (start < 0 || end < start) fail("the template has no page-free part (its script or the end-of-page-free-part marker is missing): " + tpl);
   try {
-    const page = vm.runInNewContext(html.slice(start + "<script>".length, end) + "\n;({check, recordProblems, bgFirst, assumeOf})", {});
+    const page = vm.runInNewContext(html.slice(start + "<script>".length, end) + "\n;({check, recordProblems, bgFirst, assumeOf, proCon})", {});
     if (typeof page.check !== "function" || typeof page.recordProblems !== "function" || typeof page.bgFirst !== "function"
-      || typeof page.assumeOf !== "function") throw new Error("no check(), recordProblems(), bgFirst() or assumeOf()");
+      || typeof page.assumeOf !== "function" || typeof page.proCon !== "function") throw new Error("no check(), recordProblems(), bgFirst(), assumeOf() or proCon()");
     return page;
   } catch (e) { fail("the template's page-free part does not load: " + why(e)); }
 }
@@ -309,8 +311,9 @@ function depth(c, say) {
   if (levelsOf(c, "evidence").length && c.basis !== "none" && ev < 60) say("ev", "depth: evidence is " + ev + " words at its fullest: give the basis drill-down near 150, what was observed, inferred and assumed, with the paths and links behind each; or leave it knowingly");
   else if (ev > 225) say("ev", "depth: evidence is " + ev + " words at its fullest: keep it near 150");
   /* the card in all: the flat part and Context at their summary, the fold parts at their top level (the basis reason
-     among them), each option's detail; not act */
-  const all = words(flat(c)) + words(c.context) + bg + ev + words(topOf(c.reason, levelsOf(c, "rec"))) + words(as) + optWords;
+     among them), each option's detail and its inline Pros and Cons rows; not act */
+  const pc = opts(c).reduce((n, o) => n + words(page.proCon(o).map(r => r[1])), 0);
+  const all = words(flat(c)) + words(c.context) + bg + ev + words(topOf(c.reason, levelsOf(c, "rec"))) + words(as) + optWords + pc;
   if (all > 1350) say("all", "depth: the card is " + all + " words in all: keep it near 600–900; a small call gets a short card");
   if (c.detail && typeof c.detail === "object")
     for (const k of Object.keys(c.detail)) if (!(k in PART))
@@ -325,6 +328,25 @@ function oneway(c, say) {
     say("oneway", "oneway: a ⚠ one-way card has no option flagged one-way: set oneway: true, with its undo, on each option one-way or costly to undo; or leave it knowingly on a card the operator has answered");
   if (flagged.length && !(typeof c.impact.undo === "string" && c.impact.undo.trim()))
     say("oneway impact", "oneway: (" + flagged.join(", ") + ") is flagged one-way but the Impact carries no undo: name it there, (" + flagged[0] + ") and how it is undone, or that it cannot be");
+}
+
+/* ---- the trade-offs lint (302's feedback, F4): each option but (z) shows its one-line Pros and Cons under it. It reads
+   the rows the page shows (its own proCon: a none one is not shown). A card with two or more real options and none
+   gets one line; otherwise each option missing a row gets its own, and a recommended option with no con its own ---- */
+function tradeoffs(c, say) {
+  const real = opts(c).filter(o => o.k !== "z");
+  const rows = o => new Set(page.proCon(o).map(r => r[0]));
+  if (real.length >= 2 && real.every(o => !rows(o).size)) {
+    say("tradeoffs", "shape: none of the card's " + real.length + " options but (z) carries its pros and cons: give each a one-line pro and con (pro, con: the inline Pros and Cons rows), or leave it knowingly on an upgraded older card");
+    return;
+  }
+  for (const o of real) { const r = rows(o), isRec = c.rec === o.k;
+    if (isRec && !r.has("Cons"))
+      say("tradeoffs rec", "shape: the recommended option (" + o.k + ") has no con: say what choosing it costs or risks on its Cons row (con), so the recommendation is weighed; or leave it knowingly");
+    const miss = [r.has("Pros") ? "" : "pro", r.has("Cons") || isRec ? "" : "con"].filter(Boolean);
+    if (miss.length)
+      say("tradeoffs " + o.k, "shape: (" + o.k + ") has no " + miss.join(" and no ") + ": give it a one-line " + miss.join(" and ") + " (its inline " + miss.map(m => m === "pro" ? "Pros" : "Cons").join(" and ") + " row), or leave it knowingly on an upgraded older card");
+  }
 }
 
 /* ---- the source label's short name: plain words, about 2 to 6 ---- */
@@ -348,7 +370,7 @@ function cardTexts(c) {
   put("tldr", c.tldr);
   if (Array.isArray(c.assume)) for (const a of c.assume) if (a && typeof a === "object") put("assume", [a.rests, a.tw]);
   for (const o of opts(c)) {
-    for (const k of ["title", "line", "text", "effect", "reach", "undo", "cost"]) put("(" + o.k + ")", o[k]);
+    for (const k of ["title", "line", "text", "effect", "reach", "undo", "cost", "pro", "con"]) put("(" + o.k + ")", o[k]);
     if (Array.isArray(o.act)) put("act (" + o.k + ")", o.act);
     if (Array.isArray(o.detail)) put("detail (" + o.k + ")", o.detail);
   }
@@ -404,6 +426,7 @@ function lintCard(c, w, sh, out) {
   mech(c, say);
   depth(c, say);
   oneway(c, say);
+  tradeoffs(c, say);
   labelName(c, say);
 }
 

@@ -18,7 +18,8 @@ Each card meets the `decisions` skill's floor: what is decided in plain words, e
 glossed; its Impact (wait, reach, cost, and undo only where an option is one-way or costly to
 undo), its Reach about the system the work builds, never the process (that is its Wait); Why
 now and what it blocks; Why ask; the options, each with its consequence by its mechanism: how
-it happens, who meets it and when, and the before and after, in its own `effect`; decide later
+it happens, who meets it and when, and the before and after, in its own `effect`, and its main
+upside and downside in one line each, `pro` and `con`; decide later
 as `(z)`; the recommendation, or the labelled reason there is none; its basis, and the
 assumptions it rests on, each with its tripwire, in `assume`; what is still open, in `open`. There is no card-level effect: each option carries its own. Keep the caller's numbers.
 No ids anywhere on the page: a decision by its slug `[[N]]`, an item, series, branch or commit
@@ -106,13 +107,17 @@ Do not set `what`: it is older data only.
 |---|---|---|
 | `k` | to render | one letter |
 | `title` | to render | at most six words, verb first |
-| `line` | optional | one line read after the page's label (`because:` on the rec, `not recommended because:` on the others, `if left:` on `z`, `if chosen:` with no rec) |
+| `line` | optional | one line read after the page's label (`because:` on the rec, `if chosen:` on the others, `if left:` on `z`): write it to follow *if chosen:*; the downside goes in `con` |
 | `text` | optional | the option in full |
 | `effect` | to render, but on (z) | its own effect by its mechanism, how it happens, who meets it and when, the before and after; never a bare label; on (z), what waiting does |
 | `reach` | of a new card; to render on a ⚠ card, but (z) | who or what it reaches; ~5–25 words |
 | `undo` | with `oneway` | only on an option one-way or costly to undo: how it is undone and at what cost, or that it cannot be |
 | `oneway` | optional | `true` on each option one-way or costly to undo, which then needs its `undo`; a ⚠ card flags its one-way options |
 | `cost` | optional | its cost, where it has one |
+| `pro` | of a new card, but on (z) | one line, the main upside: shown under the option as its **Pros** row, always visible |
+| `con` | of a new card, but on (z) | one line, the main downside or risk: its **Cons** row; the recommended option always gives one |
+| `pros` | optional | `["point", …]`, 1–5 upsides in full (0–5 on `z`), weightiest first, for the option's own view |
+| `cons` | optional | `["point", …]`, 1–5 downsides in full (0–5 on `z`), weightiest first |
 | `act` | optional | `["step", …]`, when the option asks the operator to act; not on `z`; each step text on one line, no `<placeholder>`; a step names where a secret goes, never its value; a paste text holding an angle-bracketed word, or of more than one line, goes in a file named by its `/…` path |
 | `detail` | optional | `[medium, high]` levels of its `text` |
 
@@ -120,7 +125,7 @@ Do not set `what`: it is older data only.
 or a dash is left off the page (a `dep`, an `open`, a `cost`, an `evidence`, an option's reach
 or cost): leave it out rather than write none. The required Impact facets, an undo when given
 and `basis` are statements, and stay shown. Leave undo out on an option reversible at little
-cost: no undo shown reads as that. There is no Options in full fold: each option's **More**
+cost: no undo shown reads as that. A none `pro` or `con` has no row. There is no Options in full fold: each option's **More**
 shows its text at its fullest (a click steps through its levels), then its effect, reach,
 undo and cost.
 
@@ -157,7 +162,7 @@ Levels scale with the decision: a small call carries none; a wide or ⚠ one-way
 medium and high on its visible parts and on the fold items with depth to give. Each level is
 longer than the one below. Soft sizes at a part's top level: Background (`why` + `whyask`)
 ~150 words; each option's text plus its effect, reach, undo and cost ~60–120; `evidence` ~150;
-the card in all ~600–900. Never pad: a fact no source holds goes under `open`.
+the card in all ~600–900, each option's `pro` and `con` counted in it. Never pad: a fact no source holds goes under `open`.
 
 ## The runner's thresholds
 
@@ -192,7 +197,8 @@ order, or not ending `z`; a `rec` not among them, or null without `norec`; a mis
 required to render; blank `context`; a TLDR bullet, at any level, opening on Rec or
 Recommend… or saying I or we recommend; an `impact` missing wait or reach, or with an undo or
 cost not text; an `open` not a list of text; an option but (z) with no effect; on a ⚠ card an
-option but (z) with no reach; an option field not text; a `oneway` not true or false; an option
+option but (z) with no reach; an option field not text; a `pro` or `con` of more than one line;
+a `pros` or `cons` not a list of text, over five points, or empty but on `z`; a `oneway` not true or false; an option
 flagged `oneway: true` without its `undo`; an `act` on (z), not a non-empty list of text, or a
 step with a fill-in placeholder (an angle-bracketed word with no spaces) or a line break; a
 `label` not `{id, name}`; a layer's `shared` not text; a `refs` entry still open (`when`
@@ -233,6 +239,7 @@ page-wide one prints `lint: page:`.
 | `all` | `depth:` | the card long in all |
 | `key` | `depth:` | a `detail` key the page does not show |
 | `oneway` | `oneway:` | a ⚠ card with no option flagged one-way; a flagged option while the Impact carries no undo |
+| `tradeoffs` | `shape:` | an option but `z` with no shown `pro` or `con`; a recommended option with no `con`; a card with two or more options but `z` and none (an upgraded older card may leave it knowingly) |
 
 Then the cold read: list each noun phrase in the Impact, TLDR, option titles and one lines
 that names a specific thing, and point to its gloss in `context`. Of each effect, ask: does

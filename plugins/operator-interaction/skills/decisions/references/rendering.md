@@ -61,8 +61,10 @@ that order:
   order, `*→ effect · reach: … · ⚠ undo: … · cost: …*`, each facet after the first labelled
   so Reach is never read as more Effect. A facet that is empty or does not apply to that
   option (nobody beyond the work, no cost worth naming) is left out, so a small option's
-  line may be its effect alone. (z) keeps its one line: what waiting costs. A block carries
-  the same facets in its table, a row per option. A list line carries none: it stays terse.
+  line may be its effect alone. (z) keeps its one line: what waiting costs. On a card the
+  option's `*pros: …*` and `*cons: …*` lines follow its impact line (§ Card); they are not
+  facets. A block carries the same facets in its table, a row per option. A list line carries
+  none: it stays terse.
 - **Undo only where it bites.** Most options are reversible without consequence, so Undo is
   shown only on an option that is one-way or costly to undo, and marked to draw the eye:
   `⚠ undo: none — a deleted snapshot is gone`, or
@@ -296,8 +298,12 @@ Example:
 **Impact:** later: wait · reach: who or what · ⚠ undo: (a) how, at what cost, or why not
 - (a) Option
   *→ effect · reach: … · ⚠ undo: … · cost: …*
+  *pros: its main upside, in one line*
+  *cons: its main downside or risk, in one line*
 - **(b) Option**
   *→ effect · cost: …*
+  *pros: …*
+  *cons: …*
 - (z) Decide later — *what waiting costs; at a deadline, what happens then*
 
 **To act on (b):** *(only for an option that asks the operator to act)*
@@ -332,7 +338,17 @@ Example:
   only on an option that is one-way or costly to undo (§ Impact). The bullet holds the
   option's label, and any plain-words gloss it needs;
   the consequence is on the impact line. (z) stays one line, what waiting costs after the
-  dash. Only the recommended option is bold — (b) above, in its own place, not moved first
+  dash.
+- **Pros and cons**, under each option but (z), after its impact line: two italic lines,
+  labelled as its facets are, `*pros: …*` then `*cons: …*`, the option's main upside and its
+  main downside or risk, one line each (the record's `pro` and `con`; the answer page's
+  **Pros** and **Cons** rows, from the operator's feedback on decision 302: pros and cons as
+  their own labelled lines, like Effect and Reach, to make them easy to read). Every option
+  but (z) carries both; the recommended option's cons line is never left out, since a
+  recommendation with no downside is not weighed. A con is the option's own, not a reason
+  against it relative to the recommendation: it says what choosing it costs or risks. A card
+  upgraded from an older format may hold none: it shows none (nothing is invented), and gains
+  them when it is next revised. Only the recommended option is bold — (b) above, in its own place, not moved first
   (SKILL.md § Critical). With no recommendation, none is.
 - **▸ Background:** why now and why ask, in a closed fold, the first under the options, its
   summary `why now:` and the first sentence of why now (§ Folds). Inside it, **Why now:** says
