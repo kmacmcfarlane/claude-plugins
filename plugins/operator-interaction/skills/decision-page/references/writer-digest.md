@@ -109,7 +109,7 @@ Do not set `what`: it is older data only.
 | `title` | to render | at most six words, verb first |
 | `line` | optional | one line read after the page's label (`because:` on the rec, `if chosen:` on the others, `if left:` on `z`): write it to follow *if chosen:*; the downside goes in `con` |
 | `text` | optional | the option in full: an older card's view, shown in the plan's place only when it has no `plan`; a new card writes `plan` |
-| `plan` | of a new card | **Plan in brief**, 2–4 sentences, at most ~100 words: what choosing the option sets in motion; (z) too, what deciding later sets in motion. Its view opens on it |
+| `plan` | of a new card | **Plan in brief**, 2–4 sentences on one line, at most ~100 words: what choosing the option sets in motion; (z) too, what deciding later sets in motion. Its view opens on it |
 | `effect` | to render, but on (z) | its own effect by its mechanism, how it happens, who meets it and when, the before and after; never a bare label; on (z), what waiting does |
 | `reach` | of a new card; to render on a ⚠ card, but (z) | who or what it reaches; ~5–25 words |
 | `undo` | with `oneway` | only on an option one-way or costly to undo: how it is undone and at what cost, or that it cannot be |
@@ -204,7 +204,7 @@ order, or not ending `z`; a `rec` not among them, or null without `norec`; a mis
 required to render; blank `context`; a TLDR bullet, at any level, opening on Rec or
 Recommend… or saying I or we recommend; an `impact` missing wait or reach, or with an undo or
 cost not text; an `open` not a list of text; an option but (z) with no effect; on a ⚠ card an
-option but (z) with no reach; an option field not text; a `pro` or `con` holding a line break
+option but (z) with no reach; an option field not text; a `plan`, `pro` or `con` holding a line break
 (CR, LF, NEL, a line or paragraph separator, a vertical tab or form feed); a `pros` or `cons`
 not a list of text, over five points, a point holding a line break, or empty but on `z`; a `oneway` not true or false; an option
 flagged `oneway: true` without its `undo`; an `act` on (z), not a non-empty list of text, or a
@@ -248,7 +248,7 @@ page-wide one prints `lint: page:`.
 | `key` | `depth:` | a `detail` key the page does not show |
 | `oneway` | `oneway:` | a ⚠ card with no option flagged one-way; a flagged option while the Impact carries no undo |
 | `tradeoffs` | `shape:` | an option but `z` with no shown `pro` or `con`; a recommended option with no `con`; a card with two or more options but `z` and none (an upgraded older card may leave it knowingly); a `pro` or `con` past its words |
-| `plan` | `depth:` | an option, `z` included, with no shown `plan` (one line when no option has one; an upgraded older card may leave it knowingly, its view showing its `text`); a `plan` past its words |
+| `plan` | `depth:` | an option, `z` included, with no shown `plan` (one line when no option has one; an upgraded older card may leave it knowingly, its view showing its `text`); a `plan` past its words; an option with both `plan` and `text`, whose text is not shown |
 
 Then the cold read: list each noun phrase in the Impact, TLDR, option titles and one lines,
 and each option's `pro` and `con` (visible rows, linted by `count` and `named` though outside

@@ -361,7 +361,7 @@ class PlanLint(unittest.TestCase):
                 self.assertIn('lint: card 43: "17" (an option\'s view) counts things its context does not name',
                               runner(d)[1])
                 js = RUNNER.read_text()
-                off = js.replace('  terms(opts(c).flatMap(viewTexts), " (an option\'s view)");\n', "", 1)
+                off = js.replace('  terms(opts(c).flatMap(viewTexts), " (an option\'s view)", namedView);\n', "", 1)
                 self.assertNotEqual(off, js)
                 self.assertNotIn("17", runner_with(off, d)[1])
 
@@ -374,6 +374,143 @@ class PlanLint(unittest.TestCase):
         m = js.replace(" + words(page.prosCons(o).map(r => r[1])), 0);", ", 0);", 1)
         self.assertNotEqual(m, js)
         self.assertNotIn("depth: the card is", runner_with(m, d)[1])
+
+
+# ---- fix round 1: the click path, re-picking, the cold read over the view, the plan's line and the phone layout
+
+# the page's click listener and More's toggleOption, as the template holds them, beside stand-ins that record what
+# reaches the views
+CLICK_HARNESS = r"""
+const handlers = {}, calls = [];
+const document = {addEventListener: (t, f) => { handlers[t] = f; }, querySelectorAll: () => []};
+const moreView = (root, n, k) => calls.push(["more", root === document, n, k]);
+const pickView = (root, n, k) => calls.push(["pick", root === document, n, k]);
+const stepSection = () => calls.push(["step"]), setAll = () => {}, goCard = () => {}, choose = () => {};
+const hideTip = () => {}, showTip = () => {}, pinTip = () => {}, getSelection = () => "", $ = () => null;
+let tipClosedAt = -Infinity, tipPinned = false, tipFor = null, readonly = false, answers = {}, byN = new Map();
+const syncCard = () => {}, syncAll = () => {}, write = () => {};
+const FOLLOW_KEYS = new Set(["later", "tell me", "expand", "dig into", "you decide", "drop"]);
+%s
+const el = (sels, props) => Object.assign({closest(s) { return sels.includes(s) ? this : null; }, dataset: {}}, props || {});
+const click = t => { const n = calls.length; handlers.click({target: t, timeStamp: 1e6, preventDefault() {}, stopPropagation() {}});
+  return calls.slice(n); };
+const log = {
+  more: click(el(["[data-omore]", "button"], {dataset: {omore: "b", n: "41"}})),
+  repick: click(el(["input"], {type: "radio", name: "d41", value: "b", checked: true})),
+  unchecked: click(el(["input"], {type: "radio", name: "d41", value: "b", checked: false})),
+  followUp: click(el(["input"], {type: "radio", name: "d41", value: "later", checked: true})),
+};
+process.stdout.write(JSON.stringify(log));
+"""
+
+
+def click_log(html):
+    code = html[html.index("function toggleOption("):html.index("function placeholderFor(")]
+    code += html[html.index('document.addEventListener("click"'):html.index('addEventListener("resize"')]
+    out = subprocess.run([NODE, "-e", CLICK_HARNESS % code], capture_output=True, text=True, timeout=60)
+    if out.returncode != 0:
+        raise AssertionError("node failed: " + out.stderr)
+    return json.loads(out.stdout)
+
+
+def click_problems(log):
+    out = []
+    if log["more"] != [["more", True, "41", "b"]]:
+        out.append("a click on More reaches %r, not moreView(document, 41, b) alone" % log["more"])
+    if log["repick"] != [["pick", True, "41", "b"]]:
+        out.append("a click on the picked option reaches %r, not pickView(document, 41, b)" % log["repick"])
+    if log["unchecked"]:
+        out.append("a click that picks nothing reaches %r" % log["unchecked"])
+    if log["followUp"]:
+        out.append("a click on a follow-up reaches %r" % log["followUp"])
+    return out
+
+
+@unittest.skipUnless(NODE, "node is not installed")
+class FixRound(unittest.TestCase):
+
+    def test_more_and_a_re_pick_reach_the_views_through_the_click_listener(self):
+        self.assertEqual(click_problems(click_log(PAGE.read_text())), [])
+
+    def test_mutants_on_the_click_path_are_caught(self):
+        html = PAGE.read_text()
+        for old, new in (("function toggleOption(b){moreView(document,b.dataset.n,b.dataset.omore)}",
+                          "function toggleOption(b){pickView(document,b.dataset.n,b.dataset.omore)}"),
+                         ("else if(om)toggleOption(om);", "else if(om);"),
+                         ("if(pk&&pk.type===\"radio\"&&pk.checked&&", "if(false&&pk&&pk.type===\"radio\"&&pk.checked&&"),
+                         ("&&!FOLLOW_KEYS.has(pk.value))pickView(", ")pickView(")):
+            with self.subTest(new=new):
+                m = html.replace(old, new, 1)
+                self.assertNotEqual(m, html)
+                self.assertTrue(click_problems(click_log(m)))
+
+    def test_a_saved_pick_stays_closed_and_the_docs_say_so(self):
+        # the page opens views only on a click or a change; a reload renders every view closed
+        self.assertNotIn("pickView", PAGE.read_text()[PAGE.read_text().index("function syncCard("):
+                                                      PAGE.read_text().index("function syncAll(")])
+        schema = " ".join((PAGE.parent.parent / "references" / "cards-schema.md").read_text().split())
+        self.assertIn("A click on an option already picked opens its view too", schema)
+        self.assertIn("A pick saved earlier and shown again on a reload leaves its view closed", schema)
+        rulings = " ".join((RENDERING.parent / "rulings.md").read_text().split())
+        self.assertIn("a click on an option already picked opening its view too, a pick saved earlier staying closed on a reload", rulings)
+
+    def test_the_cold_read_over_the_view_skips_verb_phrases(self):
+        d = example()
+        opt(d, 43, "b")["plan"] = ("We need to plan and review the change; it reaches review without plan, "
+                                   "from the template, then plan for review.")
+        self.assertEqual(runner(d)[:2], (0, ""))
+        # a real named thing, unglossed, still fires
+        opt(d, 43, "b")["cons"] = ["The content mode of the guides changes"]
+        out = runner(d)[1]
+        self.assertEqual(out, 'lint: card 43: "content mode" (an option\'s view) is not glossed in its context: give it a '
+                              "one-line gloss in context, what it is and where it comes from\n")
+        # mutant: the view read as the flat part is
+        js = RUNNER.read_text()
+        m = js.replace('" (an option\'s view)", namedView);', '" (an option\'s view)");', 1)
+        self.assertNotEqual(m, js)
+        d = example()
+        opt(d, 43, "b")["plan"] = "We need to plan and review the change; it reaches review without plan, from the template."
+        self.assertIn("is not glossed", runner_with(m, d)[1])
+
+    def test_an_option_with_both_plan_and_text(self):
+        d = example()
+        opt(d, 41, "a")["text"] = "Keep building on a laptop."
+        code, out, _ = runner(d)
+        self.assertEqual(code, 2, out)
+        self.assertEqual(out, "lint: card 41: depth: (a) has both plan and text; text is not shown: its view opens on the "
+                              "plan, so put what text says in the plan or its levels (detail), and drop text\n")
+        js = RUNNER.read_text()
+        m = js.replace('if (page.planOf(o) && typeof o.text === "string" && o.text.trim())', "if (false)", 1)
+        self.assertNotEqual(m, js)
+        self.assertEqual(runner_with(m, d)[:2], (0, ""))
+
+    def test_check_refuses_a_line_break_in_a_plan(self):
+        from test_pros_cons import BREAKS
+        for br in BREAKS:
+            d = example()
+            opt(d, 41, "b")["plan"] = "One sentence." + br + "Another."
+            self.assertIn("card 41: (b) plan must be one line: its Plan in brief, 2-4 sentences, with no line break",
+                          run_page(d)["bad"], repr(br))
+        src = page_free_script()
+        m = src.replace("if(isStr(o.plan)&&LINE_BREAK.test(o.plan))", "if(false)", 1)
+        self.assertNotEqual(m, src)
+        self.assertEqual(page_with(m, d)["bad"], [])
+
+    def test_the_columns_stack_at_phone_width(self):
+        html = PAGE.read_text()
+
+        def stacked(h):
+            phone = re.findall(r"@media \(max-width:640px\)\{(.*?)\n\}", h, re.S)
+            return any(re.search(r"\n  \.opc\{grid-template-columns:minmax\(0,1fr\)\}", p)
+                       and ".opc>.opcp,.opc>.opcc{grid-column:1}" in p for p in phone)
+
+        self.assertTrue(stacked(html))
+        m = html.replace("  .opc>.opcp,.opc>.opcc{grid-column:1}\n", "", 1)
+        self.assertNotEqual(m, html)
+        self.assertFalse(stacked(m))
+        # Pros then Cons: the source order the stacked grid keeps
+        z = card(run_page(example()), 41)["more"]["b"]
+        self.assertLess(z.index('class="opcp"'), z.index('class="opcc"'))
 
 
 # ---- chat: tell me (x) and the block

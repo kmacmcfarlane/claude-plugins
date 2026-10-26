@@ -211,6 +211,9 @@ details.more{margin:0 12px 9px 38px;font-size:.86rem}
   .opt>.odet{grid-row:5}
   .sec{grid-template-columns:minmax(0,1fr)}
   .sec>.lvb{grid-column:1;grid-row:2;justify-self:end}
+  /* an option's view at phone width: the Pros | Cons columns stack, Pros then Cons */
+  .opc{grid-template-columns:minmax(0,1fr)}
+  .opc>.opcp,.opc>.opcc{grid-column:1}
 }
 details.more>summary,details.pane>summary{cursor:pointer;color:var(--accent);font-size:.82rem;list-style:none}
 details.more>summary::before,details.pane>summary::before{content:"▸ ";display:inline-block;transition:transform .15s}
@@ -502,6 +505,8 @@ function cardProblems(c,w,keys){
     for(const o of os){const x=w+": ("+o.k+")";
       for(const k of ["line","text","plan","effect","reach","undo","cost","pro","con"])if(o[k]!=null&&!isStr(o[k]))bad.push(x+" "+k+" must be text");
       /* the inline Pros and Cons are one line each; the points in full are pros and cons, one to five ((z) may give none) */
+      /* the plan in brief is one line of 2-4 sentences: chat draws it on one line */
+      if(isStr(o.plan)&&LINE_BREAK.test(o.plan))bad.push(x+" plan must be one line: its Plan in brief, 2-4 sentences, with no line break");
       for(const k of ["pro","con"])if(isStr(o[k])&&LINE_BREAK.test(o[k]))bad.push(x+" "+k+" must be one line: its inline "+(k==="pro"?"Pros":"Cons")+" row; put the points in full in "+k+"s");
       for(const k of ["pros","cons"])if(o[k]!=null){const v=o[k],lo=o.k==="z"?0:1;
         if(!Array.isArray(v))bad.push(x+" "+k+" must be a list of "+lo+" to "+PROS_MAX+" points as text");
@@ -1000,6 +1005,10 @@ document.addEventListener("click",e=>{
   if(cl){if(readonly)return;const n=cl.dataset.clear;answers[n]={};const ta=$("#d"+n+"-words");if(ta)ta.value="";syncCard(n);syncAll();write(n);return}
   /* a part steps on its button, or on a click on its shown text: never on a link, a control, a fold's
      summary, or while text is selected (so it can be copied); More toggles its option's detail */
+  /* a click on an option's radio already picked fires no change: it opens the option's view all the same (picking
+     again re-opens it); a follow-up's leaves the views as they are */
+  const pk=e.target;
+  if(pk&&pk.type==="radio"&&pk.checked&&typeof pk.name==="string"&&pk.name.startsWith("d")&&!FOLLOW_KEYS.has(pk.value))pickView(document,pk.name.slice(1),pk.value);
   const lv=e.target.closest("[data-lv]"),om=e.target.closest("[data-omore]"),sb=e.target.closest("[data-secbody]");
   if(lv)stepSection(lv.closest(".sec"));
   else if(om)toggleOption(om);

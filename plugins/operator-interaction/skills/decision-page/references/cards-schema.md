@@ -31,7 +31,7 @@ recommendation, `(recommended)`, or `(b) is recommended`); an `impact` without i
 reach as text, or with an undo or cost that is not text; an `open` that is not a list of text;
 an `assume` that is not a list of `{rests, tw}`, each non-empty text;
 an option but (z) with no effect; on a ⚠ card, an option but (z) with no reach; an option
-field that is not text; a `pro` or `con` holding a line break (CR, LF, NEL, a line or
+field that is not text; a `plan`, `pro` or `con` holding a line break (CR, LF, NEL, a line or
 paragraph separator, a vertical tab or form feed); a `pros` or `cons` that is not a list of
 text, holds more than five points, a point that is not text or one holding a line break, or is
 empty on an option but (z); a `oneway` that is not true or false; an option flagged `oneway: true`
@@ -229,7 +229,9 @@ copied); the folds (Open questions and Assumptions above the Impact, Background 
 Dependencies after the answer) keep their order and stay closed; each option has a **More** button at its right, outside its label, which opens or closes the
 option's view alone. **Picking an option** (its radio) opens its view and closes the card's other
 open one, as **More** would (the operator: "Selecting an option opens it as if More is pressed");
-a follow-up leaves the views as they are. There is no Options in full fold: it repeated each option's **More** (the
+a follow-up leaves the views as they are. A click on an option already picked opens its view too
+(the browser sends no change then). A pick saved earlier and shown again on a reload leaves its
+view closed, as every view starts. There is no Options in full fold: it repeated each option's **More** (the
 operator, 2026-10-14). The basis word, the titles, the one lines, the Pros and Cons rows,
 `act`, and the round and default lines are static. A `⚠ one-way` card's options start closed
 too, until picked (the build design that opened them is reversed by F5); the ⚠ shows on the

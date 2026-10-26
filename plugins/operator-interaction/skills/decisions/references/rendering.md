@@ -508,8 +508,8 @@ the table's row.
 
 - **The order is fixed**: the *plan in brief:* line first, then the table, then the option's
   facet line, as its card shows it (§ Impact); on a ⚠ decision too.
-- **Plan in brief** is the card record's `plan` (2–4 sentences, about 100 words at most),
-  labelled as the facets are. An older card with no plan gives its option's text in full
+- **Plan in brief** is the card record's `plan` (2–4 sentences, about 100 words at most, on
+  one line), labelled as the facets are. An older card with no plan gives its option's text in full
   there.
 - **The table** is two columns headed `Pros | Cons`, as the Impact table's are headed
   `Effect | Reach` (the operator's feedback on decision 302: pros and cons labelled like Effect
@@ -517,7 +517,7 @@ the table's row.
   and `cons`, the one-line `*pros:*` and `*cons:*` lines in full. A side shorter than the
   other leaves its cells empty; with no points on either side there is no table, and with
   points on one side only, the other column stays, empty.
-- (z)'s view is its plan and any cons, and its facet line is what waiting costs.
+- (z)'s view is its plan, then its pros and cons where it gives any, and its facet line is what waiting costs.
 - `tell me (x)` changes nothing on the card: it is shown, not revised, so no **Added:** line
   and no new revision. The card is one scroll up; do not send it again.
 

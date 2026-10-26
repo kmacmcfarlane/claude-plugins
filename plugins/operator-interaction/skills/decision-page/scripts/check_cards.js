@@ -41,7 +41,7 @@
         a recommended option with no con; a card with two or more real options and none; a pro or
         con past PROCON_CAP words;
       - the plan (F5): an option with no plan in brief (the first part of its view); a plan past
-        PLAN_CAP words.
+        PLAN_CAP words; an option with both plan and text, whose text is not shown.
       Lints are proxies.
 
    Prints one line per problem. Exit 0 clean; 1 on a refusal, or on a file or template that
@@ -132,6 +132,14 @@ const counts = s => [...unId(s).matchAll(COUNT)].map(m => ({word: m[1], n: W[m[1
 const DET = new Set(["the","this","that","these","those","each","every","a","an","its","our","your","their","any","no","one","which","whose","same","new","old"]);
 const NAMED = /\b([a-z][a-z-]*)\s+(mode|setting|review|plan|document|doc|spec|policy|flag|profile|template|track|phase|stage)\b/gi;
 const named = s => [...strip(s).matchAll(NAMED)].map(m => { const w = m[1].toLowerCase(); return DET.has(w) || W[w] ? m[2].toLowerCase() : (m[1] + " " + m[2]).toLowerCase(); });
+/* over an option's view (its plan and its table's points, prose where the nouns are often verbs: "to plan", "and
+   review", "reaches review"), a match is dropped when its first word is a function word or a verb form, as DET
+   drops a determiner, and the bare noun left is not read: only a qualified name ("content mode") fires */
+const FUNC = new Set(["to", "and", "or", "nor", "but", "of", "for", "without", "with", "then", "than", "so", "as", "at", "by", "in",
+  "on", "from", "into", "onto", "per", "via", "if", "when", "until", "before", "after", "while"]);
+const VERB_FORM = /(?:es|ed|ing)$/;
+const namedView = s => [...strip(s).matchAll(NAMED)].flatMap(m => { const w = m[1].toLowerCase();
+  return DET.has(w) || W[w] || FUNC.has(w) || VERB_FORM.test(w) ? [] : [(m[1] + " " + m[2]).toLowerCase()]; });
 /* the broad recommendation forms the page lets through: they may be someone else's. Rec as a
    whole word and recommend…, never Recent or Records */
 const REC_BROAD = /^[^A-Za-z]*(rec|recommend\w*|suggest\w*)\b|\bwe\s+suggest\b/i;
@@ -372,6 +380,9 @@ function plan(c, say) {
   const os = opts(c), miss = os.filter(o => !page.planOf(o)).map(o => o.k);
   for (const o of os) { const n = words(page.planOf(o));
     if (n > PLAN_CAP) say("plan long " + o.k, "depth: (" + o.k + ")'s plan is " + n + " words: keep its Plan in brief to 2–4 sentences, about " + PLAN_CAP + " words at most; its fuller renditions go in its levels (detail)"); }
+  /* a view opens on the plan: an option's text beside it is never shown */
+  for (const o of os) if (page.planOf(o) && typeof o.text === "string" && o.text.trim())
+    say("plan text " + o.k, "depth: (" + o.k + ") has both plan and text; text is not shown: its view opens on the plan, so put what text says in the plan or its levels (detail), and drop text");
   if (!miss.length) return;
   if (miss.length === os.length && os.length > 1)
     say("plan", "depth: none of the card's " + os.length + " options carries its plan in brief: give each, (z) too, a plan (2–4 sentences, what choosing it sets in motion), the first part of its view; or leave it knowingly on an upgraded older card, whose view shows its text instead");
@@ -434,17 +445,17 @@ function lintCard(c, w, sh, out) {
   const seen = new Set(), say = (key, line) => { if (!seen.has(key)) { seen.add(key); out.push(w + line); } };
   for (const [at, s] of cardTexts(c)) for (const x of ids(s)) say("id " + x[0], idLine(x, at));
   /* the terms a visible text uses, against Context's summary; at is "" for the flat part, or " (part, level)" */
-  const terms = (fields, at) => {
+  const terms = (fields, at, namer = named) => {
     for (const s of fields) for (const x of counts(s)) if (!ctxNums.has(x.n))
       say("count " + x.n, "\"" + x.word + "\"" + at + " counts things its context does not name: say what the " + x.word + " things are, or list them, in context");
-    for (const s of fields) for (const t of named(s)) if (!ctxLow.includes(t))
+    for (const s of fields) for (const t of namer(s)) if (!ctxLow.includes(t))
       say("named " + t, "\"" + t + "\"" + at + " is not glossed in its context: give it a one-line gloss in context, what it is and where it comes from");
   };
   terms(flat(c), "");
   /* the Pros and Cons rows are visible too, though not in the flat part's budget: the cold read covers them */
   terms(opts(c).flatMap(o => page.proCon(o).map(r => r[1])), " (pros and cons)");
   /* and each option's view (F5), which picking the option opens: its plan in brief and its Pros | Cons table */
-  terms(opts(c).flatMap(viewTexts), " (an option's view)");
+  terms(opts(c).flatMap(viewTexts), " (an option's view)", namedView);
   c.tldr.forEach((b, i) => { if (REC_BROAD.test(b))
     say("tldr " + i, "tldr bullet " + (i + 1) + " may carry the recommendation: the options mark it; say what is decided instead, or leave it if it reports someone else's"); });
   /* the visible parts' medium and high: each steps alone, so the Context beside them may be its summary. The basis

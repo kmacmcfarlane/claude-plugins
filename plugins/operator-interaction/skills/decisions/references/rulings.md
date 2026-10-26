@@ -359,5 +359,7 @@ alternative not taken, in case practice argues for it.
   operator's: the page runner's `plan` lint (an option with none; a plan past about 100
   words), the plan's levels stepping from it, the chat label *plan in brief:*, the block's
   views under its table with their facets left in the table's rows, a follow-up leaving the
-  views as they are, and `tell me (x)` as a showing, not a revision. Not taken: the facets
+  views as they are, a click on an option already picked opening its view too, a pick saved
+  earlier staying closed on a reload, the plan on one line, the Pros | Cons columns stacked at
+  phone width, a lint on an option with both plan and text, and `tell me (x)` as a showing, not a revision. Not taken: the facets
   before the table (v4's first order); a ⚠ card's options open from the start.
