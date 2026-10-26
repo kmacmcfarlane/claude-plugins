@@ -20,7 +20,7 @@ Operator tool guide: `references/operator-playbook.md`. Manifest spec:
 
 **Lean path:** if the state file shows fewer than ~60K tokens left, skip every optional read,
 do Steps 0, 2, 4a½ in its lean form, and 4b only, then Step 7's close (the echo line when
-Step 0 acted, the manifest path, the opener, and for a handoff the continuation commands) —
+Step 0 acted, the manifest path, for a handoff `/clear`, the `/compact` line, the opener) —
 a lean checkpoint is when a handoff is likeliest and the next session has the least to go
 on. Keep the whole checkpoint under a screen.
 
@@ -81,7 +81,7 @@ with `--checkpointing`, then:
   the manifest's `Doing` and `Aware of` as `BELIEF` lines, each marked unconfirmed (`BELIEF (unconfirmed: no operator) …`). The
   `Goal` line quotes the operator's last stated goal, as ever.
 - **Lean path**: Steps 2 and 4b (with the mark), then Step 5's one sentence and Step 7's
-  close as the turn's **final message**; end the turn there. Step 4a½ writes no item file
+  close as the turn's **final message**, its `/compact` line included; end the turn there. Step 4a½ writes no item file
   here (an edit could prompt): its lines go into the manifest's `Aware of` as
   `<TAG> <item id>: <line>`, the tag first (the trim keeps CORRECTION and REFUSED by it)
   and a `REJECTED` line written as `DECIDED`, and `Next` names writing them into those
@@ -90,7 +90,8 @@ with `--checkpointing`, then:
   once the operator has allowed them (`references/operator-playbook.md` § Where the
   manifest lives). A custody skill's own remaining steps (librarian-mode: its
   push, then its closing Report) run before that final message, which still ends with
-  Step 7's close. The operator decides the window on return.
+  Step 7's close. The operator decides the window on return: the close's `/compact` line
+  is printed for them to run then, never run by this session.
 - **When the marker says a checkpoint no longer fits** (under ~20K left), do not start one:
   end the turn with the three-line brief it asks for.
 
@@ -114,9 +115,10 @@ answers 2 and 3 itself (librarian-mode) settles them. Before drafting, read the 
 2. **Anything in flight not listed** — draft the ≤10-line inventory from evidence, never
    memory: the git state of the repos touched, the ledger, the work-item store, the dispatch
    notices or ListAgents. The draft answer is *nothing more*.
-3. **The window** — draft the `/compact` guidance or the `/rewind` point (Step 5). The
-   guidance names the manifest's absolute path, the open item, every REFUSED line and every
-   hold.
+3. **The window** — draft the `/compact` guidance, and for *continue* the `/rewind` point
+   when Step 5 recommends it. The guidance names the manifest's absolute path, the open
+   item, every REFUSED line and every hold; Step 7 prints it, in both modes, as the close's
+   `/compact` line.
 
 **A fork** — only on a question this step drafted (never one the argument or a calling
 custody skill answered), ask that question first, and only it, when:
@@ -157,7 +159,7 @@ stripped first, with your drafted mode first when it named none. The window over
 separate sentence after the command, so the command never carries it when pasted:
 
 ```text
-Acted on: <mode> · in flight: <inventory heads in plain words, `; `-separated, +N more in the manifest> · window: <the guidance, or "as recommended above"> — to change: /context-guard:checkpoint <argument as given, drafted mode first when it named none> — 2: <nothing more | what I missed>. Or, for the window: run your own /compact <guidance>
+Acted on: <mode> · in flight: <inventory heads in plain words, `; `-separated, +N more in the manifest> · window: the /compact line below — to change: /context-guard:checkpoint <argument as given, drafted mode first when it named none> — 2: <nothing more | what I missed>. Or, for the window: run your own /compact <guidance>
 ```
 
 A changed mode or inventory comes back as that reply line and re-runs the checkpoint with
@@ -440,8 +442,9 @@ sentence:
 
 - **continue** → `/rewind` → *Summarize up to here* at the **last ledger epoch header** (keeps
   the current thread verbatim, condenses only the old part) — or `/compact <guidance>` with
-  the guidance you drafted, naming the manifest's absolute path, the open item, and the
-  refusals.
+  the guidance you drafted, naming the manifest's absolute path, the open item, the holds
+  and the refusals. Either way Step 7 prints that `/compact` as a line to paste: a sentence
+  that only recommends it is not the close.
 - **handoff** → `/clear`, or a fresh session (here or in the owning repo); the manifest is
   the brief. A linked `/clear` (same process, within two minutes, manifest unchanged) gets
   what a compaction gets: the full manifest plus this session's ledger digest. An unlinked
@@ -460,7 +463,7 @@ current repo state (git log, the work-item store) outranks the manifest.
 Two sentences: where the session started, where it ended, whether that was productive. No
 moralizing; the operator decides whether to keep pulling.
 
-## Step 7 — Close: the manifest path, the commands, the opener
+## Step 7 — Close: the manifest path, the `/compact` line, the opener
 
 **Every checkpoint's final message** — both modes, the lean and unattended paths included —
 ends with this close, the **last thing on screen**, after Step 6. When Step 0 acted on a
@@ -468,15 +471,18 @@ draft, the close opens with its `Acted on:` echo line (Step 0), above `Manifest:
 
 1. **The manifest's absolute path**, on its own line: `Manifest: <the path the mark step
    printed>` — the one fact the operator cannot reconstruct.
-2. **For a handoff only**, the continuation commands, one per line, each ready to paste:
-   - `/clear` — with one clause: this process's successor gets the manifest in full plus
-     this session's ledger digest;
-   - `/compact <guidance>` — to keep going here instead: the guidance drafted in Step 0
-     question 3, or, on the unattended path (which skips Step 0), guidance you draft now
-     from the Goal, the open item and the refusals.
-3. **The opener**, in both modes: **one line**, fenced, with **no leading whitespace** (a
-   leading space once broke a `/compact`), for the next session's first prompt — or the
-   `/compact`/`/clear` turn's. In order:
+2. **For a handoff only**, `/clear`, on its own line, with one clause: this process's
+   successor gets the manifest in full plus this session's ledger digest.
+3. **The `/compact` line**, in both modes: `/compact <guidance>` as **one line**, fenced,
+   with **no leading whitespace**, ready to paste unedited — for a *continue* it is the
+   window, for a handoff the way to keep going here instead. The guidance is Step 0
+   question 3's (the operator's own, when they gave it), or, on the unattended path (which
+   skips Step 0), guidance you draft now. Either way it names the manifest's absolute path,
+   the open item, and every hold and every REFUSED line, as question 3 says; it is never
+   left to a sentence recommending `/compact`, and never replaced by the echo.
+4. **The opener**, in both modes: **one line**, fenced, with **no leading whitespace** (a
+   leading space once broke a `/compact`), its own line apart from the `/compact` line, for
+   the first prompt after `/clear`, or a new session's. In order:
    - the command to run first, exactly as the operator would type it: `mode_skill:` when
      set (the standing mode leads), else `next_skill:`, else the skill or task;
    - `Read (the Read tool) <absolute manifest path> in full first` — name the tool: only a
@@ -490,12 +496,18 @@ re-dispatch` (after a fresh process: try SendMessage first, re-dispatch from the
 round only if it fails); when **Copy forward** is not empty, another is `copy forward
 <paths> first`.
 
+The close's two fenced lines, the `/compact` line first and the opener last:
+
+```text
+/compact <goal>; manifest <absolute manifest path>; open <item id>; HOLD <hold>; REFUSED <refusal>
+```
+
 ```text
 /<mode_skill, else next_skill, else skill-or-task> <args> — Read (the Read tool) <absolute manifest path> in full first; then run <next_skill>; <fact that changed>; <fact that changed>
 ```
 
-A worked example of a handoff's close is in `references/operator-playbook.md` § Where the
-manifest lives.
+Worked examples of a continue's close and a handoff's are in
+`references/operator-playbook.md` § Where the manifest lives.
 
 At a stage boundary, one of those facts is always: **do not re-run the previous stage** — its
 outputs are published and complete, read them as inputs (if your chain records a per-stage

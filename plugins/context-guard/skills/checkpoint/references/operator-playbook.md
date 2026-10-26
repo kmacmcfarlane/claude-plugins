@@ -173,9 +173,11 @@ consumer of a manifest runs inside `claude-sandbox`. The repo root is out becaus
 repo-visible copy is what let concurrent sessions in one checkout overwrite each other's
 memory (an old-layout repo `HANDOFF.md` is still read, read-only, during the transition —
 see "An old-layout `HANDOFF.md`" below). The manifest is never committed. Its path cannot be
-guessed, so **every checkpoint's last message prints it**; a handoff also prints `/clear`,
-`/compact <guidance>` and a one-line opener to paste, whose "Read (the Read tool) <path> in
-full" is what hands the file to a new session. On the same host and config dir, an operator or
+guessed, so **every checkpoint's last message prints it**, then, in both modes, a fenced
+one-line `/compact <guidance>` and a one-line opener to paste (a handoff adds `/clear`
+above them). The `/compact` line's guidance names the path, the open item, every hold and
+every REFUSED line, so it pastes without editing; the opener's "Read (the Read tool) <path>
+in full" is what hands the file to a new session. On the same host and config dir, an operator or
 a non-Claude-Code reader who missed that opener gets the same path without it:
 `handoff_path.py --path <sid>` — but the session id argument counts only outside a Claude Code
 session; run from inside one (as the commands in "Unattended checkpoints need three commands
@@ -186,17 +188,36 @@ has the argv contract). Asking a session for a *different* session's path needs
 resolved the same way as those commands; it starts with `env`, not `python3`, so the allow
 rule for `handoff_path.py` below does not cover it and it prompts.
 
+A continue's close, for example (Step 0 acted on its drafts; one open item, one hold, one
+refusal):
+
+````text
+Acted on: continue · in flight: nothing · window: the /compact line below — to change: /context-guard:checkpoint continue — 2: nothing more. Or, for the window: run your own /compact <guidance>
+Manifest: /home/me/.claude/claude-kit/handoff/1f0c…/HANDOFF.md
+```text
+/compact keep the 8cc2 turn-gate port; manifest /home/me/.claude/claude-kit/handoff/1f0c…/HANDOFF.md; open 8cc2-turn-gate-port; HOLD no push until decision 52; REFUSED no new hook event
+```
+```text
+/dev-flow:implement 8cc2-turn-gate-port — Read (the Read tool) /home/me/.claude/claude-kit/handoff/1f0c…/HANDOFF.md in full first; HOLD no push until decision 52
+```
+````
+
 A handoff's close, for example (a session in librarian mode, handing on to an implement
 run):
 
 ````text
 Manifest: /home/me/.claude/claude-kit/handoff/1f0c…/HANDOFF.md
 /clear — the successor in this process gets the manifest in full plus this session's ledger digest
-/compact keep the F3b-4 thread; manifest /home/me/.claude/claude-kit/handoff/1f0c…/HANDOFF.md; no push until decision 52
+```text
+/compact keep the F3b-4 thread; manifest /home/me/.claude/claude-kit/handoff/1f0c…/HANDOFF.md; open F3b-4; HOLD no push until decision 52
+```
 ```text
 /dev-flow:librarian-mode start — Read (the Read tool) /home/me/.claude/claude-kit/handoff/1f0c…/HANDOFF.md in full first; then run /dev-flow:implement 8cc2-turn-gate-port; HOLD no push until decision 52
 ```
 ````
+
+On the unattended path the close is the same, without the `Acted on:` line: the window is
+the operator's to run on return, so the `/compact` line is printed for them.
 
 **Unattended checkpoints need three commands allowed.** The checkpoint writes the manifest
 only through its draft in the session scratchpad (which needs no prompt) and a plugin
