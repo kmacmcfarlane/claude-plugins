@@ -1203,9 +1203,18 @@ found; with `--json`, `{"item", "n", "revisions": [{"path", "rev", "format", "sh
 `cards/<the item's id>/<N>/<the name its rev and format give>`; `cards`, `cards/<id>`,
 `cards/<id>/<N>` and the file are each lstat-ed, never a symbolic link (a link is never
 followed: its target is not read), and the record's directory lies under the store's
-`cards/`; the file is a regular file of at most 256 KB, parses as the strict JSON a write
-takes, and its `n`, `rev` and `format` equal the line's. The hash is over the bytes as read,
-never a re-serialized record.
+`cards/`; the file is a regular file of at most 256 KB (checked again on the open file,
+which is opened without blocking, so a FIFO swapped in is refused, never waited on), parses
+as the strict JSON a write takes, and its `n`, `rev` and `format` equal the line's. The hash
+is over the bytes as read, never a re-serialized record.
+
+**On a terminal**, the record is shown escaped: every control character but newline and tab
+(C0, so a carriage return too; DEL; C1, such as CSI and OSC) and every format character
+(Unicode Cf: bidi overrides, zero-width characters, BOM, tags) is written as `\uXXXX`
+(`\UXXXXXXXX` past U+FFFF), and one stderr note says so and that the sha256 covers the file's
+bytes. Into a pipe or a file, the record is the file's exact bytes. Both `--json` forms are
+ASCII (`\uXXXX` for every non-ASCII and control character), so a JSON reader gets the record
+exactly and a terminal shows nothing raw.
 
 Exits: 0; 1 for a bad N (or `--all` without `--card`, or `--brief` with it); **2** when N has
 no `card:` line on the item (*decision N has no card record on `<id>`: a card stored before

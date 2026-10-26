@@ -4426,12 +4426,22 @@ def read_card_record(root, iid, n, rel, rev, fmt):
     if not stat.S_ISREG(st.st_mode):
         raise changed("not a regular file")
     try:
-        # O_NOFOLLOW: a link swapped in since the lstat is refused, not read
-        fd = os.open(path, os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0))
-        with open(fd, "rb") as fh:
+        # O_NOFOLLOW: a link swapped in since the lstat is refused, not
+        # read; O_NONBLOCK: a FIFO swapped in never hangs the open, and
+        # fstat on the open file is what is read
+        fd = os.open(path, os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0)
+                     | getattr(os, "O_NONBLOCK", 0))
+    except OSError:
+        raise changed("unreadable") from None
+    try:
+        if not stat.S_ISREG(os.fstat(fd).st_mode):
+            raise changed("not a regular file")
+        with open(fd, "rb", closefd=False) as fh:
             data = fh.read(RECORD_CAP + 1)
     except OSError:
         raise changed("unreadable") from None
+    finally:
+        os.close(fd)
     if len(data) > RECORD_CAP:
         raise changed("changed")
     try:
@@ -5078,7 +5088,7 @@ def show_card(root, item, n, every, as_json):
             print(json.dumps({"item": item.id, "n": n, "revisions": [
                 {"path": r["path"], "rev": r["rev"], "format": r["format"],
                  "sha256": r["sha256"], "current": i == len(revs) - 1}
-                for i, r in enumerate(revs)]}, indent=1, ensure_ascii=False))
+                for i, r in enumerate(revs)]}, indent=1, ensure_ascii=True))
         else:
             for i, r in enumerate(revs):
                 print(f"{r['path']} rev {r['rev']} · {r['format']} "
@@ -5090,15 +5100,40 @@ def show_card(root, item, n, every, as_json):
         print(json.dumps({"item": item.id, "n": n, "path": r["path"],
                           "rev": r["rev"], "format": r["format"],
                           "sha256": r["sha256"], "record": r["record"]},
-                         indent=1, ensure_ascii=False))
+                         indent=1, ensure_ascii=True))
         return 0
     sys.stdout.write(f"card: {r['path']}\nrev: {r['rev']}\n"
                      f"format: {r['format']}\nsha256: {r['sha256']}\n\n")
+    if sys.stdout.isatty():
+        # a terminal never gets a record's control or format characters
+        # raw (an escape sequence, a CR, a bidi override); a pipe gets the
+        # file's exact bytes, which the sha256 covers either way
+        sys.stdout.write(_terminal_safe(r["data"].decode("utf-8")))
+        sys.stdout.flush()
+        print("wi: note: the record is shown escaped for the terminal "
+              "(control and format characters as \\uXXXX); the sha256 "
+              "covers the file's bytes, which a pipe receives as they are",
+              file=sys.stderr)
+        return 0
     sys.stdout.flush()
     # the file's bytes as written, never re-serialized
     sys.stdout.buffer.write(r["data"])
     sys.stdout.buffer.flush()
     return 0
+
+
+def _terminal_safe(text):
+    """`text` with every control character but newline and tab (C0, DEL,
+    C1, so CR too) and every format character (Unicode Cf: bidi, zero
+    width, BOM, tag) written as \\uXXXX (\\UXXXXXXXX past the BMP)."""
+    out = []
+    for ch in text:
+        if ch not in "\n\t" and unicodedata.category(ch) in ("Cc", "Cf"):
+            o = ord(ch)
+            out.append(f"\\u{o:04x}" if o <= 0xFFFF else f"\\U{o:08x}")
+        else:
+            out.append(ch)
+    return "".join(out)
 
 
 def parse_acceptance(item):

@@ -23,15 +23,19 @@ import copy
 import fcntl
 import hashlib
 import importlib.util
+import io
 import json
 import os
 import re
 import shutil
+import stat
 import subprocess
 import sys
 import tempfile
+import threading
 import time
 import unittest
+from unittest import mock
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -1308,6 +1312,178 @@ class TestShowCard(CardCase):
                 r = self.wi("show", IID, *args)
                 self.assertEqual(r.returncode, 1, r.stdout + r.stderr)
                 self.assertEqual(r.stdout, "")
+
+
+class _TTY(io.TextIOWrapper):
+    def isatty(self):
+        return True
+
+
+class TestShowCardSafety(CardCase):
+    """W3 fix round 1: a terminal never gets a record's control or format
+    characters raw (a pipe still gets the exact bytes), --json is ASCII,
+    every revision is checked before --all prints, the read cap, and a
+    non-regular file (also one swapped in after the lstat) refused without
+    a hang."""
+
+    HOSTILE = "x\u009b2J \u009d52;c \u007f ‮evil \u0007 ​"
+    REL = f"cards/{IID}/1/2026-10-23T10-00-00Z.card5.json"
+
+    def on_tty(self):
+        """show_card in-process with stdout a terminal: (exit, stdout
+        bytes, stderr text)."""
+        buf, err = io.BytesIO(), io.StringIO()
+        out = _TTY(buf, encoding="utf-8", newline="\n")
+        item = wi.load_item_anywhere(self.root, IID)
+        with mock.patch.object(sys, "stdout", out), \
+                mock.patch.object(sys, "stderr", err):
+            code = wi.show_card(self.root, item, 1, False, False)
+            out.flush()
+        return code, buf.getvalue(), err.getvalue()
+
+    def piped(self, *extra):
+        return subprocess.run(
+            [sys.executable, str(WI), "show", IID, "--card", "1", *extra],
+            env=dict(self.env, WORK_ITEMS_ROOT=str(self.root)),
+            capture_output=True, timeout=30)
+
+    def test_terminal_gets_escapes_pipe_gets_bytes(self):
+        """A record holding CSI, OSC, DEL, U+202E, BEL and a zero-width
+        space: on a terminal each is shown as \\uXXXX, with one stderr
+        note; through a pipe, the file's exact bytes. The sha256 is the
+        same. Mutant: the record written raw on a terminal."""
+        self.raise_rec(record(context=self.HOSTILE))
+        data = (self.root / self.REL).read_bytes()
+        code, out, err = self.on_tty()
+        self.assertEqual(code, 0)
+        for raw, shown in (("\u009b", "\\u009b"), ("\u009d", "\\u009d"),
+                           ("\u007f", "\\u007f"), ("‮", "\\u202e"),
+                           ("\u0007", "\\u0007"), ("​", "\\u200b")):
+            self.assertNotIn(raw.encode(), out)
+            self.assertIn(shown.encode(), out)
+        self.assertIn(b"\n  ", out)   # newlines kept
+        self.assertEqual(err.count("\n"), 1)
+        self.assertIn("escaped", err)
+        self.assertIn("sha256", err)
+        sha = hashlib.sha256(data).hexdigest()
+        self.assertIn(f"sha256: {sha}\n".encode(), out)
+        r = self.piped()
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertTrue(r.stdout.endswith(b"\n\n" + data))
+        self.assertIn(f"sha256: {sha}\n".encode(), r.stdout)
+        self.assertEqual(r.stderr, b"")
+
+    def test_tampered_carriage_returns(self):
+        """CRs added to the file (still valid JSON): shown as \\u000d on a
+        terminal, never raw; a pipe gets them. Mutant: CR left out of the
+        escaped set (only C1 and Cf escaped)."""
+        self.raise_rec()
+        path = self.root / self.REL
+        data = path.read_bytes()
+        data = data[:1] + b"\r\r\r" + data[1:]
+        path.write_bytes(data)
+        code, out, _ = self.on_tty()
+        self.assertEqual(code, 0)
+        self.assertNotIn(b"\r", out)
+        self.assertIn(b"{\\u000d\\u000d\\u000d\n", out)
+        r = self.piped()
+        self.assertTrue(r.stdout.endswith(data))
+
+    def test_json_outputs_are_ascii(self):
+        """Both --json forms escape every non-ASCII and control character.
+        Mutant: ensure_ascii=False on the single form. On the --all form
+        the same mutant is equivalent: its values (path, rev, format,
+        sha256, the item id) are ASCII by CARD_RE before they print."""
+        self.raise_rec(record(context=self.HOSTILE))
+        for extra in (("--json",), ("--json", "--all")):
+            with self.subTest(extra=extra):
+                r = self.piped(*extra)
+                self.assertEqual(r.returncode, 0, r.stderr)
+                self.assertTrue(all(32 <= b < 127 or b == 10
+                                    for b in r.stdout), r.stdout)
+        got = json.loads(self.piped("--json").stdout)
+        self.assertEqual(got["record"]["context"], self.HOSTILE)
+        self.assertIn(b"\\u009b", self.piped("--json").stdout)
+
+    def test_all_checks_every_revision_before_printing(self):
+        """A bad first revision: exit 3, stdout empty. Mutant: only the
+        last revision checked."""
+        self.raise_rec()
+        self.ok("raise", IID, "--revise", "1", "--why", "re-asked",
+                "--record", self.write_rec(record(n=1, rev=REV2,
+                                                  q="Ship it today?")))
+        (self.root / self.REL).unlink()
+        r = self.piped("--all")
+        self.assertEqual(r.returncode, 3, r.stderr)
+        self.assertEqual(r.stdout, b"")
+        self.assertIn(self.REL.encode(), r.stderr)
+        self.assertEqual(self.piped().returncode, 0)
+
+    def test_read_cap(self):
+        """A 300 KB record whose n, rev and format match: exit 3. Mutant:
+        the cap removed."""
+        self.raise_rec()
+        path = self.root / self.REL
+        rec = json.loads(path.read_text())
+        rec["pad"] = "a" * 300000
+        path.write_text(json.dumps(rec))
+        r = self.piped()
+        self.assertEqual(r.returncode, 3, r.stderr)
+        self.assertEqual(r.stdout, b"")
+
+    def test_fifo_and_directory_refused(self):
+        """A FIFO or a directory at the record's path: exit 3, no hang
+        (the run has a timeout)."""
+        self.raise_rec()
+        path = self.root / self.REL
+        for make in (os.mkfifo, os.mkdir):
+            with self.subTest(make=make.__name__):
+                if path.is_dir():
+                    path.rmdir()
+                elif path.exists() or path.is_fifo():
+                    path.unlink()
+                make(path)
+                r = self.piped()
+                self.assertEqual(r.returncode, 3, r.stderr)
+                self.assertIn(b"not a regular file", r.stderr)
+
+    def test_swapped_in_after_the_lstat(self):
+        """A FIFO or a directory the lstat saw as a regular file (swapped
+        in between): the fstat of the open file refuses it, and the open
+        never blocks. Mutants: the fstat check removed; O_NONBLOCK
+        dropped (the open hangs: the thread's timeout fails the test)."""
+        self.raise_rec()
+        path = self.root / self.REL
+        real = os.lstat
+
+        def lstat(p, *a, **kw):
+            st = real(p, *a, **kw)
+            if str(p) == str(path):
+                return os.stat_result((stat.S_IFREG | 0o644,) +
+                                      tuple(st)[1:])
+            return st
+        for make in (os.mkfifo, os.mkdir):
+            with self.subTest(make=make.__name__):
+                if path.is_dir():
+                    path.rmdir()
+                elif path.exists() or path.is_fifo():
+                    path.unlink()
+                make(path)
+                box = {}
+
+                def run():
+                    try:
+                        wi.read_card_record(self.root, IID, 1, self.REL,
+                                            REV, "decision-card/5")
+                    except wi.WiError as e:
+                        box["err"] = e
+                with mock.patch("os.lstat", lstat):
+                    t = threading.Thread(target=run, daemon=True)
+                    t.start()
+                    t.join(10)
+                self.assertFalse(t.is_alive(), "the open hung")
+                self.assertEqual(box["err"].code, 3)
+                self.assertIn("not a regular file", str(box["err"]))
 
 
 if __name__ == "__main__":
