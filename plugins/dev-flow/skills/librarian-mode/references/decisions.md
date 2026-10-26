@@ -196,10 +196,15 @@ renders what the operator read instead of composing it again.
   level, append `shown N: <UTC time> chat` for each decision it renders that way, the time
   from `date -u +%Y-%m-%dT%H:%M:%SZ`: a Report's decisions block, an Intake ask, a
   decision raised between Reports, a re-show, a `tell me` or `dig into` re-render. A list
-  line, a tag-size mention or a Groom row writes none. For an answer page or a tick-box
-  doc, append `shown N: <time> page` (or `doc`) for each number and publish time the
-  `decision-page` skill hands over. Only this session, the one the operator reads, writes
-  it; a dispatched agent never does.
+  line, a tag-size mention or a Groom row writes none. For an answer page, append one
+  `shown N: <time> page rev <rev>` line per card the `decision-page` skill hands over (its
+  number, publish time and `rev`), never one note for the page; after writing, count the
+  lines against the hand-over's count (*N cards handed over*) and write any missing one
+  before the Report. A republish that keeps a card's `rev` hands nothing over for it, so a
+  kept card writes no line: the `rev` is what the operator read, and an unchanged card was
+  already shown. For a tick-box doc, append `shown N: <time> doc` for each number and time
+  the skill hands over, with `rev <rev>` when the hand-over names one. Only this session,
+  the one the operator reads, writes it; a dispatched agent never does.
 - **Seen:** at the operator's next turn in this session, append `seen N: <UTC time> turn`
   for every decision this session showed in chat since the operator's previous turn,
   answered or not. For each new page or doc answer the `decision-page` skill hands over,

@@ -6743,6 +6743,17 @@ class TestShownAndSeen(WiTestCase):
             "seen 5: 2026-10-08T09:59:00Z page\n"))
         self.assertIs(self.decisions()["sh-1111"][5]["unseen"], False)
 
+    def test_shown_with_its_rev_reads_as_the_last_showing(self):
+        # format.md § Shown and seen: `[rev <rev>]` after the surface word
+        # names the card revision shown; the time is read, the rest ignored
+        self.write_item("sh-1111", sections=(
+            "## Notes\ndecision 5: open\n"
+            "shown 5: 2026-10-22T10:00:00Z chat\n"
+            "shown 5: 2026-10-23T10:00:00Z page rev 2026-10-23T09:00:00Z\n"))
+        d = self.decisions()["sh-1111"][5]
+        self.assertEqual((d["first_shown"], d["last_shown"], d["unseen"]),
+                         ("2026-10-22T10:00:00Z", "2026-10-23T10:00:00Z", True))
+
 
 if __name__ == "__main__":
     unittest.main()

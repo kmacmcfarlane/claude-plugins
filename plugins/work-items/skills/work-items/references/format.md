@@ -1311,7 +1311,7 @@ the operator's next turn in that session (or an answer found at a page or
 doc read-back), it appends a second. One physical line each, never wrapped:
 
 ```
-shown N: <UTC time> <chat | page | doc>
+shown N: <UTC time> <chat | page | doc> [rev <rev>]
 seen N: <UTC time> <turn | page | doc>
 ```
 
@@ -1319,10 +1319,16 @@ The time is `YYYY-MM-DDTHH:MM:SSZ`, UTC, on the writer's clock (`date -u
 +%Y-%m-%dT%H:%M:%SZ`); `raised:`'s minute form also reads. A line whose
 first token after `N:` is not written in one of those two forms is not read
 (`wi` checks the form, not the calendar, and keeps the time as written).
+The optional `rev <rev>` after the surface word names the card revision
+shown: on a page or in a doc, the card's `rev`; in chat, the `rev` of the
+decision's current card record (its last `card:` line), when it has one.
+`wi` reads the time and ignores what follows it, so the token changes no
+view.
 
 - **What is a showing:** a render at card or block level (`chat`); a card
   on an answer page at the publish that put its current `rev` there
-  (`page`); a decision's section in the tick-box doc, when shared or
+  (`page`), one line per card, each naming that `rev`, never one note for
+  the page; a decision's section in the tick-box doc, when shared or
   rewritten unticked (`doc`). A list line, a tag-size mention, a Groom row,
   an echo or a hint is not a showing and writes nothing.
 - **What sees it:** the operator's first turn after the showing, in the
@@ -1405,7 +1411,7 @@ kind's rules; this table is where a reader finds them all.
 | wake | `wake N: <time \| event \| next Report>` | 0 | the caller, for `later`, `hold` and `dig into` | no | landed |
 | closed | `closed N: acted <sha \| id>`, `closed N: rule <path>`, `closed N: superseded by <M \| <repo>#M>` | 0 | the caller; a reframe writes its `superseded by` line with its answer line | no (§ Closed gives a reader's split) | landed |
 | withdrawn | `withdrawn N: reframed as M …` | 0 | nobody: never written again | no | legacy: read as `answer N: reframed as decision M` and `closed N: superseded by M` (§ Closed) |
-| shown | `shown N: <UTC> <chat \| page \| doc>` | 0 | the session that displays the decision | `SHOWN_RE` | landed |
+| shown | `shown N: <UTC> <chat \| page \| doc> [rev <rev>]` | 0 | the session that displays the decision | `SHOWN_RE` | landed |
 | seen | `seen N: <UTC> <turn \| page \| doc>` | 0 | the session that displayed it | `SEEN_RE` | landed (held: § Shown and seen) |
 | decided | `decided: <UTC> <class> — … · authority: … · reopen: …` | 0 | the caller | no (§ Decided alone gives a reader's split) | landed |
 | open question | `open question: <text>`, closed by `open question: <text> → decision N` or `open question dropped: <text> — <why>` | 0 | the caller (the librarian-mode convention) | no | landed |

@@ -4,7 +4,8 @@
 whether `wi needs-input` still lists a decision. A follow-up (`later`, `hold`, `dig into`,
 `tell me`, `expand`) is never stored as an answer line: it is a `wake N:` line, or nothing
 (L1), whether it came in chat or from an answer page or tick-box doc's read-back. A reframe
-writes its answer line and `closed N: superseded by M` together (L2). This file pins those
+writes its answer line and `closed N: superseded by M` together (L2). An answer page's
+publish writes one `shown` line per card, with its `rev`, counted (L4). This file pins those
 rules in `references/decisions.md` § What the store records, **Answered**.
 
 Standard library only. Run from plugins/dev-flow:
@@ -69,6 +70,19 @@ class Reframes(unittest.TestCase):
         self.assertIn("`closed N: superseded by M`", reframe)
         self.assertIn("A `withdrawn N:` line is never written", reframe)
         self.assertIn("is read as those two lines", reframe)
+
+
+class PageShowings(unittest.TestCase):
+    """L4: one `shown` line per card an answer page hands over, with its `rev`, counted."""
+
+    def test_the_shown_bullet(self):
+        shown = bullet(DECISIONS.read_text(), "**Shown:**")
+        self.assertIn("append one `shown N: <time> page rev <rev>` line per card the "
+                      "`decision-page` skill hands over", shown)
+        self.assertIn("never one note for the page", shown)
+        self.assertIn("count the lines against the hand-over's count (*N cards handed over*) "
+                      "and write any missing one before the Report", shown)
+        self.assertIn("a kept card writes no line", shown)
 
 
 if __name__ == "__main__":

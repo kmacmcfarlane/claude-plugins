@@ -301,9 +301,10 @@ What an older card holds, and what a republish writes into it, is the `decisions
 knowingly, unless it is revised for another reason.
 **Hand over what was shown.** After a publish or republish, for every card whose number and
 `rev` were not on the page before (on a first publish, every card), hand the caller the
-card's number, the publish time (UTC, your clock) and the surface word *page*. A republish
-that keeps a card's `rev` hands over nothing for it. The caller records them in its own
-shape; a caller with no record drops them.
+card's number, its `rev`, the publish time (UTC, your clock) and the surface word *page*,
+one per card, then their count: *N cards handed over*. A republish that keeps a card's `rev`
+hands over nothing for it. The caller records them in its own shape, one showing per card,
+and checks its count against yours; a caller with no record drops them.
 
 ## Step 4: Hand it to the operator
 

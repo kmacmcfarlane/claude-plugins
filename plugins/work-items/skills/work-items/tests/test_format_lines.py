@@ -174,5 +174,27 @@ class Reframes(unittest.TestCase):
         self.assertEqual(row["writer"], "nobody: never written again")
 
 
+class ShownNamesItsRev(unittest.TestCase):
+    """L4: a showing names the card revision shown, one line per card on a page."""
+
+    def setUp(self):
+        self.text = FORMAT.read_text()
+        start = self.text.index("## Shown and seen")
+        self.shown = self.text[start:self.text.index("## Decided alone", start)]
+
+    def test_the_grammar_line_takes_rev(self):
+        self.assertIn("\nshown N: <UTC time> <chat | page | doc> [rev <rev>]\n", self.shown)
+        self.assertIn("The optional `rev <rev>` after the surface word names the card revision "
+                      "shown", flat(self.shown))
+
+    def test_one_line_per_card_on_a_page(self):
+        self.assertIn("one line per card, each naming that `rev`, never one note for the page",
+                      flat(self.shown))
+
+    def test_the_table_row(self):
+        row = {r["kind"]: r for r in rows(section(self.text))}["shown"]
+        self.assertIn("[rev <rev>]", row["form"])
+
+
 if __name__ == "__main__":
     unittest.main()
