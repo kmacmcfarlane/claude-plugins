@@ -1507,9 +1507,6 @@ class TestShowCardSafety(CardCase):
                 self.assertIn("not a regular file", str(box["err"]))
 
 
-if __name__ == "__main__":
-    unittest.main()
-
 
 class TestLintCards(CardCase):
     """W4: `wi lint` pairs `card:` lines and their files across items/ and
@@ -1776,3 +1773,100 @@ class TestLintCards(CardCase):
         self.assertEqual(len(found), 1, found)
         self.assertIn("is a symbolic link", found[0])
         self.assertNotIn("likely", found[0])
+
+    # -- finish round ----------------------------------------------------
+
+    def test_unencodable_name_on_an_ascii_stdout(self):
+        """A stray café.txt with stdout ASCII: exit 3, the name written
+        caf\\xe9, no encoding error. Mutant: the problems printed without
+        backslashreplace."""
+        self.raise_rec()
+        (self.root / "cards" / IID / "1" / "café.txt").write_text("x\n")
+        r = subprocess.run([sys.executable, str(WI), "lint"],
+                           env=dict(self.env, WORK_ITEMS_ROOT=str(self.root),
+                                    PYTHONIOENCODING="ascii"),
+                           capture_output=True, text=True, timeout=60)
+        self.assertEqual(r.returncode, 3, r.stdout + r.stderr)
+        self.assertIn("caf\\xe9.txt: not a card record file", r.stdout)
+
+    def test_secret_in_a_stray_directory(self):
+        """A stray directory is still walked for the scans. Mutant: stray
+        directories not walked."""
+        self.raise_rec()
+        deeper = self.root / "cards" / IID / "1" / "deeper"
+        deeper.mkdir()
+        (deeper / "x.txt").write_text(SECRET + "\n")
+        out = self.assert_problem("deeper/x.txt:1: ")
+        self.assertNotIn("hunter2", out)
+
+    def test_over_cap_stray_file(self):
+        """A stray file one byte over 256 KB: the over-256 KB line with its
+        next step, a secret before the cap still named, and the byte past
+        the cap not scanned. Mutants: the message removed; the truncation
+        removed (the last line's value then reaches the flagged length)."""
+        self.raise_rec()
+        big = self.root / "cards" / IID / "1" / "big.json"
+        # the last line's value reaches 8 characters, the length the scan
+        # flags, only with the byte past the cap: a file of the cap plus
+        # one byte, its last line flagged only if that byte is scanned
+        head = (SECRET + "\n").encode()
+        tail = b"\nDB_PASS=hunter2h"
+        fill = wi.RECORD_CAP + 1 - len(head) - len(tail)
+        data = head + (b"x" * 99 + b"\n") * (fill // 100) + \
+            b"y" * (fill % 100) + tail
+        self.assertEqual(len(data), wi.RECORD_CAP + 1)
+        big.write_bytes(data)
+        last = data.count(b"\n") + 1
+        out = self.assert_problem(
+            f"{big}: over 256 KB, which no card record is; only its first "
+            "256 KB were scanned for secrets; no card record is this size: "
+            "delete it or move it out of cards/",
+            f"{big}:1: ")
+        self.assertNotIn("hunter2", out)
+        self.assertNotIn(f"{big}: not a card record (", out)
+        self.assertNotIn(f"{big}:{last}: ", out)
+
+    def test_decoded_scan_in_an_unshaped_file(self):
+        """A record-shaped JSON file at cards/.x/foo.json, outside the
+        shape: its values are still scanned by JSON path. Mutant: the
+        decoded scan only for shaped files (`or not shaped`)."""
+        d = self.root / "cards" / ".x"
+        d.mkdir(parents=True)
+        (d / "foo.json").write_text(json.dumps(
+            {"plan": f"api_key: |\n  {KEYISH}"}, indent=2) + "\n")
+        out = self.assert_problem(f"{d / 'foo.json'}: plan line 2: ")
+        self.assertNotIn(KEYISH, out)
+
+    def test_n_level_must_be_digits(self):
+        """Mutant: the <N> segment loosened to `.+`."""
+        (self.root / "cards" / IID / "abc").mkdir(parents=True)
+        self.assert_problem(f"{self.root / 'cards' / IID / 'abc'}: not a "
+                            "card record directory")
+
+    def test_tab_in_a_name_escaped(self):
+        """Mutant: tab escaping dropped from _name_safe."""
+        self.raise_rec()
+        (self.root / "cards" / IID / "1" / "a\tb.txt").write_text("x\n")
+        out = self.assert_problem("a\\u0009b.txt: not a card record file")
+        self.assertNotIn("a\tb", out)
+
+    def test_json_file_that_is_not_json(self):
+        """Mutant: the not-a-card-record message removed."""
+        self.raise_rec()
+        bad = self.root / "cards" / IID / "1" / "bad.json"
+        bad.write_text("not json\n")
+        self.assert_problem(f"{bad}: not a card record (not one strict JSON "
+                            "object in UTF-8)")
+
+    def test_odd_whitespace_card_line_is_malformed(self):
+        """A `card:` line indented by a no-break space or a form feed is
+        reported malformed. Mutant: the open pattern back to `[ \\t]+`."""
+        for ws in (" ", "\f"):
+            with self.subTest(ws=repr(ws)):
+                self.item(IID, notes="decision 1: q? — options: (a) x\n"
+                                     f"{ws}card: cards/x/1/whatever.json")
+                self.assert_problem(f"{IID}.md:15: malformed card: line")
+
+
+if __name__ == "__main__":
+    unittest.main()

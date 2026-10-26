@@ -217,9 +217,9 @@ CARD_RE = re.compile(
     r"[1-9][0-9]{0,3})(?: — .*)?")
 
 
-# an indented line that opens `card:`, read by lint whether or not it
-# matches CARD_RE (3b51 W4)
-_CARD_OPEN_RE = re.compile(r"[ \t]+card:")
+# an indented line that opens `card:` (any whitespace, a no-break space or
+# form feed too), read by lint whether or not it matches CARD_RE (3b51 W4)
+_CARD_OPEN_RE = re.compile(r"\s+card:")
 
 
 def _card_scan(item, every=False):
@@ -7129,7 +7129,8 @@ def _lint_card_file(root, path, rel, shaped):
     over = len(data) > RECORD_CAP
     if over:
         out.append(f"{path}: over 256 KB, which no card record is; only its "
-                   "first 256 KB were scanned for secrets")
+                   "first 256 KB were scanned for secrets; no card record is "
+                   "this size: delete it or move it out of cards/")
         data = data[:RECORD_CAP]
     for k, why in secret_findings(data.decode("utf-8", "replace")):
         out.append(f"{path}:{k}: {why}")
@@ -7344,8 +7345,11 @@ def cmd_lint(args):
             problems.append(line)
         else:
             print(line, file=sys.stderr)
+    # a name or message the terminal's encoding cannot carry is written
+    # \xNN, never an encoding error
+    enc = sys.stdout.encoding or "utf-8"
     for p in problems:
-        print(p)
+        print(p.encode(enc, "backslashreplace").decode(enc))
     if problems:
         return 3
     print(f"lint clean: {len(items)} items")

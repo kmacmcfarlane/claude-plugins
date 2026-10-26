@@ -1232,7 +1232,8 @@ over every item in `items/` and `archive/` and every entry under `cards/`:
 
 - **Pairing.** Every indented line opening `card:` outside a fence is a full match of the
   `card:` line's form (else *malformed card: line*, named by the item's path and line, never
-  quoted) and sits in a `decision N:` block (else *orphan card: line*). The file it names is
+  quoted; an indent of any whitespace, a no-break space or form feed too, counts) and sits
+  in a `decision N:` block (else *orphan card: line*). The file it names is
   checked as *Reading a record* checks it: the path is this item's and this block's, no level
   and not the file is a symbolic link, the file is a regular file of at most 256 KB, parses,
   and its `n`, `rev` and `format` are the line's. Every record file under `cards/` is named
@@ -1252,12 +1253,14 @@ over every item in `items/` and `archive/` and every entry under `cards/`:
   parses as one strict JSON object, every decoded string value whole, keys too (the list
   items under a key as a raise scans them), reported `<path>: <JSON path> line <k>: <why>`
   (`options[1].plan line 2`). A finding names the path and the key or JSON path, never the
-  value. A file over 256 KB is a problem, and only its first 256 KB are scanned.
+  value. A file over 256 KB is a problem, and only its first 256 KB are scanned: no card
+  record is that size, so delete it or move it out of `cards/`.
 
 Each finding is a problem (exit 3), as every `lint` finding is. A path or name in a finding
 is printed escaped, so no file name reaches the terminal raw: control and format characters,
-the line and paragraph separators, newline and tab as `\uXXXX`, and a byte that is not UTF-8
-as `\xNN`.
+the line and paragraph separators, newline and tab as `\uXXXX` (`\UXXXXXXXX` past U+FFFF),
+and a byte that is not UTF-8 as `\xNN`; a character the terminal's encoding cannot carry is
+written `\xNN`, `\uXXXX` or `\UXXXXXXXX` too, in every `lint` line.
 
 ## Closed: `closed N:`
 
