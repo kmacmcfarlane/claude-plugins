@@ -53,7 +53,7 @@ def lkh(res, n):
 
 SEEN = ("readers followed old links to the moved pages about 300 times last month, mostly from other sites and "
         "bookmarks (the site's access log)")
-BEST = "yes: only a redirect keeps those links working; a hint on the not-found page still loses the reader for a click"
+BEST = "yes — only a redirect keeps those links working; a hint on the not-found page still loses the reader for a click"
 
 
 @unittest.skipUnless(NODE, "node is not installed")
@@ -230,6 +230,84 @@ class LikelihoodRunner(unittest.TestCase):
         js = mutant_runner('if (l) terms([l.seen], " (the likelihood)", named, undefined, false);', "")
         self.assertNotIn("preview mode", runner(d, script=js)[1])
 
+    def lk_lints(self, likelihood, script=None):
+        d = example()
+        c42(d)["likelihood"] = likelihood
+        return [x for x in runner(d, **({"script": script} if script else {}))[1].splitlines()
+                if x.startswith("lint: card 42: impact: ") and ("likelihood" in x or "best" in x)]
+
+    def test_the_likelihood_lint_fires_on_an_estimate_a_percentage_and_no_source(self):
+        out = self.lk_lints({"kind": "observed", "seen": "a 40% chance the old links break again, I am fairly confident"})
+        text = "\n".join(out)
+        self.assertIn('the likelihood holds an estimate ("chance")', text)
+        self.assertIn('the likelihood gives a percentage ("%") with no source in brackets after it', text)
+        self.assertIn("an observed likelihood ends on no source in brackets", text)
+        self.assertEqual(len(out), 3, out)
+
+    def test_the_likelihood_lint_fires_on_no_data(self):
+        out = self.lk_lints({"kind": "evidence", "seen": "no data"})
+        self.assertEqual(len(out), 1, out)
+        self.assertIn('the likelihood says only "no data"', out[0])
+        self.assertIn("a bare no data is never the line", out[0])
+
+    def test_the_likelihood_lint_fires_on_percent_in_words_and_a_carried_basis_word(self):
+        out = "\n".join(self.lk_lints({"kind": "evidence", "seen": "(estimated) the disk fills in about three months; "
+                                                                     "a week of usage graphs would show it"}))
+        self.assertIn('opens on a carried-over basis word ("(estimated)")', out)
+        out = "\n".join(self.lk_lints({"kind": "observed", "seen": "readers hit old links (access log) on two percent of visits"}))
+        self.assertIn('gives a percentage ("percent")', out)
+        # a percentage with its source after it, an observed fact ending on its source, and an evidence line: clean
+        for lk in ({"kind": "observed", "seen": "old links were 2 percent of last month's visits (the site's access log)"},
+                   {"kind": "evidence", "seen": "no log covers the old links; a week of the access log would show it"}):
+            self.assertEqual(self.lk_lints(lk), [], lk)
+
+    def test_each_likelihood_lint_is_proved_by_a_mutant(self):
+        cases = [
+            ({"kind": "evidence", "seen": "no data"}, "if (LK_NO_DATA.test(s))", "if (false)"),
+            ({"kind": "evidence", "seen": "outages are likely; a week of logs would show it"},
+             "if (e) say(", "if (false) say("),
+            ({"kind": "evidence", "seen": "down 2% of the time; a week of logs would show it"},
+             "if (p) say(", "if (false) say("),
+            ({"kind": "evidence", "seen": "(estimated) the disk fills; a week of graphs would show it"},
+             "if (LK_CARRIED.test(s))", "if (false)"),
+            ({"kind": "observed", "seen": "readers hit the old links about 300 times last month"},
+             'if (l.kind === "observed" && !LK_SOURCE_END.test(s))', "if (false)"),
+            ({"kind": "evidence", "seen": "outages are likely; a week of logs would show it"},
+             "  likelihoodLint(c, say);\n", ""),
+        ]
+        for lk, old, new in cases:
+            with self.subTest(old):
+                self.assertTrue(self.lk_lints(lk), lk)
+                self.assertEqual(self.lk_lints(lk, mutant_runner(old, new)), [], lk)
+
+    def test_a_new_card_with_no_best_is_linted_but_not_one_carried_over(self):
+        d = example()
+        del c42(d)["best"]
+        out = runner(d)[1]
+        self.assertIn("lint: card 42: impact: the likelihood has no best", out)
+        # a none best is not shown, so it counts as missing
+        d = example()
+        c42(d)["best"] = "n/a"
+        self.assertIn("the likelihood has no best", runner(d)[1])
+        # carried over by the upgrader with its rev: no lint; revised with a new rev: the lint again
+        d = example()
+        del c42(d)["best"]
+        c42(d)["upgraded"] = {"from": "kit", "rev": c42(d)["rev"]}
+        self.assertNotIn("has no best", runner(d)[1])
+        c42(d)["upgraded"]["rev"] = "2026-01-01T00:00:00Z"
+        self.assertIn("has no best", runner(d)[1])
+        # mutants: the best lint gone; the carried-over skip gone
+        d = example()
+        del c42(d)["best"]
+        self.assertNotIn("has no best", runner(d, script=mutant_runner("if (!page.bestOf(c) && !carried(c))", "if (false)"))[1])
+        c42(d)["upgraded"] = {"from": "kit", "rev": c42(d)["rev"]}
+        self.assertIn("has no best", runner(d, script=mutant_runner("if (!page.bestOf(c) && !carried(c))",
+                                                                   "if (!page.bestOf(c))"))[1])
+
+    def test_the_digest_and_the_record_say_best_is_owed_by_a_new_card(self):
+        for path in (RECORD, RECORD.parent.parent.parent / "decision-page" / "references" / "writer-digest.md"):
+            self.assertIn("of a new card (lint); needs `likelihood`", path.read_text(), path)
+
     def test_seen_and_best_count_in_the_card_in_all(self):
         for put in (lambda c: c["likelihood"].__setitem__("seen", " ".join(["word"] * 1400)),
                     lambda c: c.__setitem__("best", " ".join(["word"] * 1400))):
@@ -245,7 +323,13 @@ LIKELIHOOD_CARDS = {99}
 LIKELIHOOD_LINE = re.compile(r"^\*\*Likelihood:\*\* \*\((observed|evidence)\)\* (\S.*)$")
 BEST_LINE = re.compile(r"^\*\*Best response\?:\*\* (\S.*)$")
 NO_DATA = re.compile(r"^\W*(no data|unknown|not known|none)\W*$", re.I)
-ESTIMATE = re.compile(r"\b(likely|unlikely|probabl[ey]|chances?|odds|rare|rarely)\b", re.I)
+# the runner's own patterns (check_cards.js, LK_ESTIMATE and LK_PERCENT): an estimate word; a percentage ("%" or
+# "percent") with no bracketed source after it
+ESTIMATE = re.compile(r"\b(likely|unlikely|probabl[ey]|chances?|odds)\b", re.I)
+PERCENT = re.compile(r"(%|\bper\s?cent\b)(?![\s\S]*\()", re.I)
+# Best response?'s one form: its yes or no, then a dash (`no — …`), as rendering.md's example has it
+BEST_YES_NO = re.compile(r"^(yes|no|partly)\b", re.I)
+BEST_FORM = re.compile(r"^(yes|no|partly) — \S", re.I)
 NUMBER = re.compile(r"\b(\d+|once|twice|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|never)\b", re.I)
 
 
@@ -272,7 +356,7 @@ def likelihood_problems(where, body):
             out.append(where + ": a bare no data")
         if ESTIMATE.search(text):
             out.append(where + ": an estimate, not a fact")
-        if "%" in text and "(" not in text:
+        if PERCENT.search(text):
             out.append(where + ": a percentage with no source")
         if kind == "observed" and not (NUMBER.search(text) and re.search(r"\([^)]+\)\s*$", text)):
             out.append(where + ": an observed Likelihood with no fact and its source in brackets")
@@ -282,6 +366,10 @@ def likelihood_problems(where, body):
             out.append(where + ": a Likelihood too short to name its event and its fact")
     if bests != [k + 1] or not BEST_LINE.match(body[k + 1]):
         out.append(where + ": no Best response? line right under the Likelihood")
+    else:
+        b = BEST_LINE.match(body[k + 1]).group(1)
+        if BEST_YES_NO.match(b) and not BEST_FORM.match(b):
+            out.append(where + ": Best response? opens on its yes or no with no dash after it: `no — …`")
     w = next((i for i, x in enumerate(body) if x.startswith("**What:**")), None)
     if w is None or w > k:
         out.append(where + ": the Likelihood is not after What")
@@ -299,6 +387,24 @@ def likelihood_problems(where, body):
     later = [i for i, x in enumerate(body) if x.startswith(("▸ ", "▾ ", "**Impact:**"))]
     if not later or min(later) < k:
         out.append(where + ": the Likelihood is not before the folds and the Impact")
+    return out
+
+
+def ruling_problems(rulings):
+    """The 267 ruling's entry keeps the operator's words apart from the designs: the percentage rule and the order of
+    other facts sit in its designs clause, labelled a reading of answer 267's words."""
+    entry = " ".join(rulings.split("- **Likelihood, widened, and Best response?")[1].split("\n- **")[0].split())
+    if "Designs made in planning and build, not the operator's:" not in entry:
+        return ["no designs clause"]
+    words, designs = entry.split("Designs made in planning and build, not the operator's:", 1)
+    out = []
+    if "a reading of answer 267's words" not in designs:
+        out.append("the order of facts is not labelled a reading of answer 267's words")
+    for part in ("a percentage only as an observed share", "when it last happened, an observed share"):
+        if part in words:
+            out.append("%r stands among the operator's words" % part)
+        if part not in designs:
+            out.append("%r is not in the designs clause" % part)
     return out
 
 
@@ -342,6 +448,9 @@ class LikelihoodChat(unittest.TestCase):
             "no data": swap("**Likelihood:** *(evidence)* no data"),
             "an estimate": swap("**Likelihood:** *(observed)* outages at the payment provider are unlikely, twice a year (a guess)"),
             "a percentage with no source": swap("**Likelihood:** *(observed)* the payment provider is down 2% of the time, at most"),
+            "a percentage with its bracket before it": swap("**Likelihood:** *(observed)* the provider (its status page) is down 2% of the time, at most"),
+            "a percent in words with no source": swap("**Likelihood:** *(observed)* the payment provider (twice) is down two percent of the time"),
+            "Best response? with no dash": body[:k + 1] + [body[k + 1].replace("no — ", "no: ")] + body[k + 2:],
             "observed with no source": swap("**Likelihood:** *(observed)* the payment provider went down twice in the last twelve months"),
             "evidence with nothing to settle it": swap("**Likelihood:** *(evidence)* no outage log covers the provider before this year at all"),
             "an unknown kind": swap(body[k].replace("*(observed)*", "*(estimated)*")),
@@ -356,6 +465,17 @@ class LikelihoodChat(unittest.TestCase):
         # the evidence form, with what would settle it, passes
         ok = swap("**Likelihood:** *(evidence)* no outage log covers the provider before this year; its status page would show the last two years")
         self.assertEqual(likelihood_problems("evidence", ok), [])
+        # a percentage with its source in brackets after it passes
+        ok = swap("**Likelihood:** *(observed)* the payment provider was down for 0.02% of last year's minutes (its status page)")
+        self.assertEqual(likelihood_problems("percent", ok), [])
+
+    def test_rendering_and_the_gallery_write_best_response_one_way(self):
+        flat = " ".join(RENDERING.read_text().split())
+        self.assertIn("(**Best response?:** no — a queued retry covers both outages;", flat)
+        for line in GALLERY.read_text().splitlines():
+            m = BEST_LINE.match(line)
+            if m and BEST_YES_NO.match(m.group(1)):
+                self.assertRegex(m.group(1), BEST_FORM, line)
 
     def test_the_floor_the_worksheet_the_evidence_rule_the_record_and_the_ruling_say_it(self):
         skill = " ".join(SKILL_MD.read_text().split())
@@ -369,11 +489,18 @@ class LikelihoodChat(unittest.TestCase):
         self.assertNotIn("never as a number", eb)
         record = RECORD.read_text()
         self.assertRegex(record, r"\n\| `likelihood` \| `\{kind, seen\}` \| optional \| \*\*Likelihood:\*\*")
-        self.assertRegex(record, r"\n\| `best` \| text, one line \| optional; needs `likelihood` \|")
+        self.assertRegex(record, r"\n\| `best` \| text, one line \| of a new card \(lint\); needs `likelihood` \|")
         upgraded = record.split("## Fields an upgraded card may already carry")[1].split("\n## ")[0]
         self.assertNotIn("`likelihood` (`{kind, seen}`)", upgraded)
         rulings = (refs / "rulings.md").read_text()
         self.assertIn("- **Likelihood, widened, and Best response?, both surfaces** (2026-10-20, answer 267 (a)", rulings)
+        self.assertEqual(ruling_problems(rulings), [])
+        # mutant: the percentage rule back among the operator's words, before the designs clause
+        entry = rulings.split("- **Likelihood, widened, and Best response?")[1]
+        moved = entry.replace("and a percentage only as an observed share with its source and window; ", "")
+        moved = moved.replace("A bare *no data* is never the line;",
+                              "A bare *no data* is never the line; a percentage only as an observed share with its source and window;")
+        self.assertTrue(ruling_problems("- **Likelihood, widened, and Best response?" + moved))
 
 
 if __name__ == "__main__":

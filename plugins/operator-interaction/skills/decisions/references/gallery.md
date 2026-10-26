@@ -1126,7 +1126,7 @@ provider's own record, and whether a fallback is the response that matters (answ
 **Context:** the shop takes card payments through one payment provider, and checkout failed while that provider was down last month; a queued retry would hold a failed payment and try it again once the provider answers. You asked for a fallback after that outage · you decide how checkout meets the next one.
 **What:** how the shop's checkout handles the payment provider being down.
 **Likelihood:** *(observed)* the payment provider went down twice in the last twelve months, each time for under an hour (the provider's public status page)
-**Best response?:** no: a queued retry covers both outages; a second provider is a bigger change for the same hours
+**Best response?:** no — a queued retry covers both outages; a second provider is a bigger change for the same hours
 ▸ Assumptions — basis: **partial** · 1 assumption with its tripwire
 **Impact:** later: checkout fails again at the next outage · reach: every customer who pays during an outage
 - (a) Add a second provider and switch to it on failure

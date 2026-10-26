@@ -410,7 +410,8 @@ answer page*, and the card rules the page renders.
   no `items` or too few; a lint on a card the upgrader carried over), then lints for ids anywhere on the page, counts and named
   things a card's Context and What part do not introduce (the Finding, the Scope and the Likelihood read too), the level shapes, a reach that reads as the recommendation's, an option's effect
   or the Finding's mechanism with no mechanism, and the depth lints (a level not longer than the one below, thin or long
-  depth, an option with no reach, what a new card owes), and an option with no pro or con;
+  depth, an option with no reach, what a new card owes), an option with no pro or con, and a likelihood
+  with no fact or source (or an estimate, or no Best response? on a new card);
   `--record FILE` checks one record
 - `scripts/upgrade_cards.js` — the upgrader under node: an older `cards.json` (the legacy
   shipped shape, or the page's working kit) to `decision-page/5`, format only, every `rev` kept byte for byte,

@@ -36,6 +36,10 @@
       - an Impact reach that reads as the recommended option's alone; an item's per that gives the
         recommended option's outcome alone;
       - the mechanism: an option's effect, or the Finding's mechanism, of a bare label, MECH_MIN words or fewer (rule 268);
+      - the likelihood (F9, answer 267 (a), widened): a shown seen that is a bare no data, holds an estimate word, a
+        percentage with no bracketed source after it, opens on a carried-over basis word ("(estimated) "), or, on an
+        observed one, ends on no bracketed source; a likelihood with no shown best on a new card (not one the upgrader
+        carried over with its rev);
       - the system: a process phrase (a review comment, another round, your time, a blocked
         session) in an option's effect or reach, or the Impact's reach, which describe the thing
         the work builds (rule 259);
@@ -329,6 +333,37 @@ function mech(c, say) {
     say("mech finding", "impact: the finding's mechanism is " + words(fm) + " words (\"" + fm.trim() + "\"): say how it happens, who meets it and when; or leave it knowingly");
 }
 
+/* ---- the likelihood lint (F9, answer 267 (a), widened): the Likelihood's line gives the strongest concrete fact, else
+   the evidence there is; never a bare no data, never an estimated probability, and a percentage only as an observed
+   share with its source. Proxies over the shown seen (the page's own likelihoodOf); a lint, never a refusal, so a
+   carried-over card renders ---- */
+const LK_NO_DATA = /^\W*(no data|unknown|not known)\W*$/i;
+const LK_ESTIMATE = /\b(likely|unlikely|probabl[ey]|chances?|odds)\b/i;
+/* a percentage with no bracketed source after it: "%" or "percent", and no "(" anywhere after it */
+const LK_PERCENT = /(%|\bper\s?cent\b)(?![^]*\()/i;
+/* an observed fact's source, in brackets at the end */
+const LK_SOURCE_END = /\([^()]+\)\W*$/;
+/* the upgrader's carried-over basis word at the head of seen: "(estimated) …" */
+const LK_CARRIED = /^\s*\([A-Za-z][A-Za-z -]*\)\s/;
+function likelihoodLint(c, say) {
+  const l = page.likelihoodOf(c);
+  if (!l) return;
+  const s = l.seen, fix = "name the event, then the strongest fact (a count with its window and source), else the evidence there is and what would settle it";
+  if (LK_NO_DATA.test(s))
+    say("likelihood no-data", "impact: the likelihood says only \"" + s.trim() + "\": " + fix + "; a bare no data is never the line");
+  const e = s.match(LK_ESTIMATE);
+  if (e) say("likelihood estimate", "impact: the likelihood holds an estimate (\"" + e[0] + "\"): give an observed fact instead, or the evidence there is; or leave it knowingly");
+  const p = s.match(LK_PERCENT);
+  if (p) say("likelihood percent", "impact: the likelihood gives a percentage (\"" + p[0] + "\") with no source in brackets after it: a percentage is an observed share, with its source and window; or leave it knowingly");
+  if (LK_CARRIED.test(s))
+    say("likelihood carried", "impact: the likelihood opens on a carried-over basis word (\"" + s.trim().match(/^\([^)]*\)/)[0] + "\"): " + fix + ", and drop the word");
+  if (l.kind === "observed" && !LK_SOURCE_END.test(s))
+    say("likelihood source", "impact: an observed likelihood ends on no source in brackets: give where the fact comes from, (the provider's status page); or leave it knowingly");
+  /* Best response? (answer 339 (a)): owed by a new card beside its likelihood; one the upgrader carried over may lack it */
+  if (!page.bestOf(c) && !carried(c))
+    say("best", "impact: the likelihood has no best: say on Best response? whether acting here is the most important response to that failure, and if not, what is; or leave it knowingly on a card carried over by the upgrader");
+}
+
 /* the Finding's words in the card in all: its title, where and mechanism; never its excerpt, which has its own size */
 const findingWords = c => { const f = page.findingOf(c); return f ? [f.title, f.where, f.mechanism].filter(s => typeof s === "string") : []; };
 /* ---- the depth lints (decision 198): sizes read at each part's top level, words split on whitespace ---- */
@@ -545,6 +580,7 @@ function lintCard(c, w, sh, out) {
   recOnly(c, say);
   systemOnly(c, say);
   mech(c, say);
+  likelihoodLint(c, say);
   depth(c, say);
   oneway(c, say);
   tradeoffs(c, say);
