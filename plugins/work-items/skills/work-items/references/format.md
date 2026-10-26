@@ -1369,6 +1369,47 @@ and answers none: `needs-input`, the decision counter and the estate sweep
 pass it by. `wi` does not parse it yet; a reader splits it
 with `^decided: (\S+) ([a-z-]+) — (.*?) · authority: (.*?) · reopen: (.*)$`.
 
+## Decision line kinds
+
+Every line a decision writes in an item's body, in one table: its form, its column (0, or
+indented under the line it belongs to), who writes it, whether `wi` parses it (and the
+pattern in `wi.py` that reads it), and its state: *landed*, *planned* (with the plan that
+adds it) or *legacy* (read, never written again). The sections above give each landed
+kind's rules; this table is where a reader finds them all.
+
+| Kind | Form | Column | Written by | `wi` parses | State |
+|---|---|---|---|---|---|
+| headline | `decision N: [<label> (<name>) · ]<q>[ ⚠ one-way] — options: …` | 0 | the caller; `wi raise` (built from the record with `--record`) | `DECISION_RE` | landed |
+| raised | `raised: <UTC>` | indented, under its headline | the caller; `wi raise` | `RAISED_RE` (the first per N) | landed |
+| revised | `revised: <UTC> — <why>` | indented, under its headline | the caller; `wi raise --revise` | no | landed |
+| card | `card: cards/<id>/<N>/<file> rev <rev> · decision-card/<k> — …` | indented, under its headline | `wi raise --record` | `CARD_RE` | landed |
+| machine card lines | `delegation: <id>`, `terms: …` (the answer-changes plan); `act: …`, `grant: <id>` (the signed-grants plan) | indented, under the current `card:` block | `wi raise --lines` (at the raise, or `--revise N --lines` alone) | the keys only; each plan's own patterns | planned (their grammar; `wi` writes the keys today) |
+| legacy card lines | `what:`, `why now:`, `why ask:`, `context:`, `impact:`, option lines, `to act (x):`, `rec:`, `basis:`, `unknown:`, … | indented, under its headline | the caller, before v5 cards | no (only `raised:`) | legacy: read by the decisions skill's legacy reference |
+| answer | `answer N: <reply> [(read as: …)]` | 0 | the caller | `ANSWER_RE` | landed |
+| verbatim | `verbatim N (added <UTC>, from <source>): "<the reply>"` | indented, under its answer line | the caller | no | landed |
+| given | `given: <UTC> · by: … · session: … · via: … [· delegation: <id>] [· why: …]` | indented, under its answer line | the caller | the answer-changes plan's pattern | planned (the answer-changes plan) |
+| wake | `wake N: <time \| event \| next Report>` | 0 | the caller | no | landed |
+| closed | `closed N: acted <sha \| id>`, `closed N: rule <path>`, `closed N: superseded by <M \| <repo>#M>` | 0 | the caller | no (§ Closed gives a reader's split) | landed |
+| withdrawn | `withdrawn N: reframed as M …` | 0 | written by some callers, with no grammar of its own | no | legacy |
+| shown | `shown N: <UTC> <chat \| page \| doc>` | 0 | the session that displays the decision | `SHOWN_RE` | landed |
+| seen | `seen N: <UTC> <turn \| page \| doc>` | 0 | the session that displayed it | `SEEN_RE` | landed (held: § Shown and seen) |
+| decided | `decided: <UTC> <class> — … · authority: … · reopen: …` | 0 | the caller | no (§ Decided alone gives a reader's split) | landed |
+| open question | `open question: <text>`, closed by `open question: <text> → decision N` or `open question dropped: <text> — <why>` | 0 | the caller (the librarian-mode convention) | no | landed |
+| group, depends | `group g-<MMDD>-<hhh>: …`, `group N: g-…`, `depends N: …` | 0 | the session that writes the decisions | that plan's patterns | planned (the depends-and-groups plan) |
+| writer run | `writer-run: …` | 0 | the librarian | no | planned (the depends-and-groups plan) |
+| delegation | `delegation dl-…: …`, its revoke and `revoke-ack` lines | 0 | the session that grants it | the answer-changes plan's patterns | planned (the answer-changes plan) |
+
+- **A row's state.** A plan that adds a line kind lists it here as *planned*; the commit that
+  builds it switches the row to *landed*. A row marked *landed* that names a pattern names
+  one `wi.py` holds, and the row's form, filled in, matches it.
+- **No version on a line.** A card with no `format` stamp (stored as lines, before v5) is
+  legacy, read by the decisions skill's legacy reference; any other contract with no stamp
+  is its version 1. Event lines are never versioned: they grow by optional tokens or ` · `
+  fields, and a change that breaks a reader takes a new keyword.
+- **`card:` in two places.** It is a line kind here, under a headline in an item, and a key
+  in the signed-grants plan's statement (a file under `grants/`). Neither reader reads the
+  other's file.
+
 ## Body sections
 
 - untitled text before the first `##` — description; the first paragraph is
