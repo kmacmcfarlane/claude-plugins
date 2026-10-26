@@ -483,7 +483,7 @@ Example:
 - The read-back line (⚠ blocks only) names the one-way option(s). A block for a wide
   decision that is not ⚠ drops it.
 - Write every one-way or costly **Undo** cell plainly, after its ⚠ — it is what decides
-  whether an answer is read back (`references/replies.md`).
+  whether an answer is read back (`references/replies.md`). Write a `|` inside a cell as `\|`.
 - Never use the words "answer alone" as a label; the ⚠ and the read-back line carry it.
 
 ## An option's view
@@ -516,7 +516,7 @@ the table's row.
   and Reach), one point a row, at most five a side, the weightiest first: the record's `pros`
   and `cons`, the one-line `*pros:*` and `*cons:*` lines in full. A side shorter than the
   other leaves its cells empty; with no points on either side there is no table, and with
-  points on one side only, the other column stays, empty.
+  points on one side only, the other column stays, empty. Write a `|` inside a cell as `\|`.
 - (z)'s view is its plan, then its pros and cons where it gives any, and its facet line is what waiting costs.
 - `tell me (x)` changes nothing on the card: it is shown, not revised, so no **Added:** line
   and no new revision. The card is one scroll up; do not send it again.

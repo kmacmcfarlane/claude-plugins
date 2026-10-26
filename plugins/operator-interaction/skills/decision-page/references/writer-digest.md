@@ -252,6 +252,6 @@ page-wide one prints `lint: page:`.
 
 Then the cold read: list each noun phrase in the Impact, TLDR, option titles and one lines,
 and each option's `pro` and `con` (visible rows, linted by `count` and `named` though outside
-the flat part's size) and its view's `plan`, `pros` and `cons` (linted the same way), that names a specific thing, and point to its gloss in `context`. Of each effect, ask: does
+the flat part's size) and its view's `plan`, `pros` and `cons`, that names a specific thing, and point to its gloss in `context`. Over the view the `named` lint reads qualified names only ("content mode"); a bare noun, a phrase opening on a function word ("to plan") or on a verb form ("reaches review") is yours to check here. Of each effect, ask: does
 it name what happens to the thing being built? Could you say how it happens, not only that
 it does?

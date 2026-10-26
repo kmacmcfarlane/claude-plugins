@@ -189,10 +189,12 @@ const state = () => Object.fromEntries(bs.map(b => [b.dataset.omore,
   {shown: !b.view.hidden, expanded: b.attrs["aria-expanded"], on: b.cls.has("on")}]));
 const log = {};
 pickView(root, "41", "b"); log.pickB = state();
+pickView(root, "41", "b"); log.pickBagain = state();
 moreView(root, "41", "a"); log.moreA = state();
 moreView(root, "41", "a"); log.moreAagain = state();
 pickView(root, "41", "z"); log.pickZ = state();
-log.pure = {pick: pickOpen({a: true, b: false}, "b"), more: moreOpen({a: true, b: false}, "b")};
+log.pure = {pick: pickOpen({a: true, b: false}, "b"), more: moreOpen({a: true, b: false}, "b"),
+  again: pickOpen({a: false, b: true}, "b")};
 process.stdout.write(JSON.stringify(log));
 """
 
@@ -212,6 +214,10 @@ def pick_problems(log):
     out = []
     if open_views(log["pickB"]) != ["b"]:
         out.append("picking (b) leaves %r open, not (b) alone" % open_views(log["pickB"]))
+    if open_views(log["pickBagain"]) != ["b"]:
+        out.append("picking (b) again leaves %r open, not (b)" % open_views(log["pickBagain"]))
+    if log["pure"]["again"] != {"a": False, "b": True}:
+        out.append("pickOpen on an open (b) gives %r" % log["pure"]["again"])
     if open_views(log["moreA"]) != ["a", "b"]:
         out.append("More on (a) leaves %r open: it toggles (a) alone" % open_views(log["moreA"]))
     if open_views(log["moreAagain"]) != ["b"]:
@@ -233,13 +239,15 @@ class Picking(unittest.TestCase):
     def test_picking_opens_one_and_closes_the_other_more_toggles_one(self):
         log = picking(page_free_script())
         self.assertEqual(pick_problems(log), [])
-        self.assertEqual(log["pure"], {"pick": {"a": False, "b": True}, "more": {"a": True, "b": True}})
+        self.assertEqual(log["pure"], {"pick": {"a": False, "b": True}, "more": {"a": True, "b": True},
+                                       "again": {"a": False, "b": True}})
 
     def test_mutants_no_close_and_more_closing_others_are_caught(self):
         src = page_free_script()
         for old, new in (("const pickOpen=(open,k)=>{const o={};for(const x in open)o[x]=x===k;return o};",
                           "const pickOpen=(open,k)=>Object.assign({},open,{[k]:true});"),
                          ("function moreView(root,n,k){", "function moreView(root,n,k){return pickView(root,n,k);"),
+                         ("o[x]=x===k;return o};", "o[x]=x===k?!open[x]:false;return o};"),
                          ("el.hidden=!on;b.setAttribute(\"aria-expanded\",String(on));",
                           "el.hidden=!on;")):
             with self.subTest(new=new):
@@ -471,6 +479,30 @@ class FixRound(unittest.TestCase):
         d = example()
         opt(d, 43, "b")["plan"] = "We need to plan and review the change; it reaches review without plan, from the template."
         self.assertIn("is not glossed", runner_with(m, d)[1])
+
+    def test_qualified_names_with_ed_or_ing_still_fire(self):
+        for field, value in (("plan", "The staging phase and a managed setting change."),
+                             ("cons", ["The staging phase and a managed setting change"])):
+            with self.subTest(field=field):
+                d = example()
+                opt(d, 43, "b")[field] = value
+                out = runner(d)[1]
+                for t in ("staging phase", "managed setting"):
+                    self.assertIn('"%s" (an option\'s view) is not glossed' % t, out)
+                js = RUNNER.read_text()
+                m = js.replace("const VERB_FORM = /(?:es)$/;", "const VERB_FORM = /(?:es|ed|ing)$/;", 1)
+                self.assertNotEqual(m, js)
+                self.assertNotIn("is not glossed", runner_with(m, d)[1])
+
+    def test_a_possessive_is_no_qualifier(self):
+        for apos in ("'", "’"):
+            d = example()
+            opt(d, 43, "b")["plan"] = "The maintainer" + apos + "s plan stays."
+            self.assertEqual(runner(d)[:2], (0, ""), apos)
+        js = RUNNER.read_text()
+        m = js.replace("return possessive || DET.has(w)", "return DET.has(w)", 1)
+        self.assertNotEqual(m, js)
+        self.assertIn('"s plan" (an option\'s view) is not glossed', runner_with(m, d)[1])
 
     def test_an_option_with_both_plan_and_text(self):
         d = example()

@@ -155,7 +155,9 @@ the medium and high renditions of the Impact and the TLDR, and each option's vie
 the points of its Pros | Cons table, which picking the option opens), checked against
 Context's **summary** only: each part steps alone, so the Context beside a TLDR at full
 detail may be at its summary. A term a level introduces needs its gloss in Context's summary,
-or in the level itself.
+or in the level itself. Over an option's view the lint reads qualified names only ("content
+mode"): a bare noun, a phrase opening on a function word ("to plan", "and review") and one
+opening on a verb form ("reaches review") are left to the writer's cold read.
 
 **Levels on the page.** A part with levels steps summary → medium → high → summary on a
 click, the level replacing the part's text; a part steps alone, only through the levels it

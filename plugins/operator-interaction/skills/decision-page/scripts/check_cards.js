@@ -134,12 +134,15 @@ const NAMED = /\b([a-z][a-z-]*)\s+(mode|setting|review|plan|document|doc|spec|po
 const named = s => [...strip(s).matchAll(NAMED)].map(m => { const w = m[1].toLowerCase(); return DET.has(w) || W[w] ? m[2].toLowerCase() : (m[1] + " " + m[2]).toLowerCase(); });
 /* over an option's view (its plan and its table's points, prose where the nouns are often verbs: "to plan", "and
    review", "reaches review"), a match is dropped when its first word is a function word or a verb form, as DET
-   drops a determiner, and the bare noun left is not read: only a qualified name ("content mode") fires */
+   drops a determiner, and the bare noun left is not read: only a qualified name ("content mode") fires. A verb form
+   is a third-person -es ("reaches"); -ed and -ing stay, since they qualify real names ("the staging phase", "a managed
+   setting"). The s of a possessive ("the maintainer's plan") is no qualifier either */
 const FUNC = new Set(["to", "and", "or", "nor", "but", "of", "for", "without", "with", "then", "than", "so", "as", "at", "by", "in",
   "on", "from", "into", "onto", "per", "via", "if", "when", "until", "before", "after", "while"]);
-const VERB_FORM = /(?:es|ed|ing)$/;
-const namedView = s => [...strip(s).matchAll(NAMED)].flatMap(m => { const w = m[1].toLowerCase();
-  return DET.has(w) || W[w] || FUNC.has(w) || VERB_FORM.test(w) ? [] : [(m[1] + " " + m[2]).toLowerCase()]; });
+const VERB_FORM = /(?:es)$/;
+const namedView = s => { const t = strip(s); return [...t.matchAll(NAMED)].flatMap(m => { const w = m[1].toLowerCase();
+  const possessive = w === "s" && m.index > 0 && /['’]/.test(t[m.index - 1]);
+  return possessive || DET.has(w) || W[w] || FUNC.has(w) || VERB_FORM.test(w) ? [] : [(m[1] + " " + m[2]).toLowerCase()]; }); };
 /* the broad recommendation forms the page lets through: they may be someone else's. Rec as a
    whole word and recommend…, never Recent or Records */
 const REC_BROAD = /^[^A-Za-z]*(rec|recommend\w*|suggest\w*)\b|\bwe\s+suggest\b/i;
