@@ -122,7 +122,7 @@ class Templates(unittest.TestCase):
 
     def test_the_card_template_runs_context_what_impact(self):
         card = fenced(RENDERING.read_text(), "**N — Title as a question?**\n**Context:**")
-        self.assertEqual(heads(card)[:5], ["Context", "What", "Finding", "Scope", "Impact"])
+        self.assertEqual(heads(card)[:6], ["Context", "What", "Finding", "Scope", "Likelihood", "Impact"])
         self.assertNotIn("Why now", heads(card))
         self.assertNotIn("Why ask", heads(card))
         self.assertNotIn("cold reader only", "\n".join(card))
@@ -133,8 +133,8 @@ class Templates(unittest.TestCase):
 
     def test_the_block_template_runs_context_bullets_what_table(self):
         block = fenced(RENDERING.read_text(), "**N — Title as a question?** ⚠ one-way")
-        self.assertEqual(heads(block)[:9],
-                         ["Context", "What", "Finding", "Scope", "Basis", "Impact", "table", "Why now", "Why ask"])
+        self.assertEqual(heads(block)[:10],
+                         ["Context", "What", "Finding", "Scope", "Likelihood", "Basis", "Impact", "table", "Why now", "Why ask"])
         check_bg_block(self, "rendering.md block", block)
         k = next(i for i, x in enumerate(block) if x.startswith("**Context:**"))
         self.assertTrue(block[k + 1].startswith("- the card's Context"), block[k + 1])
@@ -403,7 +403,8 @@ class GalleryContexts(unittest.TestCase):
         for n, kind, body in views(GALLERY):
             # a card raised from a finding shows it after What (F7, answer 337 (a))
             # and, where the work states requirements, its Scope after that (F8, answer 266 (b))
-            fnd = [h for h in ("Finding", "Scope") if h in heads(body)]
+            # and, on a risk decision, its Likelihood after that (F9, answers 267 (a) and 339 (a))
+            fnd = [h for h in ("Finding", "Scope", "Likelihood") if h in heads(body)]
             want = ["Context", "What"] + fnd + (["Basis", "Impact", "table"] if kind == "block" else ["Impact"])
             self.assertEqual(heads(body)[:len(want)], want, f"gallery.md:{n} ({kind})")
 

@@ -6,7 +6,7 @@ envelope, a page card, an excerpt and the answers collection. **Each card is a c
 `decision-card/5`, whose fields are the `decisions` skill's `references/card-record.md`; a
 page card adds its layer `L` and its dependency line `dep`. `assets/cards.example.json` is a
 complete, invented example: three decisions, each opening on its TLDR, then its Context, then
-its What (one with its Scope, one with its Finding), then its Open questions fold, then its Assumptions fold, then its Impact. Its levels scale with the decision: a wide card with
+its What (one with its Scope, one with its Likelihood and Best response?, one with its Finding), then its Open questions fold, then its Assumptions fold, then its Impact. Its levels scale with the decision: a wide card with
 every part a click from more detail, a ⚠ one-way card (every option with its reach, its
 one-way option flagged) levelled too, and a small call raised from a source's labelled item
 with no recommendation and no levels, whose Finding shows its excerpt. One option carries the steps the operator takes to act
@@ -34,7 +34,9 @@ an object, has no `mechanism` as text, or one holding a line break, a `title` or
 not one line of text, a `label` that is not `{id, name}` or, on a card that carries a `label`, is
 not that same label, or an `excerpt` the excerpt rules refuse (§ An excerpt); a `scope` that is
 not an object, has a `level` other than `required`, `shapes` or `outside`, a `says` that is not
-one line of text, or none on a `required` or `shapes` scope;
+one line of text, or none on a `required` or `shapes` scope; a `likelihood` that is not an
+object, has a `kind` other than `observed` or `evidence`, or a `seen` that is not one line of
+non-blank text; a `best` that is not one line of text, or one on a card with no `likelihood`;
 an option but (z) with no effect; on a ⚠ card, an option but (z) with no reach; an option
 field that is not text; a `plan`, `pro` or `con` holding a line break (CR, LF, NEL, a line or
 paragraph separator, a vertical tab or form feed); a `pros` or `cons` that is not a list of
@@ -112,7 +114,10 @@ Each record field maps to a part of the `decisions` skill's card (its `reference
   `excerpt` drawn as a code block (§ An excerpt); then, where the work states requirements, the
   **Scope** part, never folded, one line (F8, answer 266 (b)): the `scope`'s `level` as a small
   boxed word (*required*, *shapes the work*, *outside the criteria*), then its `says`, the
-  criterion it rests on or what in the work it decides; then `open` in a closed **Open questions**
+  criterion it rests on or what in the work it decides; then, on a risk decision, the
+  **Likelihood** part, never folded (F9, answers 267 (a) and 339 (a)): the `likelihood`'s `kind`
+  as a small boxed word (*observed*, *evidence*), then its `seen`, then **Best response?** and
+  `best` on a line of its own; then `open` in a closed **Open questions**
   fold, its summary the count and the first question; then the closed **Assumptions** fold,
   on every card: its summary *basis:* and the `basis` word, then the count of `assume`
   (*basis: partial · 2 assumptions with tripwires*; *basis: strong* alone with none), and
@@ -177,8 +182,10 @@ option titles and one lines that refers to a specific thing: a count, a named mo
 review, plan or document, an item or a label. For each one, point to its gloss in
 `context`. A phrase with no gloss gets one before the page goes out. The pre-publish runner
 (SKILL.md step 2) lints counts and named things missing from `context` and the What part (the
-Finding's `title` and `mechanism`, and the Scope's `says`, included), and ids wherever they are
-(the What part and its items, the Finding but its excerpt, and the Scope included); those lints are proxies, and plain-word terms stay the cold read's. The same holds for
+Finding's `title` and `mechanism`, the Scope's `says`, the Likelihood's `seen` for named things
+and `best`, included), and ids wherever they are (the What part and its items, the Finding but
+its excerpt, the Scope, the Likelihood and Best response? included); an observed count in
+`seen` is the fact the line gives, so the count lint leaves it; those lints are proxies, and plain-word terms stay the cold read's. The same holds for
 the medium and high renditions of the Impact and the TLDR, and each option's view (its `plan` and
 the points of its Pros | Cons table, which picking the option opens), checked against
 Context's **summary** only: each part steps alone, so the Context beside a TLDR at full
@@ -215,6 +222,7 @@ whitespace-split:
 | The What part: `what`, one sentence; each item's `about` and `per`, a few words each | no cap: a set lists every item, and counts in the card in all |
 | The Finding: its `title`, `where` and `mechanism` (one to three sentences) | counts in the card in all; its `excerpt` does not, and has its own size (§ An excerpt) |
 | The Scope: its `says`, one line | counts in the card in all |
+| The Likelihood: its `seen` and `best`, one line each | count in the card in all |
 | Background: `why` + `whyask`, each at its top level | ~150 |
 | Each option but `z`: its top `plan` (or older `text`) + its effect, reach, undo and cost | ~60–120 |
 | An option's `plan`, Plan in brief | 2–4 sentences, at most ~100 words |
@@ -255,7 +263,7 @@ its title, a count of its decisions and *What they share:* its note; a bundle ad
 is its Wait: the lede says so, and the runner's `process` lint catches a process phrase in an
 option's effect or reach, or the Impact's reach. A card with a `label` shows it after its title,
 muted, with its short name, in every view. It opens every card on its TLDR, then its Context,
-then its What, then its Finding when it has one, then its Scope when it has one, then its Open questions, then its Assumptions, then its Impact: a page is read away from the conversation, so its
+then its What, then its Finding when it has one, then its Scope and its Likelihood when it has them, then its Open questions, then its Assumptions, then its Impact: a page is read away from the conversation, so its
 reader is treated as cold. Any part with `detail` toggles its level on a click, on its button
 or on its text (never on a link or a control, nor while text is selected, so it can be
 copied); the folds (Open questions and Assumptions above the Impact, Background and
@@ -277,7 +285,8 @@ don't display it*). A part, facet or field that is missing, blank, or says only 
 `none.`, `n/a`, `n/a.` or a lone dash (trimmed, any case) is left off
 the page, by one test in the template: a `dep` (no Dependencies fold), an `open` list (no Open
 questions fold), a `what` and `items` (no What part), a `finding`'s `mechanism` (no Finding part)
-and its `title` or `where`, a `scope`'s `says` (its level word alone), an item's `where`, `about` or `per` entry, an Impact `cost`, at every level, an option's effect, reach or cost, an
+and its `title` or `where`, a `scope`'s `says` (its level word alone), a `likelihood`'s `seen` (no
+Likelihood part, and no Best response? with it), a `best` (no Best response? line), an item's `where`, `about` or `per` entry, an Impact `cost`, at every level, an option's effect, reach or cost, an
 `evidence`, `ifleft`, `roundcosts`, `ifunanswered`, an option's one line, its `pro` or `con`
 (a none one has no row). A writer may simply
 leave such a field out; the optional ones were always optional. Shown whatever they say,

@@ -1111,3 +1111,42 @@ scope tag. A card from work with no stated requirements has no Scope line. On an
 same card shows a Scope part in the same place, its level a small boxed word. Not this: a
 Scope of *required* with no criterion after it; nor the criterion quoted in Context with no
 Scope line.*
+
+---
+
+## 35. A risk, with its likelihood and best response
+
+*Situation: a shop's checkout failed during the payment provider's last outage, and the
+operator asked whether to add a second provider as a fallback. The options trade against a
+failure that may or may not happen again, so the card says how often it has happened, from the
+provider's own record, and whether a fallback is the response that matters (answers 267 (a) and
+339 (a)).*
+
+**99 — Add a second payment provider for outages?**
+**Context:** the shop takes card payments through one payment provider, and checkout failed while that provider was down last month; a queued retry would hold a failed payment and try it again once the provider answers. You asked for a fallback after that outage · you decide how checkout meets the next one.
+**What:** how the shop's checkout handles the payment provider being down.
+**Likelihood:** *(observed)* the payment provider went down twice in the last twelve months, each time for under an hour (the provider's public status page)
+**Best response?:** no: a queued retry covers both outages; a second provider is a bigger change for the same hours
+▸ Assumptions — basis: **partial** · 1 assumption with its tripwire
+**Impact:** later: checkout fails again at the next outage · reach: every customer who pays during an outage
+- (a) Add a second provider and switch to it on failure
+  *→ a payment the first provider refuses with an outage error goes to the second, so checkout keeps working; before, the customer saw an error and left · cost: a second contract, about two weeks of work and a monthly fee*
+  *pros: checkout works through a long outage too*
+  *cons: two providers to keep in step, for about two hours of downtime a year*
+- **(b) Queue failed payments and retry them**
+  *→ a payment that fails with an outage error is held, the customer sees "payment pending", and it is retried every minute until the provider answers; before, the order was lost · cost: about three days of work*
+  *pros: covers every outage on record, at a fraction of the work*
+  *cons: an outage longer than a few hours leaves orders pending until it ends*
+- (z) Decide later — *checkout stays as it is; the next outage fails it again*
+
+▸ Background — why now: you asked for a fallback after last month's outage, and the next release closes on Friday.
+
+*The Likelihood names the event it counts (the provider going down), then the strongest fact
+found, a count with its window and its source, and Best response? says whether the fallback the
+operator asked about is the response that matters. With no record to count from, the line
+gives the evidence there is and what would settle it, under *(evidence)*: **Likelihood:**
+*(evidence)* no outage log covers the provider before this year; its status page would show
+the last two years. On an answer page the same card shows a Likelihood part in the same place,
+its kind a small boxed word, with Best response? under it. Not this: a Likelihood of "no data";
+nor "outages are unlikely", an estimate with no fact; nor "a 2% chance", a percentage with no
+source.*

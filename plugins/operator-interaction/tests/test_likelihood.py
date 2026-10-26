@@ -1,0 +1,380 @@
+"""The Likelihood and Best response? on a risk decision (F9, answers 267 (a), widened, and 339 (a)),
+on both surfaces.
+
+Three parts:
+
+- the decision page (`decision-page` skill, under node): `likelihoodPart` renders the record's
+  `likelihood`, `{kind, seen}`, and `best` after the Scope and before the folds above the Impact,
+  never folded: the kind as a small boxed word (*observed*, *evidence*), then `seen`, then
+  **Best response?** and `best` on a line of its own, each through `fmt`. `check()` refuses a
+  malformed likelihood and a `best` with no likelihood, which also runs in the runner's
+  `--record` mode;
+- the pre-publish runner (`scripts/check_cards.js`, under node): the id lint reads `seen` and
+  `best`; the cold read reads `best` whole and `seen` for named things (an observed count in it is
+  its fact, not a set Context names); both count in the card in all;
+- the chat card (the `decisions` skill): the **Likelihood:** line and its **Best response?:**
+  line after **Scope:** in the card and block templates, their form, and on every gallery risk
+  card a line that names its event and gives a fact with its source, or the evidence and what
+  would settle it: never a bare *no data*, an estimate, or a percentage with no source.
+
+Each check is proved by a mutation: a broken template, runner or text fails it.
+
+Run from the plugin dir: python3 -m unittest discover -s tests -q
+"""
+
+import re
+import sys
+import unittest
+
+from test_impact import NODE, example, finding_end
+from test_context import runner, RECORD
+from test_record import run_record, record_of
+from test_items import mutant_runner
+from test_chat_context import fenced, views, heads, GALLERY, RENDERING, SKILL_MD
+from test_finding import one, mutant_page, HOSTILE
+
+
+def setUpModule():
+    if not NODE:
+        print("WARNING: node is not installed: the Likelihood's page and runner tests (LikelihoodPage, "
+              "LikelihoodRunner) are skipped, so its render, its check and its lints went untested", file=sys.stderr)
+
+
+def c42(d):
+    return next(c for c in d["cards"] if c["n"] == 42)
+
+
+def lkh(res, n):
+    """The Likelihood part of card n, as the open card shows it: "" when there is none."""
+    card = res["cards"][str(n)]["card"]
+    m = re.search(r'<div class="lkh">.*?</div>', card)
+    return m.group(0) if m else ""
+
+
+SEEN = ("readers followed old links to the moved pages about 300 times last month, mostly from other sites and "
+        "bookmarks (the site's access log)")
+BEST = "yes: only a redirect keeps those links working; a hint on the not-found page still loses the reader for a click"
+
+
+@unittest.skipUnless(NODE, "node is not installed")
+class LikelihoodPage(unittest.TestCase):
+
+    def test_the_example_shows_card_42s_likelihood_and_best_response(self):
+        res = one(example())
+        self.assertEqual(res["bad"], [])
+        self.assertEqual(lkh(res, 42), '<div class="lkh"><span class="lbl">Likelihood</span><p><span class="lvw lk-observed">'
+                         'observed</span>' + SEEN.replace("'", "&#39;") + '</p><span class="lbl">Best response?</span><p>'
+                         + BEST + '</p></div>')
+        self.assertEqual(lkh(res, 41), "")
+        self.assertEqual(lkh(res, 43), "")
+        # mutants: the part left out of the card; Best response? left out of the part
+        res = one(example(), mutant_page("+scopePart(c)+likelihoodPart(c)+", "+scopePart(c)+"))
+        self.assertEqual(lkh(res, 42), "")
+        res = one(example(), mutant_page("+(b?'<span class=\"lbl\">Best response?</span><p>'+fmt(b)+'</p>':'')", ""))
+        self.assertNotIn("Best response?", lkh(res, 42))
+
+    def test_each_kind_shows_its_word_and_none_is_not_shown(self):
+        for kind in ("observed", "evidence"):
+            with self.subTest(kind):
+                d = example()
+                c42(d)["likelihood"]["kind"] = kind
+                self.assertIn('<span class="lvw lk-%s">%s</span>' % (kind, kind), lkh(one(d), 42))
+        # a none best: no Best response? line; a none seen: no part at all
+        d = example()
+        c42(d)["best"] = "n/a"
+        h = lkh(one(d), 42)
+        self.assertTrue(h)
+        self.assertNotIn("Best response?", h)
+        d = example()
+        c42(d)["likelihood"]["seen"] = "none"
+        self.assertEqual(lkh(one(d), 42), "")
+        # mutant: a none seen shown
+        script = mutant_page("&&isTxt(c.likelihood.seen)&&shown(c.likelihood.seen)?c.likelihood:null",
+                             "&&isTxt(c.likelihood.seen)?c.likelihood:null")
+        self.assertNotEqual(lkh(one(d, script), 42), "")
+
+    def test_it_sits_after_the_scope_before_the_folds_and_is_never_folded(self):
+        def problems(script=None):
+            d = example()
+            c42(d)["scope"] = {"level": "outside"}
+            card = one(d, script)["cards"]["42"]["card"]
+            if '<div class="lkh">' not in card:
+                return ["no likelihood"]
+            at = card.index('<div class="lkh">')
+            out = []
+            if not card.index('<div class="what">') < at or not card.index('<div class="scp">') < at:
+                out.append("before What or the Scope")
+            if not at < card.index('class="gfold afold"') or not at < card.index('class="impline"'):
+                out.append("after the folds or the Impact")
+            if card[:at].count("<details") - card[:at].count("</details>") != 1:
+                out.append("inside a fold")
+            return out
+        self.assertEqual(problems(), [])
+        # mutants: before the Scope; inside the Assumptions fold
+        self.assertTrue(problems(mutant_page("+scopePart(c)+likelihoodPart(c)+", "+likelihoodPart(c)+scopePart(c)+")))
+        self.assertTrue(problems(mutant_page(
+            "+likelihoodPart(c)+openFold(c)+assumeFold(c,P)",
+            "+openFold(c)+assumeFold(c,P).replace('<div>','<div>'+likelihoodPart(c))")))
+
+    def test_seen_and_best_are_escaped(self):
+        def problems(script=None):
+            out = []
+            for v in HOSTILE:
+                d = example()
+                c42(d)["likelihood"]["seen"] = v
+                c42(d)["best"] = v
+                h = lkh(one(d, script), 42)
+                if "<script" in h or "<img" in h:
+                    out.append("%r renders raw" % v)
+            return out
+        self.assertEqual(problems(), [])
+        # mutants: seen drawn raw; best drawn raw
+        self.assertTrue(problems(mutant_page("+'</span>'+fmt(l.seen)+'</p>'", "+'</span>'+l.seen+'</p>'")))
+        self.assertTrue(problems(mutant_page("Best response?</span><p>'+fmt(b)+'</p>'", "Best response?</span><p>'+b+'</p>'")))
+
+    CASES = {
+        "likelihood must be {kind, seen}, its kind observed or evidence": [
+            lambda c: c.__setitem__("likelihood", "observed"),
+            lambda c: c["likelihood"].__setitem__("kind", "estimated"),
+            lambda c: c["likelihood"].pop("kind"),
+        ],
+        "likelihood needs its seen": [
+            lambda c: c["likelihood"].pop("seen"),
+            lambda c: c["likelihood"].__setitem__("seen", " "),
+            lambda c: c["likelihood"].__setitem__("seen", 3),
+        ],
+        "likelihood seen must be one line of text": [
+            lambda c: c["likelihood"].__setitem__("seen", "a\nb"),
+        ],
+        "best must be one line of text": [
+            lambda c: c.__setitem__("best", "a b"),
+            lambda c: c.__setitem__("best", ["yes"]),
+        ],
+        "best needs likelihood": [
+            lambda c: c.pop("likelihood"),
+        ],
+    }
+
+    def test_check_refuses_a_malformed_likelihood_or_best(self):
+        for needle, puts in self.CASES.items():
+            for i, put in enumerate(puts):
+                with self.subTest(needle=needle, i=i):
+                    d = example()
+                    put(c42(d))
+                    bad = one(d)["bad"]
+                    self.assertTrue(any(b.startswith("card 42: ") and needle in b for b in bad), bad)
+        # a likelihood with no best passes
+        d = example()
+        del c42(d)["best"]
+        self.assertEqual(one(d)["bad"], [])
+        # mutants: each test gone
+        cases = [
+            (lambda c: c["likelihood"].__setitem__("kind", "estimated"),
+             "if(!isObj(l)||!LIKELIHOOD_KINDS.includes(l.kind))", "if(!isObj(l))"),
+            (lambda c: c["likelihood"].pop("seen"),
+             "else if(!isTxt(l.seen))bad.push", "else if(false)bad.push"),
+            (lambda c: c["likelihood"].__setitem__("seen", "a\nb"),
+             "else if(LINE_BREAK.test(l.seen))", "else if(false)"),
+            (lambda c: c.__setitem__("best", "a\nb"),
+             "if(!(isStr(c.best)&&!LINE_BREAK.test(c.best)))", "if(!isStr(c.best))"),
+            (lambda c: c.pop("likelihood"),
+             "else if(c.likelihood==null)", "else if(false)"),
+        ]
+        for put, old, new in cases:
+            with self.subTest(old):
+                d = example()
+                put(c42(d))
+                self.assertEqual(one(d, mutant_page(old, new))["bad"], [])
+
+
+@unittest.skipUnless(NODE, "node is not installed")
+class LikelihoodRunner(unittest.TestCase):
+
+    def test_the_example_is_clean_and_so_is_its_record(self):
+        self.assertEqual(runner(example())[:2], (0, ""))
+        self.assertEqual(run_record(record_of(c42(example()))), (0, ""))
+
+    def test_a_record_with_best_and_no_likelihood_is_refused(self):
+        rec = record_of(c42(example()))
+        del rec["likelihood"]
+        code, out = run_record(rec)
+        self.assertEqual(code, 1, out)
+        self.assertIn("record 42: best needs likelihood", out)
+
+    def test_the_id_lint_reads_seen_and_best(self):
+        for put in (lambda c: c["likelihood"].__setitem__("seen", "the outage OQ3 came back twice"),
+                    lambda c: c.__setitem__("best", "no: OQ3 covers it")):
+            d = example()
+            put(c42(d))
+            self.assertIn("lint: card 42: OQ3 looks like an id (likelihood)", runner(d)[1])
+            js = mutant_runner('  put("likelihood", likelihoodTexts(c));\n', "")
+            self.assertNotIn("OQ3 looks like an id", runner(d, script=js)[1])
+
+    def test_the_cold_read_reads_best_whole_and_seen_for_named_things(self):
+        # best: a count Context does not name
+        d = example()
+        c42(d)["best"] = "no: seven other pages break the same way"
+        self.assertIn('lint: card 42: "seven" (the likelihood) counts things its context does not name', runner(d)[1])
+        js = mutant_runner('if (b) terms([b], " (the likelihood)");', "")
+        self.assertNotIn("(the likelihood)", runner(d, script=js)[1])
+        # seen: a named thing Context does not gloss
+        d = example()
+        c42(d)["likelihood"]["seen"] = "readers hit old links 300 times last month in the preview mode (the access log)"
+        out = runner(d)[1]
+        self.assertIn('lint: card 42: "preview mode" (the likelihood) is not glossed in its context', out)
+        # seen's observed count is its fact: no count lint on it
+        self.assertNotIn('"300"', out)
+        js = mutant_runner('if (l) terms([l.seen], " (the likelihood)", named, undefined, false);',
+                           'if (l) terms([l.seen], " (the likelihood)", named, undefined, true);')
+        self.assertIn('"300" (the likelihood) counts things', runner(d, script=js)[1])
+        js = mutant_runner('if (l) terms([l.seen], " (the likelihood)", named, undefined, false);', "")
+        self.assertNotIn("preview mode", runner(d, script=js)[1])
+
+    def test_seen_and_best_count_in_the_card_in_all(self):
+        for put in (lambda c: c["likelihood"].__setitem__("seen", " ".join(["word"] * 1400)),
+                    lambda c: c.__setitem__("best", " ".join(["word"] * 1400))):
+            d = example()
+            put(c42(d))
+            self.assertIn("lint: card 42: depth: the card is", runner(d)[1])
+            js = mutant_runner("+ words(likelihoodTexts(c)) ", "")
+            self.assertNotIn("depth: the card is", runner(d, script=js)[1])
+
+
+# the gallery's risk cards, with a Likelihood line
+LIKELIHOOD_CARDS = {99}
+LIKELIHOOD_LINE = re.compile(r"^\*\*Likelihood:\*\* \*\((observed|evidence)\)\* (\S.*)$")
+BEST_LINE = re.compile(r"^\*\*Best response\?:\*\* (\S.*)$")
+NO_DATA = re.compile(r"^\W*(no data|unknown|not known|none)\W*$", re.I)
+ESTIMATE = re.compile(r"\b(likely|unlikely|probabl[ey]|chances?|odds|rare|rarely)\b", re.I)
+NUMBER = re.compile(r"\b(\d+|once|twice|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|never)\b", re.I)
+
+
+def likelihood_problems(where, body):
+    """A view's Likelihood and Best response? against the rules: at most one Likelihood line, its
+    form `**Likelihood:** *(kind)* text`; observed: a fact with its source in brackets; evidence: the
+    evidence and what would settle it; never a bare no data, an estimate, or a percentage with no
+    source; a Best response? line right under it, and none without it; after What, any Finding and
+    any Scope, before the folds and the Impact."""
+    at = [i for i, x in enumerate(body) if x.startswith("**Likelihood:**")]
+    bests = [i for i, x in enumerate(body) if x.startswith("**Best response?:**")]
+    if not at:
+        return [where + ": a Best response? with no Likelihood"] if bests else []
+    out = []
+    if len(at) > 1:
+        out.append(where + ": more than one Likelihood line")
+    k = at[0]
+    m = LIKELIHOOD_LINE.match(body[k])
+    if not m:
+        out.append(where + ": the Likelihood line is not `**Likelihood:** *(kind)* text`")
+    else:
+        kind, text = m.groups()
+        if NO_DATA.match(text):
+            out.append(where + ": a bare no data")
+        if ESTIMATE.search(text):
+            out.append(where + ": an estimate, not a fact")
+        if "%" in text and "(" not in text:
+            out.append(where + ": a percentage with no source")
+        if kind == "observed" and not (NUMBER.search(text) and re.search(r"\([^)]+\)\s*$", text)):
+            out.append(where + ": an observed Likelihood with no fact and its source in brackets")
+        if kind == "evidence" and " would " not in " " + text + " ":
+            out.append(where + ": an evidence Likelihood that does not say what would settle it")
+        if len(text.split()) < 8:
+            out.append(where + ": a Likelihood too short to name its event and its fact")
+    if bests != [k + 1] or not BEST_LINE.match(body[k + 1]):
+        out.append(where + ": no Best response? line right under the Likelihood")
+    w = next((i for i, x in enumerate(body) if x.startswith("**What:**")), None)
+    if w is None or w > k:
+        out.append(where + ": the Likelihood is not after What")
+    else:
+        j = w + 1
+        while j < k:
+            if body[j].startswith("**Finding:**"):
+                j = finding_end(body, j)
+            elif body[j].startswith(("- ", "**Scope:**")):
+                j += 1
+            else:
+                break
+        if j != k:
+            out.append(where + ": something but What's items, the Finding and the Scope stands before the Likelihood")
+    later = [i for i, x in enumerate(body) if x.startswith(("▸ ", "▾ ", "**Impact:**"))]
+    if not later or min(later) < k:
+        out.append(where + ": the Likelihood is not before the folds and the Impact")
+    return out
+
+
+class LikelihoodChat(unittest.TestCase):
+
+    def test_the_templates_put_the_likelihood_after_the_scope(self):
+        text = RENDERING.read_text()
+        card = fenced(text, "**N — Title as a question?**\n**Context:**")
+        self.assertEqual(heads(card)[:6], ["Context", "What", "Finding", "Scope", "Likelihood", "Impact"])
+        k = next(i for i, x in enumerate(card) if x.startswith("**Likelihood:**"))
+        self.assertTrue(card[k].startswith("**Likelihood:** *(observed)* the event it counts"), card[k])
+        self.assertTrue(card[k + 1].startswith("**Best response?:** whether acting here"), card[k + 1])
+        block = fenced(text, "**N — Title as a question?** ⚠ one-way")
+        self.assertEqual(heads(block)[:5], ["Context", "What", "Finding", "Scope", "Likelihood"])
+        flat = " ".join(text.split())
+        self.assertIn("- **Likelihood:** on a **risk decision**", flat)
+        self.assertIn("- **Best response?:** the Likelihood part's second line", flat)
+        self.assertIn("answer 339 (a)", flat)
+
+    def test_every_gallery_risk_card_carries_a_sound_likelihood(self):
+        seen = set()
+        for n, kind, body in views(GALLERY):
+            if any(x.startswith("**Likelihood:**") for x in body):
+                seen.add(int(re.match(r"^\*\*(\d+)", body[0]).group(1)))
+            self.assertEqual(likelihood_problems(f"gallery.md:{n}", body), [])
+        self.assertEqual(seen, LIKELIHOOD_CARDS)
+
+    def test_the_gallery_risk_card_names_its_event(self):
+        n, kind, body = next(v for v in views(GALLERY) if v[2][0].startswith("**99 — "))
+        line = next(x for x in body if x.startswith("**Likelihood:**"))
+        # the event it counts, in plain words, before the fact
+        self.assertRegex(line, r"\*\(observed\)\* the payment provider went down twice in the last twelve months")
+
+    def test_the_likelihood_checks_fail_on_broken_cards(self):
+        n, kind, body = next(v for v in views(GALLERY) if v[2][0].startswith("**99 — "))
+        k = next(i for i, x in enumerate(body) if x.startswith("**Likelihood:**"))
+        w = next(i for i, x in enumerate(body) if x.startswith("**What:**"))
+        imp = next(i for i, x in enumerate(body) if x.startswith("**Impact:**"))
+        swap = lambda s: body[:k] + [s] + body[k + 1:]
+        mutants = {
+            "no data": swap("**Likelihood:** *(evidence)* no data"),
+            "an estimate": swap("**Likelihood:** *(observed)* outages at the payment provider are unlikely, twice a year (a guess)"),
+            "a percentage with no source": swap("**Likelihood:** *(observed)* the payment provider is down 2% of the time, at most"),
+            "observed with no source": swap("**Likelihood:** *(observed)* the payment provider went down twice in the last twelve months"),
+            "evidence with nothing to settle it": swap("**Likelihood:** *(evidence)* no outage log covers the provider before this year at all"),
+            "an unknown kind": swap(body[k].replace("*(observed)*", "*(estimated)*")),
+            "no Best response?": body[:k + 1] + body[k + 2:],
+            "Best response? alone": body[:k] + body[k + 1:],
+            "before What": body[:w] + body[k:k + 2] + body[w:k] + body[k + 2:],
+            "after the Impact": body[:k] + body[k + 2:imp + 1] + body[k:k + 2] + body[imp + 1:],
+        }
+        for name, b in mutants.items():
+            with self.subTest(name):
+                self.assertTrue(likelihood_problems("mutant", b), name)
+        # the evidence form, with what would settle it, passes
+        ok = swap("**Likelihood:** *(evidence)* no outage log covers the provider before this year; its status page would show the last two years")
+        self.assertEqual(likelihood_problems("evidence", ok), [])
+
+    def test_the_floor_the_worksheet_the_evidence_rule_the_record_and_the_ruling_say_it(self):
+        skill = " ".join(SKILL_MD.read_text().split())
+        self.assertIn("12. **Its likelihood**, on a risk decision", skill)
+        refs = SKILL_MD.parent / "references"
+        ws = " ".join((refs / "worksheet.md").read_text().split())
+        self.assertIn("| Risk | whether the options trade against a failure", ws)
+        self.assertIn("does its **Likelihood:** name what it is the likelihood of", ws)
+        eb = " ".join((refs / "evidence-basis.md").read_text().split())
+        self.assertIn("A bare *no data* is never the line", eb)
+        self.assertNotIn("never as a number", eb)
+        record = RECORD.read_text()
+        self.assertRegex(record, r"\n\| `likelihood` \| `\{kind, seen\}` \| optional \| \*\*Likelihood:\*\*")
+        self.assertRegex(record, r"\n\| `best` \| text, one line \| optional; needs `likelihood` \|")
+        upgraded = record.split("## Fields an upgraded card may already carry")[1].split("\n## ")[0]
+        self.assertNotIn("`likelihood` (`{kind, seen}`)", upgraded)
+        rulings = (refs / "rulings.md").read_text()
+        self.assertIn("- **Likelihood, widened, and Best response?, both surfaces** (2026-10-20, answer 267 (a)", rulings)
+
+
+if __name__ == "__main__":
+    unittest.main()

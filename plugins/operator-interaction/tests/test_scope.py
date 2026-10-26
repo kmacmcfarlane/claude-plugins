@@ -110,8 +110,8 @@ class ScopePage(unittest.TestCase):
         self.assertTrue(problems(mutant_page("+findingPart(c)+scopePart(c)+", "+scopePart(c)+findingPart(c)+"),
                                  finding=True))
         self.assertTrue(problems(mutant_page(
-            "+scopePart(c)+openFold(c)+assumeFold(c,P)",
-            "+openFold(c)+assumeFold(c,P).replace('<div>','<div>'+scopePart(c))")))
+            "+scopePart(c)+likelihoodPart(c)+openFold(c)+assumeFold(c,P)",
+            "+likelihoodPart(c)+openFold(c)+assumeFold(c,P).replace('<div>','<div>'+scopePart(c))")))
 
     def test_says_is_escaped(self):
         def problems(script=None):
@@ -259,7 +259,7 @@ class ScopeChat(unittest.TestCase):
     def test_the_templates_put_the_scope_after_the_finding(self):
         text = RENDERING.read_text()
         card = fenced(text, "**N — Title as a question?**\n**Context:**")
-        self.assertEqual(heads(card)[:5], ["Context", "What", "Finding", "Scope", "Impact"])
+        self.assertEqual(heads(card)[:6], ["Context", "What", "Finding", "Scope", "Likelihood", "Impact"])
         k = next(i for i, x in enumerate(card) if x.startswith("**Scope:**"))
         self.assertTrue(card[k].startswith("**Scope:** *required* — "), card[k])
         block = fenced(text, "**N — Title as a question?** ⚠ one-way")

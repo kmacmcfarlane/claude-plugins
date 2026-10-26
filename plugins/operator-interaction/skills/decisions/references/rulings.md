@@ -430,3 +430,26 @@ alternative not taken, in case practice argues for it.
   form, `**Scope:** *level* — says`; the pre-publish runner reading `says` for ids and in the
   cold read, and counting it in the card in all. Not taken: the scope word on the title line, a
   pill on the page (266 (a)); a line only on decisions outside the criteria (266 (c)).
+- **Likelihood, widened, and Best response?, both surfaces** (2026-10-20, answer 267 (a),
+  widened: "Provide or determine counts (or other forms of concrete facts) where possible, but
+  fall back to describing the evidence available"; Best response? kept as a second line of the
+  Likelihood part by answer 339 (a), 2026-10-22; their place set by the v4 layout, signed off
+  with answer 313) — a risk decision, one whose options trade against a failure that may or may
+  not happen, carries **Likelihood:** after the Scope (else What or Finding) and before the folds
+  above the Impact, never folded: it names the event it counts, then the strongest concrete
+  fact (an observed count with its window and source; else another fact: when it last
+  happened, an observed share, whether the failing path is reachable, a reproduction, whether a
+  guard exists; else the evidence there is and what would settle it), and **Best response?:**
+  under it, whether acting here is the most important response to that failure, and if not,
+  what is. A bare *no data* is never the line; estimated probabilities stay banned (*No
+  confidence percentage*, 2026-09-24, about the agent's confidence, stands: an observed count
+  is evidence), and a percentage appears only as an observed share with its source. It changes
+  the evidence-basis design sentence that said likelihood only in words, never as a number.
+  Designs made in planning and build, not the operator's: the record's `likelihood`, `{kind,
+  seen}`, its kinds `observed` and `evidence` (the page refuses another), and `best` beside it
+  (the page refuses one with no `likelihood`); the page's kind as a small boxed word; the chat
+  lines' form, `**Likelihood:** *(kind)* seen` and `**Best response?:** best`; the pre-publish
+  runner reading both for ids, `best` whole and `seen` for named things in the cold read (an
+  observed count in `seen` is its fact, not a set Context names), and counting both in the card
+  in all. Not taken: Likelihood in words only (267 (b)); Best response? dropped (339 (b)) or
+  folded into the Assumptions fold (339 (c)).

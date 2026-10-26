@@ -6,7 +6,7 @@ description: "Put a set of decisions to the operator as an answer page: a publis
 # Decision page
 
 A set of decisions on one page the operator works through at their own pace: a map of its
-groups, each card a one-line row that opens flat on its essentials (its TLDR, then its Context, then its What, then its Finding when it is raised from one, then its Scope where the work states requirements, then its Open questions, folded, then its Impact) with folds for the rest; a
+groups, each card a one-line row that opens flat on its essentials (its TLDR, then its Context, then its What, then its Finding when it is raised from one, then its Scope where the work states requirements, then its Likelihood on a risk decision, then its Open questions, folded, then its Impact) with folds for the rest; a
 click on a part with a more-detail button shows it as terse bullets, then in headed sections,
 each option but (z) shows its **Pros** and **Cons** rows under it, and picking an option, or **More** beside it, opens its view (its Plan in brief, its Pros | Cons table, then its effect, reach, undo and cost); one choice per card enforced by the
 radio buttons, answers saved as they click. You publish it, they answer, you read the answers
@@ -134,6 +134,12 @@ The rules below are what the digest condenses:
   folded. `level` is `required` (`says` the criterion, in plain words), `shapes` (it decides
   something the work itself creates; `says` what) or `outside` (no criterion covers it); the
   criterion goes here, not in `context`. With no stated requirements, leave it out.
+- On a risk decision (its options trade against a failure that may or may not happen), set
+  `likelihood`, `{kind, seen}`, and `best`: shown as its **Likelihood** part after the Scope,
+  never folded. `seen` names the event, then the strongest fact (`kind` `observed`: a count with
+  its window and source, or another concrete fact), or the evidence there is and what would
+  settle it (`kind` `evidence`); never a bare *no data* or an estimate. `best`, **Best
+  response?**, says whether acting here is the most important response to that failure.
 - **No ids on the page.** The page is the operator's only context: refer to another decision
   by its slug, and to an item, a series, a branch or a commit by its short name or title, with
   no id after it, in every field, the page and layer titles included. A fact only an id
@@ -402,7 +408,7 @@ answer page*, and the card rules the page renders.
 - `scripts/check_cards.js` — the pre-publish check under node: the page's own refusals, then
   the set refusal (a card that counts two or more things where it says what is decided, with
   no `items` or too few; a lint on a card the upgrader carried over), then lints for ids anywhere on the page, counts and named
-  things a card's Context and What part do not introduce (the Finding and the Scope read too), the level shapes, a reach that reads as the recommendation's, an option's effect
+  things a card's Context and What part do not introduce (the Finding, the Scope and the Likelihood read too), the level shapes, a reach that reads as the recommendation's, an option's effect
   or the Finding's mechanism with no mechanism, and the depth lints (a level not longer than the one below, thin or long
   depth, an option with no reach, what a new card owes), and an option with no pro or con;
   `--record FILE` checks one record

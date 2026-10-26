@@ -423,7 +423,7 @@ class GalleryShowsImpact(unittest.TestCase):
                     elif x.startswith("**Finding:**"):
                         j = finding_end(lines, j)  # the Finding, after What (F7)
                         continue
-                    elif x.strip() and not x.startswith(("*While it waited", "**What:**", "**Scope:**")):
+                    elif x.strip() and not x.startswith(("*While it waited", "**What:**", "**Scope:**", "**Likelihood:**", "**Best response?:**")):
                         break
                     else:
                         in_context = in_context and bool(x.strip())
