@@ -123,7 +123,7 @@ class DecisionPageNone(unittest.TestCase):
             d = example()
             d["cards"][1]["options"][0]["undo"] = undo
             more = card(run_page(d), 42)["more"]["a"]
-            self.assertIn('<span class="lbl">Undo</span>' + undo, more, undo)
+            self.assertIn('<span class="lbl">Undo</span><span>' + undo, more, undo)
 
     def test_a_one_way_more_shows_its_facets_first(self):
         res = run_page(example())
@@ -261,7 +261,7 @@ class OneWayOptions(unittest.TestCase):
         res = run_page(example())
         more = card(res, 42)["more"]
         self.assertNotIn("Undo", more["a"])
-        self.assertIn('<span class="lbl owu">⚠ Undo</span>Cannot be fully undone', more["b"])
+        self.assertIn('<span class="lbl owu">⚠ Undo</span><span>Cannot be fully undone', more["b"])
         self.assertNotIn("undo", card(res, 43)["parts"]["imp"][0])
         # the marker is styled from the theme's warn token
         self.assertIn(".impline i.owu,.lbl.owu{color:var(--warn)", PAGE.read_text())

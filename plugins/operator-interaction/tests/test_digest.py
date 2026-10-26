@@ -46,6 +46,7 @@ THRESHOLDS = {
     "words in the card in all": r"\ball > (\d+)",
     "words in an option's effect, at or under which mech fires": r"\bMECH_MIN = (\d+)",
     "words in the Background fold's summary": r"\bBGSUM_CAP = (\d+)",
+    "words in a pro or con": r"\bPROCON_CAP = (\d+)",
 }
 
 
@@ -169,7 +170,7 @@ class WriterDigest(unittest.TestCase):
         self.assertEqual(required_problems(self.record, self.digest, "A card"), [])
         self.assertGreaterEqual(len(keyed(section(self.record, "A card"), 2)), 26)
         self.assertEqual(required_problems(self.record, self.digest, "An option"), [])
-        self.assertGreaterEqual(len(keyed(section(self.record, "An option"), 2)), 11)
+        self.assertGreaterEqual(len(keyed(section(self.record, "An option"), 2)), 15)
 
     def test_the_v5_fields_are_listed(self):
         card = keyed(section(self.digest, "A card"), 1)
@@ -192,6 +193,19 @@ class WriterDigest(unittest.TestCase):
             self.assertNotIn("costly but reversible", text)
         gone = self.digest.replace("| `label` | optional |", "| label | optional |")
         self.assertIn("A card: `label` missing", required_problems(self.record, gone, "A card"))
+        # the option's inline Pros and Cons (F4), owed by a new card but on (z), and the points in full
+        option = keyed(section(self.digest, "An option"), 1)
+        for k in ("pro", "con"):
+            self.assertEqual(option.get(k), "of a new card, but on (z)")
+        for k in ("pros", "cons"):
+            self.assertEqual(option.get(k), "optional")
+        gone = self.digest.replace("| `con` | of a new card, but on (z) |", "| con | of a new card, but on (z) |")
+        self.assertIn("An option: `con` missing", required_problems(self.record, gone, "An option"))
+        req = self.digest.replace("| `pro` | of a new card, but on (z) |", "| `pro` | optional |")
+        self.assertTrue(required_problems(self.record, req, "An option"))
+        # the page's label before a non-recommended option's line is if chosen: in both
+        for text in (self.digest, self.record):
+            self.assertNotIn("not recommended because:", text)
 
     def test_card_field_mutations(self):
         gone = self.digest.replace("| `basis` | to render |", "| basis | to render |")
@@ -257,6 +271,12 @@ class WriterDigest(unittest.TestCase):
         self.assertIn("lint `assume` missing", lint_problems(self.js, gone))
         moved = self.digest.replace("| `assume` | `depth:` |", "| `assume` | `shape:` |")
         self.assertTrue(lint_problems(self.js, moved))
+        # the trade-offs lint (F4): its row, and its start
+        self.assertEqual(runner_lints(self.js)["tradeoffs"], {"shape:"})
+        gone = self.digest.replace("| `tradeoffs` | `shape:` |", "| tradeoffs | `shape:` |")
+        self.assertIn("lint `tradeoffs` missing", lint_problems(self.js, gone))
+        moved = self.digest.replace("| `tradeoffs` | `shape:` |", "| `tradeoffs` | `depth:` |")
+        self.assertTrue(lint_problems(self.js, moved))
 
     def test_thresholds(self):
         self.assertEqual(threshold_problems(self.js, self.digest), [])
@@ -265,7 +285,8 @@ class WriterDigest(unittest.TestCase):
         for old, new in [("TERSE = 14", "TERSE = 15"), ("MEDIUM_CAP = 6", "MEDIUM_CAP = 7"),
                          ("cw > 60", "cw > 61"), ("all > 1350", "all > 1400"),
                          ("cs > 2", "cs > 3"), ("c.tldr.length > 2", "c.tldr.length > 3"),
-                         ("MECH_MIN = 4", "MECH_MIN = 5"), ("BGSUM_CAP = 25", "BGSUM_CAP = 26")]:
+                         ("MECH_MIN = 4", "MECH_MIN = 5"), ("BGSUM_CAP = 25", "BGSUM_CAP = 26"),
+                         ("PROCON_CAP = 25", "PROCON_CAP = 30")]:
             with self.subTest(old=old):
                 self.assertIn(old, self.js)
                 self.assertTrue(threshold_problems(self.js.replace(old, new), self.digest))

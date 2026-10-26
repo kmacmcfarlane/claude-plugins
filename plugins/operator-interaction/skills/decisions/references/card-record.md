@@ -61,13 +61,17 @@ Two kinds of required:
 |---|---|---|---|
 | `k` | one letter `a`–`z` | to render | its letter; `z` is decide later |
 | `title` | text | to render | at most six words, verb first where it reads naturally |
-| `line` | text | optional | one line shown after the label the page picks: `because:` on the recommended option, `not recommended because:` on the others, `if left:` on (z), `if chosen:` on every option of a card with no recommendation |
+| `line` | text | optional | one line shown after the label the page picks: `because:` on the recommended option, `if chosen:` on every other option but (z), `if left:` on (z). Write it to follow *if chosen:*: what choosing it does or rests on; its downside goes on its Cons row |
 | `text` | text | optional | the option in full, its summary level |
 | `effect` | text | to render, but on (z) | its own effect, by its mechanism: how it happens, who meets it and when, the before and after; never a bare label. On (z), what waiting does |
 | `reach` | text | of a new card; to render on a ⚠ card, but (z) | who or what it reaches |
 | `undo` | text | with `oneway` | how it is undone and at what cost, or that it cannot be; given only on an option one-way or costly to undo |
 | `oneway` | boolean | optional | `true` on an option one-way or costly to undo; it then needs its `undo` |
 | `cost` | text | optional | its cost, where it has one |
+| `pro` | text, one line | of a new card, but on (z) | its **Pros** row: the option's main upside in one line, about 25 words at most, shown under it, always visible, labelled like Effect and Reach (the operator's feedback on decision 302); in chat, its `*pros: …*` line under its impact line. (z) has none on either surface: chat's (z) is one line, and the page shows no row for it |
+| `con` | text, one line | of a new card, but on (z) | its **Cons** row: its main downside or risk in one line, shown under its Pros; the recommended option always gives one. In chat, its `*cons: …*` line. None on (z) |
+| `pros` | list of text | optional | the option's upsides in full, one point each, one to five ((z) none to five), the weightiest first: the Pros column of the option's own view, its Pros \| Cons table. Until a surface draws that table, a reader checks them and keeps them as data |
+| `cons` | list of text | optional | its downsides in full, one point each, one to five ((z) none to five), the weightiest first: the table's Cons column |
 | `act` | list of text | optional | **To act on (x):** the steps the operator takes, one line each, in order; never on (z), never a fill-in placeholder (`<dir>`), never a secret's value |
 | `detail` | `[medium, high]` | optional | the levels of `text` |
 
@@ -93,7 +97,7 @@ The upgrader maps the answer page's working kit into the record, and some of the
 have no row above yet: `what` as the What part with its `items`
 (`[{name, where?, about?, per?}]`), `finding` (`{label?, title?, where?, mechanism, excerpt?}`),
 `scope` (`{level, says}`), `likelihood` (`{kind, seen}`) and `best`, `attached`, `rejected`
-(`[{t, why}]`), and on an option `pro`, `con`, `pros`, `cons` and `plan`. A reader keeps them as
+(`[{t, why}]`), and on an option `plan`. A reader keeps them as
 data and does not show them; each joins the tables above when the page and the chat card show
 it. In the kit, `pros` and `cons` were the one-line texts and `prosT` and `consT` the table's
 rows; the record names the one-line texts `pro` and `con` and the rows `pros` and `cons`. The

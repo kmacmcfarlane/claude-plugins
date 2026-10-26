@@ -29,11 +29,16 @@ from test_record import run_record
 # an older card never held assumptions: the upgrade invents none, so a recommended card is linted for
 # them, which a writer leaves knowingly on an upgraded card (the Assumptions fold, A1)
 ASSUME_LINT = "depth: no assumptions: "
+# nor pros and cons (F4): the upgrade invents none, so the tradeoffs lint fires on an upgraded
+# legacy card, left knowingly the same way
+TRADEOFFS_LINTS = ("options but (z) carries its pros and cons", ") has no pro", ") has no con")
 
 
 def unassumed(code, out):
-    """The runner's (code, output) less the assume lint, which an upgraded older card may carry."""
-    rest = [x for x in out.splitlines() if ASSUME_LINT not in x]
+    """The runner's (code, output) less the lints an upgraded older card may carry knowingly: assume
+    and tradeoffs, since the upgrade invents no field."""
+    rest = [x for x in out.splitlines()
+            if ASSUME_LINT not in x and not any(t in x for t in TRADEOFFS_LINTS)]
     return (0 if code == 2 and not rest else code), "".join(x + "\n" for x in rest)
 
 UPGRADER = SKILL / "scripts" / "upgrade_cards.js"
@@ -123,8 +128,12 @@ class Upgrade(unittest.TestCase):
         self.assertEqual(run_page(d)["bad"], [])
         self.assertEqual(unassumed(*runner(d)[:2]), (0, ""))
         # the legacy cards with a recommendation are the ones linted for it
-        self.assertEqual(sorted(x.split(":")[1].strip() for x in runner(d)[1].splitlines()),
+        self.assertEqual(sorted(x.split(":")[1].strip() for x in runner(d)[1].splitlines() if ASSUME_LINT in x),
                          ["card 41", "card 42"])
+        # and every legacy card, holding no pros and cons, is linted for them (F4)
+        self.assertEqual(sorted(x.split(":")[1].strip() for x in runner(d)[1].splitlines()
+                                if "options but (z) carries its pros and cons" in x),
+                         ["card 41", "card 42", "card 43"])
         # every rev kept, every card reported
         old = {c["n"]: c["rev"] for c in load(LEGACY)["cards"]}
         self.assertEqual({c["n"]: c["rev"] for c in d["cards"]}, old)
@@ -195,10 +204,12 @@ class Upgrade(unittest.TestCase):
         self.assertEqual(code, 0, out)
         self.assertEqual(run_page(d)["bad"], [])
         rcode, rout, _ = runner(d)
-        # no refusal; the only lints are the kit's what, which a later feature shows as its own part, and
-        # the assume lint on a recommended card the kit gave no assumptions
+        # no refusal; the only lints are the kit's what, which a later feature shows as its own part, the
+        # assume lint on a recommended card the kit gave no assumptions, and the cold read of the kit's own
+        # pro and con rows, which an upgrade carries over as written and cannot gloss without inventing context
         self.assertIn(rcode, (0, 2), rout)
-        self.assertTrue(all("what present" in x or ASSUME_LINT in x for x in rout.splitlines()), rout)
+        self.assertTrue(all("what present" in x or ASSUME_LINT in x or "(pros and cons)" in x
+                            for x in rout.splitlines()), rout)
         self.assertIn("card 51: kit, rev kept", out)
         self.assertIn("card 52: kit (v4), rev kept;", out)
         self.assertEqual(by_n(d)[52]["rev"], "2026-02-03T08:15Z")

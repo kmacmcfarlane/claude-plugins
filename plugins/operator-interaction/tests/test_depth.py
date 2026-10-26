@@ -437,7 +437,7 @@ class DecisionPageDepth(unittest.TestCase):
         self.assertNotIn(">Cost<", more["a"])
         # (z): its text and its effect, labelled Wait
         self.assertTrue(more["z"].startswith('<p><span class="mono ol">(z)</span> Decide later.</p>'), more["z"])
-        self.assertIn('<span class="lbl">Wait</span>The local build stays until you answer', more["z"])
+        self.assertIn('<span class="lbl">Wait</span><span>The local build stays until you answer', more["z"])
         # without levels, the option's own text
         d["cards"][0]["options"][0].pop("detail")
         self.assertTrue(card(run_page(d), 41)["more"]["a"].startswith('<p><span class="mono ol">(a)</span> Keep building on a laptop.'))

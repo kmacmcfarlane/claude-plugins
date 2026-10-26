@@ -8,7 +8,7 @@ description: "Put a set of decisions to the operator as an answer page: a publis
 A set of decisions on one page the operator works through at their own pace: a map of its
 groups, each card a one-line row that opens flat on its essentials (its TLDR, then its Context, then its Open questions, folded, then its Impact) with folds for the rest; a
 click on a part with a more-detail button shows it as terse bullets, then in headed sections,
-and **More** beside an option shows that option in full; one choice per card enforced by the
+each option but (z) shows its **Pros** and **Cons** rows under it, and **More** beside an option shows that option in full; one choice per card enforced by the
 radio buttons, answers saved as they click. You publish it, they answer, you read the answers
 back and hand them to your caller. The format first served a 24-decision set on how decisions
 are handled.
@@ -137,6 +137,10 @@ The rules below are what the digest condenses:
   option one-way or costly to undo carries `oneway: true` and its undo: the page refuses a
   flagged option without one, and the runner lints a ⚠ card with no flagged option. A round
   ask carries `ifleft` and `roundcosts`; a status-quo default, `ifunanswered`.
+- Every option but (z) carries its main upside and downside in one line each, `pro` and
+  `con`, shown under it as its **Pros** and **Cons** rows, always visible; the recommended
+  option always gives its con (the runner's `tradeoffs` lint). The points in full, one to five
+  each, the weightiest first, go in `pros` and `cons`.
 - What is not known yet goes in `open`, one question each, folded above the Impact.
 - What the recommendation rests on goes in `assume`, each `{rests, tw}`: the assumption and
   its tripwire, the sign that would change the call. The page shows it in the closed
@@ -369,7 +373,8 @@ answer page*, and the card rules the page renders.
   lints for ids anywhere on the page, counts and named things a card's Context does not
   introduce, the level shapes, a reach that reads as the recommendation's, an option's effect
   with no mechanism, and the depth lints (a level not longer than the one below, thin or long
-  depth, an option with no reach, what a new card owes); `--record FILE` checks one record
+  depth, an option with no reach, what a new card owes), and an option with no pro or con;
+  `--record FILE` checks one record
 - `scripts/upgrade_cards.js` — the upgrader under node: an older `cards.json` (the legacy
   shipped shape, or the page's working kit) to `decision-page/5`, format only, every `rev` kept byte for byte,
   all or nothing; `--questions`, `--only`, `--records`

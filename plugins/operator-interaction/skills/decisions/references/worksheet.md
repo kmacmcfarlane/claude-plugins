@@ -183,6 +183,12 @@ on an italic line under the option, a block in its table (`references/rendering.
 § Impact). Write these first: the closed views read the recommended option's effect off
 them, and the Impact line's reach, undo and cost are drawn from them.
 
+**Each option's pros and cons**, written with it: its main upside and its main downside or
+risk, one line each (`*pros: …*`, `*cons: …*` on a card; `pro` and `con` in the record), and,
+where the decision is wide, up to five of each in full (`pros`, `cons`), the weightiest first.
+Every option but (z) gets both; the recommended option's con is never skipped. A con says what
+the option itself costs or risks, never only that another option is better.
+
 Write it when the decision is raised, and store it with the card where the caller keeps one,
 so every later view reads it instead of composing it again.
 
