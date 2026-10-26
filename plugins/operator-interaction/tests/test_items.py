@@ -279,7 +279,8 @@ class WhatPartRunner(unittest.TestCase):
             with self.subTest(t):
                 self.assertTrue(self.refused(t))
         for t in ("Clarify principle 3", "as step 2 of the guide says", "runs on Python 3 only", "Clarify principle 3.",
-                  "Build tier three", "Option two first"):
+                  "Build tier three", "Option two first", "Phase 2 plan", "Make phase 2 optional",
+                  "Drop version 2 support", "Close ticket 4 today"):
             with self.subTest(t):
                 self.assertFalse(self.refused(t))
         # mutants: the label rule gone; a noun after the numeral read as a function word
@@ -288,7 +289,7 @@ class WhatPartRunner(unittest.TestCase):
         d["cards"][0]["options"][0]["line"] = "Clarify principle 3"
         self.assertIn(SET_REFUSAL, runner(d, script=script)[1])
         script = mutant_runner('|| (!!nx && FUNC_AFTER.has(nx[1].toLowerCase()))', "|| !!nx")
-        d["cards"][0]["options"][0]["line"] = "fix item 3 broken links"
+        d["cards"][0]["options"][0]["line"] = "fix items 3 broken links"
         self.assertTrue(refusal_in(runner(d)[1]))
         self.assertNotIn(SET_REFUSAL, runner(d, script=script)[1])
         # mutant: any word a label head again, so a verb on no list ("Retire") heads a label
@@ -303,9 +304,27 @@ class WhatPartRunner(unittest.TestCase):
                   # versions, codes, years, dates and label lists (fix round 2, M1)
                   "Drop Python 2 support", "Keep the Python 3 build", "Use Node 22 everywhere", "Plan the 2027 roadmap",
                   "Fix the 404 page", "Serve a 404 for old URLs", "Due by 26 October", "Due by October 26",
-                  "principle 3 implies the change", "findings 3, 4 and 7", "Close issues 12, 14"):
+                  "principle 3 implies the change", "findings 3, 4 and 7", "Close issues 12, 14",
+                  "Raise the budget to $30", "Raise to $30, about two rounds here",
+                  # a setting's value after to or at (finish round, M2)
+                  "Set the timeout to 30", "Cut the cache TTL to 5"):
             with self.subTest(t):
                 self.assertFalse(self.refused(t))
+        # a plural noun after "to N" still counts
+        for t in ("Move to 3 hosts", "Cut the list to 3 pages"):
+            with self.subTest(t):
+                self.assertTrue(self.refused(t))
+        # mutants (finish round): a singular label noun no longer always a label; no currency sign; no rounds unit;
+        # no setting's value
+        for phrase, old, new in (
+                ("Phase 2 plan", "  if (!/s$/i.test(p[1])) return true;\n", ""),
+                ("Raise the budget to $30", "/[-–/$£€]\\s*$/.test(before)", "/[-–/]\\s*$/.test(before)"),
+                ("Raise to $30, about two rounds here", '"(?:rounds?|spaces?|', '"(?:spaces?|'),
+                ("Set the timeout to 30", "|| /\\b(?:to|at)\\s+$/i.test(before) && !/^\\s+[A-Za-z]+s\\b/.test(after)", "")):
+            with self.subTest(mutant=phrase):
+                d = example()
+                d["cards"][0]["options"][0]["line"] = phrase
+                self.assertTrue(refusal_in(runner(d, script=mutant_runner(old, new))[1]))
         # a year is no count for the count lint either
         d = example()
         d["cards"][0]["options"][0]["line"] = "Plan the 2027 roadmap"
@@ -341,7 +360,7 @@ class WhatPartRunner(unittest.TestCase):
                 ("Due by 26 October", "&& !nearMonth(t, m) ", ""),
                 ("Close issues 12, 14", "&& !inNumList(t, m) ", ""),
                 ("Fix the 404 page", "const SET_BIG = 100;", "const SET_BIG = 1e9;"),
-                ("principle 3 implies the change", "\n    || (!!nx && /s$/i.test(nx[1]) && !!nx[2] && OBJ_DET.has(nx[2].toLowerCase()))", "")):
+                ("issues 7 breaks the build", "\n    || (!!nx && /s$/i.test(nx[1]) && !!nx[2] && OBJ_DET.has(nx[2].toLowerCase()))", "")):
             with self.subTest(mutant=phrase):
                 d["cards"][0]["options"][0]["line"] = phrase
                 out = runner(d, script=mutant_runner(old, new))[1]
@@ -617,7 +636,7 @@ class WhatPartChat(unittest.TestCase):
             self.assertIn(rule, " ".join(f.read_text().split()), f.name)
         # fix round 3: the label rule by its closed noun list, in one clause
         for f in (page / "cards-schema.md", page / "writer-digest.md"):
-            self.assertIn("a numeral right after a label noun from a closed list", " ".join(f.read_text().split()), f.name)
+            self.assertIn("a numeral right after a singular label noun from a closed list", " ".join(f.read_text().split()), f.name)
         self.assertIn("a numeral after a label noun from a closed list (principle, step, tier, …), never after a verb",
                       " ".join((REFS / "rulings.md").read_text().split()))
         trust = "is the writer's self-check, not a gate, and the marker is the upgrader's alone"

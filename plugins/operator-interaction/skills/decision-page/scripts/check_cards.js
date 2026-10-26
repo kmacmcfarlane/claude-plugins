@@ -531,11 +531,11 @@ function lint(d) {
    its rev: format only, rev kept) gets the lint in place of the refusal, so a lazy upgrade stays seamless; once a
    writer revises it with a new rev, it is refused like any card. The runner's alone: the page's check() never
    refuses it, so an older published page still renders ---- */
-/* a numeral (digits or a word) labels one thing, never counts a set, only right after a label noun (LABEL_HEAD, a
-   closed list: principle, step, tier, option, …), and only when it ends the text, comes before punctuation or a
-   function word, or before a verb and its object: principle 3, step 2 of the guide, tier three, Option two first,
-   principle 3 implies the change. After any other word it counts: "Retire 3 plugins this quarter", "Delete three",
-   "Archive 5 in this round", "the three pages" */
+/* a numeral (digits or a word) labels one thing, never counts a set, when it comes right after a singular label
+   noun from a closed list (LABEL_HEAD: principle, step, tier, option, …), or after a plural one before the text's
+   end, punctuation, a function word or a verb and its object: principle 3, Phase 2 plan, step 2 of the guide, tier
+   three, Option two first, issues 7 breaks the build. After any other word it counts: "Retire 3 plugins this
+   quarter", "Delete three", "Archive 5 in this round", "the three pages", "fix items 3 broken links" */
 const LABEL_NUM = /([A-Za-z]+)\s+$/;
 const LABEL_HEAD = /^(?:principle|step|tier|option|phase|stage|rule|finding|item|issue|answer|decision|question|section|chapter|part|level|round|wave|track|version|row|line|card|page|figure|table|note|point|criterion|requirement|ticket|case|test|example|layer|group|slot|lane|sprint|milestone)s?$/i;
 const COUNT_DET = new Set([...DET, "all", "both", "only", "first", "last", "other", "of", "between", "on", "in", "at",
@@ -548,6 +548,7 @@ const FUNC_AFTER = new Set(["of", "and", "or", "nor", "to", "in", "on", "at", "b
   "the", "a", "an", "when", "while", "before", "after", "under", "over", "until", "since"]);
 const isLabelNum = (t, m) => { const p = t.slice(0, m.index).match(LABEL_NUM);
   if (!p || COUNT_DET.has(p[1].toLowerCase()) || !LABEL_HEAD.test(p[1])) return false;
+  if (!/s$/i.test(p[1])) return true;
   const rest = t.slice(m.index + m[1].length), nx = rest.match(/^\s+([A-Za-z]+)(?:\s+([A-Za-z]+))?/);
   return !rest.trim() || /^\s*[.,;:!?)\]—–]/.test(rest) || (!!nx && FUNC_AFTER.has(nx[1].toLowerCase()))
     || (!!nx && /s$/i.test(nx[1]) && !!nx[2] && OBJ_DET.has(nx[2].toLowerCase())); };
@@ -562,11 +563,13 @@ const nearMonth = (t, m) => new RegExp("\\b" + MONTH + "\\.?\\s*$", "i").test(t.
 /* a list of labels: numerals in a run, "findings 3, 4 and 7", "issues 12, 14" */
 const inNumList = (t, m) => /^[0-9]+$/.test(m[1]) && (/^\s*(?:,|and|or)\s*[0-9]+\b/.test(t.slice(m.index + m[1].length))
   || /\b[0-9]+\s*(?:,|and|or)\s*$/.test(t.slice(0, m.index)));
-/* not a set's count: N times; a range (3-5, pages 3-5, 1350 to 900 words); a number after a slash (HTTP/2); N of
-   the …, a part of a set named elsewhere; a quantity of a unit (2 spaces, 600 words) */
-const SET_UNIT = "(?:spaces?|words?|characters?|chars?|lines?|columns?|bytes?|tokens?|sentences?|bullets?|px|em|rem|pt|times)";
+/* not a set's count: N times; a range (3-5, pages 3-5, 1350 to 900 words); a number after a slash (HTTP/2) or a
+   currency sign ($30); a setting's value after "to" or "at" with no plural noun after it (set the timeout to 30); N
+   of the …, a part of a set named elsewhere; a quantity of a unit (2 spaces, 600 words, two rounds) */
+const SET_UNIT = "(?:rounds?|spaces?|words?|characters?|chars?|lines?|columns?|bytes?|tokens?|sentences?|bullets?|px|em|rem|pt|times)";
 const notSetCount = (t, m) => { const before = t.slice(0, m.index), after = t.slice(m.index + m[1].length);
-  return /[-–/]\s*$/.test(before) || /\b(?:to|and)\s+$/.test(before) && /\d\s*$/.test(before.replace(/\s*(?:to|and)\s+$/, ""))
+  return /[-–/$£€]\s*$/.test(before) || /\b(?:to|and)\s+$/.test(before) && /\d\s*$/.test(before.replace(/\s*(?:to|and)\s+$/, ""))
+    || /\b(?:to|at)\s+$/i.test(before) && !/^\s+[A-Za-z]+s\b/.test(after)
     || /^\s*[-–]\s*\w/.test(after) || /^\s+to\s+[0-9]+\b/.test(after) || new RegExp("^(?:\\s*(?:to|and|-|–)\\s*[0-9a-z]+)?\\s+" + SET_UNIT + "\\b", "i").test(after)
     || /^\s+of\s+(?:the|these|those|its|our|your|their|them)\b/i.test(after) && !/\b(?:all|both|each)\s+$/i.test(before); };
 /* "both" before a plural noun counts two (Retire both plugins); "both" alone, "both options", or "both" before a
