@@ -60,7 +60,8 @@ out → read it cold (`references/worksheet.md` § The cold read) before it goes
 
 Every decision carries, at any level:
 
-1. **What is decided**, in plain words. Gloss every id, hash, file or item name on first use —
+1. **What is decided**, in plain words, and for a set, every item it acts on, one bullet each
+   under **What:**, never a count alone (`references/rendering.md` § Card). Gloss every id, hash, file or item name on first use —
    a bare `a3f9` or `7c41e0d` tells a cold reader nothing. Define every term the operator may
    not know (a source document's label or number, an acronym, a term of art) where it first
    appears in each view, preferring the words it stands for; on a card or block, its
@@ -176,8 +177,8 @@ Smallest to largest, each showing more of the impact in facet order (templates i
   Wait, its class when the caller names classes, ⚠ one-way when it is, basis, its age and
   any deadline; a round ask, its justification; a line-only decision, its
   why ask.
-- **Card** — in the answer page's order: the decision line (the title, then **What:**, what
-  is decided), then **Context:**, then the ▸ Open questions fold line when anything is open,
+- **Card** — in the answer page's order: the title, then **Context:**, then **What:** (what
+  is decided, and a set's items one bullet each), then the ▸ Open questions fold line when anything is open,
   then the ▸ Assumptions fold line (the basis word and the assumptions with their
   tripwires), then an **Impact:** line, with no effect of its own; then the options, each with its
   own impact (effect, reach, a one-way or costly option's `⚠ undo:`, cost) on an italic line

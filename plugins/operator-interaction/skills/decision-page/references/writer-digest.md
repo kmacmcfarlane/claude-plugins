@@ -14,8 +14,8 @@ start, and the runner's thresholds.
 
 ## The floor, per card
 
-Each card meets the `decisions` skill's floor: what is decided in plain words, every term
-glossed; its Impact (wait, reach, cost, and undo only where an option is one-way or costly to
+Each card meets the `decisions` skill's floor: what is decided in plain words, in `what`, and
+for a set every item it acts on, in `items`, every term glossed; its Impact (wait, reach, cost, and undo only where an option is one-way or costly to
 undo), its Reach about the system the work builds, never the process (that is its Wait); Why
 now and what it blocks; Why ask; the options, each with its consequence by its mechanism: how
 it happens, who meets it and when, and the before and after, in its own `effect`, and its main
@@ -83,6 +83,8 @@ it knowingly only on a card upgraded from an older format.
 | `class` | optional | the class that opens Why ask, when the caller names classes |
 | `tldr` | to render | 1–2 bullets, each one sentence of about 14 words or fewer: what is decided, what rides on it; never the recommendation |
 | `context` | to render | 1–2 sentences, ~30–60 words: introduces every count, named mode, setting, review, plan, document, item or label the flat part uses; then the resume cue. Does not repeat the TLDR. Its high level holds the facts a cold reader has lost |
+| `what` | optional | one sentence: what is decided, in plain words; shown as the **What** part after Context, never folded |
+| `items` | optional; a card that counts a set where it says what is decided is refused without it | `[{name, where, about, per}, …]`, one per item of a set, every item listed: `name` its plain name (never an id), `where` where it lives when that helps, `about` what it is in a few words, `per` `{"a": "…", "b": "…"}`, its outcome under each option, keyed by the card's letters, only where the options treat it differently (left out, it reads the same under every option); the part reads *What · N items* |
 | `open` | optional | a list of text: what is not known yet, one question each; shown folded above the Impact |
 | `impact` | to render | `{wait, reach}` as text; `undo` only when some option is one-way or costly to undo, naming that option (`(b) none — …`), left out when every option is reversible at little cost; `cost` optional (leave it out when none); across all options, favouring none; `reach` about the thing the work builds, never the process (that is `wait`). No `effect`: each option carries its own |
 | `options` | to render | the options, below, `a`… in order, ending `z` (decide later) |
@@ -99,7 +101,9 @@ it knowingly only on a card upgraded from an older format.
 | `ifunanswered` | optional | **If unanswered:** a status-quo default |
 | `detail` | optional | the levels, below |
 
-Do not set `what`: it is older data only.
+`what` is the What part: what is decided, in plain words, after Context. A count of two or
+more in `t`, the TLDR, or an option's title or line (but (z)'s) names a set: list every item in
+`items`, or the runner refuses the card.
 
 ## An option
 
@@ -167,7 +171,7 @@ Levels scale with the decision: a small call carries none; a wide or ⚠ one-way
 medium and high on its visible parts and on the fold items with depth to give. Each level is
 longer than the one below. Soft sizes at a part's top level: Background (`why` + `whyask`)
 ~150 words; each option's plan (or older text) plus its effect, reach, undo and cost ~60–120; `evidence` ~150;
-the card in all ~600–900, each option's `pro` and `con` and its table's `pros` and `cons` counted in it. Never pad: a fact no source holds goes under `open`.
+the card in all ~600–900, the What part (`what` and `items`), each option's `pro` and `con` and its table's `pros` and `cons` counted in it; a set still lists every item. Never pad: a fact no source holds goes under `open`.
 
 ## The runner's thresholds
 
@@ -195,7 +199,9 @@ The lints fire past these values, except `mech`, which fires at or under its val
 FILE` checks one record (no layer, no slug check, and `L` and `dep` refused in it), before it
 is raised. Exit codes are the same.
 
-**Refusals** (the page renders nothing; the runner prints them first, exit 1): no
+**Refusals** (the page renders nothing; the runner prints them first, exit 1): a `what` not
+text; an `items` not a non-empty list of objects with a `name`, an item's `where` or `about`
+not text, a `per` not an object of text keyed by the card's option letters; no
 `decision-page/5` stamp, or a newer one; a card with no `decision-card/5` stamp, or a newer
 one; a field the record no longer has (`o`, `blocks`, a card-level `act`, `warn`, `unknown`,
 `stakes`, `detail.o`); a bad or duplicate `n`; a `rev` or `raised` not a UTC time; a `q` on
@@ -218,6 +224,11 @@ neither text nor a non-empty list of text; a malformed `detail` (a bullet neithe
 `{t, sub}`, a section not `{h, b}`, both `t` and `h`, bullets and sections mixed, an Impact
 level with none of its four facets), or an option's `detail` not `[medium, high]`.
 
+**The set refusal** (the runner's alone, exit 1, after the page's own; the page never refuses
+it, so an older published page still renders): a card whose `t`, TLDR, or an option's title or
+line (but (z)'s) counts two or more things, with no `items` list of that length. A card
+upgraded from an older format is refused the same way: give it its items before a republish.
+
 **Lints** (exit 2; each line says how to fix it, or leave it knowingly; never pad). A card's
 lint prints `lint: card N:` (a record's `lint: record N:`), then the start below (— is none); a
 page-wide one prints `lint: page:`.
@@ -227,13 +238,12 @@ page-wide one prints `lint: page:`.
 | `page` | `page:` | an id in the page title, the lede, a layer's title, note or shared context, or a `refs` short or question |
 | `group` | `page:` | a bundle (a layer with `shared`) holding fewer than two cards |
 | `refs` | `page:` | a `refs` answer holding an id (left as given when it is the operator's words) |
-| `id` | — | an id in any card text: a hash, an item tag, a ticket key, a label like OQ3, decision N; a label a card declares passes with its short name beside it |
-| `count` | — | a count in the flat part or a visible level that Context (with its bundle's `shared`) does not name |
+| `id` | — | an id in any card text, the What part's `what` and `items` included: a hash, an item tag, a ticket key, a label like OQ3, decision N; a label a card declares passes with its short name beside it |
+| `count` | — | a count in the flat part or a visible level that Context (with its bundle's `shared`) and the What part (`what`, `items` and their number) do not name; one where the card says what is decided points to `items` |
 | `named` | — | a named mode, setting, review, plan, document, … not glossed in Context |
 | `tldr` | — | a TLDR bullet, at any level, that may carry the recommendation |
-| `what` | — | a leftover `what`: move it into `context` |
 | `shape` | `shape:` | a level off its shape, Context past its size, a long Impact facet, a label's short name past 6 words |
-| `rec-only` | `impact:` | an Impact reach, at any level, that shares 40% or more of its words with the recommended option and none with any other option (the v5 form: with no card-level effect, the reach is what it reads; a reach naming two or more options is the decision's) |
+| `rec-only` | `impact:` | an Impact reach, at any level, that shares 40% or more of its words with the recommended option and none with any other option (the v5 form: with no card-level effect, the reach is what it reads; a reach naming two or more options is the decision's); an item's `per` that names the recommended option and no other |
 | `mech` | `impact:` | an option's effect, but `z`'s, of 4 words or fewer that does not open on no, nothing, none or unchanged: a label, not the mechanism |
 | `process` | `impact:` | a process phrase (a review comment, another round, your time, a blocked session) in an option's effect or reach but `z`'s, or the Impact's reach at any level; never the wait, never a round ask |
 | `grow` | `depth:` | a level not longer than the one below it |
@@ -250,7 +260,8 @@ page-wide one prints `lint: page:`.
 | `tradeoffs` | `shape:` | an option but `z` with no shown `pro` or `con`; a recommended option with no `con`; a card with two or more options but `z` and none (an upgraded older card may leave it knowingly); a `pro` or `con` past its words |
 | `plan` | `depth:` | an option, `z` included, with no shown `plan` (one line when no option has one; an upgraded older card may leave it knowingly, its view showing its `text`); a `plan` past its words; an option with both `plan` and `text`, whose text is not shown |
 
-Then the cold read: list each noun phrase in the Impact, TLDR, option titles and one lines,
+Then the cold read: could you name every item the card acts on, from its What part alone? List
+each noun phrase in the Impact, TLDR, option titles and one lines,
 and each option's `pro` and `con` (visible rows, linted by `count` and `named` though outside
 the flat part's size) and its view's `plan`, `pros` and `cons`, that names a specific thing, and point to its gloss in `context`. Over the view the `named` lint reads qualified names only ("content mode"); a bare noun, a phrase opening on a function word ("to plan") or on a verb form ("reaches review") is yours to check here. Of each effect, ask: does
 it name what happens to the thing being built? Could you say how it happens, not only that

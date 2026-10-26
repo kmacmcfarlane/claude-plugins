@@ -91,7 +91,8 @@ A card the operator has answered stays as it is, its lints left knowingly.
 - **A `cards.json` written before Context came first** has either no `context` or a cue-only
   one with its `what` after the cue. The one-time Context migration kept its `rev`: a card
   whose own `what` and resume cue moved into `context`, its terms glossed from its own folds
-  alone. A gloss drawn from outside the card was new information: a new `rev`.
+  alone. A gloss drawn from outside the card was new information: a new `rev`. A `what` such a
+  card still holds shows as its What part, after Context (F6), never at the end of Context.
 - **A `cards.json` written before `detail` existed** renders with **More** buttons and no
   toggles; it is thin until rewritten. A card that gets `detail` gets a new `rev`.
 - **A `cards.json` written before undo went optional** (answer 260, 2026-10-20) carries

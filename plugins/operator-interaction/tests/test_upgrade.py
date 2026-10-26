@@ -4,7 +4,7 @@
 text: `tests/fixtures/cards.legacy.json` (the shipped example before v5, kept verbatim) and
 `tests/fixtures/cards.kit.json` (three cards in the shape of the answer page's working kit, one
 of them in its v4 layout). Each upgrades to a file the page's check passes and the runner runs
-on with no refusal; the legacy map (effect from the blocks row, else the option's impact;
+on with no refusal, once the legacy set card is given its items (the set refusal, F6); the legacy map (effect from the blocks row, else the option's impact;
 `warn` to `oneway`; `unknown` to `open`, none dropped); the kit's name trap (its `pros` the one
 line, `prosT` the rows) with its mutant; every rev kept byte for byte; all or nothing (a card
 it cannot map stops the run, nothing written); `--only`, `--records`; a v5 file passed through.
@@ -34,6 +34,22 @@ ASSUME_LINT = "depth: no assumptions: "
 TRADEOFFS_LINTS = ("options but (z) carries its pros and cons", ") has no pro", ") has no con")
 # nor a plan in brief (F5): an upgraded card's view shows its text instead, so the plan lint is left knowingly too
 PLAN_LINTS = ("options carries its plan in brief", ") has no plan: ")
+
+
+# nor a set's items (F6): an older card about a set counts its items without listing them, which the runner
+# refuses (the set refusal: the What part lists every item), so a writer gives the upgraded card its items before a
+# republish. The legacy fixture's card 42 moves twelve pages
+SET_REFUSAL = ": a set not listed in items: it counts 12 things where it says what is decided"
+ITEMS_42 = [{"name": "Guide %d" % i, "where": "/guides/", "about": "a how-to guide"} for i in range(1, 11)] + [
+    {"name": "Site settings", "where": "/config/", "about": "a configuration page"},
+    {"name": "Theme settings", "where": "/config/", "about": "a configuration page"}]
+
+
+def with_items(card):
+    """The writer's step after an upgrade: card 42's twelve moved pages, listed in items."""
+    if card.get("n") == 42:
+        card["items"] = copy.deepcopy(ITEMS_42)
+    return card
 
 
 def unassumed(code, out):
@@ -128,6 +144,13 @@ class Upgrade(unittest.TestCase):
         self.assertEqual(code, 0, out)
         self.assertEqual(d["format"], "decision-page/5")
         self.assertEqual(run_page(d)["bad"], [])
+        # the set card is refused until its items are listed, and it alone (F6)
+        code, rout, _ = runner(d)
+        self.assertEqual((code, [x.split(":")[0] for x in rout.splitlines()]), (1, ["card 42"]), rout)
+        self.assertIn("card 42" + SET_REFUSAL, rout)
+        for c in d["cards"]:
+            with_items(c)
+        self.assertEqual(run_page(d)["bad"], [])
         self.assertEqual(unassumed(*runner(d)[:2]), (0, ""))
         # the legacy cards with a recommendation are the ones linted for it
         self.assertEqual(sorted(x.split(":")[1].strip() for x in runner(d)[1].splitlines() if ASSUME_LINT in x),
@@ -206,12 +229,13 @@ class Upgrade(unittest.TestCase):
         self.assertEqual(code, 0, out)
         self.assertEqual(run_page(d)["bad"], [])
         rcode, rout, _ = runner(d)
-        # no refusal; the only lints are the kit's what, which a later feature shows as its own part, the
-        # assume lint on a recommended card the kit gave no assumptions, and the cold read of the kit's own
-        # pro and con rows and of its plans and tables (the option's view), which an upgrade carries over as written
-        # and cannot gloss without inventing context, and the plan lint on a (z) the kit gave no plan
+        # no refusal; the only lints are the assume lint on a recommended card the kit gave no assumptions, and the cold read of the kit's own
+        # pro and con rows and of its plans and tables (the option's view), and the kit's per that names the
+        # recommended option alone, which an upgrade carries over as written and cannot complete without inventing,
+        # and the plan lint on a (z) the kit gave no plan. Its what is the What part now (F6): no lint
         self.assertIn(rcode, (0, 2), rout)
-        self.assertTrue(all("what present" in x or ASSUME_LINT in x or "(pros and cons)" in x
+        self.assertNotIn("what present", rout)
+        self.assertTrue(all(ASSUME_LINT in x or "(pros and cons)" in x or "per gives only the recommended" in x
                             or "(an option's view)" in x or any(t in x for t in PLAN_LINTS)
                             for x in rout.splitlines()), rout)
         # the kit's plans come over as the option's plan in brief, and its view opens on them
@@ -331,7 +355,10 @@ class Upgrade(unittest.TestCase):
             self.assertNotIn("L", r, name)
             self.assertNotIn("dep", r, name)
             self.assertEqual(r["format"], "decision-card/5")
-            self.assertEqual(unassumed(*run_record(r)), (0, ""), name)
+            if name == "42.json":
+                self.assertEqual(run_record(r)[0], 1, name)
+                self.assertIn("record 42" + SET_REFUSAL, run_record(r)[1])
+            self.assertEqual(unassumed(*run_record(with_items(r))), (0, ""), name)
         self.assertEqual(by_n(res)[42]["dep"], "[[41]] (b)")
 
     def test_a_v5_file_passes_through(self):

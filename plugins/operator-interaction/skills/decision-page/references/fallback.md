@@ -20,7 +20,9 @@ first); this file sets only the layout.
   `label` puts the label and its short name after its own, `43 · Theme colour · D3 (site
   colour off the logo) → …`.
 - In each section, the card's essentials as text: the TLDR bullets first, then **Context:**
-  (the terms the card uses, then where the operator left it), then ⚠ one-way when it is and
+  (the terms the card uses, then where the operator left it), then **What:** (`what`, and for a
+  set a bullet per item: its name, where it lives, what it is, and its outcome under each
+  option where they differ, `(a) …; (b) …`), then ⚠ one-way when it is and
   **Impact:**, across all the options, describing the system the work builds, never the review or
   the process (what waiting holds up is its `later:` line), one facet a line (`later: …`, `reach: …`,
   `⚠ undo: …` only when an option is one-way or costly, `cost: …` where given, each on its own

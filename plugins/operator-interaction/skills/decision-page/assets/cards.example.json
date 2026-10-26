@@ -62,6 +62,7 @@
       "L": "direction",
       "t": "Docs build home",
       "context": "The docs site is built and published from one maintainer's laptop, where a stale cache (a leftover copy of an old build) broke two publishes this month, and clearing it once ([[38]]) held a week. CI is the shared build service that already runs on every merge to `main`.",
+      "what": "Where the docs build runs and who can publish the site.",
       "tldr": [
         "Docs build and publish from one laptop today",
         "Move them to CI, or keep the laptop build"
@@ -476,6 +477,69 @@
       "L": "details",
       "t": "Old URLs after the move",
       "context": "Building in CI ([[41]], option b) moves twelve pages to new web addresses (URLs): the ten how-to guides and the two configuration pages. A redirect is one config line that sends a reader from an old URL to its new one.",
+      "what": "Whether the moved pages answer at their old web addresses.",
+      "items": [
+        {
+          "name": "Install the tool",
+          "where": "/guides/",
+          "about": "a how-to guide"
+        },
+        {
+          "name": "Write your first page",
+          "where": "/guides/",
+          "about": "a how-to guide"
+        },
+        {
+          "name": "Add a search box",
+          "where": "/guides/",
+          "about": "a how-to guide"
+        },
+        {
+          "name": "Translate a page",
+          "where": "/guides/",
+          "about": "a how-to guide"
+        },
+        {
+          "name": "Add a code sample",
+          "where": "/guides/",
+          "about": "a how-to guide"
+        },
+        {
+          "name": "Link between pages",
+          "where": "/guides/",
+          "about": "a how-to guide"
+        },
+        {
+          "name": "Publish a preview",
+          "where": "/guides/",
+          "about": "a how-to guide"
+        },
+        {
+          "name": "Add an image",
+          "where": "/guides/",
+          "about": "a how-to guide"
+        },
+        {
+          "name": "Write a changelog entry",
+          "where": "/guides/",
+          "about": "a how-to guide"
+        },
+        {
+          "name": "Retire an old page",
+          "where": "/guides/",
+          "about": "a how-to guide"
+        },
+        {
+          "name": "Site settings",
+          "where": "/config/",
+          "about": "the configuration page for the site's options"
+        },
+        {
+          "name": "Theme settings",
+          "where": "/config/",
+          "about": "the configuration page for colours and fonts"
+        }
+      ],
       "tldr": [
         "The CI build moves twelve pages to new URLs",
         "Redirect the old URLs, or let them break"
@@ -849,6 +913,7 @@
         "name": "site colour off the logo"
       },
       "context": "Building in CI ([[41]], option b) applies the site's theme afresh, so the accent colour (the colour of links and headings) can change at no extra cost. The site is blue and the logo green, which the brand check listed as D3 (site colour off the logo); either colour is one line in the theme file.",
+      "what": "Which blue the site uses for links and buttons.",
       "tldr": [
         "The move to CI can change the accent colour for free",
         "Keep the blue, or switch to the logo's green"

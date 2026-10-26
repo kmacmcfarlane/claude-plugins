@@ -9,22 +9,27 @@
       so this refuses exactly what the page refuses (decision-page/5, each card a decision-card/5
       record plus L and dep). With --record, the card checks alone (no layer, no slug check), and
       the page-only L and dep refused in a record;
+   1b. the set refusal, the runner's own (never the page's, so an older published page still renders): a
+      card whose title, TLDR, or an option's title or line (but (z)'s) counts two or more things, with no
+      items list of that length (the What part lists every item of a set, F6);
    2. on a file that passes, lints, each line saying how to fix it, or that the thing may be left
       knowingly:
       - ids: a machine-readable id anywhere the page shows text (every card field and level, act,
-        the page title, the lede, the layer titles and notes, refs), whatever Context says; the
+        the page title, the lede, the layer titles and notes, refs, the What part and its items), whatever Context says; the
         page is the reader's only context. Backtick spans, https links and slugs are not ids;
       - terms: a count or a named thing in the flat part, or in the medium and high levels of the
-        Impact and the TLDR, that Context's summary (with its bundle's shared context)
-        does not introduce;
+        Impact and the TLDR, that Context's summary (with its bundle's shared context, and the What
+        part: its text and its items) does not introduce; a count in the places that say what is
+        decided points to items;
       - groups: a bundle (a layer with shared context) holding fewer than two cards;
       - the TLDR: a bullet that may carry the recommendation, at every level, headings, bullets
-        and sub-bullets in reading order; a leftover what;
+        and sub-bullets in reading order;
       - the Background fold's summary: the first sentence of why past BGSUM_CAP words;
       - shapes: summaries a sentence or two (the TLDR one or two bullets, an Impact facet a line),
         medium terse bullets with a sub-bullet or two, high headed sections; the Impact's medium
         one bullet per facet;
-      - an Impact reach that reads as the recommended option's alone;
+      - an Impact reach that reads as the recommended option's alone; an item's per that gives the
+        recommended option's outcome alone;
       - the mechanism: an option's effect of a bare label, MECH_MIN words or fewer (rule 268);
       - the system: a process phrase (a review comment, another round, your time, a blocked
         session) in an option's effect or reach, or the Impact's reach, which describe the thing
@@ -61,10 +66,11 @@ function loadPage() {
   const start = html.indexOf("<script>"), end = html.indexOf(END_MARK);
   if (start < 0 || end < start) fail("the template has no page-free part (its script or the end-of-page-free-part marker is missing): " + tpl);
   try {
-    const page = vm.runInNewContext(html.slice(start + "<script>".length, end) + "\n;({check, recordProblems, bgFirst, assumeOf, proCon, planOf, prosCons})", {});
+    const page = vm.runInNewContext(html.slice(start + "<script>".length, end) + "\n;({check, recordProblems, bgFirst, assumeOf, proCon, planOf, prosCons, itemsOf, perOf})", {});
     if (typeof page.check !== "function" || typeof page.recordProblems !== "function" || typeof page.bgFirst !== "function"
       || typeof page.assumeOf !== "function" || typeof page.proCon !== "function" || typeof page.planOf !== "function"
-      || typeof page.prosCons !== "function") throw new Error("no check(), recordProblems(), bgFirst(), assumeOf(), proCon(), planOf() or prosCons()");
+      || typeof page.prosCons !== "function" || typeof page.itemsOf !== "function" || typeof page.perOf !== "function")
+      throw new Error("no check(), recordProblems(), bgFirst(), assumeOf(), proCon(), planOf(), prosCons(), itemsOf() or perOf()");
     return page;
   } catch (e) { fail("the template's page-free part does not load: " + why(e)); }
 }
@@ -160,6 +166,16 @@ function flat(c) {
   for (const k of ["ifleft", "roundcosts", "ifunanswered", "norec", "dep"]) out.push(c[k]);
   return out.filter(s => typeof s === "string");
 }
+/* the places that say what is decided (F6, the set refusal): the title, the TLDR, and each option's title and line,
+   but (z)'s, which says what waiting costs */
+function decided(c) {
+  const out = [c.t, ...c.tldr];
+  for (const o of opts(c)) if (o.k !== "z") out.push(o.title, o.line);
+  return out.filter(s => typeof s === "string");
+}
+/* the What part's texts, as the page shows them: what, then each item's name, where, about and per */
+const whatTexts = c => [c.what, ...page.itemsOf(c).flatMap(x => [x.name, x.where, x.about, ...page.perOf(x).map(p => p[1])])]
+  .filter(s => typeof s === "string");
 /* every text in a value, in reading order: a section's heading, then each bullet and its sub-bullets */
 const textsOf = x => typeof x === "string" ? [x] : Array.isArray(x) ? x.flatMap(textsOf)
   : x && typeof x === "object" ? ("h" in x ? [x.h, ...textsOf(x.b)] : "t" in x ? [x.t, ...textsOf(x.sub || [])] : Object.values(x).flatMap(textsOf)) : [];
@@ -259,6 +275,11 @@ function recOnly(c, say) {
     if ((e.match(/\([a-y]\)/g) || []).length < 2 && sr >= 0.4 && so === 0)
       say("rec-only" + at, "impact: the reach" + at + " reads as the recommended option's (\"" + e.slice(0, 60) + "\"): say who or what any option reaches; the option's own reach is on the option");
   }
+  /* an item's per (F6) is its outcome under each option: one that names the recommended option and no other reads
+     as the recommendation's alone */
+  page.itemsOf(c).forEach((x, i) => { const ks = page.perOf(x).map(p => p[0]);
+    if (ks.includes(c.rec) && !others.some(o => ks.includes(o.k)))
+      say("rec-only item " + (i + 1), "impact: item " + (i + 1) + " (" + x.name + ")'s per gives only the recommended option's outcome: give its outcome under each option, or leave per out when every option leaves it the same"); });
 }
 
 /* ---- the system lint (rule 259): Effect and Reach describe the thing the work builds, never the process, which
@@ -332,10 +353,10 @@ function depth(c, say) {
   if (levelsOf(c, "evidence").length && c.basis !== "none" && ev < 60) say("ev", "depth: evidence is " + ev + " words at its fullest: give the basis drill-down near 150, what was observed, inferred and assumed, with the paths and links behind each; or leave it knowingly");
   else if (ev > 225) say("ev", "depth: evidence is " + ev + " words at its fullest: keep it near 150");
   /* the card in all: the flat part and Context at their summary, the fold parts at their top level (the basis reason
-     among them), each option's detail (its plan or text at its top level, and its facets), its inline Pros and Cons
+     among them), the What part (its text and its items), each option's detail (its plan or text at its top level, and its facets), its inline Pros and Cons
      rows and the points of its view's Pros | Cons table; not act */
   const pc = opts(c).reduce((n, o) => n + words(page.proCon(o).map(r => r[1])) + words(page.prosCons(o).map(r => r[1])), 0);
-  const all = words(flat(c)) + words(c.context) + bg + ev + words(topOf(c.reason, levelsOf(c, "rec"))) + words(as) + optWords + pc;
+  const all = words(flat(c)) + words(c.context) + words(whatTexts(c)) + bg + ev + words(topOf(c.reason, levelsOf(c, "rec"))) + words(as) + optWords + pc;
   if (all > 1350) say("all", "depth: the card is " + all + " words in all: keep it near 600–900; a small call gets a short card");
   if (c.detail && typeof c.detail === "object")
     for (const k of Object.keys(c.detail)) if (!(k in PART))
@@ -412,6 +433,7 @@ function cardTexts(c) {
   for (const k of ["t", "context", "what", "class", "why", "whyask", "dep", "ifleft", "roundcosts", "ifunanswered", "reason", "norec", "evidence", "open"]) put(k, c[k]);
   for (const k of IMP) put("impact", c.impact[k]);
   put("tldr", c.tldr);
+  page.itemsOf(c).forEach((x, i) => put("item " + (i + 1), [x.name, x.where, x.about, ...page.perOf(x).map(p => p[1])]));
   if (Array.isArray(c.assume)) for (const a of c.assume) if (a && typeof a === "object") put("assume", [a.rests, a.tw]);
   for (const o of opts(c)) {
     for (const k of ["title", "line", "text", "plan", "effect", "reach", "undo", "cost", "pro", "con", "pros", "cons"]) put("(" + o.k + ")", o[k]);
@@ -441,19 +463,23 @@ function pageIds(d, out) {
 
 /* the card lints, one card; w opens each line ("lint: card 41: "), sh is its bundle's shared context */
 function lintCard(c, w, sh, out) {
-  const hasWhat = typeof c.what === "string" && c.what.trim();
-  /* an item card in a bundle may lean on its group's shared context (rule 263) */
-  const ctx = c.context + (hasWhat ? " " + c.what : "") + (typeof sh === "string" ? " " + sh : "");
+  /* an item card in a bundle may lean on its group's shared context (rule 263); the What part, after Context,
+     introduces too: its text, and a set's items, whose number is itself named by the list */
+  const items = page.itemsOf(c);
+  const ctx = [c.context, ...whatTexts(c), typeof sh === "string" ? sh : ""].join(" ");
   const ctxNums = new Set(counts(ctx).map(x => x.n)), ctxLow = ctx.toLowerCase();
+  if (items.length) ctxNums.add(items.length);
   const seen = new Set(), say = (key, line) => { if (!seen.has(key)) { seen.add(key); out.push(w + line); } };
   for (const [at, s] of cardTexts(c)) for (const x of ids(s)) say("id " + x[0], idLine(x, at));
   /* the terms a visible text uses, against Context's summary; at is "" for the flat part, or " (part, level)" */
-  const terms = (fields, at, namer = named) => {
+  const terms = (fields, at, namer = named, fix = "say what the WORD things are, or list them, in context") => {
     for (const s of fields) for (const x of counts(s)) if (!ctxNums.has(x.n))
-      say("count " + x.n, "\"" + x.word + "\"" + at + " counts things its context does not name: say what the " + x.word + " things are, or list them, in context");
+      say("count " + x.n, "\"" + x.word + "\"" + at + " counts things its context does not name: " + fix.replace("WORD", x.word));
     for (const s of fields) for (const t of namer(s)) if (!ctxLow.includes(t))
       say("named " + t, "\"" + t + "\"" + at + " is not glossed in its context: give it a one-line gloss in context, what it is and where it comes from");
   };
+  /* a count where the card says what is decided names a set: its items belong in the What part (F6) */
+  terms(decided(c), "", named, "list the WORD things in items, the What part, one each with its name; or say what they are in context");
   terms(flat(c), "");
   /* the Pros and Cons rows are visible too, though not in the flat part's budget: the cold read covers them */
   terms(opts(c).flatMap(o => page.proCon(o).map(r => r[1])), " (pros and cons)");
@@ -467,7 +493,6 @@ function lintCard(c, w, sh, out) {
   /* a TLDR level's headings, bullets and sub-bullets, numbered in reading order as the page numbers them */
   levelsOf(c, "tldr").forEach((bs, m) => textsOf(bs).forEach((b, i) => { if (REC_BROAD.test(b))
     say("tldr " + m + "." + i, "tldr bullet " + (i + 1) + " (" + DETAIL_NAME[m] + ") may carry the recommendation: the options mark it; say what is decided instead, or leave it if it reports someone else's"); }));
-  if (hasWhat) say("what", "what present: move it into context (after the terms, before the cue) and delete it");
   shapes(c, say);
   recOnly(c, say);
   systemOnly(c, say);
@@ -487,6 +512,30 @@ function lint(d) {
   return out;
 }
 
+/* ---- the set refusal (F6, b78c): a card about a set cannot pass without its items named. A count of two or more
+   where the card says what is decided needs an items list of that length; one list may answer any of the counts.
+   The runner's alone: the page's check() never refuses it, so an older published page still renders ---- */
+/* a numeral right after a word that is no determiner, with no plural noun after it, labels a thing (principle 3,
+   step 2), never counts a set; "Fix 3 bugs" and "the 3 failing tests" still count. A proxy: a label followed by a
+   word ending in s ("step 2 says") still counts */
+const LABEL_NUM = /([A-Za-z]+)\s+$/;
+const COUNT_DET = new Set([...DET, "all", "both", "only", "first", "last", "other"]);
+const isLabelNum = (t, m) => { const p = t.slice(0, m.index).match(LABEL_NUM);
+  return /^[0-9]+$/.test(m[1]) && !!p && !COUNT_DET.has(p[1].toLowerCase()) && !/^\s+[A-Za-z]+s\b/.test(t.slice(m.index + m[1].length)); };
+const setCounts = s => { const t = unId(s);
+  return [...t.matchAll(COUNT)].filter(m => !isLabelNum(t, m))
+    .map(m => W[m[1].toLowerCase()] || Number(m[1])); };
+function setProblems(c, w) {
+  const n = page.itemsOf(c).length, out = [], seen = new Set();
+  for (const s of decided(c)) for (const x of setCounts(s)) if (x >= 2 && !seen.has(x)) seen.add(x);
+  if (seen.size && !seen.has(n)) {
+    const x = [...seen][0];
+    out.push(w + ": a set not listed in items: it counts " + x + " things where it says what is decided" + (n ? ", but items lists " + n
+      : ", and there are no items") + ": list each in items (the What part: {name, where, about, per}), so the operator can name every item it acts on");
+  }
+  return out;
+}
+
 /* ---- the run ---- */
 const page = loadPage();
 const args = process.argv.slice(2);
@@ -498,6 +547,11 @@ try { text = fs.readFileSync(file, "utf8"); } catch (e) { fail("cannot read " + 
 try { d = JSON.parse(text); } catch (e) { fail("not valid JSON: " + why(e)); }
 let bad;
 try { bad = record ? page.recordProblems(d) : page.check(d); } catch (e) { fail("the page's check stopped on this file: " + why(e)); }
+if (bad.length) { process.stdout.write(bad.join("\n") + "\n"); process.exit(1); }
+try {
+  DECLARED = declare(record ? [d] : d.cards);
+  bad = record ? setProblems(d, "record " + d.n) : d.cards.flatMap(c => setProblems(c, "card " + c.n));
+} catch (e) { fail("the set check stopped on this file: " + why(e)); }
 if (bad.length) { process.stdout.write(bad.join("\n") + "\n"); process.exit(1); }
 let lines = [];
 try {

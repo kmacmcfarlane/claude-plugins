@@ -438,7 +438,7 @@ def chat_problems(body):
 class ChatLines(unittest.TestCase):
 
     def test_the_card_template(self):
-        body = fenced(RENDERING.read_text(), "**N — Title as a question?**\n**What:**")
+        body = fenced(RENDERING.read_text(), "**N — Title as a question?**\n**Context:**")
         probs, seen = chat_problems(body)
         self.assertEqual(probs, [])
         self.assertGreaterEqual(seen, 2)

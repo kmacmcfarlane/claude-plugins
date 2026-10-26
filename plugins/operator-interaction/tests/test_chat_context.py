@@ -1,7 +1,7 @@
 """Every card and block in chat carries a Context section, in the answer page's order.
 
-The decisions skill's cards and blocks follow the page's `context` field: the decision line
-(the title, then What), then Context, then the Impact and the options. A card's Context is
+The decisions skill's cards and blocks follow the page's `context` field: the title, then
+Context, then What (F6, answer 290 (a): Context above What), then the Impact and the options. A card's Context is
 one or two sentences at the page's summary size, ending on the resume cue; a block's is a
 bullet list at the page's medium size, its first bullet the card's Context, and a block's
 Impact line stands above its table. A list line
@@ -120,21 +120,21 @@ def context_of(body):
 class Templates(unittest.TestCase):
     """rendering.md's card and block templates run in the page's order."""
 
-    def test_the_card_template_runs_what_context_impact(self):
-        card = fenced(RENDERING.read_text(), "**N — Title as a question?**\n**What:**")
-        self.assertEqual(heads(card)[:3], ["What", "Context", "Impact"])
+    def test_the_card_template_runs_context_what_impact(self):
+        card = fenced(RENDERING.read_text(), "**N — Title as a question?**\n**Context:**")
+        self.assertEqual(heads(card)[:3], ["Context", "What", "Impact"])
         self.assertNotIn("Why now", heads(card))
         self.assertNotIn("Why ask", heads(card))
         self.assertNotIn("cold reader only", "\n".join(card))
 
     def test_the_card_template_folds_background_under_the_options(self):
-        card = fenced(RENDERING.read_text(), "**N — Title as a question?**\n**What:**")
+        card = fenced(RENDERING.read_text(), "**N — Title as a question?**\n**Context:**")
         check_bg_line(self, "rendering.md card", card)
 
-    def test_the_block_template_runs_what_context_bullets_table(self):
+    def test_the_block_template_runs_context_bullets_what_table(self):
         block = fenced(RENDERING.read_text(), "**N — Title as a question?** ⚠ one-way")
         self.assertEqual(heads(block)[:7],
-                         ["What", "Context", "Basis", "Impact", "table", "Why now", "Why ask"])
+                         ["Context", "What", "Basis", "Impact", "table", "Why now", "Why ask"])
         check_bg_block(self, "rendering.md block", block)
         k = next(i for i, x in enumerate(block) if x.startswith("**Context:**"))
         self.assertTrue(block[k + 1].startswith("- the card's Context"), block[k + 1])
@@ -154,7 +154,7 @@ class Templates(unittest.TestCase):
 
     def test_the_templates_fold_open_questions_above_the_impact(self):
         text = RENDERING.read_text()
-        card = fenced(text, "**N — Title as a question?**\n**What:**")
+        card = fenced(text, "**N — Title as a question?**\n**Context:**")
         self.assertEqual(open_question_problems("rendering.md card", card), [])
         self.assertTrue(any(x.startswith("▸ Open questions — ") for x in card))
         block = fenced(text, "**N — Title as a question?** ⚠ one-way")
@@ -167,7 +167,7 @@ class Templates(unittest.TestCase):
 
     def test_the_templates_fold_assumptions_above_the_impact(self):
         text = RENDERING.read_text()
-        card = fenced(text, "**N — Title as a question?**\n**What:**")
+        card = fenced(text, "**N — Title as a question?**\n**Context:**")
         self.assertEqual(assume_problems("rendering.md card", card), [])
         block = fenced(text, "**N — Title as a question?** ⚠ one-way")
         self.assertEqual(assume_problems("rendering.md block", block, block=True), [])
@@ -398,9 +398,10 @@ class GalleryContexts(unittest.TestCase):
         self.assertGreaterEqual(kinds.count("card"), 12)
         self.assertGreaterEqual(kinds.count("block"), 2)
 
-    def test_every_card_and_block_runs_what_context_impact(self):
+    def test_every_card_and_block_runs_context_what_impact(self):
+        # Context above What (the v4 layout, answer 290 (a), F6)
         for n, kind, body in views(GALLERY):
-            want = ["What", "Context"] + (["Basis", "Impact", "table"] if kind == "block" else ["Impact"])
+            want = ["Context", "What"] + (["Basis", "Impact", "table"] if kind == "block" else ["Impact"])
             self.assertEqual(heads(body)[:len(want)], want, f"gallery.md:{n} ({kind})")
 
     def test_a_cards_context_is_one_or_two_sentences_ending_on_the_cue(self):
@@ -558,7 +559,7 @@ class Groups(unittest.TestCase):
 class Checks(unittest.TestCase):
     """Each check fails on the form it exists to catch, so a clean run means something."""
 
-    CARD = ["**41 — Resume the backup?**", "**What:** x", "**Context:** y · z",
+    CARD = ["**41 — Resume the backup?**", "**Context:** y · z", "**What:** x",
             "▸ Assumptions — basis: **strong** · 1 assumption with its tripwire", "**Impact:** → a",
             "- **(a) Resume**", "  *→ it finishes*", "- (z) Decide later — *it waits*", "",
             "▸ Background — why now: the lease lapses at five."]
@@ -655,7 +656,7 @@ class Checks(unittest.TestCase):
             check_bg_block(self, "mutant", block)
 
     def test_an_open_questions_line_out_of_place_or_an_unknown_is_caught(self):
-        card = ["**41 — Resume the backup?**", "**What:** x", "**Context:** y · z",
+        card = ["**41 — Resume the backup?**", "**Context:** y · z", "**What:** x",
                 "▸ Open questions — 1 open: whether the lease can be extended",
                 "**Impact:** later: w · reach: r", "- **(a) Resume**", "  *→ it finishes*"]
         self.assertEqual(open_question_problems("good", card), [])

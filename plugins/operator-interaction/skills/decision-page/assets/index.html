@@ -5,13 +5,14 @@
    the progress bar, with Expand all and Collapse all, then each group's cards, each closed to a
    one-line row (number, title, ⚠, the rec pill and the recommended option's effect with its letter, the
    answer) with Use recommendation and Later beside it. An open card opens on its TLDR, then its Context
-   (the terms it uses), then a closed Open questions fold, then a closed Assumptions fold (the basis word and
+   (the terms it uses), then its What (what is decided; for a set, every item listed, never folded), then a closed
+   Open questions fold, then a closed Assumptions fold (the basis word and
    its reason, the evidence, each assumption with its tripwire), then its Impact, one facet a line (wait,
    reach, undo, cost: there is no card-level effect). Every view shows impact: a card's row the recommended
    option's effect, an open card its Impact lines, each option's view its own effect, reach, undo
    (only where it is one-way or costly; ⚠ on an option flagged one-way) and cost. Each option but (z) shows its
    one-line Pros and Cons under it, as labelled rows, always visible. A decision raised from
-   one labelled item of a source shows its title, then the label and its short name, muted. Inside a card the essentials are flat (TLDR, Context, Impact, options, follow-ups,
+   one labelled item of a source shows its title, then the label and its short name, muted. Inside a card the essentials are flat (TLDR, Context, What, Impact, options, follow-ups,
    words); open questions, the assumptions with the basis and evidence, background and dependencies sit in
    folds. The data is
    decision-page/5: each card a decision-card/5 record (options as objects) plus L and dep. A part with a
@@ -135,7 +136,14 @@ details.card>summary .rrec{display:inline-flex;flex-wrap:wrap;gap:4px 8px;align-
 details summary::-webkit-details-marker{display:none}
 details.card>summary h3{font-size:1.08rem;font-weight:700;flex:1 1 16rem;min-width:0}
 .body{padding:0 14px 16px;display:flex;flex-direction:column;gap:12px}
-.what{max-width:70ch}
+.what{max-width:70ch;display:flex;flex-direction:column;gap:4px;min-width:0;overflow-wrap:anywhere}
+/* the What part (F6, answer 290 (a)): after Context, never folded. A set lists every item: its name, where it lives
+   (mono, muted), what it is, and its outcome under each option where they differ, on a muted line under it */
+.what ul.items{margin:0;padding-left:1.2em;display:flex;flex-direction:column;gap:4px}
+.items .iname{font-weight:600}
+.items .iwhere{font-family:var(--f-mono);font-size:.8em;color:var(--muted);margin-left:.35em}
+.items .iper{display:block;color:var(--muted);font-size:.9em}
+.items .iper b{font-family:var(--f-mono);font-weight:600;color:var(--ink);margin-right:.2em}
 .ctx{max-width:70ch;display:flex;flex-direction:column;gap:4px}
 .ctx .lbl{margin-bottom:-2px}
 fieldset{border:0;margin:0;padding:0;min-width:0;display:flex;flex-direction:column;gap:12px}
@@ -288,7 +296,7 @@ footer{color:var(--muted);font-size:.85rem;max-width:70ch}
   <header>
     <h1 id="title">Decision answers</h1>
     <p class="lede" id="lede"></p>
-    <p class="lede">For each decision, pick one option or one follow-up (the radio buttons allow only one), and add your words if you like. Each click saves at once; there is no submit button. Tell Claude in chat when you're done. The map under the progress bar lists the groups; each decision is one line in its group, and a click on the line opens its card (<b>Expand all</b> and <b>Collapse all</b> open or close every card). <b>Use recommendation</b> and <b>Later</b> beside a line answer without opening the card. A <span class="slug-t">number · name</span> is a decision: hover over it or focus it to see it, and click it to open its card; on one not on this page, a tap or click pins what it shows, and a second tap, a tap elsewhere or Escape closes it. Each line shows, after an arrow (→) and its letter, what the recommended option changes in the system the work builds (with no recommendation, each option's, in a few words); each card opens on a TLDR, then its Context (the terms it uses), then its impact, one facet a line, then one line per option, each but (z) with its <b>Pros</b> and <b>Cons</b> under it; the folds under it go from compressed to full detail. A part with a <i>more detail</i> button, above or inside a fold, shows more detail as short bullets when you click it or its text, and full detail in headed sections on a second click; picking an option opens its view (and closes the card's other one), and <b>More</b> beside an option opens or closes its view alone: its plan in brief, its <b>Pros</b> and <b>Cons</b> side by side, then its own effect, reach, undo and cost. A part with nothing to say (none) is left out. An Impact describes the system the work builds, never the review or the process; its <i>later:</i> line says what waiting holds up. <b>Open questions</b>, folded above the Impact, lists what is not known yet; <b>Assumptions</b>, folded under it, gives the basis of the call, its evidence, and each assumption it rests on with its tripwire, the sign that would change it.<span id="doclink"></span></p>
+    <p class="lede">For each decision, pick one option or one follow-up (the radio buttons allow only one), and add your words if you like. Each click saves at once; there is no submit button. Tell Claude in chat when you're done. The map under the progress bar lists the groups; each decision is one line in its group, and a click on the line opens its card (<b>Expand all</b> and <b>Collapse all</b> open or close every card). <b>Use recommendation</b> and <b>Later</b> beside a line answer without opening the card. A <span class="slug-t">number · name</span> is a decision: hover over it or focus it to see it, and click it to open its card; on one not on this page, a tap or click pins what it shows, and a second tap, a tap elsewhere or Escape closes it. Each line shows, after an arrow (→) and its letter, what the recommended option changes in the system the work builds (with no recommendation, each option's, in a few words); each card opens on a TLDR, then its Context (the terms it uses), then its What (what is decided; a set lists every item it acts on, and each item's outcome under each option where they differ), then its impact, one facet a line, then one line per option, each but (z) with its <b>Pros</b> and <b>Cons</b> under it; the folds under it go from compressed to full detail. A part with a <i>more detail</i> button, above or inside a fold, shows more detail as short bullets when you click it or its text, and full detail in headed sections on a second click; picking an option opens its view (and closes the card's other one), and <b>More</b> beside an option opens or closes its view alone: its plan in brief, its <b>Pros</b> and <b>Cons</b> side by side, then its own effect, reach, undo and cost. A part with nothing to say (none) is left out. An Impact describes the system the work builds, never the review or the process; its <i>later:</i> line says what waiting holds up. <b>Open questions</b>, folded above the Impact, lists what is not known yet; <b>Assumptions</b>, folded under it, gives the basis of the call, its evidence, and each assumption it rests on with its tripwire, the sign that would change it.<span id="doclink"></span></p>
     <div class="banner" id="nodb" hidden>This view can't save answers. Nothing you pick here is kept; answer in chat instead (<code id="nodbex">N: a</code>).</div>
     <div class="banner" id="viewonly" hidden>You are viewing these answers. Only the page's owner can answer here.</div>
     <div class="banner" id="nodata" hidden>The decisions didn't load. Reload the page; if it keeps failing, ask Claude for them in chat.</div>
@@ -409,10 +417,22 @@ const LINE_BREAK=/[\r\n\u0085\u2028\u2029\v\f]/;
 /* a fill-in placeholder: an angle-bracketed word with no spaces, such as <dir> or <path> */
 const PLACEHOLDER=/<[A-Za-z][\w-]*>/;
 
-/* the card's Context: under the TLDR on the open card.
-   An older card's what, when present, is shown at its end, after the cue, so nothing is lost */
-const contextBlock=c=>'<div class="ctx"><span class="lbl">Context</span><p>'+fmt(c.context)+'</p>'
-    +(isTxt(c.what)&&shown(c.what)?'<p>'+fmt(c.what)+'</p>':'')+'</div>';
+/* the card's Context: under the TLDR on the open card */
+const contextBlock=c=>'<div class="ctx"><span class="lbl">Context</span><p>'+fmt(c.context)+'</p></div>';
+/* the What part (F6, answer 290 (a)): what is decided, in plain words, after Context and never folded. For a set,
+   each item (items: [{name, where, about, per}]): its name, where it lives, what it is, and per, its outcome under
+   each option keyed by letter, in letter order; with no per it reads the same under every option, and shows none.
+   Labelled "What · N items" for a set. "" when neither what nor an item is shown. The runner reads the same items */
+const itemsOf=c=>Array.isArray(c.items)?c.items.filter(x=>isObj(x)&&isTxt(x.name)&&shown(x.name)):[];
+const perOf=x=>isObj(x.per)?Object.keys(x.per).sort().filter(k=>isTxt(x.per[k])&&shown(x.per[k])).map(k=>[k,x.per[k]]):[];
+const itemHtmlW=x=>{const ps=perOf(x);
+  return '<li><span class="iname">'+fmt(x.name)+'</span>'+(isTxt(x.where)&&shown(x.where)?'<span class="iwhere">'+fmt(x.where)+'</span>':'')
+    +(isTxt(x.about)&&shown(x.about)?' — '+fmt(x.about):'')
+    +(ps.length?'<span class="iper">'+ps.map(([k,v])=>'<b>('+esc(k)+')</b>'+fmt(v)).join('; ')+'</span>':'')+'</li>'};
+const whatPart=c=>{const w=isTxt(c.what)&&shown(c.what),its=itemsOf(c);if(!w&&!its.length)return "";
+  const lbl=its.length?'What · '+its.length+' item'+(its.length===1?'':'s'):'What';
+  return '<div class="what"><span class="lbl">'+lbl+'</span>'+(w?'<p>'+fmt(c.what)+'</p>':'')
+    +(its.length?'<ul class="items">'+its.map(itemHtmlW).join("")+'</ul>':'')+'</div>'};
 /* a TLDR bullet that carries the recommendation (the options list marks it): only forms that cannot be anything else.
    No lookbehind: one would stop the whole script in an older browser */
 const REC_OPEN=/^[^A-Za-z]*(rec|recs|recommend|recommended|recommendation)\b(?!\s*(\([a-y]\)\s*)?by\b)\s*(\.|:|—|–|-\s|\(|$)/i;
@@ -487,6 +507,19 @@ function cardProblems(c,w,keys){
   if(!Array.isArray(c.tldr)||!c.tldr.every(isStr))bad.push(w+": tldr must be a list of text");
   else{const i=c.tldr.findIndex(recBullet);if(i>=0)bad.push(w+": tldr bullet "+(i+1)+" carries the recommendation: the options mark it; say what is decided instead")}
   if(c.open!=null&&!(Array.isArray(c.open)&&c.open.every(isStr)))bad.push(w+": open must be a list of text, one open question each");
+  if(c.what!=null&&!isStr(c.what))bad.push(w+": what must be text: what is decided, in plain words");
+  /* the What part's set (F6): each item an object with its name; where and about text; per keyed by the card's
+     option letters, each its outcome under that option as text */
+  if(c.items!=null){
+    if(!Array.isArray(c.items)||!c.items.length)bad.push(w+": items must be a non-empty list of {name, where, about, per}, one per item of the set");
+    else c.items.forEach((x,i)=>{const at=w+": item "+(i+1);
+      if(!isObj(x)||!isTxt(x.name)){bad.push(at+" needs its name: each item is {name, where, about, per}");return}
+      for(const k of ["where","about"])if(x[k]!=null&&!isStr(x[k]))bad.push(at+" "+k+" must be text");
+      if(x.per!=null){const os=Array.isArray(c.options)?c.options.filter(isObj).map(o=>o.k):[];
+        if(!isObj(x.per))bad.push(at+" per must be an object keyed by option letter, each its outcome as text");
+        else for(const k in x.per){if(!os.includes(k))bad.push(at+" per names ("+k+"), which is not one of the card's options");
+          else if(!isStr(x.per[k]))bad.push(at+" per ("+k+") must be text")}}})
+  }
   if(c.assume!=null&&!(Array.isArray(c.assume)&&c.assume.every(a=>isObj(a)&&isTxt(a.rests)&&isTxt(a.tw))))bad.push(w+": assume must be a list of {rests, tw}: each assumption the call rests on and its tripwire, both text");
   /* undo and cost are optional; an effect an older writer left is ignored, never shown */
   if(!isObj(c.impact)||!["wait","reach"].every(k=>isTxt(c.impact[k]))||["undo","cost"].some(k=>k in c.impact&&!isStr(c.impact[k])))
@@ -781,7 +814,7 @@ const quickHtml=c=>{const n=esc(c.n);
 function cardHtml(c){
   const n=esc(c.n),g="d"+n,P=parts(c);
   let h='<div class="cardw '+(c.rec?'q2':'q1')+'"><details class="card" id="card-'+n+'"><summary>'+rowHtml(c)+'</summary>'
-    +'<div class="body">'+secHtml(c,"tldr","TLDR",P.tldr)+secHtml(c,"ctx","Context",P.ctx)+openFold(c)+assumeFold(c,P)+secHtml(c,"imp","Impact",P.imp)
+    +'<div class="body">'+secHtml(c,"tldr","TLDR",P.tldr)+secHtml(c,"ctx","Context",P.ctx)+whatPart(c)+openFold(c)+assumeFold(c,P)+secHtml(c,"imp","Impact",P.imp)
     +line("If left:",c.ifleft)+line("A round costs:",c.roundcosts)+line("If unanswered:",c.ifunanswered)
     +'<fieldset><legend>Your answer: one option or one follow-up</legend><div class="opts">';
   for(const o of optsOf(c)){const k=o.k;

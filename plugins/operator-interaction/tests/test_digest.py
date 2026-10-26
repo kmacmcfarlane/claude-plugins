@@ -4,8 +4,8 @@
 `references/cards-schema.md` and the example. It must carry:
 
 - every key of the schema's Top level, A page card and An excerpt tables, and of the card
-  record's A card and An option tables (the `decisions` skill's `references/card-record.md`;
-  but `what`, older data only), each with its own Required cell;
+  record's A card and An option tables (the `decisions` skill's `references/card-record.md`),
+  each with its own Required cell, `what` and `items` (the What part, F6) included;
 - every lint key the pre-publish runner, `scripts/check_cards.js`, emits, and none it does
   not, each with the start its printed line has (`shape:`, `impact:`, `depth:`, `page:` or
   none);
@@ -30,8 +30,8 @@ RECORD = SKILL.parent / "decisions" / "references" / "card-record.md"
 RUNNER = SKILL / "scripts" / "check_cards.js"
 EXAMPLE = SKILL / "assets" / "cards.example.json"
 
-# the card keys the digest leaves out on purpose
-SKIPPED = {"what"}
+# the card keys the digest leaves out on purpose: none, since `what` is the What part (F6)
+SKIPPED = set()
 # the page-wide lints print under "lint: page:", whatever their key
 PAGE_WIDE_START = "page:"
 # a digest threshold row -> the runner's value, found by this pattern in check_cards.js
@@ -207,6 +207,24 @@ class WriterDigest(unittest.TestCase):
         # the page's label before a non-recommended option's line is if chosen: in both
         for text in (self.digest, self.record):
             self.assertNotIn("not recommended because:", text)
+
+    def test_the_what_part_fields_are_listed(self):
+        # F6: what and items, the What part, each with the record's Required cell; the leftover-what lint is gone
+        card = keyed(section(self.digest, "A card"), 1)
+        self.assertEqual(card.get("what"), "optional")
+        self.assertEqual(card.get("items"),
+                         "optional; a card that counts a set where it says what is decided is refused without it")
+        self.assertNotIn("Do not set `what`", self.digest)
+        self.assertNotIn("what", keyed(section(self.digest, "The checks"), 1))
+        for row in ("| `what` | optional |", "| `items` | optional;"):
+            gone = self.digest.replace(row, row.replace("`", "", 2))
+            self.assertNotEqual(gone, self.digest)
+            self.assertTrue(required_problems(self.record, gone, "A card"), row)
+        # mutant: the record's what row put back as older data the digest skips
+        old = self.record.replace("| `what` | text | optional |", "| `what` | text | older data |")
+        self.assertNotEqual(old, self.record)
+        self.assertIn("A card: `what` Required is 'optional', the schema's 'older data'",
+                      required_problems(old, self.digest, "A card"))
 
     def test_card_field_mutations(self):
         gone = self.digest.replace("| `basis` | to render |", "| basis | to render |")
