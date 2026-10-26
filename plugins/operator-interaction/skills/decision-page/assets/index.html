@@ -475,6 +475,8 @@ const PAGE_FORMAT="decision-page/5",CARD_FORMAT="decision-card/5";
 const stampOf=(v,name)=>{const m=typeof v==="string"?v.match(/^([a-z-]+)\/([0-9]+)$/):null;return m&&m[1]===name?Number(m[2]):null};
 /* a rev or raised time: UTC, to the second (the minute form is read, never written) */
 const UTC_RE=/^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}(:[0-9]{2})?Z$/;
+/* the shapes the upgrader writes in its carried-over marker, upgraded.from (scripts/upgrade_cards.js) */
+const UPGRADED_FROM=["legacy","kit","kit (v4)"];
 const isPosInt=v=>typeof v==="number"&&Number.isInteger(v)&&v>=1;
 /* the fields a decision-card/5 record no longer has, and what holds each now */
 const OLDER_KEYS={o:"options (objects)",blocks:"each option's effect, reach, undo, cost and oneway",act:"each option's act",
@@ -508,7 +510,7 @@ function cardProblems(c,w,keys){
   else{const i=c.tldr.findIndex(recBullet);if(i>=0)bad.push(w+": tldr bullet "+(i+1)+" carries the recommendation: the options mark it; say what is decided instead")}
   if(c.open!=null&&!(Array.isArray(c.open)&&c.open.every(isStr)))bad.push(w+": open must be a list of text, one open question each");
   /* the upgrader's carried-over marker: the shape a card came from and the rev it kept (the runner's set check reads it) */
-  if(c.upgraded!=null&&!(isObj(c.upgraded)&&isTxt(c.upgraded.from)&&isStr(c.upgraded.rev)&&UTC_RE.test(c.upgraded.rev)))bad.push(w+": upgraded must be {from, rev}: the shape the upgrader read and the rev it kept, as UTC");
+  if(c.upgraded!=null&&!(isObj(c.upgraded)&&UPGRADED_FROM.includes(c.upgraded.from)&&isStr(c.upgraded.rev)&&UTC_RE.test(c.upgraded.rev)))bad.push(w+": upgraded must be {from, rev}: the shape the upgrader read ("+UPGRADED_FROM.join(", ")+") and the rev it kept, as UTC; only the upgrader writes it");
   if(c.what!=null&&!isStr(c.what))bad.push(w+": what must be text: what is decided, in plain words");
   /* the What part's set (F6): each item an object with its name; where and about text; per keyed by the card's
      option letters, each its outcome under that option as text */

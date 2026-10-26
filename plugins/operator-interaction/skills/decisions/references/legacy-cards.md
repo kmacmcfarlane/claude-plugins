@@ -38,7 +38,11 @@ scope level, unequal assumption lists, a writer marker, a newer stamp. `--only` 
 set of decisions; `--records` also writes one record per card, without `L` and `dep`. Each card
 it writes carries `upgraded`, `{from, rev}`: the shape it came from and the `rev` it kept. Beside
 `rev`, never touching it, it marks the card as carried over: until a writer revises it with a new
-`rev`, the pre-publish runner lints its set check rather than refusing it.
+`rev`, the pre-publish runner lints its set check rather than refusing it. **A gap:** data
+upgraded by an earlier upgrader, before the marker, carries none, so its set check is a
+refusal. Re-upgrade it from its kit or legacy source, which this upgrader marks, or list its
+items. The live answer page is still in the kit shape, so the migration pass runs this
+upgrader and its cards carry the marker.
 
 ## Legacy shipped → `decision-card/5`
 

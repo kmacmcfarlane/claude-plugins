@@ -76,7 +76,7 @@ it knowingly only on a card upgraded from an older format.
 | `n` | to render | whole number, 1 or more, unique, the caller's own |
 | `rev` | to render | the UTC time you write it, `YYYY-MM-DDTHH:MM:SSZ`. New on any change to the card, Context included, since answers given to an old `rev` stop counting; kept only by a format-only upgrade |
 | `raised` | optional | UTC, when the decision was first raised |
-| `upgraded` | optional; written by the upgrader only | `{from, rev}`: the shape a card was carried over from and the `rev` it kept. Never write it; a revision gives a new `rev`, so it no longer matches |
+| `upgraded` | optional; written by the upgrader only | `{from, rev}`: the shape a card was carried over from (`legacy`, `kit` or `kit (v4)`; the page refuses any other) and the `rev` it carries after the upgrade. Never write it; a revision gives a new `rev`, so it no longer matches. **The trust boundary:** the runner is the writer's self-check, not a gate, and the marker is the upgrader's alone: a writer who forges it only skips their own check |
 | `t` | to render | short name, 2–6 words, a noun phrase |
 | `q` | to render | the question as asked, one line (the headline's) |
 | `label` | optional | `{id, name}`, when the decision is raised from one labelled item of a source (a finding, a plan's question or feature; never a work item, ticket or commit): `id` one word (`F7`), `name` its short name, 2–6 plain words, from the source where it has one; shown after the title, muted: `t` · **F7** (oversize upload) |
@@ -103,8 +103,9 @@ it knowingly only on a card upgraded from an older format.
 | `detail` | optional | the levels, below |
 
 `what` is the What part: what is decided, in plain words, after Context. A count of two or
-more in `t`, the TLDR, or an option's title or line (but (z)'s) names a set: list every item in
-`items`, or the runner refuses the card.
+more in `t`, the first TLDR bullet, or an option's title or line (but (z)'s) names a set: list
+every item in `items`, or the runner refuses the card. A set named by a rule that picks out its members (*the pages that cite the retired setup guide*) keeps its count out of the checked places (the title, the first TLDR bullet, the option titles and lines), or lists its items. A count in `what`
+itself with no `items` of its length is the `count` lint.
 
 ## An option
 
@@ -231,8 +232,9 @@ option's title or line (but (z)'s) counts two or more things, with no `items`, o
 than the largest count. A list of another length is the `set` lint. **A card the upgrader
 carried over** (its `upgraded.rev` equal to its `rev`) gets the set check as the `set` lint,
 never a refusal: the upgrade is lazy and keeps every `rev`. A writer who revises it gives it a
-new `rev`, and from then it is refused like any card until its items are listed. Not a set's
-count: a numeral that labels one thing (a word before it; the text's end, punctuation or a
+new `rev`, and from then it is refused like any card until its items are listed. A count of
+100 or more is the `set` lint, never a refusal. A set named by a rule that picks out its members (*the pages that cite the retired setup guide*) keeps its count out of the checked places (the title, the first TLDR bullet, the option titles and lines), or lists its items. Not a set's
+count: a four-digit year; a numeral right after a capitalised word inside the text (*Python 2*, *Node 22*, *HTTP 404*); a date (*26 October*); a list of labels (*findings 3, 4 and 7*); a numeral that labels one thing (a word before it; the text's end, punctuation or a
 function word after it: *principle 3*, *step 2 of the guide*, *tier three*), *N times*, a
 range, a number after a slash, *N of the …*, a quantity of a unit (*2 spaces*, *600 words*),
 and a count equal to the real options' in a sentence about them (*choose between the two

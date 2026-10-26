@@ -12,7 +12,8 @@
    1b. the set refusal, the runner's own (never the page's, so an older published page still renders): a
       card whose title, first TLDR bullet, or an option's title or line (but (z)'s) counts two or more
       things, with no items or fewer items than the largest count (the What part lists every item of a
-      set, F6). A card the upgrader carried over with its rev kept gets it as the set lint instead;
+      set, F6). A card the upgrader carried over with its rev kept, and a count of 100 or more, get it as
+      the set lint instead; a count in what with no items of its length gets the count lint;
    2. on a file that passes, lints, each line saying how to fix it, or that the thing may be left
       knowingly:
       - the set: an items list of another length than the count; a carried-over card's set;
@@ -135,7 +136,9 @@ const unId = s => ID_ALL.reduce((t, r) => t.replace(r, " "), strip(s));
 /* a count: not "two-way", not a duration, size or percentage, not the first number of "N of M" */
 const COUNT = new RegExp("\\b(two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|[0-9]+)\\b(?!-)(?!\\s*" + UNIT + "\\b)(?!\\s*%)(?!\\s+of\\s+[0-9]+)", "gi");
 /* an id's digits are the id lint's, not a count */
-const counts = s => [...unId(s).matchAll(COUNT)].map(m => ({word: m[1], n: W[m[1].toLowerCase()] || Number(m[1])}));
+/* a four-digit year (2027) counts nothing */
+const counts = s => [...unId(s).matchAll(COUNT)].filter(m => !(/^[0-9]+$/.test(m[1]) && YEAR.test(m[1])))
+  .map(m => ({word: m[1], n: W[m[1].toLowerCase()] || Number(m[1])}));
 /* a named thing: "<word> mode|setting|…"; a determiner or count word before it is dropped, leaving the bare noun */
 const DET = new Set(["the","this","that","these","those","each","every","a","an","its","our","your","their","any","no","one","which","whose","same","new","old"]);
 const NAMED = /\b([a-z][a-z-]*)\s+(mode|setting|review|plan|document|doc|spec|policy|flag|profile|template|track|phase|stage)\b/gi;
@@ -499,6 +502,10 @@ function lintCard(c, w, sh, out) {
   /* the set check's lint: a list of another length, or a carried-over card's set (its refusal is setProblems') */
   const sc = setCheck(c);
   if (sc && !sc.refuse) say("set", "shape: " + sc.text);
+  /* a count in what (F6): the What part says what is decided, so a count there names a set its items list */
+  if (typeof c.what === "string") { const nOpts = opts(c).filter(o => o.k !== "z").length;
+    for (const x of setCounts(c.what, nOpts)) if (x >= 2 && x !== items.length)
+      say("count " + x, "what counts " + x + " things its items do not list" + (items.length ? " (items lists " + items.length + ")" : "") + ": list each in items, one each with its name; or leave it knowingly when the count names something else"); }
   shapes(c, say);
   recOnly(c, say);
   systemOnly(c, say);
@@ -526,9 +533,15 @@ function lint(d) {
    refuses it, so an older published page still renders ---- */
 /* a numeral (digits or a word) labels one thing, never counts a set, when a word that is no determiner comes right
    before it and it ends the text, comes before punctuation, or comes before a function word: principle 3, step 2 of
-   the guide, Python 3 only, tier three, Option two first. "Fix 3 broken links" and "the three pages" count */
+   the guide, Python 3 only, tier three, Option two first; or before a verb and its object (principle 3 implies the
+   change). "Fix 3 broken links" and "the three pages" count. The text's first word, when it is a common imperative
+   verb, heads no label: "Ship 3 now", "Close 5" and "Fix 3 in this round" count */
 const LABEL_NUM = /([A-Za-z]+)\s+$/;
-const COUNT_DET = new Set([...DET, "all", "both", "only", "first", "last", "other", "of", "between"]);
+const COUNT_DET = new Set([...DET, "all", "both", "only", "first", "last", "other", "of", "between", "on", "in", "at",
+  "to", "for", "from", "with", "after", "before", "by", "over", "under", "up"]);
+const IMPERATIVE = new Set(["ship", "close", "fix", "keep", "drop", "move", "file", "add", "remove", "pick", "merge", "cut",
+  "run", "build", "write", "open"]);
+const OBJ_DET = new Set(["the", "a", "an", "this", "that", "these", "those", "its", "their", "our", "your", "his", "her"]);
 const FUNC_AFTER = new Set(["of", "and", "or", "nor", "to", "in", "on", "at", "by", "for", "from", "with", "into", "onto", "per",
   "via", "as", "if", "but", "not", "so", "than", "then", "now", "only", "first", "already", "also", "again", "still",
   "says", "said", "say", "is", "are", "was", "were", "be", "been", "has", "had", "have", "does", "did", "do", "will",
@@ -536,8 +549,22 @@ const FUNC_AFTER = new Set(["of", "and", "or", "nor", "to", "in", "on", "at", "b
   "the", "a", "an", "when", "while", "before", "after", "under", "over", "until", "since"]);
 const isLabelNum = (t, m) => { const p = t.slice(0, m.index).match(LABEL_NUM);
   if (!p || COUNT_DET.has(p[1].toLowerCase())) return false;
-  const rest = t.slice(m.index + m[1].length), nx = rest.match(/^\s+([A-Za-z]+)/);
-  return !rest.trim() || /^\s*[.,;:!?)\]—–]/.test(rest) || (!!nx && FUNC_AFTER.has(nx[1].toLowerCase())); };
+  /* the first word an imperative verb: "Fix 3 …", "Close 5" */
+  if (!t.slice(0, p.index).trim() && IMPERATIVE.has(p[1].toLowerCase())) return false;
+  const rest = t.slice(m.index + m[1].length), nx = rest.match(/^\s+([A-Za-z]+)(?:\s+([A-Za-z]+))?/);
+  return !rest.trim() || /^\s*[.,;:!?)\]—–]/.test(rest) || (!!nx && FUNC_AFTER.has(nx[1].toLowerCase()))
+    || (!!nx && /s$/i.test(nx[1]) && !!nx[2] && OBJ_DET.has(nx[2].toLowerCase())); };
+/* a version or a code: a numeral right after a capitalised word that is not the text's first word (Drop Python 2
+   support, Use Node 22, HTTP 404), whatever follows it */
+const afterName = (t, m) => { const p = t.slice(0, m.index).match(LABEL_NUM);
+  return !!p && /^[A-Z]/.test(p[1]) && !!t.slice(0, p.index).trim(); };
+const MONTH = "(?:jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|june?|july?|aug(?:ust)?|sep(?:t(?:ember)?)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)";
+/* a date: a numeral next to a month name (26 October, October 26) */
+const nearMonth = (t, m) => new RegExp("\\b" + MONTH + "\\.?\\s*$", "i").test(t.slice(0, m.index))
+  || new RegExp("^\\s+" + MONTH + "\\b", "i").test(t.slice(m.index + m[1].length));
+/* a list of labels: numerals in a run, "findings 3, 4 and 7", "issues 12, 14" */
+const inNumList = (t, m) => /^[0-9]+$/.test(m[1]) && (/^\s*(?:,|and|or)\s*[0-9]+\b/.test(t.slice(m.index + m[1].length))
+  || /\b[0-9]+\s*(?:,|and|or)\s*$/.test(t.slice(0, m.index)));
 /* not a set's count: N times; a range (3-5, pages 3-5, 1350 to 900 words); a number after a slash (HTTP/2); N of
    the …, a part of a set named elsewhere; a quantity of a unit (2 spaces, 600 words) */
 const SET_UNIT = "(?:spaces?|words?|characters?|chars?|lines?|columns?|bytes?|tokens?|sentences?|bullets?|px|em|rem|pt|times)";
@@ -546,9 +573,12 @@ const notSetCount = (t, m) => { const before = t.slice(0, m.index), after = t.sl
     || /^\s*[-–]\s*\w/.test(after) || new RegExp("^(?:\\s*(?:to|and|-|–)\\s*[0-9a-z]+)?\\s+" + SET_UNIT + "\\b", "i").test(after)
     || /^\s+of\s+(?:the|these|those|its|our|your|their|them)\b/i.test(after); };
 /* a sentence about the options themselves: a count equal to the real options' is the options, not a set */
-const ABOUT_OPTIONS = /\b(?:options?|which of|which one|between|one of|either|choose|pick)\b/i;
+const ABOUT_OPTIONS = /\b(?:options?|which of|which one|between|one of|either)\b/i;
+/* a count of 100 or more (a status code, a size) is never refused: SET_BIG and over is linted only */
+const SET_BIG = 100;
 const setCounts = (s, nOpts) => { const t = unId(s);
-  return [...t.matchAll(COUNT)].filter(m => !isLabelNum(t, m) && !notSetCount(t, m))
+  return [...t.matchAll(COUNT)].filter(m => !(/^[0-9]+$/.test(m[1]) && YEAR.test(m[1])) && !isLabelNum(t, m)
+    && !afterName(t, m) && !nearMonth(t, m) && !inNumList(t, m) && !notSetCount(t, m))
     .map(m => W[m[1].toLowerCase()] || Number(m[1])).filter(x => !(x === nOpts && ABOUT_OPTIONS.test(t))); };
 /* a card the upgrader carried over, format only: its marker names the rev it kept */
 const carried = c => !!c.upgraded && typeof c.upgraded === "object" && c.upgraded.rev === c.rev;
@@ -559,7 +589,9 @@ function setCheck(c) {
   if (!seen.size) return null;
   const max = Math.max(...seen), short = n < max;
   if (!short && seen.has(n)) return null;
-  return {refuse: short && !carried(c), text: "a set not listed in items: it counts " + [...seen].join(" and ") + " things where it says what is decided"
+  /* refused only short of a count under SET_BIG; short of a bigger one alone, linted */
+  const small = [...seen].filter(x => x < SET_BIG), refuse = !!small.length && n < Math.max(...small) && !carried(c);
+  return {refuse, text: "a set not listed in items: it counts " + [...seen].join(" and ") + " things where it says what is decided"
     + (n ? ", but items lists " + n : ", and there are no items") + ": " + (short
       ? "list each in items (the What part: {name, where, about, per}), so the operator can name every item it acts on"
         + (carried(c) ? "; carried over by the upgrader with its rev, so linted, and refused once revised with a new rev" : "")

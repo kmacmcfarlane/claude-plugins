@@ -101,9 +101,10 @@ The rules below are what the digest condenses:
   Context does not repeat it. **Context introduces every specific thing the card names.** Two
   shapes need it most:
   - **A count** ("four changes", "the three"). Where the card says what is decided (its `t`,
-    TLDR, an option's title or line), a count names a set: list every item in `items`, the
-    What part, one each (below); the runner refuses a set with no items or too few (one the
-    upgrader carried over, its `rev` kept, gets a lint until it is revised).
+    first TLDR bullet, an option's title or line but (z)'s), a count names a set: list every
+    item in `items`, the What part, one each (below); the runner refuses a set with no items or
+    too few (one the upgrader carried over, its `rev` kept, gets a lint until it is revised; a
+    count of 100 or more is linted only). A set named by a rule that picks out its members (*the pages that cite the retired setup guide*) keeps its count out of the checked places (the title, the first TLDR bullet, the option titles and lines), or lists its items.
     Elsewhere, Context says what the things are, or lists them: *the review asked for four
     changes: X, Y, Z and W*.
   - **A named mode, setting, review, plan or document** ("content mode", "the review").

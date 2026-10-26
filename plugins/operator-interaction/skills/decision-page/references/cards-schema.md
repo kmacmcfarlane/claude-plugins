@@ -149,7 +149,8 @@ sits in its view. Two shapes need it most:
   upgrader carried over**, its `upgraded` marker naming the `rev` it still has, gets the set
   check as the `set` lint, never a refusal: the upgrade is lazy and seamless, and every `rev` is
   kept. Once a writer revises it, with a new `rev`, it is refused like any card until its items
-  are listed. Not a set's count: a numeral that labels one thing (*principle 3*, *step 2 of
+  are listed. A count of 100 or more is the `set` lint, never a refusal. A set named by a rule that picks out its members (*the pages that cite the retired setup guide*) keeps its count out of the checked places (the title, the first TLDR bullet, the option titles and lines), or lists its items.
+  Not a set's count: a four-digit year; a numeral right after a capitalised word inside the text (*Python 2*, *Node 22*, *HTTP 404*); a date (*26 October*); a list of labels (*findings 3, 4 and 7*); a numeral that labels one thing (*principle 3*, *step 2 of
   the guide*: a word before it, and the text, punctuation or a function word after it), *N
   times*, a range, a number after a slash, *N of the …*, a quantity of a unit (*600 words*),
   and the options themselves counted (*choose between the two options*). Elsewhere, Context says what the things are, or lists them: *the review asked for four
