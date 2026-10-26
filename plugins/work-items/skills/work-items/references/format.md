@@ -1209,8 +1209,9 @@ as the strict JSON a write takes, and its `n`, `rev` and `format` equal the line
 is over the bytes as read, never a re-serialized record.
 
 **On a terminal**, the record is shown escaped: every control character but newline and tab
-(C0, so a carriage return too; DEL; C1, such as CSI and OSC) and every format character
-(Unicode Cf: bidi overrides, zero-width characters, BOM, tags) is written as `\uXXXX`
+(C0, so a carriage return too; DEL; C1, such as CSI and OSC), every format character
+(Unicode Cf: bidi overrides, zero-width characters, BOM, tags) and the line and paragraph
+separators (U+2028, U+2029) are written as `\uXXXX`
 (`\UXXXXXXXX` past U+FFFF), and one stderr note says so and that the sha256 covers the file's
 bytes. Into a pipe or a file, the record is the file's exact bytes. Both `--json` forms are
 ASCII (`\uXXXX` for every non-ASCII and control character), so a JSON reader gets the record
@@ -1223,8 +1224,8 @@ file is missing, unreadable or mismatched (*card record missing (`<path>`); rest
 the store's history (`git -C <root> log -- <path>`); never backfill it*), or a level is a
 symbolic link. An older `wi` also exits 2 on `--card`, from its argument parser: a caller
 tells them apart by the message, `show --card`'s opening *decision N has no card record*, the parser's
-holding *unrecognized arguments*. An id that matches no item exits 2 as every `show` does
-(*no item matching*).
+holding *unrecognized arguments*. An id that matches no item, or more than one, exits 2 as every
+`show` does (*no item matching*, *ambiguous id*).
 
 ## Closed: `closed N:`
 

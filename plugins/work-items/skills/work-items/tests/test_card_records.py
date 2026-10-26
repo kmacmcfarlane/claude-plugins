@@ -1326,7 +1326,8 @@ class TestShowCardSafety(CardCase):
     non-regular file (also one swapped in after the lstat) refused without
     a hang."""
 
-    HOSTILE = "x\u009b2J \u009d52;c \u007f ‮evil \u0007 ​"
+    HOSTILE = ("x\u009b2J \u009d52;c \u007f \u202eevil \u0007 \u200b "
+               "\u2028 \u2029")
     REL = f"cards/{IID}/1/2026-10-23T10-00-00Z.card5.json"
 
     def on_tty(self):
@@ -1357,8 +1358,9 @@ class TestShowCardSafety(CardCase):
         code, out, err = self.on_tty()
         self.assertEqual(code, 0)
         for raw, shown in (("\u009b", "\\u009b"), ("\u009d", "\\u009d"),
-                           ("\u007f", "\\u007f"), ("‮", "\\u202e"),
-                           ("\u0007", "\\u0007"), ("​", "\\u200b")):
+                           ("\u007f", "\\u007f"), ("\u202e", "\\u202e"),
+                           ("\u0007", "\\u0007"), ("\u200b", "\\u200b"),
+                           ("\u2028", "\\u2028"), ("\u2029", "\\u2029")):
             self.assertNotIn(raw.encode(), out)
             self.assertIn(shown.encode(), out)
         self.assertIn(b"\n  ", out)   # newlines kept
@@ -1372,6 +1374,21 @@ class TestShowCardSafety(CardCase):
         self.assertTrue(r.stdout.endswith(b"\n\n" + data))
         self.assertIn(f"sha256: {sha}\n".encode(), r.stdout)
         self.assertEqual(r.stderr, b"")
+
+    def test_non_utf8_terminal(self):
+        """An ASCII terminal and a record holding \u00e9: no exception, the
+        letter written as \\xe9. Mutant: the text written without
+        backslashreplace (an encoding error)."""
+        self.raise_rec(record(context="caf\u00e9"))
+        buf, err = io.BytesIO(), io.StringIO()
+        out = _TTY(buf, encoding="ascii", newline="\n")
+        item = wi.load_item_anywhere(self.root, IID)
+        with mock.patch.object(sys, "stdout", out), \
+                mock.patch.object(sys, "stderr", err):
+            code = wi.show_card(self.root, item, 1, False, False)
+            out.flush()
+        self.assertEqual(code, 0)
+        self.assertIn(b"caf\\xe9", buf.getvalue())
 
     def test_tampered_carriage_returns(self):
         """CRs added to the file (still valid JSON): shown as \\u000d on a

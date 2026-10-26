@@ -5108,7 +5108,11 @@ def show_card(root, item, n, every, as_json):
         # a terminal never gets a record's control or format characters
         # raw (an escape sequence, a CR, a bidi override); a pipe gets the
         # file's exact bytes, which the sha256 covers either way
-        sys.stdout.write(_terminal_safe(r["data"].decode("utf-8")))
+        # backslashreplace: a terminal whose encoding is not UTF-8
+        # (ASCII, Latin-1) gets \\xe9 rather than an encoding error
+        enc = sys.stdout.encoding or "utf-8"
+        sys.stdout.write(_terminal_safe(r["data"].decode("utf-8")).encode(
+            enc, "backslashreplace").decode(enc))
         sys.stdout.flush()
         print("wi: note: the record is shown escaped for the terminal "
               "(control and format characters as \\uXXXX); the sha256 "
@@ -5124,11 +5128,13 @@ def show_card(root, item, n, every, as_json):
 
 def _terminal_safe(text):
     """`text` with every control character but newline and tab (C0, DEL,
-    C1, so CR too) and every format character (Unicode Cf: bidi, zero
-    width, BOM, tag) written as \\uXXXX (\\UXXXXXXXX past the BMP)."""
+    C1, so CR too), every format character (Unicode Cf: bidi, zero
+    width, BOM, tag) and the line and paragraph separators (U+2028,
+    U+2029) written as \\uXXXX (\\UXXXXXXXX past the BMP)."""
     out = []
     for ch in text:
-        if ch not in "\n\t" and unicodedata.category(ch) in ("Cc", "Cf"):
+        if ch not in "\n\t" and unicodedata.category(ch) in ("Cc", "Cf",
+                                                               "Zl", "Zp"):
             o = ord(ch)
             out.append(f"\\u{o:04x}" if o <= 0xFFFF else f"\\U{o:08x}")
         else:
