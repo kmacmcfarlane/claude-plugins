@@ -852,9 +852,10 @@ says what happens if it is chosen.*
 *Situation: today's code review of the upload-service change left three findings for the
 operator to rule on before the merge: F3 (oversize upload), F7 (retry storm) and F9 (stale
 temp files). Each needs its own answer, so the bundle is a group: one whole card per finding
-under one heading that carries what they share. The set is findings-style, so it is put in
-chat, not on an answer page. Each title opens on the finding's label with its short name,
-since the operator answers by the review's labels; the number stays the handle.*
+under one heading that carries what they share. The set is findings-style, so it goes to
+chat by default (an answer page is offered too: it shows each finding). Each title opens on
+the finding's label with its short name, since the operator answers by the review's labels;
+the number stays the handle. Each card shows its finding after **What:** (example 33).*
 
 **Decisions** — *3*
 
@@ -864,6 +865,16 @@ since the operator answers by the review's labels; the number stays the handle.*
 **51 — F3 (oversize upload) · Check an upload's size before reading it?**
 **Context:** the declared size is the length a client sends ahead of the upload; the handler ignores it, reads the whole file into memory and only then compares it with the 50 MB limit. Raised when the review turned it up · you decide whether the check moves first.
 **What:** whether the upload handler checks the size a client declares before it reads the upload, in `upload/handler.go`.
+**Finding:** F3 (oversize upload): the handler reads the whole upload before it checks the size — `upload/handler.go:40-45`
+The handler copies the whole request body into memory and compares its length with the 50 MB limit only after the copy, so a 2 GB upload fills the server's memory before it is refused, and every other upload on that server stalls meanwhile.
+```go
+func (h *Handler) Upload(w http.ResponseWriter, r *http.Request) {
+	body, err := io.ReadAll(r.Body) // the whole upload, into memory
+	if err != nil {
+		return
+	}
+	if int64(len(body)) > h.maxSize { // checked only after the read
+```
 ▸ Assumptions — basis: **strong** · 1 assumption with its tripwire
 **Impact:** later: the merge waits on this finding · reach: the upload service and every client that uploads
 - **(a) Check the declared size first**
@@ -881,6 +892,15 @@ since the operator answers by the review's labels; the number stays the handle.*
 **52 — F7 (retry storm) · Add a backoff to failed disk writes?**
 **Context:** a backoff is a wait that grows after each failed try; today the writer tries again at once, with no wait. Raised when the review turned it up · you decide whether the backoff goes in before the merge.
 **What:** whether a failed write to disk waits before it is tried again, in the upload service's storage writer.
+**Finding:** F7 (retry storm): a failed write is tried again at once — `storage/writer.go:88-95`
+When a write to disk fails, the writer tries it again in the same loop with no pause, so a disk that fails every write draws hundreds of writes a second until someone takes it out of service.
+````go
+// see ```text``` and ``storage`` in the docs
+const retryMsg = "write failed: retrying"
+for err := w.write(b); err != nil; err = w.write(b) {
+	log.Print(retryMsg) // no wait before the next try
+}
+````
 ▸ Open questions — 1 open: how long a busy disk stays busy
 ▸ Assumptions — basis: **partial** · 2 assumptions with tripwires
 **Impact:** later: the merge waits on this finding · reach: the upload service and the disks it writes to
@@ -899,6 +919,8 @@ since the operator answers by the review's labels; the number stays the handle.*
 **53 — F9 (stale temp files) · Remove an aborted upload's temp file?**
 **Context:** each upload is written to a temporary file first and moved into place when it completes; an aborted upload's file is never moved or deleted. Raised when the review turned it up · you decide whether the cleanup goes in before the merge.
 **What:** whether the upload service deletes the temporary file an aborted upload leaves on disk.
+**Finding:** F9 (stale temp files): an aborted upload's temporary file is never removed — `upload/tempfile.go:21-30`
+When a client aborts, the handler returns without moving or deleting the upload's temporary file, so each aborted upload leaves its file on the server's disk for good, about 40 GB a week across the servers.
 ▸ Assumptions — basis: **strong** · 1 assumption with its tripwire
 **Impact:** later: the temp directory keeps growing, about 40 GB a week, until the disk fills · reach: the upload servers' disks
 - **(a) Delete it when the upload aborts**
@@ -919,7 +941,7 @@ since the operator answers by the review's labels; the number stays the handle.*
 
 *Reply with a letter (`51: a`) or in your own words · `later [when]` · `tell me [what]` · `expand` · `dig into [what]` · `you decide` · `drop`*
 
-*Each card is whole — its own What, Context, Assumptions fold line, Impact, options and Background fold line — so each finding gets its own impact and its own answer, and `ok 51-53` still takes all three recommendations. The heading adds what the three share and replaces nothing on them. Each effect says how the failure happens and what changes after the fix, not just its name: F3's says a 2 GB upload fills the server's memory first.*
+*Each card is whole — its own Context, What, Finding, Assumptions fold line, Impact, options and Background fold line — so each finding gets its own impact and its own answer, and `ok 51-53` still takes all three recommendations. The heading adds what the three share and replaces nothing on them. Each effect says how the failure happens and what changes after the fix, not just its name: F3's says a 2 GB upload fills the server's memory first.*
 
 *Not this: one card, "Fix the upload-service housekeeping before the merge?", with options "(a) fix all", "(b) fix some" and "(z) later". It names a category, not the three findings, gives no impact for any one of them, and has no way to answer F3 differently from F7: the operator cannot decide it without asking what the findings are. Nor one card with a pick per finding (`51: F3 a, F7 b`): its picks would be lettered sub-decisions under one number.*
 
@@ -949,6 +971,18 @@ Impact names, with the mechanism spelled out and the term glossed.*
 **88 — Stop exposing the archived date library from the client package?**
 **Context:** an archived library is one whose maintainers have stopped releasing it, security fixes included; the client package is what partner apps import to call our API. Raised when the dependency audit turned it up · you decide whether the client's public types change in the next major release.
 **What:** whether the client package's public functions switch from the archived date library's types to the standard library's, in the next major release.
+**Finding:** the client's public functions take and return the archived library's date type — `client/api.py:12-19`
+Each public function's signature names the archived library's date type, so an app that imports the client must install that library, at the exact version the client pins, before it can call any of them.
+```python
+from archived_dates import DateTime  # the archived library
+
+
+def list_orders(since: DateTime) -> list[Order]:
+    ...
+
+
+def next_delivery(order_id: str) -> DateTime:
+```
 ▸ Open questions — 1 open: how many partner apps also use the date library directly
 ▸ Assumptions — basis: **partial** · 2 assumptions with tripwires
 **Impact:** later: the next major release keeps the archived types · reach: every partner app that imports the client, and its build
@@ -997,3 +1031,48 @@ differently; the two fixes are filed under either real option, so they carry non
 ▸ Background — why now: the docs team plans its next month on Thursday, from the queue as it stands.
 
 *Not this: a What of "which of the four proposed work items to file" with no list under it, and a Context that names the count alone: the operator cannot decide on items they cannot see, so a count is always listed, never left bare. Nor the four listed in Context: Context introduces the terms, and the What part lists what is decided.*
+
+---
+
+## 33. A finding, after What
+
+*Situation: today's code review of the signup change left one finding for the operator, F3
+(unescaped display name). The decision is raised from that finding, so the card shows it after
+**What:** — the label with its short name and the finding's title, where it lives, how it
+happens, then its code — and before the folds and the Impact (answer 337 (a)).*
+
+**97 — F3 (unescaped display name) · Escape the display name in the welcome email?**
+**Context:** the parcel tracker sends a welcome email built from an HTML template, and the display name is what a user types at signup. Today's code review of the signup change numbered its findings, and F3 (unescaped display name) is the one left for you · you decide how the template shows the name.
+**What:** whether the welcome email's template escapes the display name, so any tags in it show as plain text, and whether names already stored are cleaned too.
+**Finding:** F3 (unescaped display name): the template turns escaping off for the name — `templates/welcome.html:14-16` `at 3f2a9c1`
+The template marks the display name as safe, which turns escaping off, so a name typed as a link to another site becomes a real link inside an email that comes from us, sent to the new user and to anyone they forward it to.
+```jinja
+<h1>Welcome aboard</h1>
+<p>Hi {{ user.display_name | safe }},</p>
+<p>Your first parcel is on its way.</p>
+```
+▸ Assumptions — basis: **strong** · 1 assumption with its tripwire
+**Impact:** later: the signup change does not merge · reach: every welcome email and anyone who signs up
+- **(a) Remove the safe mark so the template escapes the name**
+  *→ a name holding tags shows them as literal text in the email; before, the tags ran as markup, so a typed link was live · cost: a one-line change and one test*
+  *pros: one word removed fixes every email, for names already stored too*
+  *cons: a stored name with tags shows them as literal text*
+- (b) As (a), and clean the names already stored
+  *→ as (a), and about 40 stored names lose their tags once · reach: every welcome email, and the users whose names change · cost: a script, its dry run and an hour to review the list*
+  *pros: no literal tags show in any email*
+  *cons: a script that rewrites user data, for a cosmetic gain*
+- (z) Decide later — *the signup change does not merge; the live email keeps the gap*
+
+▸ Background — why now: the signup change cannot merge until F3 is answered, and it is the last open finding from today's review.
+
+*The finding sits inside the card, after **What:**, so the card reads in the one order every card
+has: what is decided, then the problem it is decided about. Its head repeats the title's label
+with the same short name, so it reads alone; its mechanism says how a typed name turns into a
+live link, and for whom; the excerpt is the source's text, verbatim, fenced with its language,
+and the head ends on the commit the excerpt came from (its `src`). A text holding backticks
+takes a longer fence, as 52's does, and a control or bidirectional character in one is written as its tag,
+`U+202E`.
+On an answer page the same card shows a Finding part in the same place, its code drawn as a
+block that shows every character as typed. Not this: the finding above the card, before the
+title (265 (a)'s provisional reading, replaced by 337 (a)); nor a Finding of "F3: XSS in the
+welcome email", a label with no mechanism.*

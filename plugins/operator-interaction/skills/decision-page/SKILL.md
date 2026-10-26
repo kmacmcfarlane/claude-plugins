@@ -1,12 +1,12 @@
 ---
 name: decision-page
-description: "Put a set of decisions to the operator as an answer page: a published page of decision cards with one radio group per decision (its options and the follow-ups later, tell me, expand, dig into, you decide, drop), a words box, saved on click with no submit; then read the answers back and hand them to the caller to record, echoed before anything acts on them. A template plus a data file, so a new set is a data write and a republish. Needs claude.ai artifacts with the db capability (a docs connector optional); falls back to a doc with tick boxes, or to decisions in chat. Use when a session has several decisions to put to the operator at once and they want to answer them on a page rather than in chat, or says 'answer page', 'decision page', 'put these on a page', 'let me answer on a page', 'read my answers from the page'. Not for a single decision, a set of review or audit findings (chat, until the page shows findings), or decisions answered in chat (the decisions skill)."
+description: "Put a set of decisions to the operator as an answer page: a published page of decision cards with one radio group per decision (its options and the follow-ups later, tell me, expand, dig into, you decide, drop), a words box, saved on click with no submit; then read the answers back and hand them to the caller to record, echoed before anything acts on them. A template plus a data file, so a new set is a data write and a republish. Needs claude.ai artifacts with the db capability (a docs connector optional); falls back to a doc with tick boxes, or to decisions in chat. Use when a session has several decisions to put to the operator at once and they want to answer them on a page rather than in chat, or says 'answer page', 'decision page', 'put these on a page', 'let me answer on a page', 'read my answers from the page'. Not for a single decision, or decisions answered in chat (the decisions skill); a set of review or audit findings goes to chat by default, and the page is offered for it too."
 ---
 
 # Decision page
 
 A set of decisions on one page the operator works through at their own pace: a map of its
-groups, each card a one-line row that opens flat on its essentials (its TLDR, then its Context, then its Open questions, folded, then its Impact) with folds for the rest; a
+groups, each card a one-line row that opens flat on its essentials (its TLDR, then its Context, then its What, then its Finding when it is raised from one, then its Open questions, folded, then its Impact) with folds for the rest; a
 click on a part with a more-detail button shows it as terse bullets, then in headed sections,
 each option but (z) shows its **Pros** and **Cons** rows under it, and picking an option, or **More** beside it, opens its view (its Plan in brief, its Pros | Cons table, then its effect, reach, undo and cost); one choice per card enforced by the
 radio buttons, answers saved as they click. You publish it, they answer, you read the answers
@@ -24,9 +24,10 @@ line. Generation time does not limit use: a new set is a data file and a publish
 
 - **Every decision meets the `decisions` skill's floor first** — load that skill (same
   plugin). The page renders its card; it does not replace it. Keep the caller's numbers.
-- **Not for a findings-style set** — decisions raised from the findings of a review, an
-  audit, a test run or a scan. Those go to chat until the page can show each finding (the
-  `decisions` skill's rendering reference, § Several decisions in one message).
+- **A findings-style set goes to chat by default** — decisions raised from the findings of a
+  review, an audit, a test run or a scan (the `decisions` skill's rendering reference,
+  § Several decisions in one message). The page is offered for it too: each card carries its
+  `finding`, shown as its Finding part with the excerpt as a code block (step 2).
 - **The caller supplies the decisions and records the answers.** This skill holds no store;
   it hands the answers over verbatim, and with them when each card was shown (step 3) and
   seen (step 6), for a caller that records shown and seen (the `decisions` skill's § Before
@@ -121,6 +122,13 @@ The rules below are what the digest condenses:
   outcome under each option keyed by letter, only where the options treat it differently (left
   out, it reads the same under every option). The part is labelled *What · N items*
   (`references/cards-schema.md`).
+- On a decision raised from a finding (of a review, an audit, a test run or a scan), set
+  `finding`, `{label, title, where, mechanism, excerpt}`: shown as its **Finding** part after
+  What, never folded. `mechanism` says how it happens, who meets it and when, in one paragraph;
+  `label` is the card's own `label` when it has one; `title` is the finding's own title, one
+  line; `where` is where it lives, one line (a path and line range); `excerpt` is its code, log
+  or failing output, verbatim, never a secret's value (`references/cards-schema.md` § An
+  excerpt).
 - **No ids on the page.** The page is the operator's only context: refer to another decision
   by its slug, and to an item, a series, a branch or a commit by its short name or title, with
   no id after it, in every field, the page and layer titles included. A fact only an id
@@ -389,8 +397,8 @@ answer page*, and the card rules the page renders.
 - `scripts/check_cards.js` — the pre-publish check under node: the page's own refusals, then
   the set refusal (a card that counts two or more things where it says what is decided, with
   no `items` or too few; a lint on a card the upgrader carried over), then lints for ids anywhere on the page, counts and named
-  things a card's Context and What part do not introduce, the level shapes, a reach that reads as the recommendation's, an option's effect
-  with no mechanism, and the depth lints (a level not longer than the one below, thin or long
+  things a card's Context and What part do not introduce (the Finding read too), the level shapes, a reach that reads as the recommendation's, an option's effect
+  or the Finding's mechanism with no mechanism, and the depth lints (a level not longer than the one below, thin or long
   depth, an option with no reach, what a new card owes), and an option with no pro or con;
   `--record FILE` checks one record
 - `scripts/upgrade_cards.js` — the upgrader under node: an older `cards.json` (the legacy

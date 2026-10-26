@@ -178,7 +178,9 @@ Smallest to largest, each showing more of the impact in facet order (templates i
   any deadline; a round ask, its justification; a line-only decision, its
   why ask.
 - **Card** — in the answer page's order: the title, then **Context:**, then **What:** (what
-  is decided, and a set's items one bullet each), then the ▸ Open questions fold line when anything is open,
+  is decided, and a set's items one bullet each), then, on a decision raised from a finding,
+  **Finding:** (its label and short name, its title, where it lives, how it happens, and its
+  excerpt in a fenced block), then the ▸ Open questions fold line when anything is open,
   then the ▸ Assumptions fold line (the basis word and the assumptions with their
   tripwires), then an **Impact:** line, with no effect of its own; then the options, each with its
   own impact (effect, reach, a one-way or costly option's `⚠ undo:`, cost) on an italic line
@@ -253,7 +255,8 @@ The decisions close the message — after any report, push outcome or summary:
 To put several decisions on a page the operator answers by clicking, instead of in the
 message, use the `decision-page` skill (same plugin); the cards it renders are this skill's.
 A **findings-style set** (raised from a review, an audit, a test run or a scan) goes to chat
-by default, until the page can show each finding, which is what the operator decides from.
+by default, each card with its **Finding:** part; the page shows each finding too (its Finding
+part, the excerpt as a code block), so offer it for such a set as for any other.
 
 `expand` raises a decision one level in the next round (line → card → block); it keeps its
 number and position and stays raised on later re-shows.

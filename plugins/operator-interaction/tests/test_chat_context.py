@@ -35,9 +35,9 @@ CUE = " · "  # where you left it · what you decide now
 SENTENCE_END = re.compile(r"[.!?](?=\s+[A-Za-z`])")
 # a re-show's title: "**62 — back, as you asked (...):** the question?"
 RESHOW_HEAD = re.compile(r"^\*\*\d+ — back[^*]*:\*\* .+\?")
-# a group heading (a bundle, A4b) or a finding heading (finding first, when it lands): a view
-# stops at either, so neither is read as the tail of the card above it
-GROUP_OR_FINDING = re.compile(r"^\*\*(Group|Finding): ")
+# a group heading (a bundle, A4b): a view stops at it, so it is not read as the tail of the card above
+# it. A finding is no heading: it sits inside its card, as **Finding:** after What (F7, answer 337 (a))
+GROUP_OR_FINDING = re.compile(r"^\*\*Group: ")
 GROUP_HEAD = re.compile(r"^\*\*Group: [^*]+\*\* — \*(\d+) decisions, [^*]+\*$")
 WHY_LINE = "**Why you, why now:**"  # retired by answer 338: no card carries it
 BG_LINE = "▸ Background — why now: "
@@ -122,7 +122,7 @@ class Templates(unittest.TestCase):
 
     def test_the_card_template_runs_context_what_impact(self):
         card = fenced(RENDERING.read_text(), "**N — Title as a question?**\n**Context:**")
-        self.assertEqual(heads(card)[:3], ["Context", "What", "Impact"])
+        self.assertEqual(heads(card)[:4], ["Context", "What", "Finding", "Impact"])
         self.assertNotIn("Why now", heads(card))
         self.assertNotIn("Why ask", heads(card))
         self.assertNotIn("cold reader only", "\n".join(card))
@@ -133,8 +133,8 @@ class Templates(unittest.TestCase):
 
     def test_the_block_template_runs_context_bullets_what_table(self):
         block = fenced(RENDERING.read_text(), "**N — Title as a question?** ⚠ one-way")
-        self.assertEqual(heads(block)[:7],
-                         ["Context", "What", "Basis", "Impact", "table", "Why now", "Why ask"])
+        self.assertEqual(heads(block)[:8],
+                         ["Context", "What", "Finding", "Basis", "Impact", "table", "Why now", "Why ask"])
         check_bg_block(self, "rendering.md block", block)
         k = next(i for i, x in enumerate(block) if x.startswith("**Context:**"))
         self.assertTrue(block[k + 1].startswith("- the card's Context"), block[k + 1])
@@ -401,7 +401,9 @@ class GalleryContexts(unittest.TestCase):
     def test_every_card_and_block_runs_context_what_impact(self):
         # Context above What (the v4 layout, answer 290 (a), F6)
         for n, kind, body in views(GALLERY):
-            want = ["Context", "What"] + (["Basis", "Impact", "table"] if kind == "block" else ["Impact"])
+            # a card raised from a finding shows it after What (F7, answer 337 (a))
+            fnd = ["Finding"] if "Finding" in heads(body) else []
+            want = ["Context", "What"] + fnd + (["Basis", "Impact", "table"] if kind == "block" else ["Impact"])
             self.assertEqual(heads(body)[:len(want)], want, f"gallery.md:{n} ({kind})")
 
     def test_a_cards_context_is_one_or_two_sentences_ending_on_the_cue(self):
@@ -544,7 +546,7 @@ class Groups(unittest.TestCase):
             check_group(self, f"gallery.md:{n}", count, cards, after,
                         [bodies[c] for c in cards])
 
-    def test_a_view_stops_at_a_group_or_finding_heading(self):
+    def test_a_view_stops_at_a_group_heading(self):
         for n, kind, body in views(GALLERY):
             for x in body[1:]:
                 self.assertIsNone(GROUP_OR_FINDING.match(x), f"gallery.md:{n}")

@@ -41,6 +41,7 @@ Two kinds of required:
 | `context` | text | to render | **Context:** one or two sentences introducing every term, item, count and named thing the card uses, by name, never by id; then where the operator left it |
 | `what` | text | optional | **What:** what is decided, in plain words, one sentence: the What part, after Context and never folded, on both surfaces (F6, answer 290 (a)) |
 | `items` | list of `{name, where?, about?, per?}` | optional; a card that counts a set where it says what is decided is refused with none, or too few | **What:** for a set, every item it acts on, one each, never a count alone: `name` its plain name (never an id), `where` where it lives when that helps, `about` what it is in a few words, `per` its outcome under each option, keyed by the card's option letters (`{"a": "…", "b": "…"}`), only where the options treat it differently (left out, it reads the same under every option). In chat a bullet each under **What:**; on the page the part reads *What · N items*. The pre-publish runner refuses a card whose title, first TLDR bullet, or an option's title or line (but (z)'s) counts two or more things with no `items`, or fewer than the largest count; a list of another length, or a card the upgrader carried over with its `rev`, is linted |
+| `finding` | `{label, title, where, mechanism, excerpt}` | optional | **Finding:** on a card raised from a finding (of a review, an audit, a test run or a scan), after What and above the Impact, never folded, on both surfaces (F7, answer 337 (a)). `mechanism` (required in it): how it happens, who meets it and when, one paragraph with no line break, never a bare label. `label`: the source label `{id, name}`, the card's own `label` when the card carries one (one label keeps one short name). `title`: the finding's own title as its source gives it, one line. `where`: where it lives, one line (a path and line range; a commit goes in the excerpt's `src`). `excerpt`: its code, log or failing output, an excerpt (the `decision-page` skill's `references/cards-schema.md` § An excerpt), shown verbatim as a code block. In chat, `**Finding:** label (name): title — `where``, then the mechanism, then the excerpt fenced |
 | `open` | list of text | optional | **Open questions**: what is not known yet, one question each (it was `unknown`). Empty or none: no fold |
 | `impact` | `{wait, reach, undo?, cost?}` | to render | the **Impact**, across all the options, favouring none: `wait` (what waiting costs, what it holds up) and `reach` (who or what any option reaches), each non-empty text; `undo` only when some option is one-way or costly to undo, naming that option (*(b) none — lost search ranking does not come back*); `cost` when it is what the operator weighs. There is **no card-level effect**: each option carries its own (the operator's v5 ruling, 2026-10-22). Effect and Reach describe the system the work builds, never the process, which is the Wait |
 | `options` | list of options | to render | the options in letter order, (z) decide later last, each letter once (§ An option) |
@@ -97,11 +98,11 @@ shapes.
 ## Fields an upgraded card may already carry
 
 The upgrader maps the answer page's working kit into the record, and some of the kit's parts
-have no row above yet: `finding` (`{label?, title?, where?, mechanism, excerpt?}`),
-`scope` (`{level, says}`), `likelihood` (`{kind, seen}`) and `best`, `attached`, `rejected`
+have no row above yet: `scope` (`{level, says}`), `likelihood` (`{kind, seen}`) and `best`, `attached`, `rejected`
 (`[{t, why}]`). A reader keeps them as
 data and does not show them; each joins the tables above when the page and the chat card show
-it, as the kit's `what` has: it maps to `what` and `items`, above. In the kit, `pros` and `cons` were the one-line texts and `prosT` and `consT` the table's
+it, as the kit's `what` and `finding` have: `what` maps to `what` and `items`, and `finding {what,
+where, code}` to `finding {mechanism, where, excerpt}`, above. In the kit, `pros` and `cons` were the one-line texts and `prosT` and `consT` the table's
 rows; the record names the one-line texts `pro` and `con` and the rows `pros` and `cons`. The
 kit's `plan` is the option's `plan`, above. The
 kit's `evidence` attachments become the record's `evidence`, a flat list of text: their ids are
