@@ -157,7 +157,7 @@ const COUNT = new RegExp("\\b(two|three|four|five|six|seven|eight|nine|ten|eleve
 /* a four-digit year (2027) counts nothing */
 const counts = s => [...unId(s).matchAll(COUNT)].filter(m => !(/^[0-9]+$/.test(m[1]) && YEAR.test(m[1])))
   .map(m => ({word: m[1], n: W[m[1].toLowerCase()] || Number(m[1])}));
-/* a named thing: "<word> mode|setting|…"; a determiner or count word before it is dropped, leaving the bare noun */
+/* a named thing: "<word> mode|setting|…"; a determiner or count word before it is dropped, leaving the bare noun; the s of a possessive is no qualifier */
 const DET = new Set(["the","this","that","these","those","each","every","a","an","its","our","your","their","any","no","one","which","whose","same","new","old"]);
 const NAMED = /\b([a-z][a-z-]*)\s+(mode|setting|review|plan|document|doc|spec|policy|flag|profile|template|track|phase|stage)\b/gi;
 const named = s => { const t = strip(s); return [...t.matchAll(NAMED)].flatMap(m => { const w = m[1].toLowerCase();

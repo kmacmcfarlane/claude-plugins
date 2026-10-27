@@ -822,6 +822,10 @@ class DecisionPageRunner(unittest.TestCase):
                 d["cards"][0]["options"][0]["title"] = "Rename the dev cycle" + ap + "s phase to stage"
                 code, out, _ = runner(d)
                 self.assertNotIn('"s phase"', out)
+                # strip() shifts the text: the apostrophe is read from the stripped text
+                d["cards"][0]["options"][0]["title"] = "Run `x y z` then the dev cycle" + ap + "s phase"
+                code, out, _ = runner(d)
+                self.assertNotIn('"s phase"', out)
         d = example()
         d["cards"][0]["options"][0]["title"] = "Turn on content mode"
         self.assert_lint(d, '"content mode" is not glossed')
