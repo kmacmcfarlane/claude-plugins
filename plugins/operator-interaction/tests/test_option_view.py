@@ -106,7 +106,8 @@ class PageView(unittest.TestCase):
         self.assertIn(".opc>.opcp{grid-column:1}", html)
         self.assertIn(".opc>.opcc{grid-column:2}", html)
         # not a <table>: the page's no-table checks stand
-        self.assertNotIn("<table", card(run_page(example()), 41)["html"])
+        from test_impact import before_attached
+        self.assertNotIn("<table", before_attached(card(run_page(example()), 41)["html"]))
         # a side with none is not drawn, and a lone side keeps its own column: 42's (z) gives cons alone
         z = card(run_page(example()), 42)["more"]["z"]
         self.assertIn('<div class="opc"><div class="opcc"><span class="lbl">Cons</span>', z)

@@ -360,7 +360,7 @@ class DecisionPageDepth(unittest.TestCase):
         res = run_page(example())
         for c in res["cards"]:
             panes = re.findall(r'<details class="pane"( open)?><summary>([^<]+?)(?: <span class="fsum">.*?</span>)?</summary>', c["html"])
-            want = (["Background"] + (["Dependencies"] if c["n"] != 41 else [])
+            want = (["Background"] + (["Attached"] if c["n"] == 41 else []) + (["Dependencies"] if c["n"] != 41 else [])
                     + (["Rejected alternatives"] if c["n"] == 41 else []))
             self.assertEqual([p[1] for p in panes], want, c["n"])
             self.assertEqual([p[0] for p in panes], [""] * len(want), c["n"])
@@ -369,7 +369,8 @@ class DecisionPageDepth(unittest.TestCase):
             self.assertNotIn('<details class="gfold afold" open', c["html"])
             self.assertLess(c["html"].index('<details class="gfold afold">'), c["html"].index('class="impline"'), c["n"])
             self.assertNotIn("Options in full", c["html"])
-            self.assertNotIn("<table", c["html"])
+            from test_impact import before_attached
+            self.assertNotIn("<table", before_attached(c["html"]))
 
     def test_the_rendered_order_of_a_card(self):
         res = run_page(example())

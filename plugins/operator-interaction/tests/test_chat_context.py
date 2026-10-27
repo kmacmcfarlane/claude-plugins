@@ -300,7 +300,7 @@ def empty_fold_problems(where, body):
         # an open fold's items are bullets; Background's are its two labelled lines, and Rejected
         # alternatives' its bold title lines (F2)
         item = {"Background": ("**Why now:**", "**Why ask:**"), "Assumptions": ("**Basis:**",),
-                "Rejected alternatives": ("**",)}.get(m.group(2), ("- ",))
+                "Attached": ("**",), "Rejected alternatives": ("**",)}.get(m.group(2), ("- ",))
         if m.group(1) == "▾" and not (k + 1 < len(body) and body[k + 1].startswith(item)):
             out.append(f"{where}: an open {m.group(2)} fold with nothing under it")
     return out
@@ -337,8 +337,8 @@ BLOCK_BEFORE_BG = ("**If left:**", "**A round costs:**", "**To act on (")
 def check_bg_block(test, where, body):
     """A block's Background fold stands open below its table, after any If left, A round costs
     and To act on (x) part: `▾ Background — why now: …` (one sentence), then **Why now:** and
-    **Why ask:** on the two lines under it, with nothing after them but any open Rejected
-    alternatives fold (F2, the last fold) and a ⚠ block's read-back line; no flat why line and no
+    **Why ask:** on the two lines under it, with nothing after them but any open Attached fold
+    (F3), any open Rejected alternatives fold (F2, the last fold) and a ⚠ block's read-back line; no flat why line and no
     Rec line."""
     test.assertNotIn("Why you, why now", heads(body), f"{where}: the flat why line")
     bg = [i for i, x in enumerate(body) if x.startswith(BG_OPEN)]
@@ -353,6 +353,12 @@ def check_bg_block(test, where, body):
     test.assertFalse(SENTENCE_END.search(body[k][len(BG_OPEN):]),
                      f"{where}: the Background summary is more than one sentence")
     after = [x for x in body[k + 3:] if x.strip()]
+    # the Attached fold, open, may come next (F3): its line and its entries, up to the next fold or the read-back
+    if after and after[0].startswith("▾ Attached — "):
+        j = 1
+        while j < len(after) and not after[j].startswith(("▾ ", "▸ ", READ_BACK)):
+            j += 1
+        after = after[j:]
     # the Rejected alternatives fold, open, may come next: its line, then its bold titles and reason bullets
     if after and after[0].startswith("▾ Rejected alternatives — "):
         j = 1

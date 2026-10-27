@@ -8,8 +8,9 @@ record is versioned by its `format` stamp (answer 343 (a)); a card with no stamp
 older format, read by `legacy-cards.md` and upgraded before it is shown again.
 
 **Writers write only `decision-card/5`.** A record is JSON. Every text field is plain text:
-the page escapes it, and only two marks render, `` `code` `` in backticks and `[[N]]`, a
-decision slug. A part, facet or field that is missing, blank or says only `none`, `n/a` or a
+the page escapes it, and only three marks render, `` `code` `` in backticks, `[[N]]`, a
+decision slug, and `[[att:id|label]]`, a link to one of the card's own attachments (in chat,
+*label (attached)*). A part, facet or field that is missing, blank or says only `none`, `n/a` or a
 dash is not shown (*none is not shown*, 2026-10-14), except where its none is a statement (the
 Impact's `wait` and `reach`, an `undo` when given, the `basis` word).
 
@@ -59,6 +60,7 @@ Two kinds of required:
 | `ifleft` | text | optional | **If left:** on an ask for another round: each leftover finding and what it would break |
 | `roundcosts` | text | optional | **A round costs:** on an ask for another round |
 | `ifunanswered` | text | optional | **If unanswered:** a status-quo default |
+| `attached` | list of attachments | optional | **Attached**: the material the decision rests on, carried with the card and opened when needed (F3; answers 264 (a), 291 (a) and 286 (b), each with the operator's words): each `{id, kind, title, src, body}`, plus `url` on a link, `pointer` on a summary and `form` on an example, `kind` one of `excerpt`, `summary`, `link`, `example`, `preview`, `table`, `matrix`, `steps`, `checks`, `depmap` (the `decision-page` skill's `references/cards-schema.md` § An attachment: each kind's body, shape and source line). The second of the bottom folds on both surfaces, after Background, closed: its summary the count and the titles, *2: title · title*; open, each attachment its own entry, closed, its title, its kind and its source line. `evidence` is no attachment kind: it is the card's `evidence`. Never a secret's value, personal data or another party's private material; never counted in the card in all; about six a card. A `[[att:id\|label]]` link in any text opens it. Empty or none: no fold |
 | `rejected` | list of `{t, why}` | optional | **Rejected alternatives**: the alternatives weighed and not offered, each `t` its short title, one line, and `why` its reasons, one or more, each one line of text. The last fold on both surfaces, closed, after Background (F2; answer 286 (b) and the operator's prototype feedback of 2026-10-22): its summary the count and the titles, *2: title · title*; open, each title on a bold line with its reasons as bullets under it. Empty or none: no fold. An alternative the operator might still pick is an option, never here |
 | `detail` | object | optional | the card parts' fuller renditions, `[medium, high]` each (§ Levels) |
 
@@ -101,13 +103,14 @@ shapes.
 
 ## Fields an upgraded card may already carry
 
-The upgrader maps the answer page's working kit into the record, and some of the kit's parts
-have no row above yet: `attached`. A reader keeps it as
-data and does not show it; it joins the tables above when the page and the chat card show
-it, as the kit's `what`, `finding`, `scope`, `likelihood`, `best` and `rejected` have: `what` maps to `what` and `items`, `finding {what,
+The upgrader maps the answer page's working kit into the record, and every part of the kit
+now has its row above: none is kept as data unshown. The kit's `what`, `finding`, `scope`,
+`likelihood`, `best`, `rejected` and `attached` joined the tables as the page and the chat card
+came to show them: `what` maps to `what` and `items`, `finding {what,
 where, code}` to `finding {mechanism, where, excerpt}`, `scope {k, text}` to `scope {level,
 says}`, `likelihood {basis, text}` to `likelihood {kind, seen}`, `best` to `best`, and
-`rejected [{bold, bullets}]` to `rejected [{t, why}]`, above. In the kit, `pros` and `cons` were the one-line texts and `prosT` and `consT` the table's
+`rejected [{bold, bullets}]` to `rejected [{t, why}]`, and each attachment but an `evidence`
+one to `attached` as it stands, an example's `mode` read as its `form`, above. In the kit, `pros` and `cons` were the one-line texts and `prosT` and `consT` the table's
 rows; the record names the one-line texts `pro` and `con` and the rows `pros` and `cons`. The
 kit's `plan` is the option's `plan`, above. The
 kit's `evidence` attachments become the record's `evidence`, a flat list of text: their ids are

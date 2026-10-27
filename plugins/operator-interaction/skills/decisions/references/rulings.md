@@ -473,3 +473,29 @@ alternative not taken, in case practice argues for it.
   line over its reason bullets, a blank line before each title after the first; the pre-publish
   runner reading every title and reason for ids, the titles alone in the cold read, and
   counting both in the card in all.
+- **Attached, a fold of its own, both surfaces** (2026-10-20, answer 264 (a), the attachments
+  draft as written; 2026-10-21, answer 291 (a) with the operator's words, "I like the `▸`
+  symbol to show a folded item", attachment references as links that open and scroll to the
+  attachment, attachments collapsed by default; 2026-10-21, answer 286 (b) with the operator's
+  words, "full-text attachments of the new kinds" and "check results included"; feedback 1's
+  order, Rejected below Attached; its place set by the v4 layout, signed off with answer 313,
+  and kept by the v5 order of item 9168) — a card whose decision rests on material it can only
+  name carries it in an **Attached** fold, the second of the folds under the options, after
+  Background and before Rejected alternatives, closed: each attachment its own entry, closed,
+  its title, its kind and its source line, opening to its body in its kind's shape. The kinds
+  are a closed list: excerpt, summary, link, example (`mock` or `narrative`), preview, table,
+  matrix, steps, checks, depmap; evidence is the card's own `evidence`, in the Assumptions
+  fold. It adds a fold to the 2026-10-12 chat order and the 2026-10-09 page order; it reverses
+  nothing. Designs made in planning and build, not the operator's: the record's `attached`,
+  each `{id, kind, title, src, body}` with `url`, `pointer` or `form` by kind, the page refusing
+  any other shape; the fold's name and summary, `▸ Attached — N: <title> · <title>` in chat and
+  the same count and titles on the page; the chat block's open form, each attachment a bold
+  head line over its body, a blank line before each head after the first and a table after a
+  blank line; the four new page shapes (a table, a numbered list, a status list, a tree), every
+  text escaped, an excerpt-shaped body drawn by the code-block renderer; the link mark
+  `[[att:id|label]]`, a dotted button on the page and *label (attached)* in chat; the
+  pre-publish runner refusing a link to an id the card does not attach, and a secret in an
+  attachment or the Finding's excerpt, by where it is and its key, never its value, with the
+  skill's grep step running the same patterns without node; the `attached` lint (six a card, an
+  excerpt about 80 lines or 4 KB); the id lint reading every shown text but an excerpt, the
+  titles alone in the cold read, and none of it in the card in all.

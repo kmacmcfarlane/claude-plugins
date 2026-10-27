@@ -75,7 +75,8 @@ stamp.
 | `assume.unknown` (v4 layout), `open` (v5 layout) | `open` |
 | `background {why, whyask}` | `why`, `whyask` |
 | an `evidence` attachment | `evidence`, one flat list: a text body is one item `<title> — <text>`; a list body one item per entry, the first prefixed `<title> — ` |
-| an `example` attachment's `mode` | its `form` |
+| any other attachment | `attached`, as it stands, shown as the Attached fold; a kind the record has not (`excerpt`, `summary`, `link`, `example`, `preview`, `table`, `matrix`, `steps`, `checks`, `depmap`), or an `attached` that is not a list, refused; a null `attached` is none |
+| an `example` attachment's `mode` | its `form`: `mock` or `narrative` as written; `invented to illustrate`, or none, `narrative` (the kit drew every example as paragraphs); any other word refused |
 | `scope {k, text}` | `scope {level, says}`: `shapes the work` → `shapes`, `required` → `required`, `outside the criteria` → `outside`; any other refused |
 | `likelihood {basis, text}` | `likelihood {kind, seen}`: `observed` → `observed`; any other word → `evidence`, the word kept at the head of `seen` as `(<word>) ` |
 | `what` text; a list; `{intro, items[{name, is, per}]}` | `what`; `items[{name}]`; `what: intro`, `items[{name, about: is, per}]` |

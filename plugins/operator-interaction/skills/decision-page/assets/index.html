@@ -16,8 +16,10 @@
    (only where it is one-way or costly; ⚠ on an option flagged one-way) and cost. Each option but (z) shows its
    one-line Pros and Cons under it, as labelled rows, always visible. A decision raised from
    one labelled item of a source shows its title, then the label and its short name, muted. Inside a card the essentials are flat (TLDR, Context, What, Finding, Scope, Likelihood, Impact, options, follow-ups,
-   words); open questions, the assumptions with the basis and evidence, background, dependencies and the
-   rejected alternatives (the last fold: each a bold title, its reasons as bullets) sit in folds. The data is
+   words); open questions, the assumptions with the basis and evidence, background, the attachments (F3: each
+   entry closed, its title, a kind pill and its source; a dotted [[att:id|label]] link in any text opens it),
+   dependencies and the rejected alternatives (the last fold: each a bold title, its reasons as bullets) sit in
+   folds. The data is
    decision-page/5: each card a decision-card/5 record (options as objects) plus L and dep. A part with a
    more-detail button, above or inside a fold, steps to more detail on a click (terse bullets)
    and again to full detail (headed sections); each level replaces the part's text, and the next
@@ -284,6 +286,44 @@ ul.rej{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap
 ul.rej>li{min-width:0;overflow-wrap:anywhere}
 ul.rej .rt{margin:0;font-weight:600}
 ul.rej ul{margin:2px 0 0;padding-left:1.2em;display:flex;flex-direction:column;gap:3px}
+/* Attached (F3): the second bottom fold, after Background. Each attachment its own entry, closed: its title, a kind
+   pill and its source line; open, its body in the shape of its kind: a code block (B0), prose with a pointer, a
+   link, a table (table, matrix), a numbered list (steps), a status list (checks) or a tree (depmap). A dotted link
+   in any text field opens the card, the fold and the entry, and marks it briefly */
+.atts{display:flex;flex-direction:column;gap:6px;min-width:0}
+details.att{border:1px solid var(--line);border-radius:6px;background:var(--surface);padding:6px 10px;min-width:0;transition:box-shadow .3s}
+details.att.flash{box-shadow:0 0 0 3px var(--accent-soft);border-color:var(--accent)}
+details.att>summary{cursor:pointer;list-style:none;display:flex;flex-wrap:wrap;gap:2px 8px;align-items:baseline;font-size:.9rem;color:var(--ink)}
+details.att>summary::before{content:"▸";font-family:var(--f-mono);color:var(--accent);width:1em;flex:none}
+details.att[open]>summary::before{content:"▾"}
+details.att .at{font-weight:600;min-width:0;overflow-wrap:anywhere}
+.pill.akind{border:1px solid var(--line);color:var(--muted)}
+details.att .asrc{flex-basis:100%;padding-left:1.6em;font-family:var(--f-mono);font-size:.76rem;color:var(--muted);overflow-wrap:anywhere;min-width:0}
+.abody{padding:8px 0 2px 1.6em;display:flex;flex-direction:column;gap:8px;min-width:0;font-size:.9rem;overflow-wrap:anywhere}
+.aptr,.atally{color:var(--muted);font-size:.86rem}
+.atally{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.atbl{overflow-x:auto;max-width:100%;border:1px solid var(--line);border-radius:6px}
+.atbl table{border-collapse:collapse;font-size:.85rem;min-width:100%}
+.atbl th,.atbl td{text-align:left;vertical-align:top;padding:5px 9px;border-bottom:1px solid var(--line)}
+.atbl th{font-family:var(--f-mono);font-size:.72rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);background:var(--sunk);font-weight:600}
+.atbl tr:last-child td{border-bottom:0}
+.asteps{margin:0;padding-left:1.5em;display:flex;flex-direction:column;gap:5px}
+.asteps li::marker{font-family:var(--f-mono);font-weight:600;color:var(--accent)}
+.stt{font-weight:600}
+.std{display:block;color:var(--muted);font-size:.9em}
+.achecks{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:5px}
+.achecks li{display:grid;grid-template-columns:4.6rem minmax(0,1fr);gap:8px;align-items:baseline;min-width:0}
+.st{font-family:var(--f-mono);font-size:.72rem;font-weight:600;border:1px solid currentColor;border-radius:4px;padding:0 6px;text-align:center}
+.st-pass{color:var(--ok);background:var(--ok-soft)}
+.st-fail{color:var(--warn);background:var(--rec-soft)}
+.st-pending{color:var(--muted);background:var(--sunk)}
+.adep,.adep ul{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:5px}
+.adep ul{padding-left:1.3em;border-left:1px dashed var(--line);margin:5px 0 0 .4em}
+.drel{font-family:var(--f-mono);font-size:.74rem;color:var(--muted)}
+.dnote{color:var(--muted);font-size:.9em}
+.slug-t.self,.slug.self{color:var(--accent)}
+/* a link to an attachment: a dotted underline in the accent, a button so no link nests in it */
+button.attref{border:0;background:none;padding:0;font:inherit;color:var(--accent);text-decoration:underline dotted;text-underline-offset:3px}
 /* the Impact: one facet a line, at every level */
 .impline{font-size:.92rem;max-width:70ch;border-left:3px solid var(--accent);padding:6px 12px;background:var(--sunk);border-radius:0 6px 6px 0;display:flex;flex-direction:column;gap:2px;min-width:0}
 .impline .lbl{display:block;margin-bottom:1px}
@@ -314,14 +354,14 @@ ul.rej ul{margin:2px 0 0;padding-left:1.2em;display:flex;flex-direction:column;g
 .tip-o .pill{margin-left:.4em;font-weight:400}
 .tip-a,.tip-m{color:var(--muted);font-size:.82rem}
 footer{color:var(--muted);font-size:.85rem;max-width:70ch}
-@media (prefers-reduced-motion:reduce){details.card,.meter>i,details.more>summary::before,details.pane>summary::before,details.gfold>summary::before{transition:none}}
+@media (prefers-reduced-motion:reduce){details.card,details.att,.meter>i,details.more>summary::before,details.pane>summary::before,details.gfold>summary::before{transition:none}}
 </style>
 
 <div class="wrap">
   <header>
     <h1 id="title">Decision answers</h1>
     <p class="lede" id="lede"></p>
-    <p class="lede">For each decision, pick one option or one follow-up (the radio buttons allow only one), and add your words if you like. Each click saves at once; there is no submit button. Tell Claude in chat when you're done. The map under the progress bar lists the groups; each decision is one line in its group, and a click on the line opens its card (<b>Expand all</b> and <b>Collapse all</b> open or close every card). <b>Use recommendation</b> and <b>Later</b> beside a line answer without opening the card. A <span class="slug-t">number · name</span> is a decision: hover over it or focus it to see it, and click it to open its card; on one not on this page, a tap or click pins what it shows, and a second tap, a tap elsewhere or Escape closes it. Each line shows, after an arrow (→) and its letter, what the recommended option changes in the system the work builds (with no recommendation, each option's, in a few words); each card opens on a TLDR, then its Context (the terms it uses), then its What (what is decided; a set lists every item it acts on, and each item's outcome under each option where they differ), then, on a decision raised from a finding, its Finding (where it lives, how it happens, and its code, shown exactly as written), then, where the work states requirements, its Scope (<i>required</i> by a criterion, <i>shapes the work</i>, or <i>outside the criteria</i>), then, on a decision about a failure that may or may not happen, its Likelihood (how often it happens, <i>observed</i> or from the <i>evidence</i> there is) and its <b>Best response?</b> (whether acting here is the response that matters), then its impact, one facet a line, then one line per option, each but (z) with its <b>Pros</b> and <b>Cons</b> under it; the folds under it go from compressed to full detail. A part with a <i>more detail</i> button, above or inside a fold, shows more detail as short bullets when you click it or its text, and full detail in headed sections on a second click; picking an option opens its view (and closes the card's other one), and <b>More</b> beside an option opens or closes its view alone: its plan in brief, its <b>Pros</b> and <b>Cons</b> side by side, then its own effect, reach, undo and cost. A part with nothing to say (none) is left out. An Impact describes the system the work builds, never the review or the process; its <i>later:</i> line says what waiting holds up. <b>Open questions</b>, folded above the Impact, lists what is not known yet; <b>Assumptions</b>, folded under it, gives the basis of the call, its evidence, and each assumption it rests on with its tripwire, the sign that would change it. <b>Rejected alternatives</b>, the last fold, lists the choices that were weighed and not offered, each with why.<span id="doclink"></span></p>
+    <p class="lede">For each decision, pick one option or one follow-up (the radio buttons allow only one), and add your words if you like. Each click saves at once; there is no submit button. Tell Claude in chat when you're done. The map under the progress bar lists the groups; each decision is one line in its group, and a click on the line opens its card (<b>Expand all</b> and <b>Collapse all</b> open or close every card). <b>Use recommendation</b> and <b>Later</b> beside a line answer without opening the card. A <span class="slug-t">number · name</span> is a decision: hover over it or focus it to see it, and click it to open its card; on one not on this page, a tap or click pins what it shows, and a second tap, a tap elsewhere or Escape closes it. Each line shows, after an arrow (→) and its letter, what the recommended option changes in the system the work builds (with no recommendation, each option's, in a few words); each card opens on a TLDR, then its Context (the terms it uses), then its What (what is decided; a set lists every item it acts on, and each item's outcome under each option where they differ), then, on a decision raised from a finding, its Finding (where it lives, how it happens, and its code, shown exactly as written), then, where the work states requirements, its Scope (<i>required</i> by a criterion, <i>shapes the work</i>, or <i>outside the criteria</i>), then, on a decision about a failure that may or may not happen, its Likelihood (how often it happens, <i>observed</i> or from the <i>evidence</i> there is) and its <b>Best response?</b> (whether acting here is the response that matters), then its impact, one facet a line, then one line per option, each but (z) with its <b>Pros</b> and <b>Cons</b> under it; the folds under it go from compressed to full detail. A part with a <i>more detail</i> button, above or inside a fold, shows more detail as short bullets when you click it or its text, and full detail in headed sections on a second click; picking an option opens its view (and closes the card's other one), and <b>More</b> beside an option opens or closes its view alone: its plan in brief, its <b>Pros</b> and <b>Cons</b> side by side, then its own effect, reach, undo and cost. A part with nothing to say (none) is left out. An Impact describes the system the work builds, never the review or the process; its <i>later:</i> line says what waiting holds up. <b>Open questions</b>, folded above the Impact, lists what is not known yet; <b>Assumptions</b>, folded under it, gives the basis of the call, its evidence, and each assumption it rests on with its tripwire, the sign that would change it. <b>Attached</b>, the fold after Background, holds the material a decision rests on (an excerpt, a table, check results and the like), each entry closed until you open it; a dotted link opens the attachment it names. <b>Rejected alternatives</b>, the last fold, lists the choices that were weighed and not offered, each with why.<span id="doclink"></span></p>
     <div class="banner" id="nodb" hidden>This view can't save answers. Nothing you pick here is kept; answer in chat instead (<code id="nodbex">N: a</code>).</div>
     <div class="banner" id="viewonly" hidden>You are viewing these answers. Only the page's owner can answer here.</div>
     <div class="banner" id="nodata" hidden>The decisions didn't load. Reload the page; if it keeps failing, ask Claude for them in chat.</div>
@@ -341,6 +381,8 @@ footer{color:var(--muted);font-size:.85rem;max-width:70ch}
 
 <script>
 let LAYERS=[],FOLLOW=[],CARDS=[],REFS={},byN=new Map(),FOLLOW_KEYS=new Set();
+/* the card cardHtml is rendering, so a [[att:id|label]] link resolves against its attachments; null elsewhere */
+let CUR=null;
 let answers={},raw={},db=null,col=null,readonly=false;const timers={},inflight={},dirty={};
 const $=(s,r=document)=>r.querySelector(s);
 // the scroll padding follows the sticky bar's real height (it wraps at phone width); 5rem in
@@ -358,8 +400,14 @@ const slug=k=>{const t=esc(k)+(nameOf(k)?' · '+esc(nameOf(k)):'');
   if(Object.prototype.hasOwnProperty.call(REFS,k))return '<button type="button" class="slug" data-ref="'+esc(k)+'">'+t+'</button>';
   return '<span class="slug-t">'+t+'</span>'};
 const code=s=>s.replace(/`([^`]+)`/g,"<code>$1</code>");
-const fmt=s=>code(esc(s==null?"":s)).replace(/\[\[([0-9]+)\]\]/g,(m,k)=>slug(k));
-const fmtPlain=s=>code(esc(s==null?"":s)).replace(/\[\[([0-9]+)\]\]/g,(m,k)=>'<span class="slug-t">'+esc(k)+(nameOf(k)?' · '+esc(nameOf(k)):'')+'</span>');
+/* a link to an attachment (F3), [[att:id|label]]: on the card being rendered, when it attaches that id, a dotted button
+   that opens the attachment (openAtt); anywhere else, or for an id the card does not hold, its label as plain text,
+   so an older or hand-edited page still shows (the runner refuses the unknown id). The id is [a-z0-9-] only and the
+   label is escaped with the text around it */
+const ATT_LINK=/\[\[att:([a-z0-9-]+)\|([^\]\r\n]+)\]\]/g;
+const attLink=(id,label)=>CUR&&attIds(CUR).has(id)?'<button type="button" class="attref" data-att="'+id+'" data-n="'+esc(CUR.n)+'">'+label+'</button>':label;
+const fmt=s=>code(esc(s==null?"":s)).replace(ATT_LINK,(m,id,l)=>attLink(id,l)).replace(/\[\[([0-9]+)\]\]/g,(m,k)=>slug(k));
+const fmtPlain=s=>code(esc(s==null?"":s)).replace(ATT_LINK,"$2").replace(/\[\[([0-9]+)\]\]/g,(m,k)=>'<span class="slug-t">'+esc(k)+(nameOf(k)?' · '+esc(nameOf(k)):'')+'</span>');
 /* the rec slot: "rec (b)", or the no-recommendation label */
 const recPill=c=>c.rec?'<span class="pill rec">rec ('+esc(c.rec)+')</span>':'<span class="pill none">'+esc(c.norec||"no recommendation")+'</span>';
 /* a decision raised from one labelled item of a source shows its title first, then the label and its short
@@ -426,6 +474,131 @@ const rejectedFold=c=>{const rs=rejectedOf(c);if(!rs.length)return "";
   return '<details class="pane"><summary>Rejected alternatives'+rejSum(c)+'</summary><div><ul class="rej">'
     +rs.map(r=>{const ws=rejWhy(r);return '<li><p class="rt">'+fmt(r.t)+'</p>'+(ws.length?'<ul>'+ws.map(x=>'<li>'+fmtD(x)+'</li>').join("")+'</ul>':'')+'</li>'}).join("")
     +'</ul></div></details>'};
+/* Attached (F3; answer 264 (a), 291 (a) with words, 286 (b) with words): the material a decision rests on, carried
+   with the card and opened when needed. attached: [{id?, kind, title, src?, body, …}], kind one of the closed list
+   below (its pill's words beside it); evidence is no attachment kind (it is the card's evidence, in the Assumptions
+   fold). The second bottom fold, after Background, closed; its summary the count and the titles, "2: <title> ·
+   <title>", a slug as its bare number. Each attachment its own entry, closed: its title, its kind pill and its
+   source line (an example's is always "invented to illustrate"); open, its body by its kind's shape. An attachment
+   whose title is none is not shown; with none shown there is no fold. Every text goes through fmt (or fmtPlain in a
+   summary), an excerpt-shaped body through codeBlock. The runner reads the same attachments */
+const ATT_KINDS={excerpt:"excerpt",summary:"summary",link:"link",example:"worked example",preview:"preview",
+  table:"comparison",matrix:"who's affected",steps:"steps",checks:"check results",depmap:"dependency map"};
+/* the fields each kind may hold beyond {id, kind, title, src, body} */
+const ATT_MORE={link:["url"],summary:["pointer"],example:["form"]};
+const ATT_ID=/^[a-z0-9-]+$/;
+const ATT_URL=/^https:\/\/[^\s<>"'`]+$/;
+const CHECK_STATES=["pass","fail","pending"];
+const hasOwn=(o,k)=>Object.prototype.hasOwnProperty.call(o,k);
+const isAttKind=k=>typeof k==="string"&&hasOwn(ATT_KINDS,k);
+const attachedOf=c=>Array.isArray(c.attached)?c.attached.filter(a=>isObj(a)&&isAttKind(a.kind)&&isTxt(a.title)&&shown(a.title)):[];
+const attIds=c=>new Set(attachedOf(c).map(a=>a.id).filter(x=>typeof x==="string"&&ATT_ID.test(x)));
+const attSum=c=>{const as=attachedOf(c);
+  return as.length?' <span class="fsum">'+as.length+': '+as.map(a=>code(esc(a.title.trim().replace(ATT_LINK,"$2").replace(/\[\[([0-9]+)\]\]/g,"$1")))).join(" · ")+'</span>':""};
+/* prose: text or a list of paragraphs, a none one left out */
+const paras=v=>(Array.isArray(v)?v:[v]).filter(p=>isTxt(p)&&shown(p)).map(p=>'<p>'+fmtD(p)+'</p>').join("");
+const xcOk=b=>isObj(b)&&!excerptProblem(b);
+/* a dependency map's node: its relation, then the decision as N · name (a card on the page opens on a click, as a
+   slug does), then its note, then its children nested under it */
+const depNode=x=>{const k=isPosInt(x.n)?String(x.n):"",lab=esc(k)+(isTxt(x.name)?' · '+fmtPlain(x.name):''),self=x.self===true?' self':'';
+  const head=k&&byN.has(k)?'<button type="button" class="slug in'+self+'" data-ref="'+k+'" data-goto="'+k+'">'+lab+'</button>':'<span class="slug-t'+self+'">'+lab+'</span>';
+  return '<li>'+(isTxt(x.rel)&&shown(x.rel)?'<span class="drel">'+fmtPlain(x.rel)+'</span> ':'')+head
+    +(isTxt(x.note)&&shown(x.note)?'<span class="dnote"> — '+fmt(x.note)+'</span>':'')
+    +(Array.isArray(x.kids)&&x.kids.length?'<ul>'+x.kids.filter(isObj).map(depNode).join("")+'</ul>':'')+'</li>'};
+/* an attachment's body, by the shape of its kind */
+function attBody(a){const b=a.body;
+  switch(a.kind){
+    case "excerpt":case "preview":return xcOk(b)?codeBlock(b):"";
+    case "example":return a.form==="mock"?(xcOk(b)?codeBlock(b):""):paras(b);
+    case "summary":return paras(b)+(isTxt(a.pointer)&&shown(a.pointer)?'<p class="aptr"><span class="lbl inl">Full text:</span>'+fmt(a.pointer)+'</p>':'');
+    case "link":return (typeof a.url==="string"&&ATT_URL.test(a.url)?'<p><a href="'+esc(a.url)+'" target="_blank" rel="noopener">'+esc(a.url)+'</a></p>':'')+paras(b);
+    case "table":case "matrix":
+      if(!isObj(b)||!Array.isArray(b.cols)||!Array.isArray(b.rows))return "";
+      return '<div class="atbl" tabindex="0"><table><thead><tr>'+b.cols.map(h=>'<th scope="col">'+fmt(h)+'</th>').join("")+'</tr></thead><tbody>'
+        +b.rows.filter(Array.isArray).map(r=>'<tr>'+r.map(x=>'<td>'+fmt(x)+'</td>').join("")+'</tr>').join("")+'</tbody></table></div>';
+    case "steps":
+      if(!Array.isArray(b))return "";
+      return '<ol class="asteps">'+b.filter(x=>isObj(x)&&isTxt(x.t)).map(x=>'<li><span class="stt">'+fmt(x.t)+'</span>'+(isTxt(x.d)&&shown(x.d)?'<span class="std">'+fmtD(x.d)+'</span>':'')+'</li>').join("")+'</ol>';
+    case "checks":{
+      if(!Array.isArray(b))return "";
+      const xs=b.filter(x=>isObj(x)&&CHECK_STATES.includes(x.s)&&isTxt(x.t));
+      return '<p class="atally">'+CHECK_STATES.map(st=>xs.filter(x=>x.s===st).length+' '+st).join(" · ")+'</p><ul class="achecks">'
+        +xs.map(x=>'<li><span class="st st-'+x.s+'">'+x.s+'</span><span><span class="stt">'+fmt(x.t)+'</span>'+(isTxt(x.d)&&shown(x.d)?'<span class="std">'+fmtD(x.d)+'</span>':'')+'</span></li>').join("")+'</ul>'}
+    case "depmap":return Array.isArray(b)?'<ul class="adep">'+b.filter(isObj).map(depNode).join("")+'</ul>':"";
+  }
+  return "";
+}
+/* its source line: where it came from; an example is always invented to illustrate */
+const attSrc=a=>{const s=isTxt(a.src)&&shown(a.src)?fmtPlain(a.src):"";return a.kind==="example"?"invented to illustrate"+(s?" · "+s:""):s};
+const attEntry=(c,a)=>{const id=typeof a.id==="string"&&ATT_ID.test(a.id)?a.id:"",s=attSrc(a);
+  return '<details class="att"'+(id?' id="att-'+esc(c.n)+'-'+id+'"':'')+'><summary><span class="at">'+fmtPlain(a.title)+'</span>'
+    +'<span class="pill akind">'+esc(ATT_KINDS[a.kind])+'</span>'+(s?'<span class="asrc">'+s+'</span>':'')+'</summary><div class="abody">'+attBody(a)+'</div></details>'};
+const attachedFold=c=>{const as=attachedOf(c);if(!as.length)return "";
+  return '<details class="pane"><summary>Attached'+attSum(c)+'</summary><div class="atts">'+as.map(a=>attEntry(c,a)).join("")+'</div></details>'};
+/* a link to attachment id on card n: the card, the Attached fold and the entry open; the entry comes back for the caller
+   to scroll to and mark. root is the document (a stand-in under node) */
+function openAtt(root,n,id){const a=root.getElementById("att-"+n+"-"+id);if(!a)return null;
+  const c=root.getElementById("card-"+n);if(c)c.open=true;
+  const f=a.closest("details.pane");if(f)f.open=true;
+  a.open=true;return a}
+/* why an attachment is refused: its problems, each naming its field ([] when it is sound) */
+const isLine=v=>isTxt(v)&&!LINE_BREAK.test(v);
+const isParas=v=>isTxt(v)||(Array.isArray(v)&&v.length>0&&v.every(isTxt));
+function depProblems(x,at,out){
+  if(!isObj(x)||!isPosInt(x.n)||!isLine(x.name)){out.push(at+" must be {n, name, rel, note, kids}: n a decision number, name its short name on one line");return}
+  for(const k of ["rel","note"])if(x[k]!=null&&!isLine(x[k]))out.push(at+" "+k+" must be one line of text");
+  if(x.self!=null&&typeof x.self!=="boolean")out.push(at+" self must be true or false");
+  for(const k of Object.keys(x))if(!["n","name","rel","note","self","kids"].includes(k))out.push(at+" "+k+" is not a field a node has");
+  if(x.kids!=null){if(!Array.isArray(x.kids)||!x.kids.length)out.push(at+" kids must be a non-empty list of nodes");else x.kids.forEach((y,i)=>depProblems(y,at+"."+(i+1),out))}
+}
+function attProblems(a){
+  if(!isObj(a))return ["must be an object {kind, title, body}"];
+  if(!isAttKind(a.kind))return ["kind must be one of "+Object.keys(ATT_KINDS).join(", ")+(a.kind==="evidence"?": evidence is the card's own evidence, shown in the Assumptions fold":"")];
+  const out=[],k=a.kind,b=a.body,keys=["id","kind","title","src","body"].concat(ATT_MORE[k]||[]);
+  for(const x of Object.keys(a))if(!keys.includes(x))out.push(x+" is not a field a "+k+" attachment has ("+keys.join(", ")+")");
+  if(a.id!=null&&!(typeof a.id==="string"&&ATT_ID.test(a.id)))out.push("id must be lower-case letters, digits and -: what a [[att:id|label]] link names");
+  if(!isLine(a.title))out.push("needs its title, one line of text");
+  if(a.src!=null&&!isLine(a.src))out.push("src must be one line of text: where it came from");
+  const xc=what=>{const p=excerptProblem(b);if(p){out.push("body"+what+": "+p);return false}return true};
+  switch(k){
+    case "excerpt":xc("");break;
+    case "preview":if(xc("")&&!isTxt(a.src)&&!isTxt(b.src))out.push("needs its source line in src: invented to illustrate, or the command that produced it");break;
+    case "example":
+      if(a.form==="mock")xc(" (a mock)");
+      else if(a.form==="narrative"){if(!isParas(b))out.push("body (a narrative) must be text or a non-empty list of paragraphs")}
+      else out.push("form must be mock (a code block) or narrative (prose)");
+      break;
+    case "summary":
+      if(!isParas(b))out.push("body must be text or a non-empty list of paragraphs");
+      if(a.pointer!=null&&!isLine(a.pointer))out.push("pointer must be one line of text: where the full text lives");
+      break;
+    case "link":
+      if(!(typeof a.url==="string"&&ATT_URL.test(a.url)))out.push("url must be one https:// address");
+      if(b!=null&&!isParas(b))out.push("body (its note) must be text: why it matters");
+      break;
+    case "table":case "matrix":
+      if(!isObj(b)||Object.keys(b).some(x=>x!=="cols"&&x!=="rows")||!Array.isArray(b.cols)||!b.cols.length||!b.cols.every(isLine))out.push("body must be {cols, rows}: cols a non-empty list of headings, each one line of text");
+      else if(!Array.isArray(b.rows)||!b.rows.length)out.push("body rows must be a non-empty list of rows");
+      else{const i=b.rows.findIndex(r=>!Array.isArray(r)||r.length!==b.cols.length||!r.every(x=>typeof x==="string"&&!LINE_BREAK.test(x)));
+        if(i>=0)out.push("body row "+(i+1)+" must be a list of "+b.cols.length+" cells, one per column, each one line of text")}
+      break;
+    case "steps":
+      if(!Array.isArray(b)||!b.length)out.push("body must be a non-empty list of steps, {t, d}");
+      else b.forEach((x,i)=>{if(!isObj(x)||!isLine(x.t)||Object.keys(x).some(y=>y!=="t"&&y!=="d"))out.push("body step "+(i+1)+" must be {t, d}: t one line of text");
+        else if(x.d!=null&&typeof x.d!=="string")out.push("body step "+(i+1)+" d must be text")});
+      break;
+    case "checks":
+      if(!Array.isArray(b)||!b.length)out.push("body must be a non-empty list of check results, {s, t, d}");
+      else b.forEach((x,i)=>{if(!isObj(x)||!CHECK_STATES.includes(x.s)||!isLine(x.t)||Object.keys(x).some(y=>!["s","t","d"].includes(y)))out.push("body check "+(i+1)+" must be {s, t, d}: s pass, fail or pending, t one line of text");
+        else if(x.d!=null&&typeof x.d!=="string")out.push("body check "+(i+1)+" d must be text")});
+      break;
+    case "depmap":
+      if(!Array.isArray(b)||!b.length)out.push("body must be a non-empty list of nodes, {n, name, rel, note, kids}");
+      else b.forEach((x,i)=>depProblems(x,"body node "+(i+1),out));
+      break;
+  }
+  return out;
+}
 
 /* what it takes to act on option k (the decisions skill's To act on part): its numbered steps, flat
    under the option, never folded; empty when the option asks nothing of the operator */
@@ -639,6 +812,13 @@ function cardProblems(c,w,keys){
       else{const j=r.why.findIndex(p=>!isTxt(p)),k=r.why.findIndex(p=>isStr(p)&&LINE_BREAK.test(p));
         if(j>=0)bad.push(x+" why reason "+(j+1)+" is not text: each reason is one line of text");
         else if(k>=0)bad.push(x+" why reason "+(k+1)+" has a line break: each reason is one line of text, one bullet")}})}
+  /* Attached (F3): a list of attachments, each sound by its kind (attProblems), each id its own */
+  if(c.attached!=null){const at=w+": attached";
+    if(!Array.isArray(c.attached))bad.push(at+" must be a list of attachments, each {kind, title, body}");
+    else{const ids=new Set();
+      c.attached.forEach((a,i)=>{const x=at+" "+(i+1)+(isObj(a)&&isAttKind(a.kind)?" ("+a.kind+")":"");
+        for(const p of attProblems(a))bad.push(x+" "+p);
+        if(isObj(a)&&typeof a.id==="string"&&ATT_ID.test(a.id)){if(ids.has(a.id))bad.push(x+" id "+a.id+" is used twice: each attachment's id is its own");ids.add(a.id)}})}}
   if(c.assume!=null&&!(Array.isArray(c.assume)&&c.assume.every(a=>isObj(a)&&isTxt(a.rests)&&isTxt(a.tw))))bad.push(w+": assume must be a list of {rests, tw}: each assumption the call rests on and its tripwire, both text");
   /* undo and cost are optional; an effect an older writer left is ignored, never shown */
   if(!isObj(c.impact)||!["wait","reach"].every(k=>isTxt(c.impact[k]))||["undo","cost"].some(k=>k in c.impact&&!isStr(c.impact[k])))
@@ -849,6 +1029,8 @@ const optPara=(k,x)=>Array.isArray(x)?'<div><span class="mono ol">('+esc(k)+')</
 /* every part's renditions as HTML, summary first: {key: [summary, medium?, high?]}. Context's levels keep
    its labelled wrapper, so its label shows at every level; the visible summaries never link */
 function parts(c){
+  /* a [[att:id|label]] link in a part resolves against this card's attachments, whoever asks for the parts */
+  const prev=CUR;CUR=c;
   const cls=c.class?'<em>'+esc(c.class)+'</em>':'';
   const ev=detOf(c,"evidence"),dl=detOf(c,"dep");
   /* a fold part that may be none: its summary and levels; with levels but no summary, a placeholder holds
@@ -869,6 +1051,7 @@ function parts(c){
   for(const o of optsOf(c)){const lv=Array.isArray(o.detail)?o.detail:[],pl=planOf(o);
     P["opt-"+o.k]=pl?[rend(pl,fmtD)].concat(lv.map(x=>rend(x,fmtD)))
       :shown(o.text)?[optPara(o.k,o.text)].concat(lv.map(x=>optPara(o.k,x))):(lv.length?lv.map(x=>optPara(o.k,x)):[""])}
+  CUR=prev;
   return P;
 }
 /* one part: its renditions, one shown at a time, and a button naming the next step; just the summary when it has
@@ -933,6 +1116,7 @@ const quickHtml=c=>{const n=esc(c.n);
     +'<button class="btn" type="button" data-quick="later" data-n="'+n+'" aria-pressed="false" title="Answer later">Later</button></span>'};
 /* one card, as renderCards places it in its group: closed to its row, its quick answers beside it */
 function cardHtml(c){
+  CUR=c;
   const n=esc(c.n),g="d"+n,P=parts(c);
   let h='<div class="cardw '+(c.rec?'q2':'q1')+'"><details class="card" id="card-'+n+'"><summary>'+rowHtml(c)+'</summary>'
     +'<div class="body">'+secHtml(c,"tldr","TLDR",P.tldr)+secHtml(c,"ctx","Context",P.ctx)+whatPart(c)+findingPart(c)+scopePart(c)+likelihoodPart(c)+openFold(c)+assumeFold(c,P)+secHtml(c,"imp","Impact",P.imp)
@@ -956,14 +1140,17 @@ function cardHtml(c){
     h+='<label class="chip"><input type="radio" name="'+g+'" id="'+g+'-'+fid(k)+'" value="'+esc(k)+'">'+esc(label)+(ph?' <span class="ph">'+esc(ph)+'</span>':'')+'</label>';
   }
   const bg=secHtml(c,"why","Why now",P.why)+secHtml(c,"whyask","Why ask",P.whyask);
-  return h+'</div></div><div><label class="lbl" for="'+g+'-words">Your words</label>'
+  const out=h+'</div></div><div><label class="lbl" for="'+g+'-words">Your words</label>'
     +'<textarea id="'+g+'-words" data-n="'+n+'"></textarea></div></div></fieldset>'
     +'<div class="cardfoot"><span class="lbl">Details, most compressed first</span><button class="btn" type="button" data-clear="'+n+'">Clear answer</button></div>'
     +'<div class="panes">'
     +(bg?'<details class="pane"><summary>Background'+bgSum(c)+'</summary><div>'+bg+'</div></details>':'')
+    +attachedFold(c)
     +(P.dep[0]?'<details class="pane"><summary>Dependencies</summary><div>'+secHtml(c,"dep","Depends on",P.dep)+'</div></details>':'')
     +rejectedFold(c)
     +'</div></div></details>'+quickHtml(c)+'</div>';
+  CUR=null;
+  return out;
 }
 /* a group's heading (rule 263 on the page): a band with the Group label, its title, a count pill and what its
    cards share (its note); a bundle, a layer whose fourth element is its shared context, adds a closed Shared
@@ -1149,6 +1336,14 @@ document.addEventListener("click",e=>{
   /* a tap elsewhere closes a pinned tooltip. Not verified: iOS may not deliver a tap on plain text to this
      listener; a second tap on the reference and Escape still close it */
   if(tipPinned)hideTip();
+  /* a link to an attachment: its card, the Attached fold and the entry open; it scrolls into view, takes focus and is
+     marked briefly */
+  const ar=e.target.closest("[data-att]");
+  if(ar){e.preventDefault();const a=openAtt(document,ar.dataset.n,ar.dataset.att);
+    if(a){a.scrollIntoView({behavior:matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth",block:"center"});
+      a.classList.add("flash");setTimeout(()=>a.classList.remove("flash"),1400);
+      const sm=a.querySelector("summary");if(sm)sm.focus({preventScroll:true})}
+    return}
   const q=e.target.closest("[data-quick]");
   if(q){const n=q.dataset.n,c=byN.get(n);if(!c||(q.dataset.quick==="rec"&&!c.rec))return;choose(n,q.dataset.quick==="rec"?c.rec:"later");return}
   const go=e.target.closest("[data-go]");

@@ -197,8 +197,10 @@ Smallest to largest, each showing more of the impact in facet order (templates i
   tripwires), then an **Impact:** line, with no effect of its own; then the options, each with its
   own impact (effect, reach, a one-way or costly option's `⚠ undo:`, cost) on an italic line
   under it and its `*pros: …*` and `*cons: …*` lines under that, decide later, any **To act on (x):** part, a round ask's justification, the
-  ▸ Background fold line (why now and why ask), and last, on a card that weighed alternatives
-  it does not offer, the ▸ Rejected alternatives fold line (their count and titles); there is
+  ▸ Background fold line (why now and why ask), then, on a card whose decision rests on
+  material it can only name, the ▸ Attached fold line (their count and titles), and last, on a
+  card that weighed alternatives it does not offer, the ▸ Rejected alternatives fold line
+  (their count and titles); there is
   no Rec line, the recommended option being the bold one. Its **Context:** is one or
   two sentences, the page's summary size: the terms the card uses, then the resume cue
   (where you left it · what you decide now). It is written for every decision when it is
@@ -210,8 +212,8 @@ Smallest to largest, each showing more of the impact in facet order (templates i
   a table (a row per option, its effect, reach, undo and cost, plus a Wait row) in place of
   the options' impact lines, then each option's *plan in brief:* and its `Pros | Cons` table,
   then the Background fold open, why now and why ask on two
-  lines, then any Rejected alternatives fold open, each title in bold over its reasons as
-  bullets; its Assumptions fold, open, carries the basis drill-down with evidence links.
+  lines, then any Attached fold open, each attachment's bold head line over its body, then
+  any Rejected alternatives fold open, each title in bold over its reasons as bullets; its Assumptions fold, open, carries the basis drill-down with evidence links.
 
 **The line-only rule.** A decision may stay a list line only when all of these hold: the
 reader is warm; the stakes are low (two-way and narrow); the basis is strong (for a

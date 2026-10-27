@@ -289,7 +289,8 @@ class Upgrade(unittest.TestCase):
         self.assertEqual(c["evidence"], ["Health report — Observed: the disk logs rising read errors.",
                                          "Observed: it is four years old."])
         self.assertEqual([x["kind"] for x in c["attached"]], ["example"])
-        self.assertEqual(c["attached"][0]["form"], "invented to illustrate")
+        # the kit's mode "invented to illustrate" is no form: the kit drew every example as paragraphs (F3)
+        self.assertEqual(c["attached"][0]["form"], "narrative")
         self.assertNotIn("mode", c["attached"][0])
         self.assertEqual(d[52]["evidence"], ["Free space — The disk's free space drops about one percent a night."])
         # scope, finding, rejected

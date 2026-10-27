@@ -58,7 +58,7 @@
     {
       "format": "decision-card/5",
       "n": 41,
-      "rev": "2026-10-27T14:00:00Z",
+      "rev": "2026-10-27T18:00:00Z",
       "L": "direction",
       "t": "Docs build home",
       "context": "The docs site is built and published from one maintainer's laptop, where a stale cache (a leftover copy of an old build) broke two publishes this month, and clearing it once ([[38]]) held a week. CI is the shared build service that already runs on every merge to `main`.",
@@ -84,8 +84,20 @@
           "tw": "someone asks to publish a fix without merging it first"
         }
       ],
-      "evidence": "Build logs for both failed publishes show the same stale cache directory.",
+      "evidence": "Build logs for both failed publishes show the same stale cache directory ([[att:log|the second failed build]]).",
       "ifunanswered": "I leave the build on the laptop and carry on with other work.",
+      "attached": [
+        {"id": "log", "kind": "excerpt", "title": "The second failed build", "src": "the docs build log of the second failed publish, 21 October",
+         "body": {"lang": "log", "text": "building docs site\nreusing cache .docs-cache/ (built 2 October)\npage /setup/install: template not found: partials/nav-v1\nbuild finished with 1 error; publishing anyway"}},
+        {"id": "homes", "kind": "table", "title": "Where the build could run", "src": "the build logs and the CI service's usage page",
+         "body": {"cols": ["Home", "Starts clean", "Who can publish", "Time per publish"],
+                  "rows": [["The laptop", "no", "the maintainer", "about 2 minutes"],
+                           ["CI", "yes", "anyone who merges", "about 4 minutes"]]}},
+        {"id": "trial", "kind": "checks", "title": "A trial CI build on a branch", "src": "run on a branch on 26 October, nothing published",
+         "body": [{"s": "pass", "t": "the site builds from a clean start"},
+                  {"s": "pass", "t": "every page link resolves"},
+                  {"s": "pending", "t": "publishing with the deploy token", "d": "waits on the token (b) asks you to add"}]}
+      ],
       "rejected": [
         {"t": "Build on a shared office machine", "why": ["it is still one machine whose cache can go stale", "publishing would wait on whoever looks after that machine"]}
       ],

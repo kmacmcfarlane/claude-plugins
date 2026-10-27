@@ -462,8 +462,8 @@ class RejectedChat(unittest.TestCase):
         self.assertRegex(record, r"\n\| `rejected` \| list of `\{t, why\}` \| optional \| \*\*Rejected alternatives\*\*")
         # no longer among the fields an upgraded card may carry unshown
         upgraded = record.split("## Fields an upgraded card may already carry")[1].split("\n## ")[0]
-        self.assertIn("have no row above yet: `attached`.", " ".join(upgraded.split()))
-        self.assertNotIn("`attached` and `rejected`", upgraded)
+        self.assertIn("every part of the kit now has its row above", " ".join(upgraded.split()))
+        self.assertNotIn("have no row above yet", " ".join(upgraded.split()))
         self.assertIn("| Rejected alternatives | each alternative you weighed", (REFS / "worksheet.md").read_text())
         self.assertIn("- **Rejected alternatives in a fold, both surfaces** (2026-10-21, answer 286 (b)",
                       (REFS / "rulings.md").read_text())
