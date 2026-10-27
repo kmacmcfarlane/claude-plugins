@@ -436,15 +436,16 @@ how it happens, who meets it and when, the before and after, in one to three sen
     alternatives, *is (a) or (c)*, three or more *is (a), (b), or (c)*;
   - a target with no letter reads *after M (name) is answered, whatever its answer*;
   - different decisions all apply, joined by *, and*;
-  - each decision is its number and its plain short name in brackets, a target in another
-    repo its repo first, *only if the agents repo's 12 (name) is (a)*.
+  - each decision is its number and its plain short name in brackets; a target in another
+    repo is `<repo>'s M (name)` where the caller knows its name, else `<repo>'s decision M`, as
+    on the page.
 
-  A decision it names that is still open is shown in the same set, before it. With no
+  A decision it names that is still open is shown in the same set. With no
   dependency there is no line, never *depends: none*. The answer page draws the same line
   from its card's `dep` (the `decision-page` skill's `references/cards-schema.md` § A page
   card).
-- **CommonMark.** A blank line goes between a bullet and a bold head or fold line that
-  follows it (the TLDR's last bullet and **Context:**, a set's last item and the next part),
+- **CommonMark.** A blank line goes between a bullet and a bold head, a fold line or the
+  dependency line that follows it (the TLDR's last bullet and **Context:**, a set's last item and the next part),
   so the line is never read into the bullet above it.
 - **TLDR:** under the title, one or two terse bullets: what is decided, and what rides on it
   (the card record's `tldr`; answer 336 (a), the same TLDR as the answer page on every chat
@@ -818,8 +819,10 @@ does not say what is decided (SKILL.md § The floor, item 1).
   caller stores is the group** (a librarian's group entity and member lines, which its store's
   JSON view carries as each decision's `group`, `{id, name, shares, context}`): its members
   are the cards under the heading, `name` is the plain name, `shares` what they share and
-  `context` the shared context. The group's id is store-internal and never shown, on the
-  heading or anywhere else; the group goes by its plain name. The group keeps
+  `context` the shared context. A stored group with `shares` and `context` is a bundle and
+  takes the heading; one without them is kept together under no heading. The group's id is
+  store-internal and never shown, on the heading or anywhere else; the group goes by its plain
+  name. The group keeps
   the order's rules (SKILL.md § Order): placed by its most pressing member, kept together.
   Each card has its own list line, and `ok 51-53` takes every recommendation in it, ⚠ cards
   skipped as in any batch.

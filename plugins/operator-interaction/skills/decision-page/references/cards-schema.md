@@ -174,8 +174,8 @@ decision's `depends` targets `{n, repo, letter}`), never from the card record, w
   (a) or (c)`, three or more `is (a), (b), or (c)`;
 - a target with no letter: `after [[M]] is answered, whatever its answer`;
 - different Ms all apply, joined by `, and `;
-- a target in another repo (`<repo>#M`) has no slug: it is named in words, `<repo>'s decision M`,
-  with its short name;
+- a target in another repo (`<repo>#M`) has no slug: it is named in words, `<repo>'s M (name)`
+  where the caller knows its name, else `<repo>'s decision M`, as the chat card names it;
 - a target that is open goes on the page as a card; an answered one not on the page gets a
   `refs` entry (§ Top level), as every slug does.
 

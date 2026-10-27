@@ -134,7 +134,8 @@ const MARKER = "@@WRITE";
 const ATT_KINDS = ["excerpt", "summary", "link", "example", "preview", "table", "matrix", "steps", "checks", "depmap"];
 
 function hasMarker(v) { return isStr(v) ? v.includes(MARKER) : Array.isArray(v) ? v.some(hasMarker) : isObj(v) ? Object.values(v).some(hasMarker) : false; }
-function lettersPhrase(ls) { const xs = ls.map(l => "(" + l + ")"); return xs.length < 2 ? xs.join("") : xs.slice(0, -1).join(", ") + " or " + xs[xs.length - 1]; }
+/* letters on one target are alternatives: (a); (a) or (b); (a), (b), or (c), the serial comma from three on */
+function lettersPhrase(ls) { const xs = ls.map(l => "(" + l + ")"); return xs.length < 2 ? xs.join("") : xs.length === 2 ? xs[0] + " or " + xs[1] : xs.slice(0, -1).join(", ") + ", or " + xs[xs.length - 1]; }
 
 function fromKit(c, bad, note) {
   const out = {};

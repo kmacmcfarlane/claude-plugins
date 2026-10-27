@@ -100,6 +100,39 @@ def flat(path):
     return " ".join(path.read_text().split())
 
 
+def missing(text, clauses):
+    """The clauses a file's text lacks, read with its whitespace collapsed; empty when it holds them all."""
+    f = " ".join(text.split())
+    return [c for c in clauses if c not in f]
+
+
+SKILL_CLAUSES = (
+    "says so on its dependency line, second on its card, read from the caller's stored dependency",
+    "its dependency line, `*depends: only if 41 (name) is (a) or (c), and after 47 (name) is answered, whatever its answer*`",
+    "A group the caller stores is the group, and related decisions are the rule only where it stores none",
+    "its id never shown")
+RENDERING_CLAUSES = (
+    "**A group the caller stores is the group**", "`{id, name, shares, context}`",
+    "A stored group with `shares` and `context` is a bundle and takes the heading; one without them is kept together under no heading",
+    "The group's id is store-internal and never shown",
+    "the groups are the ones the caller stores where it stores them",
+    "`<repo>'s M (name)` where the caller knows its name, else `<repo>'s decision M`",
+    "a bold head, a fold line or the dependency line that follows it")
+PLAIN_CLAUSES = ("Its id (`g-1022-a3f`) is store-internal and never shown to the operator",)
+RULING_CLAUSES = (
+    "answer 313", "answer 336 (a)", "never shown on either surface", "second on the card, after the TLDR",
+    "the Dependencies fold is gone",
+    "Not taken: groups worked out at render time from the item and dependencies in prose only")
+
+
+def ruling_bullet(text):
+    start = text.find("- **Groups and dependencies, stored; writers by group** (2026-10-21")
+    if start < 0:
+        return ""
+    end = text.find("\n- **", start + 1)
+    return text[start:end if end > 0 else len(text)]
+
+
 class DependencyLineForm(unittest.TestCase):
 
     FIXTURES = [
@@ -177,21 +210,19 @@ class GalleryDependentCard(unittest.TestCase):
 class StoredGroupsAndText(unittest.TestCase):
 
     def test_skill_md_names_the_line_and_the_stored_group(self):
-        f = flat(SKILL_MD)
-        for s in ("says so on its dependency line, second on its card, read from the caller's stored dependency",
-                  "its dependency line, `*depends: only if 41 (name) is (a) or (c), and after 47 (name) is answered, whatever its answer*`",
-                  "A group the caller stores is the group, and related decisions are the rule only where it stores none",
-                  "its id never shown"):
-            self.assertIn(s, f, s)
-            # mutant: the clause deleted
-            self.assertNotIn(s, f.replace(s, ""))
+        text = SKILL_MD.read_text()
+        self.assertEqual(missing(text, SKILL_CLAUSES), [])
+        # mutants: each clause's opening words reworded in the file's text, and the check re-run
+        for c in SKILL_CLAUSES:
+            mutated = " ".join(text.split()).replace(c, "X" + c[1:])
+            self.assertEqual(missing(mutated, SKILL_CLAUSES), [c], c)
 
     def test_rendering_reads_the_stored_group(self):
-        f = flat(RENDERING)
-        for s in ("**A group the caller stores is the group**", "`{id, name, shares, context}`",
-                  "The group's id is store-internal and never shown",
-                  "the groups are the ones the caller stores where it stores them"):
-            self.assertIn(s, f, s)
+        text = RENDERING.read_text()
+        self.assertEqual(missing(text, RENDERING_CLAUSES), [])
+        for c in RENDERING_CLAUSES:
+            mutated = " ".join(text.split()).replace(c, "X" + c[1:])
+            self.assertIn(c, missing(mutated, RENDERING_CLAUSES), c)
 
     def test_no_group_id_in_the_chat_references(self):
         def found(text):
@@ -211,10 +242,12 @@ class StoredGroupsAndText(unittest.TestCase):
         self.assertTrue(found(text))
 
     def test_plain_names_says_a_group_id_is_never_shown(self):
-        s = "Its id (`g-1022-a3f`) is store-internal and never shown to the operator"
-        f = flat(PLAIN_NAMES)
-        self.assertIn(s, f)
-        self.assertNotIn(s, f.replace(s, ""))
+        text = PLAIN_NAMES.read_text()
+        self.assertEqual(missing(text, PLAIN_CLAUSES), [])
+        # mutant: the sentence's bullet deleted from the file's text
+        start = text.index("- **A group of decisions has no tag.**")
+        end = text.index("\n- **", start + 1)
+        self.assertEqual(missing(text[:start] + text[end + 1:], PLAIN_CLAUSES), list(PLAIN_CLAUSES))
 
     def test_no_dependencies_fold_left_in_the_skills(self):
         for p in sorted((PLUGIN / "skills").rglob("*.md")) + [PAGE_SKILL / "assets" / "index.html"]:
@@ -225,14 +258,13 @@ class StoredGroupsAndText(unittest.TestCase):
 
     def test_the_rulings_bullet_carries_its_date_and_not_taken(self):
         text = RULINGS.read_text()
-        start = text.index("- **Groups and dependencies, stored; writers by group** (2026-10-21")
-        end = text.find("\n- **", start + 1)
-        bullet = " ".join(text[start:end if end > 0 else len(text)].split())
-        for s in ("answer 313", "answer 336 (a)", "never shown on either surface", "second on the card, after the TLDR",
-                  "the Dependencies fold is gone", "Not taken: groups worked out at render time from the item and dependencies in prose only"):
-            self.assertIn(s, bullet, s)
-        # mutant: Not taken deleted
-        self.assertNotIn("Not taken:", bullet.replace("Not taken:", ""))
+        self.assertEqual(missing(ruling_bullet(text), RULING_CLAUSES), [])
+        # mutants, in the file's text: its Not taken cut; its date changed (the bullet is then not found)
+        cut = text.replace("  Not taken: groups worked out at render time", "  Kept: groups worked out at render time", 1)
+        self.assertNotEqual(cut, text)
+        self.assertIn(RULING_CLAUSES[-1], missing(ruling_bullet(cut), RULING_CLAUSES))
+        undated = text.replace("writers by group** (2026-10-21", "writers by group** (", 1)
+        self.assertEqual(missing(ruling_bullet(undated), RULING_CLAUSES), list(RULING_CLAUSES))
 
 
 if __name__ == "__main__":

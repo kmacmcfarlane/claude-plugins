@@ -502,7 +502,7 @@ alternative not taken, in case practice argues for it.
 - **The v5 order, both surfaces** (2026-10-22, the operator's v5 ordering, item 9168: Finding,
   then Open questions, then Assumptions with tripwires, then the Impact; an option's view Plan
   in brief, the Pros | Cons table, then the facets; unknowns become Open questions) — a card
-  runs: the title; the TLDR; the dependency line's slot; Context, What, Finding, Scope,
+  runs: the title; the TLDR; the dependency line's slot (since 2026-10-27, *Groups and dependencies, stored; writers by group*, below); Context, What, Finding, Scope,
   Likelihood; the folds above the Impact, ▸ Open questions then ▸ Assumptions; the Impact; the
   options; the bottom folds, ▸ Background, ▸ Attached, ▸ Rejected alternatives. A part with
   nothing to say is left out, and what is shown keeps this order; a block is the card with every
@@ -510,8 +510,8 @@ alternative not taken, in case practice argues for it.
   in planning and build, not the operator's: chat's To act on and round lines (If left, A round
   costs, If unanswered) after the options, where the page has its round lines after the Impact
   and each To act on under its own option, and the page's Dependencies fold, kept until stored
-  dependencies land, the stated differences; the dependency line's slot kept after the TLDR, drawn by no card
-  until the dependency line lands; a blank line in chat between a bullet and the bold head or
+  dependencies land (since 2026-10-27, *Groups and dependencies, stored; writers by group*, below), the stated differences; the dependency line's slot kept after the TLDR, drawn by no card
+  until the dependency line lands (since 2026-10-27, *Groups and dependencies, stored; writers by group*, below); a blank line in chat between a bullet and the bold head or
   fold line under it, so CommonMark never reads one into the other; the order checks reading
   only the parts a card holds. Not taken: the v4 order, with the Assumptions fold first among
   the bottom folds and an option's facets before its table.

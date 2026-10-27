@@ -335,6 +335,13 @@ class CardLayout(unittest.TestCase):
         self.assertTrue(problems(h), h)
 
 
+TIP_HARNESS = r"""
+const d = JSON.parse(require("fs").readFileSync(0, "utf8"));
+CARDS = d.cards; REFS = d.refs || {}; FOLLOW = d.follow;
+byN = new Map(CARDS.map(c => [String(c.n), c])); FOLLOW_KEYS = new Set(FOLLOW.map(f => f[0]));
+const c = byN.get("42");
+process.stdout.write(JSON.stringify({line: depLine(c), tip38: tipHtml("38"), tip41: tipHtml("41")}));
+"""
 DEP_TLDR = 'secHtml(c,"tldr","TLDR",P.tldr)+depLine(c)+secHtml(c,"ctx","Context",P.ctx)'
 
 
@@ -436,6 +443,35 @@ class DependencyLine(unittest.TestCase):
         out = subprocess.run([NODE, "-e", script + HARNESS], input=json.dumps([d]), capture_output=True, text=True, timeout=60)
         self.assertFalse(any("dep must be" in b for b in json.loads(out.stdout)["out"][0]["bad"]))
 
+    def test_each_target_carries_its_tooltip(self):
+        d = example()
+        d["cards"][1]["dep"] = "only if [[41]] is (b), and after [[38]] is answered, whatever its answer"
+
+        def run(script=None):
+            out = subprocess.run([NODE, "-e", (script or page_free_script()) + TIP_HARNESS], input=json.dumps(d),
+                                 capture_output=True, text=True, timeout=60)
+            if out.returncode != 0:
+                raise AssertionError("node failed: " + out.stderr)
+            return json.loads(out.stdout)
+
+        def problems(r):
+            out = []
+            refs = re.findall(r'data-ref="(\d+)"', r["line"])
+            if refs != ["41", "38"]:
+                out.append("the targets' tooltip triggers: %s" % refs)
+            if 'class="declink"' not in r["line"]:
+                out.append("the on-page target is no link")
+            tip = r["tip38"]
+            if '<span class="lbl">Asked</span>Clear the docs build cache?' not in tip or '<span class="lbl">Answer</span>a — clear it' not in tip:
+                out.append("the off-page target's tooltip lacks Asked and Answer")
+            if '<span class="lbl">Context</span>' not in r["tip41"]:
+                out.append("the on-page target's tooltip lacks its card's Context")
+            return out
+
+        self.assertEqual(problems(run()), [])
+        # mutant: data-ref stripped from depRef, so the on-page target shows no tooltip
+        script = mutant('''class="declink" data-ref="'+esc(k)+'" data-goto=''', '''class="declink" data-goto=''')
+        self.assertIn("the targets' tooltip triggers: ['38']", problems(run(script)))
 
     def test_an_older_detail_dep_lints_key_once_and_nothing_else(self):
         from test_context import RUNNER, runner
