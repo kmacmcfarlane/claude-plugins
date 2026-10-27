@@ -6,7 +6,9 @@ in, and which decision it waits on, are column-0 store lines; a group is an enti
 members, and a bundle's shared context is stored once on its entity line. Only the store's
 writer session writes them, at raise, reframe, rename and regroup; back-fill is lazy, per item,
 at the next showing, revision or raise, and only in this session's own store. An answer page's
-writers each record a `writer-run:` line, to tune the split's card cap. The grammar is the
+writers each record a `writer-run:` line, to tune the split's card cap; they are split from the
+stored group and depends lines, and the records they return are stored with `$WI raise` before
+the page is merged from them (03ab F4). The grammar is the
 work-items format's (checked in that plugin's own suite); this file pins the librarian's rules
 in `references/decisions.md` and the counter sentence in `references/report.md`. Each check
 runs on the real file and on a mutant copy, which it must catch.
@@ -197,6 +199,46 @@ class GroupedAndDepends(unittest.TestCase):
         cut = self.text.replace("there is no back-fill pass.",
                                 "there is no back-fill pass. Run one back-fill pass at start.")
         self.assertNotEqual(decisions_problems(cut), [])
+
+
+WRITERS = [
+    "split among writers by the `decision-page` skill's `references/writers.md`",
+    "whose card `L` is the key of its stored group (the group id; the title its name)",
+    "whose `dep` is its stored depends set as slugs",
+    "When a page is built, a decision a card depends on that is not on the page goes in `refs` "
+    "when it is answered; an open one is added as a card.",
+    "Each writer returns `decision-card/5` records, checked in record mode",
+    "a new decision with `$WI raise <id> --record <file>`",
+    "a new revision with `$WI raise <id> --revise N --why '<why>' --record <file>`",
+    "builds `cards.json` from the stored records plus `L`, `dep` and `refs`",
+    "A writer never writes a store line.",
+]
+
+
+def writers_problems(text):
+    """The librarian's half of the writer split (03ab F4): the layer and dependency from the
+    store, refs and open targets, the writers' records stored with `$WI raise`, the merge."""
+    b = bullet(text, "**An answer page's writers:**")
+    return [f"An answer page's writers lacks {p!r}" for p in WRITERS if p not in b]
+
+
+class AnswerPageWriters(unittest.TestCase):
+
+    def setUp(self):
+        self.text = DECISIONS.read_text()
+
+    def test_the_bullet(self):
+        self.assertEqual(writers_problems(self.text), [])
+
+    def test_each_phrase_is_load_bearing(self):
+        # each phrase, its words cut wherever they wrap, is caught; and the bullet gone is caught
+        cut = self.text.replace("**An answer page's writers:**", "**Gone:**")
+        self.assertEqual(len(writers_problems(cut)), len(WRITERS))
+        for old in WRITERS:
+            pattern = r"\s+".join(re.escape(w) for w in old.split())
+            cut, n = re.subn(pattern, "gone", self.text)
+            self.assertEqual(n, 1, old)
+            self.assertNotEqual(writers_problems(cut), [], old)
 
 
 class CounterSentence(unittest.TestCase):

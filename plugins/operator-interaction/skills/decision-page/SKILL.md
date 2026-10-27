@@ -61,12 +61,11 @@ In a working directory (your scratchpad unless the caller names one): copy
 **Write it cheaply.** Most of a page's cost is the reading each writer repeats, not the card
 text, so by default:
 
-- **One writer per page.** Write the page yourself, or hand it to one writer; a page too large
-  for one goes to one writer per large group of cards (a `layers` group or more), never one per
-  few cards. A page is too large for one writer when its sources and its card text will not fit
-  in one writer's context beside the shared reading; card text alone is small (22 cards came to
-  about 27k tokens). The shared reading (this step, the digest, the `decisions` floor) is then
-  paid once, or once per group.
+- **One writer per page, up to the cap.** Write the page yourself, or hand it to one writer; a
+  page over the writer cap is split among writers by group and dependency, briefed alike and
+  merged from the stored records, as `references/writers.md` says (its split, its brief, its
+  merge, and `scripts/split_writers.js`). The shared reading (this step, the digest, the
+  `decisions` floor) is then paid once per writer, never once per few cards.
 - **The digest, not the schema.** A writer reads `references/writer-digest.md` in place of the
   schema and `assets/cards.example.json`; the caller may paste the digest into the brief.
 - **Approved text, passed in.** Where the caller already holds approved card text (a series'
@@ -447,6 +446,8 @@ answer page*, and the card rules the page renders.
   document
 - `references/writer-digest.md` — what a writer needs in one read: fields, level shapes,
   the floor's must-haves, the refusals and the lint keys
+- `references/writers.md` — a page over the writer cap: the split by group and dependency, the
+  one brief every writer gets, and the merge from the stored records
 - `references/fallback.md` — the tick-box doc, and the plain decisions block
 - `assets/index.html` — the page template
 - `assets/cards.example.json` — invented example data
@@ -461,6 +462,8 @@ answer page*, and the card rules the page renders.
   with no fact or source (or an estimate, or no Best response? on a new card), and a card
   placed before one in its own layer that it depends on;
   `--record FILE` checks one record
+- `scripts/split_writers.js` — the writer split under node: a page's skeleton (`layers`, each
+  card's `n`, `L` and `dep`, the `refs` keys) to its writers, `--cap N`
 - `scripts/upgrade_cards.js` — the upgrader under node: an older `cards.json` (the legacy
   shipped shape, or the page's working kit) to `decision-page/5`, format only, every `rev` kept byte for byte,
   all or nothing; `--questions`, `--only`, `--records`

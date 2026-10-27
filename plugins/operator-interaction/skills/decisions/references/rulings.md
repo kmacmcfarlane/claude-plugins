@@ -540,12 +540,20 @@ alternative not taken, in case practice argues for it.
   *N · short name*, and a decision in `refs` keeping its slug and tooltip; a target in another
   repo named with its repo, in words; no line for a none `dep`; a `dep` that is not one line of
   text refused, and an older `detail.dep` ignored and linted `key`. The writers' split by group
-  and the order inside a group are this request's page and order halves, planned beside it.
+  (answer 306 (a)) is its page half: a page over the writer cap goes to writers
+  that each take whole groups, a dependent with what it depends on, small groups sharing a
+  writer under the cap (the `decision-page` skill's `references/writers.md`); cards in no
+  stored group go in a last *Other decisions* layer, on the page only, since a page puts every
+  card under a heading and lists the groups in its map, while chat shows a lone decision with
+  no heading and a heading over lone decisions would say nothing the list does not; chat has
+  one writer, so the split and the writers' brief are page-only too. The order inside a group
+  is its order half (the next bullet).
   A set in chat shows every open decision its cards name or depend on; the hover tooltip and
   the jump to a card are page-only, since chat has no hover or click (2026-10-22, the
   librarian's reading of 335's feedback).
   Not taken: groups worked out at render time from the item and dependencies in prose only; the
-  condition on the title line, which the template openers could not take; the Dependencies fold.
+  condition on the title line, which the template openers could not take; the Dependencies fold;
+  a writer of its own for each group, however small.
 - **Dependents after what they depend on, both surfaces** (2026-10-22, answer 307 (a):
   "sorting by the dep tree makes the most sense to me") — inside a group, each decision comes
   after every decision it depends on that the set shows, in chat and on the answer page; among

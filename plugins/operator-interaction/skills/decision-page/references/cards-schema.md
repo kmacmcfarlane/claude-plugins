@@ -106,7 +106,7 @@ fields only a page has, never written into a record:
 
 | Key | Type | Required | What |
 |---|---|---|---|
-| `L` | string | yes | its group: a `layers` key |
+| `L` | string | yes | its group: a `layers` key, from the caller's stored group where it keeps one (the key the group id, the layer's title the group's name, never the id); a card in no group goes in the last layer, `other`, titled *Other decisions* (`references/writers.md` § The split) |
 | `dep` | string | no | what it depends on, one line in the dependency line's sentence form, each decision a slug: `only if [[41]] is (a) or (c), and after [[47]] is answered, whatever its answer` (*The dependency line*, below). Shown as the dependency line, after the TLDR; it has no levels, and an older `detail.dep` is not shown. Leave it out when the card depends on nothing: a card with no `dep`, or a none one, has no line |
 
 Each record field maps to a part of the `decisions` skill's card (its `references/rendering.md`
