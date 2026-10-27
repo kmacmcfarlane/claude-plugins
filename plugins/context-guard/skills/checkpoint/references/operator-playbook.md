@@ -73,6 +73,20 @@ one fails the request in flight. An unknown depth always lets it through. Manual
 to checkpoint, fires only at or under DUE, once per epoch: a deferral above DUE relays
 nothing.
 
+**The gate does not stop every idle compaction.** Once a checkpoint has recorded this epoch
+and DUE or less remains, an idle attempt goes through like any other. That is a fill of
+about 85% or more on 1M (130K left, for example), or about 65% or more on 200K. Observed on
+Claude Code 2.1.309 (work item 699d): a session that had checkpointed and then sat idle at
+~870K of 1M was compacted about 54 minutes after its last turn. Claude Code then showed a
+notice that it had compacted while idle, before the prompt cache expired, and that
+`"idleCompaction": false` in settings.json turns this off. If you do not want a session you
+stepped away from compacted at any fill, set that key yourself. The settings reference
+lists it under memory and context, settable in any settings file
+(https://code.claude.com/docs/en/settings-reference#idlecompaction). context-guard never
+writes `settings.json`. The key does not change the gate: any automatic attempt that does
+arrive is still deferred above DUE, and still let through at or under DUE once a checkpoint
+has recorded.
+
 Two caveats. Without any status-line reading for the session, the depth is inferred from
 the transcript, and the window is guessed at 200K until the session passes ~190K. On a 1M
 model DUE and HARD are then measured against 200K: an idle attempt at ~130K–160K is held

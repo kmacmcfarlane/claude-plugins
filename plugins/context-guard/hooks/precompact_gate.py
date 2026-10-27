@@ -15,7 +15,9 @@ since the last usage line). Input since then may have overflowed a fill the
 gate never saw (a batch of reads, or a model switch that leaves a 1M guess on
 a 200K model), so after a checkpoint such an attempt goes through, as it did
 before. At or under due it releases once a checkpoint has been recorded this
-epoch, and keeps deferring until one has.
+epoch, and keeps deferring until one has. That release covers an idle attempt
+too, so the gate does not stop every idle compaction (work item 699d; the
+operator playbook names the settings key that turns idle compaction off).
 
 Per the hooks reference, blocking a PROACTIVE compaction is free (the
 conversation continues uncompacted), but blocking one that fired to recover

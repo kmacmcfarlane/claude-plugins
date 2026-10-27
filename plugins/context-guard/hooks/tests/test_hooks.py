@@ -345,6 +345,27 @@ class TestPrecompactGate(Base):
                 # not a deferral a checkpoint would release
                 self.assertFalse(L.load_state("s").get("compact_deferred"))
 
+    def test_idle_after_checkpoint_at_or_under_due_releases(self):
+        # 699d: a checkpointed session idle at ~870K of 1M (~130K left,
+        # under due 150K) was compacted; that release is the design, and the
+        # operator playbook names the settings key that stops idle ones.
+        L.mark_checkpoint("s")
+        self.set_exact("s", 870_326, 1_000_000)
+        rc, out, err = self.gate("s", "auto", transcript=self.idle(870_326))
+        self.assertEqual((rc, out, err), (0, {}, ""))
+        st = L.load_state("s")
+        self.assertFalse(st.get("compact_deferred"))
+        self.assertEqual(st["last_compact_trigger"], "auto")
+
+    def test_playbook_names_the_idle_compaction_key(self):
+        with open(PLAYBOOK) as f:
+            text = " ".join(f.read().split())
+        self.assertIn("The gate does not stop every idle compaction.", text)
+        self.assertIn('`"idleCompaction": false`', text)
+        self.assertIn(
+            "https://code.claude.com/docs/en/settings-reference#idlecompaction",
+            text)
+
     def test_after_checkpoint_input_since_usage_releases_above_due(self):
         # A tool result after the last measured fill may have overflowed it
         # unseen: after a checkpoint the above-due hold does not apply.

@@ -170,6 +170,22 @@ Three layers, escalating; the first two are hooks, the third is a skill.
    only for a deferral at or under DUE, the one a checkpoint would release. The Stop relay
    asks for a checkpoint only at or under DUE, once per epoch; a deferral above DUE relays
    nothing.
+   **Clarified 2026-10-27 (work item 699d):** "while more than DUE remains" is the whole
+   promise. At or under DUE, once a checkpoint has recorded this epoch, an idle attempt is
+   released like any other, so the gate does not stop every idle compaction. Observed on
+   Claude Code 2.1.309: a session that had checkpointed sat idle at ~870K of 1M (~130K left,
+   under DUE's 150K). The gate ran on the automatic attempt about 54 minutes after the last
+   turn and released it as designed, and Claude Code then showed a notice that it had
+   compacted while idle and that `"idleCompaction": false` in settings.json turns this off.
+   Holding these attempts too was not chosen: at DUE the checkpoint is what makes a
+   compaction safe, and the gate would release the next attempt as soon as input followed
+   anyway, so holding only moves the compaction onto the operator's return. An
+   operator who wants no idle compaction at any fill sets that key
+   (https://code.claude.com/docs/en/settings-reference#idlecompaction). The gate never
+   writes it (context-guard never writes `settings.json`). A SessionStart notice when the
+   key is unset was not added either: the key is the operator's preference rather than
+   breakage, and no peer is missing, so the peer-hint mechanics do not cover it. The
+   operator playbook documents it instead.
 4. **Checkpoint skill** — Step 0 settles the goal (*continue / handoff*)
    because that is the one input nobody else holds and it changes everything downstream:
    *continue* means residue then `/compact` with drafted guidance; *handoff* means a brief
