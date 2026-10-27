@@ -56,8 +56,10 @@ near the model window is unaffected. The compaction gate never uses the derived 
 auto-compact window: it defers only on the depth it used before the window mirror.
 
 **Automatic compaction waits for a full window.** Claude Code also starts an automatic
-compaction when a session sits idle, at any fill: observed from transcripts on Claude Code
-2.1.292, the idle attempts arrived about 54 minutes after the last turn ended. The
+compaction when a session sits idle, once its context reaches the idle-compaction threshold
+(documented default 200,000 tokens, so by default never on a 200K window:
+https://code.claude.com/docs/en/settings-reference#idlecompaction): observed from transcripts on Claude Code 2.1.292, the idle attempts
+arrived about 54 minutes after the last turn ended. The
 compaction gate defers every automatic attempt while more than the DUE line remains
 (~150K on 1M, 70K on 200K), so an idle session is not compacted at 30% or 80% fill. Before
 a checkpoint this epoch it always does; after one, only while the session is idle at its
@@ -75,15 +77,22 @@ nothing.
 
 **The gate does not stop every idle compaction.** Once a checkpoint has recorded this epoch
 and DUE or less remains, an idle attempt goes through like any other. That is a fill of
-about 85% or more on 1M (130K left, for example), or about 65% or more on 200K. Observed on
+about 85% or more on 1M (130K left, for example). Idle compaction applies only once the
+context reaches its threshold, documented as 200,000 tokens by default, so by default it does
+not happen on a 200K window (https://code.claude.com/docs/en/settings-reference#idlecompaction). Observed on
 Claude Code 2.1.309 (work item 699d): a session that had checkpointed and then sat idle at
 ~870K of 1M was compacted about 54 minutes after its last turn. Claude Code then showed a
 notice that it had compacted while idle, before the prompt cache expired, and that
 `"idleCompaction": false` in settings.json turns this off. If you do not want a session you
 stepped away from compacted at any fill, set that key yourself. The settings reference
-lists it under memory and context, settable in any settings file
-(https://code.claude.com/docs/en/settings-reference#idlecompaction). context-guard never
-writes `settings.json`. The key does not change the gate: any automatic attempt that does
+lists it under memory and context: a Boolean, default `true`, settable in any settings
+file (https://code.claude.com/docs/en/settings-reference#idlecompaction). Documented there too: Claude Code ignores the key before v2.1.290,
+where turning `autoCompactEnabled` off is what stops idle compaction, and from v2.1.302
+`/config` has an Idle compaction row that sets it. The middle option, documented on the
+same page, raises the threshold instead of turning idle compaction off:
+`CLAUDE_CODE_IDLE_COMPACT_MIN_TOKENS`, a token count, with values below 100000 raised to
+100000 (https://code.claude.com/docs/en/settings-reference#change-the-idle-compaction-threshold).
+context-guard never writes `settings.json`. The key does not change the gate: any automatic attempt that does
 arrive is still deferred above DUE, and still let through at or under DUE once a checkpoint
 has recorded.
 

@@ -358,7 +358,7 @@ class TestPrecompactGate(Base):
         self.assertEqual(st["last_compact_trigger"], "auto")
 
     def test_playbook_names_the_idle_compaction_key(self):
-        with open(PLAYBOOK) as f:
+        with open(PLAYBOOK, encoding="utf-8") as f:
             text = " ".join(f.read().split())
         self.assertIn("The gate does not stop every idle compaction.", text)
         self.assertIn('`"idleCompaction": false`', text)
