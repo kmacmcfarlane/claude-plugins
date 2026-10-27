@@ -108,8 +108,8 @@ For every request, in this order (detail: `references/intake.md`):
 
 3. **Decide, or ask.** An obvious best way: decide it, state it in one line, proceed.
    Ask only when a reason applies, or you are in doubt whether one does
-   (`references/decide-alone.md` § The line), every decision (one or many) as
-   `decision N:` on the item (its line form: `references/report.md` § The counter) under
+   (`references/decide-alone.md` § The line), every decision (one or many) raised with
+   `$WI raise <id>` on the item (its line form: `references/report.md` § The counter) under
    the Report's `decisions needed`. Either way it is
    recorded: a `decided:` line under its kind, or the ask's `why ask:` and its reason
    (`references/decide-alone.md`). Never

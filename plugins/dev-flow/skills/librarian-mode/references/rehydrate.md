@@ -37,7 +37,7 @@ templates carry its rule: `<plain name> (<tag>)`.
 $WI prime
 $WI show <id> --brief      # for each item marked doing by you
 $WI ls --tag hold          # active holds
-grep -rh '^decision [0-9]' "$WORK_ITEMS_ROOT" | sort -k2 -n | tail -1  # last decision N
+$WI counter || grep -rh '^decision [0-9]' "$WORK_ITEMS_ROOT" | sort -k2 -n | tail -1  # last decision N; the grep for an older wi (exit 2); exit 1 is a store.yaml problem, so read wi's stderr and fix it
 ```
 
 Take each `doing` item's record up by the `dev-cycle` skill's `references/resume.md`,
