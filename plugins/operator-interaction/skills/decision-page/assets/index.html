@@ -416,12 +416,12 @@ const assumeFold=(c,P)=>{const as=assumeOf(c);
 /* Rejected alternatives (F2; 286 (b) and the operator's prototype feedback 2, 2026-10-22): the alternatives weighed
    and not offered, each {t, why}: its title on a bold line, then its reasons as bullets ("a bold line for each item
    with a bullet list instead of sentences"). The last of the bottom folds, closed; its summary the count and the
-   titles, "2: <title>; <title>", a slug as its bare number, as Background's summary reads one. An alternative whose
+   titles, "2: <title> · <title>", a slug as its bare number, as Background's summary reads one. An alternative whose
    title is none is not shown, nor a none reason; with none shown there is no fold. The runner reads the same texts */
 const rejectedOf=c=>Array.isArray(c.rejected)?c.rejected.filter(r=>isObj(r)&&isTxt(r.t)&&shown(r.t)):[];
 const rejWhy=r=>Array.isArray(r.why)?r.why.filter(x=>isTxt(x)&&shown(x)):[];
 const rejSum=c=>{const rs=rejectedOf(c);
-  return rs.length?' <span class="fsum">'+rs.length+': '+rs.map(r=>code(esc(r.t.trim().replace(/\[\[([0-9]+)\]\]/g,"$1")))).join("; ")+'</span>':""};
+  return rs.length?' <span class="fsum">'+rs.length+': '+rs.map(r=>code(esc(r.t.trim().replace(/\[\[([0-9]+)\]\]/g,"$1")))).join(" · ")+'</span>':""};
 const rejectedFold=c=>{const rs=rejectedOf(c);if(!rs.length)return "";
   return '<details class="pane"><summary>Rejected alternatives'+rejSum(c)+'</summary><div><ul class="rej">'
     +rs.map(r=>{const ws=rejWhy(r);return '<li><p class="rt">'+fmt(r.t)+'</p>'+(ws.length?'<ul>'+ws.map(x=>'<li>'+fmtD(x)+'</li>').join("")+'</ul>':'')+'</li>'}).join("")

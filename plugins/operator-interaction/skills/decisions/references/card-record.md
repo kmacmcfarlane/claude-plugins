@@ -59,7 +59,7 @@ Two kinds of required:
 | `ifleft` | text | optional | **If left:** on an ask for another round: each leftover finding and what it would break |
 | `roundcosts` | text | optional | **A round costs:** on an ask for another round |
 | `ifunanswered` | text | optional | **If unanswered:** a status-quo default |
-| `rejected` | list of `{t, why}` | optional | **Rejected alternatives**: the alternatives weighed and not offered, each `t` its short title, one line, and `why` its reasons, one or more, each one line of text. The last fold on both surfaces, closed, after Background (F2; answer 286 (b) and the operator's prototype feedback of 2026-10-22): its summary the count and the titles, *2: title; title*; open, each title on a bold line with its reasons as bullets under it. Empty or none: no fold. An alternative the operator might still pick is an option, never here |
+| `rejected` | list of `{t, why}` | optional | **Rejected alternatives**: the alternatives weighed and not offered, each `t` its short title, one line, and `why` its reasons, one or more, each one line of text. The last fold on both surfaces, closed, after Background (F2; answer 286 (b) and the operator's prototype feedback of 2026-10-22): its summary the count and the titles, *2: title · title*; open, each title on a bold line with its reasons as bullets under it. Empty or none: no fold. An alternative the operator might still pick is an option, never here |
 | `detail` | object | optional | the card parts' fuller renditions, `[medium, high]` each (§ Levels) |
 
 ## An option

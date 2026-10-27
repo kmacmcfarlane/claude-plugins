@@ -213,7 +213,7 @@ function fromKit(c, bad, note) {
   if (att.length) out.attached = att;
   /* rejected alternatives (F2): the kit's [{bold, bullets}] is the record's [{t, why}]; any other shape is refused, so
      nothing reaches the page that its check would refuse */
-  if ("rejected" in c) {
+  if (c.rejected != null) {
     const line = v => isStr(v) && !!v.trim() && !/[\r\n\u0085\u2028\u2029\v\f]/.test(v);
     const ok = r => isObj(r) && line(r.bold) && Array.isArray(r.bullets) && r.bullets.length > 0 && r.bullets.every(line);
     if (!Array.isArray(c.rejected) || !c.rejected.every(ok)) bad.push("rejected is not a list of {bold, bullets}, each a title and one or more reasons, each one line of text: nothing maps it");

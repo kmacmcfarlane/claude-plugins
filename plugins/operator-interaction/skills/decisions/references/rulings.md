@@ -468,7 +468,8 @@ alternative not taken, in case practice argues for it.
   it reverses nothing. Designs made in planning and build, not the operator's: the record's
   `rejected`, `[{t, why}]`, each title and reason one line of text (the page refuses another
   shape, and the upgrader maps the kit's `[{bold, bullets}]` or refuses it); the fold's name and
-  summary, `▸ Rejected alternatives — N: <title>; <title>` in chat and the same count and titles
+  summary, `▸ Rejected alternatives — N: <title> · <title>` in chat and the same count and titles
   on the page, a slug there as its number; the chat block's open form, each title on a bold
-  line over its reason bullets; the pre-publish runner reading every title and reason for ids
-  and in the cold read, and counting them in the card in all. Not taken: 286 (a), (c), (d).
+  line over its reason bullets, a blank line before each title after the first; the pre-publish
+  runner reading every title and reason for ids, the titles alone in the cold read, and
+  counting both in the card in all.

@@ -4,7 +4,7 @@ Four parts:
 
 - the decision page (`decision-page` skill, under node): `rejectedFold` renders the record's
   `rejected`, `[{t, why}]`, as the last of the bottom folds, closed, its summary the count and
-  the titles (`N: title; title`, a slug as its number); open, each title on a bold line and its
+  the titles (`N: title · title`, a slug as its number); open, each title on a bold line and its
   reasons as bullets, every text escaped. `check()` refuses a malformed list, which also runs in
   the runner's `--record` mode;
 - the pre-publish runner (`scripts/check_cards.js`, under node): the id lint and the cold read
@@ -111,7 +111,7 @@ class RejectedPage(unittest.TestCase):
         card(d, 41)["rejected"] = [{"t": "Build on a shared office machine", "why": ["x"]},
                                    {"t": "Publish from [[42]]'s `docs-old` branch", "why": ["y"]}]
         h = rej(one(d), 41)
-        self.assertIn('<span class="fsum">2: Build on a shared office machine; Publish from 42\'s '
+        self.assertIn('<span class="fsum">2: Build on a shared office machine · Publish from 42\'s '
                       '<code>docs-old</code> branch</span></summary>', h.replace("&#39;", "'"))
         self.assertNotIn("<button", h[:h.index("</summary>")])
         # in the open fold the slug is a mark, as in every text field
@@ -174,7 +174,7 @@ class RejectedPage(unittest.TestCase):
         ],
         "rejected 1 t must be one line of text": [
             lambda c: c["rejected"][0].__setitem__("t", "a\nb"),
-            lambda c: c["rejected"][0].__setitem__("t", "a b"),
+            lambda c: c["rejected"][0].__setitem__("t", "a\u2028b"),
         ],
         "rejected 1 why must be a list of one or more reasons": [
             lambda c: c["rejected"][0].pop("why"),
@@ -202,8 +202,16 @@ class RejectedPage(unittest.TestCase):
         d = example()
         card(d, 41)["rejected"] = {"t": "x", "why": ["y"]}
         # with the list test gone the check stops on the object instead of refusing it
-        with self.assertRaises(AssertionError):
-            one(d, mutant_page("if(!Array.isArray(c.rejected))bad.push(", "if(false)bad.push("))
+        js = mutant_page("if(!Array.isArray(c.rejected))bad.push(", "if(false)bad.push(")
+        with self.assertRaisesRegex(AssertionError, "node failed"):
+            one(d, js)
+        # L4: the title test and the reason-text test each gone
+        d = example()
+        card(d, 41)["rejected"][0].pop("t")
+        self.assertEqual(one(d, mutant_page("if(!isObj(r)||!isTxt(r.t)){bad.push(", "if(false){bad.push("))["bad"], [])
+        d = example()
+        card(d, 41)["rejected"][0]["why"][1] = 3
+        self.assertEqual(one(d, mutant_page('if(j>=0)bad.push(x+" why reason "', 'if(false)bad.push(x+" why reason "'))["bad"], [])
         d = example()
         card(d, 41)["rejected"][0]["t"] = "a\nb"
         self.assertEqual(one(d, mutant_page("if(LINE_BREAK.test(r.t))bad.push(", "if(false)bad.push("))["bad"], [])
@@ -243,15 +251,22 @@ class RejectedRunner(unittest.TestCase):
             self.assertNotIn("OQ3 looks like an id", runner(d, script=js)[1], where)
 
     def test_the_cold_read_reads_titles_and_reasons(self):
+        # the titles, which the fold's summary shows, are read; the reasons sit in the closed fold and are not
         d = example()
-        card(d, 41)["rejected"][0]["why"] = ["the seven office machines all share one cache"]
+        card(d, 41)["rejected"][0]["t"] = "Build on the seven office machines"
         self.assertIn('lint: card 41: "seven" (rejected alternatives) counts things its context does not name',
                       runner(d)[1])
-        js = mutant_runner('  terms(rejectedTexts(c), " (rejected alternatives)");\n', "")
+        js = mutant_runner('  terms(page.rejectedOf(c).map(r => r.t), " (rejected alternatives)");\n', "")
         self.assertNotIn("(rejected alternatives)", runner(d, script=js)[1])
         # a carried-over card's fold is read the same: the cold read is no lint a new card owes
         d["cards"][0]["upgraded"] = {"from": "kit", "rev": d["cards"][0]["rev"]}
         self.assertIn('"seven" (rejected alternatives)', runner(d)[1])
+        # a count in a reason is not read; mutant: the reasons read again
+        d = example()
+        card(d, 41)["rejected"][0]["why"] = ["the seven office machines all share one cache"]
+        self.assertNotIn("(rejected alternatives)", runner(d)[1])
+        js = mutant_runner('terms(page.rejectedOf(c).map(r => r.t), " (rejected', 'terms(rejectedTexts(c), " (rejected')
+        self.assertIn('"seven" (rejected alternatives)', runner(d, script=js)[1])
 
     def test_they_count_in_the_card_in_all(self):
         d = example()
@@ -280,6 +295,20 @@ class RejectedUpgrade(unittest.TestCase):
                 self.assertEqual(code, 1, out)
                 self.assertIn("card 51: rejected is not a list of {bold, bullets}", out)
                 self.assertIsNone(d)
+        # a null rejected is no list: left out, never refused; mutant: any rejected key read as a list
+        kit = load(KIT)
+        next(c for c in cards_of(kit) if c["n"] == 51)["rejected"] = None
+        code, out, d = upgrade(kit)[:3]
+        self.assertEqual(code, 0, out)
+        self.assertNotIn("rejected", next(c for c in cards_of(d) if c["n"] == 51))
+        import pathlib as _p
+        import tempfile as _t
+        with _t.TemporaryDirectory() as tmp:
+            js = _p.Path(tmp) / "upgrade_cards.js"
+            src = UPGRADER.read_text()
+            self.assertEqual(src.count("  if (c.rejected != null) {"), 1)
+            js.write_text(src.replace("  if (c.rejected != null) {", '  if ("rejected" in c) {'))
+            self.assertEqual(upgrade(kit, script=js)[0], 1)
         # mutant: the refusal gone, a malformed list passes the upgrader
         import pathlib
         import tempfile
@@ -304,7 +333,7 @@ BOLD_TITLE = re.compile(r"^\*\*([^*].*)\*\*$")
 
 def fold_problems(where, body, block=False):
     """A view's Rejected alternatives fold against the rules: one at most; after ▸ Background and
-    the last fold line; its summary `N: title; title`, N the titles' count; closed on a card, open
+    the last fold line; its summary `N: title · title`, N the titles' count; closed on a card, open
     in a block, where each title stands on a bold line, in the summary's order, each with one or
     more reason bullets under it, and nothing else."""
     at = [i for i, x in enumerate(body) if (m := FOLD.match(x)) and m.group(2) == REJ_NAME]
@@ -326,13 +355,25 @@ def fold_problems(where, body, block=False):
         out.append(where + ": an option after Rejected alternatives")
     s = SUMMARY.match(m.group(3).replace(" *(only where one was)*", ""))
     if not s:
-        return out + [where + ": the summary is not 'N: title; title'"]
-    titles = s.group(2).split("; ")
+        return out + [where + ": the summary is not 'N: title · title'"]
+    titles = s.group(2).split(" · ")
     if int(s.group(1)) != len(titles):
         out.append(where + ": the summary counts %s and names %d" % (s.group(1), len(titles)))
     if block:
         j, seen = k + 1, []
-        while j < len(body) and (t := BOLD_TITLE.match(body[j])):
+        while j < len(body):
+            if seen:
+                # a title after the first stands after a blank line, or CommonMark reads it into the bullet above
+                b = j
+                while j < len(body) and not body[j].strip():
+                    j += 1
+                if not (j < len(body) and BOLD_TITLE.match(body[j])):
+                    break
+                if j == b:
+                    out.append(where + ": no blank line before %s" % body[j])
+            t = BOLD_TITLE.match(body[j])
+            if not t:
+                break
             seen.append(t.group(1))
             j += 1
             n = 0
@@ -375,8 +416,13 @@ class RejectedChat(unittest.TestCase):
         sec = text[text.index("## 36. Rejected alternatives, folded last"):]
         lines = sec.splitlines()
         k = next(i for i, x in enumerate(lines) if x.startswith("▾ Rejected alternatives — "))
-        self.assertEqual(fold_problems("gallery.md § 36", lines[k:k + 6], block=True), [])
-        self.assertIn("▸ Rejected alternatives — 2: Take payment on delivery; Ask customers to pay again later", text)
+        self.assertEqual(fold_problems("gallery.md § 36", lines[k:k + 8], block=True), [])
+        # mutant: the blank line before the second title dropped
+        cut = lines[k:k + 3] + lines[k + 4:k + 8]
+        self.assertIn("gallery.md § 36: no blank line before **Ask customers to pay again later**",
+                      fold_problems("gallery.md § 36", cut, block=True))
+        self.assertIn("*Read as: 99 → tell me (rejected alternatives).*", sec)
+        self.assertIn("▸ Rejected alternatives — 2: Take payment on delivery · Ask customers to pay again later", text)
 
     def test_the_fold_checks_fail_on_broken_cards(self):
         n, kind, body = next(v for v in views(GALLERY) if v[2][0].startswith("**99 — "))

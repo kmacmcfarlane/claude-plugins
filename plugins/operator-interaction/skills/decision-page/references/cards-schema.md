@@ -148,7 +148,7 @@ Each record field maps to a part of the `decisions` skill's card (its `reference
   folds; closed, its summary is *why now:* and the first sentence of `why`, a slug as its
   number, which the runner's `bgsum` lint keeps to about 25 words), then **Dependencies**
   (`dep`), then **Rejected alternatives** (`rejected`; F2, answer 286 (b)), the last: closed,
-  its summary the count and the titles, *2: title; title*, a slug as its number; open, each
+  its summary the count and the titles, *2: title · title*, a slug as its number; open, each
   alternative's `t` on a bold line with its `why` reasons as bullets under it. The evidence is
   in the Assumptions fold, above.
 
@@ -190,8 +190,8 @@ review, plan or document, an item or a label. For each one, point to its gloss i
 Finding's `title` and `mechanism`, the Scope's `says`, the Likelihood's `seen` for named things
 and `best`, included), and ids wherever they are (the What part and its items, the Finding but
 its excerpt, the Scope, the Likelihood and Best response?, and each rejected alternative's `t` and
-`why` included); the Rejected alternatives fold's texts are read for counts and named things
-too; an observed count in
+`why` included); each rejected alternative's `t` is read for counts and named things too (its
+reasons sit in the closed fold, as the other folds' text does); an observed count in
 `seen` is the fact the line gives, so the count lint leaves it; those lints are proxies, and plain-word terms stay the cold read's. The same holds for
 the medium and high renditions of the Impact and the TLDR, and each option's view (its `plan` and
 the points of its Pros | Cons table, which picking the option opens), checked against

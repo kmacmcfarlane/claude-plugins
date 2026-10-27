@@ -25,7 +25,7 @@
         Impact and the TLDR, that Context's summary (with its bundle's shared context, and the What
         part: its text and its items) does not introduce; a count in the places that say what is
         decided points to items; the Finding's title and mechanism are read too (F7), the Scope's says (F8), and the
-        Likelihood's seen and Best response? (F9), and each rejected alternative's title and reasons (F2);
+        Likelihood's seen and Best response? (F9), and each rejected alternative's title (F2);
       - groups: a bundle (a layer with shared context) holding fewer than two cards;
       - the TLDR: a bullet that may carry the recommendation, at every level, headings, bullets
         and sub-bullets in reading order;
@@ -576,8 +576,9 @@ function lintCard(c, w, sh, out) {
   { const l = page.likelihoodOf(c), b = page.bestOf(c);
     if (l) terms([l.seen], " (the likelihood)", named, undefined, false);
     if (b) terms([b], " (the likelihood)"); }
-  /* the Rejected alternatives fold (F2), the last bottom fold: each title and its reasons */
-  terms(rejectedTexts(c), " (rejected alternatives)");
+  /* the Rejected alternatives fold (F2), the last bottom fold: its titles, which its summary shows; the reasons sit in
+     the closed fold, as the other folds' text does */
+  terms(page.rejectedOf(c).map(r => r.t), " (rejected alternatives)");
   /* the Pros and Cons rows are visible too, though not in the flat part's budget: the cold read covers them */
   terms(opts(c).flatMap(o => page.proCon(o).map(r => r[1])), " (pros and cons)");
   /* and each option's view (F5), which picking the option opens: its plan in brief and its Pros | Cons table */

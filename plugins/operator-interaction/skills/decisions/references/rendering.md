@@ -224,18 +224,20 @@ way, first of its bottom folds (the `decision-page` skill's `references/cards-sc
 card record's `rejected`; answer 286 (b), "alternatives with rejection reasons folded under the
 options", and the operator's prototype feedback of 2026-10-22, "a bold line for each item with
 a bullet list instead of sentences"): the last fold on the card, after ▸ Background, on a card
-that weighed any. Its summary is `N: <title>; <title>`, the count and each title, in order:
-`▸ Rejected alternatives — 2: A second payment provider on standby; Take payment on delivery`.
+that weighed any. Its summary is `N: <title> · <title>`, the count and each title, in order:
+`▸ Rejected alternatives — 2: A second payment provider on standby · Take payment on delivery`.
 `tell me rejected` (or `tell me rejected alternatives`) answers with it open, and `expand` and a
 block show it open: under the line, each alternative's title in bold on a line of its own,
-then its reasons, one bullet each. A rejected alternative is never an option: it cannot be
+then its reasons, one bullet each, and a blank line before each title after the first, so
+the title is not read as part of the bullet above it. A rejected alternative is never an option: it cannot be
 picked, and an alternative the operator might still want is an option instead. The answer
 page folds it the same way, last of its bottom folds.
 
 ```
-▾ Rejected alternatives — 2: A second payment provider on standby; Take payment on delivery
+▾ Rejected alternatives — 2: A second payment provider on standby · Take payment on delivery
 **A second payment provider on standby**
 - the same contract and fee as (a), for a provider that only waits
+
 **Take payment on delivery**
 - the shop sells downloads, so there is no delivery to pay on
 ```

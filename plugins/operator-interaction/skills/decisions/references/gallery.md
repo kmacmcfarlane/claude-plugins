@@ -1145,7 +1145,7 @@ provider's own record, and whether a fallback is the response that matters (answ
 - (z) Decide later — *checkout stays as it is; the next outage fails it again*
 
 ▸ Background — why now: you asked for a fallback after last month's outage, and the next release closes on Friday.
-▸ Rejected alternatives — 2: Take payment on delivery; Ask customers to pay again later
+▸ Rejected alternatives — 2: Take payment on delivery · Ask customers to pay again later
 
 *The Likelihood names the event it counts (the provider going down), then the strongest fact
 found, a count with its window and its source, and Best response? says whether the fallback the
@@ -1162,14 +1162,17 @@ source.*
 ## 36. Rejected alternatives, folded last
 
 *Situation: on decision 99 (§ 35) the operator replies "99: tell me rejected". The card's last
-line, `▸ Rejected alternatives — 2: Take payment on delivery; Ask customers to pay again later`,
+line, `▸ Rejected alternatives — 2: Take payment on delivery · Ask customers to pay again later`,
 names the two ways out that were weighed and not offered; the answer opens that fold.*
+
+*Read as: 99 → tell me (rejected alternatives).*
 
 **99 — Rejected alternatives**
 
-▾ Rejected alternatives — 2: Take payment on delivery; Ask customers to pay again later
+▾ Rejected alternatives — 2: Take payment on delivery · Ask customers to pay again later
 **Take payment on delivery**
 - the shop sells downloads, so there is no delivery to pay on
+
 **Ask customers to pay again later**
 - a customer who sees an error rarely comes back to pay
 - each order would need someone to chase it by hand
