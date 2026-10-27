@@ -397,9 +397,10 @@ class TestStep0ActsOnDrafts(unittest.TestCase):
         self.assertIn("Acted on:", self.step0)
         self.assertIn("Acted on:", self.step7)
         self.assertIn("argument as given", self.step0)
-        self.assertIn("run your own /compact", self.step0)
+        self.assertIn("run your own `/compact <guidance>`", self.step0)
         self.assertIn("only question 3 open, which it re-drafts", self.step0)
-        self.assertIn("Or, for the window: run your own /compact", self.step0)
+        self.assertIn("Or, for the window: edit the /compact line below, or run your own",
+                      self.step0)
         # the argument's own answers are stripped before a line is built,
         # at a fork and in the echo's override
         self.assertGreaterEqual(

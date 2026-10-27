@@ -192,7 +192,7 @@ A continue's close, for example (Step 0 acted on its drafts; one open item, one 
 refusal):
 
 ````text
-Acted on: continue · in flight: nothing · window: the /compact line below — to change: /context-guard:checkpoint continue — 2: nothing more. Or, for the window: run your own /compact <guidance>
+Acted on: continue · in flight: nothing · window: the /compact line below — to change: /context-guard:checkpoint continue — 2: nothing more. Or, for the window: edit the /compact line below, or run your own
 Manifest: /home/me/.claude/claude-kit/handoff/1f0c…/HANDOFF.md
 ```text
 /compact keep the 8cc2 turn-gate port; manifest /home/me/.claude/claude-kit/handoff/1f0c…/HANDOFF.md; open 8cc2-turn-gate-port; HOLD no push until decision 52; REFUSED no new hook event

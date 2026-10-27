@@ -147,8 +147,9 @@ compacts when convenient, and it continues. Finish the step in hand, then:
    push outcome with its `incoming:` lines, then its team summary, then the in-flight
    inventory (step 2), then — with the `operator-interaction:decisions` skill loaded — the
    decisions block (`references/decisions.md` § The Report), then the checkpoint's own close
-   — its `/compact <guidance>` recommendation, to run at the operator's convenience (the next
-   morning is fine), the manifest's absolute path, and last its Step 7 opener, led by
+   as its Step 7 sets it out (manifest path, the fenced `/compact` line, the opener) — the
+   `/compact` line to run at the operator's convenience (the next morning is fine), and last
+   the opener, led by
    `/dev-flow:librarian-mode start`, then
    `Read (the Read tool) <absolute manifest path> in full first`, then — when the roster
    is not `None` — `resume <ids>` per the `dev-cycle` skill's `references/resume.md`
@@ -157,8 +158,9 @@ compacts when convenient, and it continues. Finish the step in hand, then:
    the manifest, Holds first. Never run `/compact` yourself, and start no new work — no
    dispatch, no merge — in that turn (step 3's merge of `origin/main` through a rejected
    push is not new work). This is the one exception to "the decisions block is the last
-   thing in the turn": the checkpoint's close (the `/compact` line, the manifest path and the
-   opener) stays the literal end, so the decisions sit directly above it.
+   thing in the turn": the checkpoint's own close as its Step 7 sets it out (manifest path,
+   the fenced `/compact` line, the opener) stays the literal end, so the decisions sit
+   directly above it.
 
 The checkpoint stands the gate down, so nothing warns again before the compaction.
 Requests that arrive in that gap are filed through Intake as usual and held — no

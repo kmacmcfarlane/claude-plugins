@@ -72,9 +72,23 @@ class TestCloseCompactLine(unittest.TestCase):
         self.assertNotIn("/compact", fences[opener[0]].split(" — ", 1)[0])
         self.assertIn("its own line apart from the `/compact` line", _flat(self.step7))
 
+    def test_guidance_built_on_one_line(self):
+        flat = _flat(self.step7)
+        self.assertIn("when none was drafted (the unattended path skips Step 0; "
+                      "`then <next-skill>` settles question 3 without guidance)", flat)
+        self.assertIn("an operator's own guidance is printed as given, then `; manifest "
+                      "<path>`, the open item, and any hold or REFUSED line it lacks, "
+                      "appended", flat)
+        self.assertIn("Join parts with `; `, never a line break; collapse any line break "
+                      "inside a part to a space", flat)
+
     def test_echo_points_at_the_line(self):
         self.assertNotIn("as recommended above", self.skill)
-        self.assertIn("window: the /compact line below", self.step0)
+        self.assertIn("window: <the /compact line below | /rewind to <epoch header>, "
+                      "or the /compact line below | /clear, or the /compact line below "
+                      "to stay here>", self.step0)
+        self.assertIn("Or, for the window: edit the /compact line below, or run your own",
+                      self.step0)
 
     def test_question_3_feeds_the_line_in_both_modes(self):
         flat = _flat(self.step0)
@@ -109,12 +123,16 @@ class TestPlaybookCloseExamples(unittest.TestCase):
             self.assertNotIn("\n", compact[0])
             self.assertIn("HANDOFF.md", compact[0])
             self.assertIn("HOLD", compact[0])
+            self.assertRegex(compact[0], r"; open \S+")
+            if label.startswith("A continue"):
+                self.assertIn("REFUSED", compact[0])
             self.assertTrue(any("Read (the Read tool)" in b and not b.startswith("/compact")
                                 for b in fences), label)
 
     def test_not_handoff_only(self):
         self.assertNotIn("a handoff also prints `/clear`,\n`/compact", self.pb)
-        self.assertIn("in both modes, a fenced\none-line `/compact <guidance>`", self.pb)
+        self.assertIn("in both modes, a fenced one-line `/compact <guidance>`",
+                      _flat(self.pb))
 
 
 if __name__ == "__main__":

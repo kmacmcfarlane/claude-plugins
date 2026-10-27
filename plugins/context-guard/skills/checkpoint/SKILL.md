@@ -159,7 +159,7 @@ stripped first, with your drafted mode first when it named none. The window over
 separate sentence after the command, so the command never carries it when pasted:
 
 ```text
-Acted on: <mode> · in flight: <inventory heads in plain words, `; `-separated, +N more in the manifest> · window: the /compact line below — to change: /context-guard:checkpoint <argument as given, drafted mode first when it named none> — 2: <nothing more | what I missed>. Or, for the window: run your own /compact <guidance>
+Acted on: <mode> · in flight: <inventory heads in plain words, `; `-separated, +N more in the manifest> · window: <the /compact line below | /rewind to <epoch header>, or the /compact line below | /clear, or the /compact line below to stay here> — to change: /context-guard:checkpoint <argument as given, drafted mode first when it named none> — 2: <nothing more | what I missed>. Or, for the window: edit the /compact line below, or run your own
 ```
 
 A changed mode or inventory comes back as that reply line and re-runs the checkpoint with
@@ -476,10 +476,14 @@ draft, the close opens with its `Acted on:` echo line (Step 0), above `Manifest:
 3. **The `/compact` line**, in both modes: `/compact <guidance>` as **one line**, fenced,
    with **no leading whitespace**, ready to paste unedited — for a *continue* it is the
    window, for a handoff the way to keep going here instead. The guidance is Step 0
-   question 3's (the operator's own, when they gave it), or, on the unattended path (which
-   skips Step 0), guidance you draft now. Either way it names the manifest's absolute path,
-   the open item, and every hold and every REFUSED line, as question 3 says; it is never
-   left to a sentence recommending `/compact`, and never replaced by the echo.
+   question 3's (the operator's own, when they gave it), or, when none was drafted (the
+   unattended path skips Step 0; `then <next-skill>` settles question 3 without guidance),
+   guidance you draft now. Either way it names the manifest's absolute path, the open item,
+   and every hold and every REFUSED line, as question 3 says: an operator's own guidance is
+   printed as given, then `; manifest <path>`, the open item, and any hold or REFUSED line
+   it lacks, appended. Join parts with `; `, never a line break; collapse any line break
+   inside a part to a space. It is never left to a sentence recommending `/compact`, and
+   never replaced by the echo.
 4. **The opener**, in both modes: **one line**, fenced, with **no leading whitespace** (a
    leading space once broke a `/compact`), its own line apart from the `/compact` line, for
    the first prompt after `/clear`, or a new session's. In order:
