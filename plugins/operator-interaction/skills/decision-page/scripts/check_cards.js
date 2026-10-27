@@ -160,8 +160,13 @@ const counts = s => [...unId(s).matchAll(COUNT)].filter(m => !(/^[0-9]+$/.test(m
 /* a named thing: "<word> mode|setting|…"; a determiner or count word before it is dropped, leaving the bare noun; the s of a possessive is no qualifier */
 const DET = new Set(["the","this","that","these","those","each","every","a","an","its","our","your","their","any","no","one","which","whose","same","new","old"]);
 const NAMED = /\b([a-z][a-z-]*)\s+(mode|setting|review|plan|document|doc|spec|policy|flag|profile|template|track|phase|stage)\b/gi;
+/* NAMED matches do not overlap: when a function word leads one ("to plan" in "to plan mode"), the noun it used up
+   can still head the real name, so read on from the second word */
+const NAMED_NEXT = /^\s+(mode|setting|review|plan|document|doc|spec|policy|flag|profile|template|track|phase|stage)\b/i;
 const named = s => { const t = strip(s); return [...t.matchAll(NAMED)].flatMap(m => { const w = m[1].toLowerCase();
   const possessive = w === "s" && m.index > 0 && /['’]/.test(t[m.index - 1]);
+  if (!possessive && FUNC.has(w)) { const nx = t.slice(m.index + m[0].length).match(NAMED_NEXT);
+    return nx ? [(m[2] + " " + nx[1]).toLowerCase()] : []; }
   return possessive ? [] : [DET.has(w) || W[w] ? m[2].toLowerCase() : (m[1] + " " + m[2]).toLowerCase()]; }); };
 /* over an option's view (its plan and its table's points, prose where the nouns are often verbs: "to plan", "and
    review", "reaches review"), a match is dropped when its first word is a function word or a verb form, as DET

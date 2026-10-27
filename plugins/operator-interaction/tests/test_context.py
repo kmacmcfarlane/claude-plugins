@@ -830,6 +830,25 @@ class DecisionPageRunner(unittest.TestCase):
         d["cards"][0]["options"][0]["title"] = "Turn on content mode"
         self.assert_lint(d, '"content mode" is not glossed')
 
+    def test_a_function_word_before_a_noun_is_no_named_thing(self):
+        for title, bad in (("Rename the dev cycle's phase to stage", '"to stage"'),
+                           ("Fix it, then plan for review", '"for review"')):
+            with self.subTest(title=title):
+                d = example()
+                d["cards"][0]["options"][0]["title"] = title
+                code, out, _ = runner(d)
+                self.assertNotIn(bad, out)
+        d = example()
+        d["cards"][0]["options"][0]["title"] = "Turn on content mode"
+        self.assert_lint(d, '"content mode" is not glossed')
+
+    def test_a_function_word_match_does_not_hide_the_name_after_it(self):
+        for title in ("Switch to plan mode", "Run it in plan mode"):
+            with self.subTest(title=title):
+                d = example()
+                d["cards"][0]["options"][0]["title"] = title
+                self.assert_lint(d, '"plan mode" is not glossed')
+
     def test_a_named_thing_drops_its_determiner(self):
         d = with_tldr("The plan stays")
         out = self.assert_lint(d, '"plan" is not glossed')
