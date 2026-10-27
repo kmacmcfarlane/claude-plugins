@@ -29,20 +29,25 @@ carries its label first in the headline's question, with its short name (`decisi
 § What the store records) — never a second numbering. The two
 exceptions are the opt-in dialog (`opt-in.md`) and the session-name gate
 (`session-name.md`). Another repo's decision is written `<repo>#N`, never a bare N. The
-counter lives in the store: raising a decision appends one line to its item's body — one
-physical line, never wrapped, since `wi` reads the headline only to the line's end — in
-the form of the `dev-cycle` skill's `references/record-lines.md` `decision:` line,
-numbered:
+counter lives in the store, in `store.yaml`: raising a decision is `$WI raise <id>`, which
+gives out N under the store's lock and appends the headline to its item's body, with its
+`raised:` line under it; a card as its record, with `--record` (`decisions.md` § What the
+store records). The headline is one physical line, never wrapped, since `wi` reads it only
+to the line's end, in the form of the `dev-cycle` skill's `references/record-lines.md`
+`decision:` line, numbered:
 
 ```
 decision N: <question> — options: (a) … [recommended] | (b) … | (z) decide later
 ```
 
 The question may open on a source label and its short name, `F7 (oversize upload) · `;
-the line still opens `decision N:`. The reply is `answer N: <reply>`; on re-entry continue
-from the highest N (`rehydrate.md` § Step 3), else 1. Group ids are not numbers: they are a
-short time plus a hash (`decisions.md` § What the store records, **Grouped and depends**),
-and take nothing from this counter.
+the line still opens `decision N:`. The reply is `answer N: <reply>`. `$WI counter`
+prints the last N given out (`rehydrate.md` § Step 3), 0 for none. An older `wi`
+(`invalid choice: 'raise'`, exit 2): N is one more than the last decision number the
+counter grep prints (`rehydrate.md` § Step 3), and the headline is written with
+`$WI note <id> --raw`. Group ids are not numbers: they are a short time plus a hash
+(`decisions.md` § What the store records, **Grouped and depends**), and take nothing from
+this counter.
 
 ## With the decisions skill
 

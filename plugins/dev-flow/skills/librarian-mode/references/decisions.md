@@ -37,7 +37,7 @@ indented line, `why ask:` (`decide-alone.md` § Raised), is written under it wit
 
 | The skill asks for | The librarian's binding |
 |---|---|
-| the caller's numbering | the store counter, the one counter for every question put to the operator (`report.md` § The counter): `decision N:` continues from the highest N (`rehydrate.md` § Step 3); a number is never reused. A source label (a review's F7, a series' OQ3, a gate's G5) is never a number: a decision raised from one labelled item carries it, with its short name, first in the headline's question (§ What the store records) |
+| the caller's numbering | the store counter, the one counter for every question put to the operator (`report.md` § The counter): N from `$WI raise`, which gives it out under the store's lock, and the last one given out from `$WI counter` (`rehydrate.md` § Step 3); a number is never reused. A source label (a review's F7, a series' OQ3, a gate's G5) is never a number: a decision raised from one labelled item carries it, with its short name, first in the headline's question (§ What the store records) |
 | the default wake ("the next time I finish a piece of work and report") | **the next Report**; a `later` with no time or event wakes there |
 | the operator's expected return | what the operator said ("back tomorrow morning"), in the item or the transcript; when they said nothing, the return is unknown and every stated deadline goes first |
 | who is reading, and how warm | after Rehydrate the operator is **cold** on every decision raised before the reset; the first Report after it re-shows them per the skill, with what changed since each was raised. Between resets: a decision shown in a Report written after the operator's last turn has **not been seen** — background returns can write several Reports while the operator is away — so the next Report shows it at its level again, not *(shown before)*. Your own transcript tells you: has the operator taken a turn since that Report? The store records the same thing (§ What the store records, **Shown** and **Seen**): a reader without the transcript — after a reset, or another session — reads the last showing as unseen when no `seen N:` line follows the last `shown N:` line, and as not recorded (cold) when there is no `shown N:` line |
@@ -86,7 +86,7 @@ how the librarian raises, revises and reads a record, and what it binds in one.
   ```
 
   The headline is as the `dev-cycle` skill's `references/record-lines.md` gives the
-  `decision:` line, so `wi needs-input` and the counter grep (`^decision [0-9]`) read it
+  `decision:` line, so `wi needs-input` and the counter (`$WI counter`) read it
   unchanged; the `card:` line, indented, matches neither `^decision` nor `^answer`.
   `[recommended]` closes the `rec` option's title; with `rec` null, ` — <norec>` follows the
   last option; `⚠ one-way` follows the question when the card's `oneway` is true. When the
@@ -106,7 +106,7 @@ how the librarian raises, revises and reads a record, and what it binds in one.
   - **The label.** Its short name is plain words, taken from the source or written where it
     has none, and kept for as long as the operator sees the label; `what` names the source by
     plain name (*… from the upload review*). The number stays the handle: the headline still
-    opens `decision N:`, so the counter grep and `wi` read it unchanged, and a reply by the
+    opens `decision N:`, so `$WI counter` and `wi` read it unchanged, and a reply by the
     label is stored as `answer N:`. Any other label a card names (a decision covering several
     labelled items) is written label first with its short name where it stands, never a bare
     label and never a number. Tracker ids (items, tickets, commits) are not source labels:
@@ -215,8 +215,8 @@ how the librarian raises, revises and reads a record, and what it binds in one.
 - **An older `wi`** (no `--record`): the record stays in the session's scratchpad, the
   headline is raised headline-only (`$WI raise <id> -- '<question> — options: (a) … [recommended] | … | (z) decide later'`, the headline `wi` would
   build from the record; with no `raise` at all,
-  `invalid choice: 'raise'`, N is one more than the last decision number the counter grep
-  prints, and the headline is written with `$WI note <id> --raw`), the card is shown from the
+  `invalid choice: 'raise'`, exit 2, N is one more than the last decision number the counter
+  grep prints (`rehydrate.md` § Step 3), and the headline is written with `$WI note <id> --raw`), the card is shown from the
   scratchpad copy, and `--revise N --record` follows once `wi` updates. Never legacy lines in
   its place.
 - **Grouped and depends:** which group each decision is in, and which decision it waits

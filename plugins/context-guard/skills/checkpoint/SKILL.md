@@ -356,11 +356,15 @@ written nothing for that item: carry its lines in `Aware of` as above, naming th
 carry each accepted line as written, and a text refused twice only as its path and key in
 words, never either refused value; name the item in `Next`. The other items go ahead.
 
-A question already put to the operator that has no `decision N:` line gets one now, written
-undated and unbulleted so the line starts `decision N:`, N one more than the store's highest,
-with `wi note <id> --raw -- 'decision N: …'`:
+A question already put to the operator that has no `decision N:` line gets one now, with
+`wi raise <id> -- '<question>'`, which gives out N from the store's counter, writes the line
+undated and unbulleted so it starts `decision N:`, and prints N. An older `wi` has no
+`raise` (exit 2, `invalid choice: 'raise'`): N is then one more than the last decision
+number the grep below prints, written with `wi note <id> --raw -- 'decision N: …'`.
 
 ```bash
+$WI raise <id> -- '<question>'
+# an older wi (exit 2, invalid choice: 'raise'): N is one more than this, written with $WI note <id> --raw
 grep -rhoE '^decision [0-9]+' <store> | sort -k2 -n | tail -1
 ```
 
