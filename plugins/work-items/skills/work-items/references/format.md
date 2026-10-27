@@ -901,6 +901,18 @@ reply that opens with such a form word is written in double quotes. A reply
 recorded after the fact goes on an indented `verbatim N …` line under the
 answer, which, indented, matches neither marker.
 
+**A follow-up is never an answer line.** An `answer N:` line holds a final
+answer only: an option, words, `you decide`, `drop`, a reframe. `later`
+(the `(z)` option too, by its letter or its words), `hold` and `dig into`
+write a `wake N:` line (`wake N: <time | event | next Report>`; § Decision
+line kinds, or the caller's rules); `tell me` and `expand` write none. `wi`
+reads any `answer N:` line as answered, so a follow-up stored as one hides
+an open decision from `needs-input`. A `later`, `hold` or `dig into` stored
+as an answer line before this rule, on a decision with no later final
+answer, is rewritten as its `wake N:` line, the original kept whole on an
+indented `verbatim N (moved <UTC>, from its answer line): <the original
+line>` line under it; one followed by a final answer is left as written.
+
 **One counter.** Every question a caller puts to the operator takes its N
 from the store's one counter, the `counters:` block in `store.yaml` that
 `wi raise` advances under the store's lock (§ Allocating a decision
@@ -1276,13 +1288,18 @@ closed N: superseded by <M | <repo>#M>
 
 `acted` names the commit or the item that carried the answer out; `rule`
 the file the answer became a standing rule in; `superseded by` the later
-decision that replaced it. An answer carried out by several changes is
-closed when the last of them lands; one that changes nothing closes as
-`acted <the id of the item it was recorded on>`. A `drop` answer
-(`answer N: drop …`, the word `drop` unquoted) needs no `closed N:` line
-and counts as closed — a plain reply quoted as `answer N: "drop …"` is not
-one; any other answered decision with no `closed N:` line is answered but
-not closed. When N repeats, the last line is its state.
+decision that replaced it. A reframe closes as `superseded by M` at
+once, with its answer line: `answer N: reframed as decision M …` and
+`closed N: superseded by M`, written together. An older `withdrawn N:
+reframed as M` line (no grammar of its own) is read the same way, as
+that answer and that closed line; it is never written again. An answer
+carried out by several changes is closed when the last of them lands;
+one that changes nothing closes as `acted <the id of the item it was
+recorded on>`. A `drop` answer (`answer N: drop …`, the word `drop`
+unquoted) needs no `closed N:` line and counts as closed — a plain reply
+quoted as `answer N: "drop …"` is not one; any other answered decision
+with no `closed N:` line is answered but not closed. When N repeats, the
+last line is its state.
 `closed N:` is neither `decision N:` nor `answer N:`, so it opens no
 question and answers none: `needs-input`, the decision counter and the
 estate sweep pass it by. The target is one token, never containing a
@@ -1297,7 +1314,7 @@ the operator's next turn in that session (or an answer found at a page or
 doc read-back), it appends a second. One physical line each, never wrapped:
 
 ```
-shown N: <UTC time> <chat | page | doc>
+shown N: <UTC time> <chat | page | doc> [rev <rev>]
 seen N: <UTC time> <turn | page | doc>
 ```
 
@@ -1305,10 +1322,16 @@ The time is `YYYY-MM-DDTHH:MM:SSZ`, UTC, on the writer's clock (`date -u
 +%Y-%m-%dT%H:%M:%SZ`); `raised:`'s minute form also reads. A line whose
 first token after `N:` is not written in one of those two forms is not read
 (`wi` checks the form, not the calendar, and keeps the time as written).
+The optional `rev <rev>` after the surface word names the card revision
+shown: on a page or in a doc, the card's `rev`; in chat, the `rev` of the
+decision's current card record (its last `card:` line), when it has one.
+`wi` reads the time and ignores what follows it, so the token changes no
+view.
 
 - **What is a showing:** a render at card or block level (`chat`); a card
   on an answer page at the publish that put its current `rev` there
-  (`page`); a decision's section in the tick-box doc, when shared or
+  (`page`), one line per card, each naming that `rev`, never one note for
+  the page; a decision's section in the tick-box doc, when shared or
   rewritten unticked (`doc`). A list line, a tag-size mention, a Groom row,
   an echo or a hint is not a showing and writes nothing.
 - **What sees it:** the operator's first turn after the showing, in the
@@ -1368,6 +1391,49 @@ on. It is neither `decision N:` nor `answer N:`, so it opens no question
 and answers none: `needs-input`, the decision counter and the estate sweep
 pass it by. `wi` does not parse it yet; a reader splits it
 with `^decided: (\S+) ([a-z-]+) — (.*?) · authority: (.*?) · reopen: (.*)$`.
+
+## Decision line kinds
+
+Every line a decision writes in an item's body, in one table: its form, its column (0, or
+indented under the line it belongs to), who writes it, whether `wi` parses it (and the
+pattern in `wi.py` that reads it), and its state: *landed*, *planned* (with the plan that
+adds it) or *legacy* (read, never written again). The sections above give each landed
+kind's rules; this table is where a reader finds them all.
+
+| Kind | Form | Column | Written by | `wi` parses | State |
+|---|---|---|---|---|---|
+| headline | `decision N: [<label> (<name>) · ]<q>[ ⚠ one-way] — options: …` | 0 | the caller; `wi raise` (built from the record with `--record`) | `DECISION_RE` | landed |
+| raised | `raised: <UTC>` | indented, under its headline | the caller; `wi raise` | `RAISED_RE` (the first per N) | landed |
+| revised | `revised: <UTC> — <why>` | indented, under its headline | the caller; `wi raise --revise` | no | landed |
+| card | `card: cards/<id>/<N>/<file> rev <rev> · decision-card/<k> — …` | indented, under its headline | `wi raise --record` | `CARD_RE` | landed |
+| machine card lines | `delegation: <id>`, `terms: …` (the answer-changes plan); `act: …`, `grant: <id>` (the signed-grants plan) | indented, under the current `card:` block | `wi raise --lines` (at the raise, or `--revise N --lines` alone) | the keys only; each plan's own patterns | planned (their grammar; `wi` writes the keys today) |
+| legacy card lines | `what:`, `why now:`, `why ask:`, `context:`, `impact:`, option lines, `to act (x):`, `rec:`, `basis:`, `unknown:`, … | indented, under its headline | the caller, before v5 cards | no (only `raised:`) | legacy: read by the decisions skill's legacy reference |
+| answer | `answer N: <reply> [(read as: …)]` | 0 | the caller | `ANSWER_RE` | landed; a final answer only, never a follow-up (§ Operator questions) |
+| verbatim | `verbatim N (added <UTC>, from <source>): "<the reply>"`; `verbatim N (moved <UTC>, from its answer line): <the original line>` | indented, under its answer or wake line | the caller | no | landed |
+| given | `given: <UTC> · by: … · session: … · via: … [· delegation: <id>] [· why: …]` | indented, under its answer line | the caller | the answer-changes plan's pattern | planned (the answer-changes plan) |
+| wake | `wake N: <time \| event \| next Report>` | 0 | the caller, for `later`, `hold` and `dig into` | no | landed |
+| closed | `closed N: acted <sha \| id>`, `closed N: rule <path>`, `closed N: superseded by <M \| <repo>#M>` | 0 | the caller; a reframe writes its `superseded by` line with its answer line | no (§ Closed gives a reader's split) | landed |
+| withdrawn | `withdrawn N: reframed as M …` | 0 | nobody: never written again | no | legacy: read as `answer N: reframed as decision M` and `closed N: superseded by M` (§ Closed) |
+| shown | `shown N: <UTC> <chat \| page \| doc> [rev <rev>]` | 0 | the session that displays the decision | `SHOWN_RE` | landed |
+| seen | `seen N: <UTC> <turn \| page \| doc>` | 0 | the session that displayed it | `SEEN_RE` | landed (held: § Shown and seen) |
+| decided | `decided: <UTC> <class> — … · authority: … · reopen: …` | 0 | the caller | no (§ Decided alone gives a reader's split) | landed |
+| open question | `open question: <text>`, closed by `open question: <text> → decision N` or `open question dropped: <text> — <why>` | 0 | the caller (the librarian-mode convention) | no | landed |
+| group, depends | `group g-<MMDD>-<hhh>: …`, `group N: g-…`, `depends N: …` | 0 | the session that writes the decisions | that plan's patterns | planned (the depends-and-groups plan) |
+| writer run | `writer-run: …` | 0 | the librarian | no | planned (the depends-and-groups plan) |
+| delegation | `delegation dl-…: …`, its revoke and `revoke-ack` lines | 0 | the session that grants it | the answer-changes plan's patterns | planned (the answer-changes plan) |
+
+- **A row's state.** A plan that adds a line kind lists it here as *planned*; the commit that
+  builds it switches the row to *landed*. A row marked *landed* that names a pattern names
+  one `wi.py` holds, and the row's form, filled in, matches it.
+- **No version on a line.** A card with no `format` stamp (stored as lines, before v5) is
+  legacy, read by the decisions skill's legacy reference; any other contract with no stamp
+  is its version 1. Event lines are never versioned: they grow by optional tokens or ` · `
+  fields, and a change that breaks a reader takes a new keyword.
+- **Not decision lines.** Item-level log lines a decision may cause (`dispatch:`,
+  `agent:`, `result:`) carry no N and are not decision lines.
+- **`card:` in two places.** It is a line kind here, under a headline in an item, and a key
+  in the signed-grants plan's statement (a file under `grants/`). Neither reader reads the
+  other's file.
 
 ## Body sections
 

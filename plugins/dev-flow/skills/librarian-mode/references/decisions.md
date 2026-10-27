@@ -193,13 +193,19 @@ renders what the operator read instead of composing it again.
   keeps the first card's `raised:` (`wi` reads the first one per N), so its age and its
   order still count from the ask.
 - **Shown:** right before a message goes out that renders decisions at card or block
-  level, append `shown N: <UTC time> chat` for each decision it renders that way, the time
+  level, append `shown N: <UTC time> chat` for each decision it renders that way, with
+  `rev <rev>` from its last `card:` line when it has one, the time
   from `date -u +%Y-%m-%dT%H:%M:%SZ`: a Report's decisions block, an Intake ask, a
   decision raised between Reports, a re-show, a `tell me` or `dig into` re-render. A list
-  line, a tag-size mention or a Groom row writes none. For an answer page or a tick-box
-  doc, append `shown N: <time> page` (or `doc`) for each number and publish time the
-  `decision-page` skill hands over. Only this session, the one the operator reads, writes
-  it; a dispatched agent never does.
+  line, a tag-size mention or a Groom row writes none. For an answer page, append one
+  `shown N: <time> page rev <rev>` line per card the `decision-page` skill hands over (its
+  number, publish time and `rev`), never one note for the page; after writing, count the
+  lines against the hand-over's count (*N cards handed over*) and write any missing one
+  before the Report. A republish that keeps a card's `rev` hands nothing over for it, so a
+  kept card writes no line: the `rev` is what the operator read, and an unchanged card was
+  already shown. For a tick-box doc, append `shown N: <time> doc` for each number and time
+  the skill hands over, with `rev <rev>` when the hand-over names one. Only this session,
+  the one the operator reads, writes it; a dispatched agent never does.
 - **Seen:** at the operator's next turn in this session, append `seen N: <UTC time> turn`
   for every decision this session showed in chat since the operator's previous turn,
   answered or not. For each new page or doc answer the `decision-page` skill hands over,
@@ -248,8 +254,7 @@ renders what the operator read instead of composing it again.
     left as they are.
   - **The forms below** that open with their own wording (`you decide`, `drop`, a
     reframe) append ` — "<the reply>"` after that wording. A redirect is a plain
-    answer. A hold reply waits on OQ6 of the decision-lifecycle investigation (5140),
-    which settles its form.
+    answer. A hold is a follow-up, never an answer line (**`hold`**, below).
   - **On a ⚠ read-back** (below), the choice's words are the verbatim reply, and the
     confirmation appends ` — confirmed "<reply>"`.
   - **The read-as stays**, last on the line; a reader splits it off at the last
@@ -266,27 +271,47 @@ renders what the operator read instead of composing it again.
     Indented, it matches neither `^decision` nor `^answer`. Interim `verbatim N` lines
     written before this rule, in other shapes, are left as written; this shape applies
     from now on.
+  - **A `later`, `hold` or `dig into` stored as an answer line** before the follow-up
+    rule (below), on a decision with no later final answer, is rewritten as its `wake N:`
+    line, the original kept whole on one indented line under it: `  verbatim N (moved <UTC
+    time>, from its answer line): <the original line>`; one followed by a final answer is
+    left as written.
 - **A one-way choice on a ⚠ decision** (the chosen option's line carries `⚠ undo:`, or, on
   a card stored before the marker, a plain `undo:` saying it cannot be undone, or only at
   real cost): repeat the choice back first. Record `answer N:` only when the operator confirms
   (`answer N: <the choice's words> — confirmed "<reply>" (read as: …)`).
   Nothing acts before that. A reversible choice on a ⚠ decision is echoed and recorded
   at once.
+- **A follow-up is never an answer line.** An `answer N:` line holds a final answer only
+  (an option, words, `you decide`, `drop`, a reframe); `later` (the `(z)` option too, by
+  its letter or its words), `hold`, `dig into`, `tell me` and `expand` are recorded as the
+  bullets below give, never as `answer N:`. `wi` reads any `answer N:` line as answered, so
+  a follow-up stored as one drops the decision from `wi needs-input` while it is still
+  open. A follow-up from an answer page or a tick-box doc is recorded by the same rule: the
+  read-back hands it over as `kind: follow-up` (as it does `you decide` and `drop`, which
+  are final answers and keep their answer lines), and it is recorded as the bullets below
+  give: a `wake N:` line for `later` and `dig into`, nothing for `tell me` and `expand`;
+  never an answer line.
 - **`later [when]`:** `wake N: <time | event | next Report>`. There is no `answer N:`, so the
   decision stays open and `wi needs-input` keeps listing it. Deferred again, it gets another
   `wake N:`; the last one wins (`grep -n '^wake N:'`, last hit). At the wake, re-show it
   with what changed.
+- **`hold`:** `wake N: <what it waits on>`, and no `answer N:`. Its form beyond that waits
+  on OQ6 of the decision-lifecycle investigation (5140), which settles it.
 - **`tell me`:** an `Added:` fact that changes an option's impact or the rec is a revision
   (above); otherwise nothing new in the store. **`expand`:** nothing new; the same number is
-  shown a level higher next round.
+  shown a level higher next round. Neither writes an `answer N:` line.
 - **`dig into [what]`:** a bounded investigation, dispatched like any other (a `dispatch:`
-  line, routing and the quota sense apply); its result comes back on the same number.
+  line, routing and the quota sense apply), and `wake N: when the dig into returns
+  (<what>)`, no `answer N:`; its result comes back on the same number.
 - **`you decide`:** `answer N: you decide — chose (x), because … — "<the reply>"`. On ⚠,
   only a reversible option; when the only good answer is the one-way option, it is
   re-asked, as the skill says.
 - **`drop`:** `answer N: drop — withdrawn — "<the reply>"`.
-- **A reframe:** `answer N: reframed as decision M — "<the reply>"`, and M is raised to the
-  floor like any new decision.
+- **A reframe:** two lines, written together: `answer N: reframed as decision M — "<the
+  reply>"` and `closed N: superseded by M`, and M is raised to the floor like any new
+  decision. A `withdrawn N:` line is never written; one already stored (`withdrawn N:
+  reframed as M`) is read as those two lines.
 - **A batch (`ok N-M`):** one `answer` line per accepted number, each keeping the batch
   reply verbatim (`answer 51: ok 51-53 (read as: …)`). The skipped ones stay open and are
   re-asked, as the skill says.

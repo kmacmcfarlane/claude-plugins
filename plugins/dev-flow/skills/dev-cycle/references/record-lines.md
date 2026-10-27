@@ -226,15 +226,15 @@ interrupted run up again; a line that is missing reads there as not recorded:
   not record lines: nothing matches them as `decision`, `answer` or `wake`, and `wi
   needs-input` reads only the headline.
 - `wake N: <time | event | next Report>` — a caller's deferral ("decide later") of
-  `decision N:`, written when the operator defers it (librarian-mode's
-  `references/decisions.md`). It is not an answer: `decision N:` stays pending, and `wi
-  needs-input` still lists it. A decision deferred again gets another `wake N:`; **the last
+  `decision N:`, written when the operator defers it (also `hold` and `dig into`)
+  (librarian-mode's `references/decisions.md`). It is not an answer: `decision N:` stays
+  pending, and `wi needs-input` still lists it. A decision deferred again gets another `wake N:`; **the last
   `wake N:` in the item wins**, found by `grep -n '^wake N:' <item>` taking the last hit.
   The Idle turn's Groom row shows it, and the decision is put to the operator again when
   it fires. A `decision:` with no matching `answer:` is **pending**
   (`bindings.md` § Decisions says what a run does with one), and an answered one is never
   raised again while its answer is in force (the same section).
-- `shown N: <UTC time> <chat | page | doc>` and `seen N: <UTC time> <turn | page | doc>` —
+- `shown N: <UTC time> <chat | page | doc> [rev <rev>]` and `seen N: <UTC time> <turn | page | doc>` —
   a caller's record of each showing of `decision N:` and of the operator's turn (or page
   or doc answer) that saw it, appended by the session that displays the decision, never
   by a dispatched agent (librarian-mode's `references/decisions.md` § What the store
