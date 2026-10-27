@@ -215,6 +215,8 @@ only the card, as someone who has seen nothing else, and for each option ask:
 4. If it is one-way or costly to undo, does it carry `⚠ undo:`; if it carries one, is it?
 5. If the option is the operator's to carry out, does the card meet SKILL.md § The floor,
    what it takes to act, from the card alone?
+6. Is there no secret value on the card, its attachments and excerpts included? A secret is
+   where it is kept and under which key, never its value.
 
 Then, for the card as a whole: if it decides on a set, could you name every item it acts on,
 from its **What:** bullets alone? A count with no list under it fails, unless the card names

@@ -148,7 +148,9 @@ The rules below are what the digest condenses:
   all, and nothing the decision needs moves into one. A text field links one with
   `[[att:id|label]]`. Never a secret's value, personal data or another party's private
   material in one: a secret is where it is kept and under which key,
-  `[redacted: key api_token in /etc/app/env]`.
+  `[redacted: key api_token in /etc/app/env]`. **When any card carries an excerpt** (an
+  excerpt-shaped attachment, a Finding's excerpt), the page's `lede` names the repos they come
+  from, so the operator knows what a share would expose (the runner's `lede` lint).
 - Where alternatives were weighed and not offered, set `rejected`, `[{t, why}]`: shown in the
   **Rejected alternatives** fold, the last of the bottom folds, its summary the count and the
   titles; each `t` a short title on one line, each `why` one or more one-line reasons. An
@@ -281,25 +283,25 @@ The rules below are what the digest condenses:
   On a republish, the depth lines on a card the operator has answered are left knowingly: that
   card keeps its depth as it stands (step 3). Without node, check by reading, and run the cold
   read. A single record is checked the same way with `--record <file>`.
-- **The secret grep.** The page's own check runs only in a viewer's browser, after publishing,
-  so it is no gate. Without node, run this one grep over the working copy's `cards.json` before
-  publishing; its patterns are the runner's (a private key block, a token with a known prefix,
-  a `password`, `token`, `secret` or API key assignment with a long value). Read every line it
-  prints: one in an attachment or an excerpt is a secret until shown otherwise, and is replaced
-  by where it is kept and under which key, never its value. Report a hit by its card and key
-  only, never by the line itself.
+- **The secret grep.** The page has no secret check of its own, and the runner's needs node.
+  Without node, run this one grep over the working copy's `cards.json` before publishing; its
+  patterns are the runner's (a private key block, a token with a known prefix, a `password`,
+  `token`, `secret` or API key assignment with a long value). It prints line numbers only, so no
+  value reaches the screen: open each line it names; one in an attachment or an excerpt is a
+  secret until shown otherwise, and is replaced by where it is kept and under which key, never
+  its value. Report a hit by its card and key only, never by the line itself.
 
   ```bash
   grep -nEi -e '-----BEGIN[ A-Z]*PRIVATE KEY-----' \
-    -e '(^|[^A-Za-z0-9])(ghp|gho|ghu|ghs|ghr)_[A-Za-z0-9]{30,}' \
+    -e '(^|[^A-Za-z0-9]|\\[nrtbf]|\\u[0-9A-Fa-f]{4})(ghp|gho|ghu|ghs|ghr)_[A-Za-z0-9]{30,}' \
     -e 'github_pat_[A-Za-z0-9_]{30,}' \
     -e 'glpat-[A-Za-z0-9_-]{20,}' \
     -e 'xox[abprs]-[A-Za-z0-9-]{10,}' \
-    -e '(^|[^A-Za-z0-9])AKIA[0-9A-Z]{16}' \
+    -e '(^|[^A-Za-z0-9]|\\[nrtbf]|\\u[0-9A-Fa-f]{4})AKIA[0-9A-Z]{16}' \
     -e 'AIza[0-9A-Za-z_-]{35}' \
-    -e '(^|[^A-Za-z0-9])sk-[A-Za-z0-9_-]{20,}' \
-    -e '[A-Za-z0-9_-]*(password|passwd|secret|token|api[_-]?key|access[_-]?key)[A-Za-z0-9_-]*.?.? *[:=] *.?.?[A-Za-z0-9_./+=-]{16,}' \
-    cards.json
+    -e '(^|[^A-Za-z0-9]|\\[nrtbf]|\\u[0-9A-Fa-f]{4})sk-[A-Za-z0-9_-]{20,}' \
+    -e '[A-Za-z0-9_-]{0,40}(password|passwd|secret|token|api[_-]?key|access[_-]?key)[A-Za-z0-9_-]{0,40}.?.? {0,40}[:=] {0,40}.?.?[A-Za-z0-9_./+=-]{16,}' \
+    cards.json | cut -d: -f1
   ```
 
 ## Step 3: Publish

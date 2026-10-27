@@ -36,6 +36,8 @@ const NONE = new Set(["", "none", "none.", "n/a", "n/a.", "-", "–", "—"]);
 const isNone = v => v == null || (typeof v === "string" && NONE.has(v.trim().toLowerCase()));
 const isObj = v => !!v && typeof v === "object" && !Array.isArray(v);
 const isStr = v => typeof v === "string";
+/* an excerpt as the page reads one: {text, lang?, src?}, its text a string */
+const isExcerpt = v => isObj(v) && isStr(v.text) && Object.keys(v).every(k => k === "text" || k === "lang" || k === "src");
 const REV_SECONDS = /^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$/;
 const REV_MINUTES = /^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}Z$/;
 const LETTER = /^[a-z]$/;
@@ -213,14 +215,26 @@ function fromKit(c, bad, note) {
          attachment's fields are the record's as they stand: only an example's mode moves */
       const y = Object.create(null);
       for (const k of Object.keys(x)) y[k] = x[k];
-      /* an example's mode is its form: mock or narrative as written; the kit's "invented to illustrate", or none, is
-         narrative, since the kit drew every example as paragraphs; any other word is refused */
+      /* an example's form follows its body, as the page draws it: an excerpt is a mock, anything else narrative (the kit
+         drew every example as paragraphs), whatever its mode; a mode the form does not match is said and dropped */
       if (x.kind === "example" && !("form" in y)) {
-        const m = y.mode;
+        const m = y.mode, xc = isExcerpt(y.body);
         delete y.mode;
-        if (m === "mock" || m === "narrative") y.form = m;
-        else if (m == null || m === "invented to illustrate") { y.form = "narrative"; note.moved.push("example " + JSON.stringify(x.title) + " read as form narrative (the kit drew it as paragraphs)"); }
-        else bad.push("an example's mode " + JSON.stringify(m) + " is neither mock nor narrative: nothing maps it to a form");
+        y.form = xc ? "mock" : "narrative";
+        if (m !== y.form) note.moved.push("example " + JSON.stringify(x.title) + " read as form " + y.form + " (its body is " + (xc ? "an excerpt" : "prose") + (m != null ? "; its mode " + JSON.stringify(m) + " dropped" : "") + ")");
+      }
+      /* a dependency map's node numbers: a numeric string is the number it spells; anything else is refused */
+      if (x.kind === "depmap" && Array.isArray(y.body)) {
+        const node = v => {
+          if (!isObj(v)) return v;
+          const o = Object.create(null);
+          for (const k of Object.keys(v)) o[k] = v[k];
+          if (isStr(o.n) && /^[1-9][0-9]*$/.test(o.n.trim())) { note.moved.push("depmap node " + JSON.stringify(o.n) + " read as the number " + o.n.trim()); o.n = Number(o.n.trim()); }
+          else if (!isPosInt(o.n)) bad.push("a depmap node's n " + JSON.stringify(o.n) + " is not a decision number: nothing maps it");
+          if (Array.isArray(o.kids)) o.kids = o.kids.map(node);
+          return o;
+        };
+        y.body = y.body.map(node);
       }
       att.push(y);
     }

@@ -2,7 +2,7 @@
   "format": "decision-page/5",
   "page": {
     "title": "Docs Site Decisions",
-    "lede": "Three invented decisions about a documentation site, to show the format. Read top down: [[41]] sets the direction for the rest."
+    "lede": "Three invented decisions about a documentation site, to show the format; their excerpts come from its invented docs-site repo. Read top down: [[41]] sets the direction for the rest."
   },
   "layers": [
     [

@@ -38,7 +38,6 @@ def panes(html):
     return re.findall(r'<details class="pane"(?: open)?><summary>([^<]+?)(?: <span class="fsum">.*?</span>)?</summary>', html)
 
 
-@unittest.skipUnless(NODE, "node is not installed")
 def table_problems(html):
     """A <table> in the template outside the attachment table renderer (F3's table and matrix kinds, in attBody): no
     card part but an attachment draws one."""
@@ -48,6 +47,7 @@ def table_problems(html):
     return ["a <table outside attBody"] if "<table" in rest else []
 
 
+@unittest.skipUnless(NODE, "node is not installed")
 class DecisionPageNone(unittest.TestCase):
 
     def test_is_none_reads_empty_missing_and_none_words(self):

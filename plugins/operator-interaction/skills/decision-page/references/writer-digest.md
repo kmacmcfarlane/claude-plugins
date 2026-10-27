@@ -49,7 +49,7 @@ summary, `act`, a tooltip or a slug). `page.doc.url` must start `https://`, or i
 | Key | Required | Shape |
 |---|---|---|
 | `format` | yes | `"decision-page/5"` |
-| `page` | no | `{title, lede, doc: {name, url}}`; `title` is `(<owner>) <session name>`, else `<repo>: open decisions` (SKILL.md step 2), the `<title>` set to match; `url` must start `https://` |
+| `page` | no | `{title, lede, doc: {name, url}}`; when any card carries an excerpt (an excerpt-shaped attachment, a Finding's excerpt), the `lede` names the repos they come from; `title` is `(<owner>) <session name>`, else `<repo>: open decisions` (SKILL.md step 2), the `<title>` set to match; `url` must start `https://` |
 | `layers` | yes | `[[key, title, note, shared], …]`, the groups in display order; `shared` optional: a bundle's shared context, the terms and source every card in it uses, in plain words, which a card's Context may lean on; `note` then says what the cards share. A bundle holds two or more whole item cards |
 | `follow` | yes | copied from below as it stands |
 | `cards` | yes | one per decision, in the `decisions` skill's order |
@@ -319,6 +319,7 @@ page-wide one prints `lint: page:`.
 |---|---|---|
 | `page` | `page:` | an id in the page title, the lede, a layer's title, note or shared context, or a `refs` short or question |
 | `group` | `page:` | a bundle (a layer with `shared`) holding fewer than two cards |
+| `lede` | `page:` | a page with an excerpt (an excerpt-shaped attachment, a Finding's excerpt) whose `lede` names no repo: it holds none of the words repo, repos, repository, repositories |
 | `refs` | `page:` | a `refs` answer holding an id (left as given when it is the operator's words) |
 | `id` | — | an id in any card text, the What part's `what` and `items`, the Finding's label, `title`, `where` and `mechanism` (never its excerpt), the Scope's `says`, the Likelihood's `seen` and `best`, each rejected alternative's `t` and `why`, and each attachment's `title`, `src`, `pointer` and text (never an excerpt-shaped body) included: a hash, an item tag, a ticket key, a label like OQ3, decision N; a label a card or its finding declares passes with its short name beside it |
 | `count` | — | a count in the flat part, the Finding's `title` and `mechanism`, the Scope's `says`, `best` (never the Likelihood's `seen`, whose observed count is its fact), a rejected alternative's `t` (never its `why`, in the closed fold), an attachment's `title` (never its body, in the closed fold), or a visible level that Context (with its bundle's `shared`) and the What part (`what`, `items` and their number) do not name; one where the card says what is decided points to `items` |
@@ -343,7 +344,7 @@ page-wide one prints `lint: page:`.
 | `key` | `depth:` | a `detail` key the page does not show |
 | `oneway` | `oneway:` | a ⚠ card with no option flagged one-way; a flagged option while the Impact carries no undo |
 | `tradeoffs` | `shape:` | an option but `z` with no shown `pro` or `con`; a recommended option with no `con`; a card with two or more options but `z` and none (an upgraded older card may leave it knowingly); a `pro` or `con` past its words |
-| `attached` | `depth:` | a card with more than 6 attachments; an excerpt-shaped attachment body (`excerpt`, `preview`, a `mock` example) past 80 lines or 4096 bytes: cut it and say where |
+| `attached` | `depth:` | a card with more than 6 attachments; an excerpt-shaped attachment body (`excerpt`, `preview`, a `mock` example) past 80 lines or 4096 bytes: cut it and say where; an attachment but an `example` with no shown `src` |
 | `plan` | `depth:` | an option, `z` included, with no shown `plan` (one line when no option has one; an upgraded older card may leave it knowingly, its view showing its `text`); a `plan` past its words; an option with both `plan` and `text`, whose text is not shown |
 
 Then the cold read: could you name every item the card acts on, from its What part alone? List

@@ -323,7 +323,7 @@ details.att .asrc{flex-basis:100%;padding-left:1.6em;font-family:var(--f-mono);f
 .dnote{color:var(--muted);font-size:.9em}
 .slug-t.self,.slug.self{color:var(--accent)}
 /* a link to an attachment: a dotted underline in the accent, a button so no link nests in it */
-button.attref{border:0;background:none;padding:0;font:inherit;color:var(--accent);text-decoration:underline dotted;text-underline-offset:3px}
+button.attref{cursor:pointer;border:0;background:none;padding:0;font:inherit;color:var(--accent);text-decoration:underline dotted;text-underline-offset:3px}
 /* the Impact: one facet a line, at every level */
 .impline{font-size:.92rem;max-width:70ch;border-left:3px solid var(--accent);padding:6px 12px;background:var(--sunk);border-radius:0 6px 6px 0;display:flex;flex-direction:column;gap:2px;min-width:0}
 .impline .lbl{display:block;margin-bottom:1px}
@@ -413,7 +413,7 @@ const recPill=c=>c.rec?'<span class="pill rec">rec ('+esc(c.rec)+')</span>':'<sp
 /* a decision raised from one labelled item of a source shows its title first, then the label and its short
    name, muted (answer 313; chat keeps the label first): Cap the upload size · F7 (oversize upload) */
 const srcLabel=c=>isLabel(c.label)?'<span class="slabm"> · <span class="slab">'+esc(c.label.id)+'</span> <span class="slabn">('+esc(c.label.name)+')</span></span>':'';
-const titleHtml=c=>esc(c.t)+srcLabel(c);
+const titleHtml=c=>esc(c.t.replace(ATT_LINK,"$2"))+srcLabel(c);
 const fid=k=>esc(k.replace(/\s/g,"_"));
 
 /* impact, one vocabulary at every size (the decisions skill). A card has no card-level Effect (the operator's v5
@@ -469,7 +469,7 @@ const assumeFold=(c,P)=>{const as=assumeOf(c);
 const rejectedOf=c=>Array.isArray(c.rejected)?c.rejected.filter(r=>isObj(r)&&isTxt(r.t)&&shown(r.t)):[];
 const rejWhy=r=>Array.isArray(r.why)?r.why.filter(x=>isTxt(x)&&shown(x)):[];
 const rejSum=c=>{const rs=rejectedOf(c);
-  return rs.length?' <span class="fsum">'+rs.length+': '+rs.map(r=>code(esc(r.t.trim().replace(/\[\[([0-9]+)\]\]/g,"$1")))).join(" · ")+'</span>':""};
+  return rs.length?' <span class="fsum">'+rs.length+': '+rs.map(r=>code(esc(r.t.trim().replace(ATT_LINK,"$2").replace(/\[\[([0-9]+)\]\]/g,"$1")))).join(" · ")+'</span>':""};
 const rejectedFold=c=>{const rs=rejectedOf(c);if(!rs.length)return "";
   return '<details class="pane"><summary>Rejected alternatives'+rejSum(c)+'</summary><div><ul class="rej">'
     +rs.map(r=>{const ws=rejWhy(r);return '<li><p class="rt">'+fmt(r.t)+'</p>'+(ws.length?'<ul>'+ws.map(x=>'<li>'+fmtD(x)+'</li>').join("")+'</ul>':'')+'</li>'}).join("")
@@ -544,12 +544,15 @@ function openAtt(root,n,id){const a=root.getElementById("att-"+n+"-"+id);if(!a)r
 /* why an attachment is refused: its problems, each naming its field ([] when it is sound) */
 const isLine=v=>isTxt(v)&&!LINE_BREAK.test(v);
 const isParas=v=>isTxt(v)||(Array.isArray(v)&&v.length>0&&v.every(isTxt));
-function depProblems(x,at,out){
+/* a dependency map is at most DEP_DEPTH levels deep */
+const DEP_DEPTH=8;
+function depProblems(x,at,out,lv){lv=lv||1;
+  if(lv>DEP_DEPTH){out.push(at+" is deeper than "+DEP_DEPTH+" levels: a dependency map shows at most "+DEP_DEPTH+"; point to the rest from a node's note");return}
   if(!isObj(x)||!isPosInt(x.n)||!isLine(x.name)){out.push(at+" must be {n, name, rel, note, kids}: n a decision number, name its short name on one line");return}
   for(const k of ["rel","note"])if(x[k]!=null&&!isLine(x[k]))out.push(at+" "+k+" must be one line of text");
   if(x.self!=null&&typeof x.self!=="boolean")out.push(at+" self must be true or false");
   for(const k of Object.keys(x))if(!["n","name","rel","note","self","kids"].includes(k))out.push(at+" "+k+" is not a field a node has");
-  if(x.kids!=null){if(!Array.isArray(x.kids)||!x.kids.length)out.push(at+" kids must be a non-empty list of nodes");else x.kids.forEach((y,i)=>depProblems(y,at+"."+(i+1),out))}
+  if(x.kids!=null){if(!Array.isArray(x.kids)||!x.kids.length)out.push(at+" kids must be a non-empty list of nodes");else x.kids.forEach((y,i)=>depProblems(y,at+"."+(i+1),out,lv+1))}
 }
 function attProblems(a){
   if(!isObj(a))return ["must be an object {kind, title, body}"];
@@ -1129,7 +1132,7 @@ function cardHtml(c){
        option opens it */
     const more=g+'-'+fid(k)+'-more',det=optionDetail(c,k,P),open=false;
     h+='<div class="opt'+(isRec?' isrec':'')+'"><label class="optl"><input type="radio" name="'+g+'" id="'+g+'-'+fid(k)+'" value="'+esc(k)+'">'
-      +'<span class="ot"><span class="ol">('+esc(k)+')</span>'+esc(o.title)+(isRec?'<span class="pill rec">recommended</span>':'')+'</span>'
+      +'<span class="ot"><span class="ol">('+esc(k)+')</span>'+esc(o.title.replace(ATT_LINK,"$2"))+(isRec?'<span class="pill rec">recommended</span>':'')+'</span>'
       +(shown(o.line)?'<span class="oi"><em>'+lab+'</em> '+fmt(o.line)+'</span>':'')+'</label>'
       +(det?'<button type="button" class="btn omore'+(open?' on':'')+'" data-omore="'+esc(k)+'" data-n="'+n+'" aria-expanded="'+open+'" aria-controls="'+more+'" aria-label="More decision detail on option ('+esc(k)+')">More</button>':'')
       +proConRows(o)+actList(c,k)
@@ -1159,7 +1162,7 @@ const firstSentence=s=>{const m=String(s).match(/^[\s\S]*?[.!?](?=\s|$)/);return
 /* the Background fold's summary (answer 338): "why now: " and the first sentence of why at its summary level,
    a slug as its bare number, cut at the first . ? or ! before a space or the end. The runner's bgsum lint
    measures the same text (bgFirst). None when why is none; the summary hides while the fold is open */
-const bgFirst=c=>isTxt(c.why)&&shown(c.why)?firstSentence(c.why.trim().replace(/\[\[([0-9]+)\]\]/g,"$1")):"";
+const bgFirst=c=>isTxt(c.why)&&shown(c.why)?firstSentence(c.why.trim().replace(ATT_LINK,"$2").replace(/\[\[([0-9]+)\]\]/g,"$1")):"";
 const bgSum=c=>{const s=bgFirst(c);return s?' <span class="fsum">why now: '+code(esc(s))+'</span>':""};
 function layerHtml(l,cs){
   const [key,title,note,shared]=l,id="layer-"+fid(key),n=cs.length;

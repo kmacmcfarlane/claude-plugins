@@ -250,6 +250,37 @@ class AttachPage(unittest.TestCase):
                 mutant_page("isTxt(a.title)&&shown(a.title)):[]", "isTxt(a.title)):[]"))["cards"]["41"]["card"]
         self.assertIn("<summary>Attached", h)
 
+    def test_a_link_never_shows_its_markup_where_it_cannot_link(self):
+        d = example()
+        c = card(d, 41)
+        c["t"] = "Docs build ([[att:log|the log]])"
+        c["options"][0]["title"] = "Keep [[att:log|the log]]"
+        c["rejected"][0]["t"] = "Office machine ([[att:log|the log]])"
+        c["why"] = "Two broken publishes ([[att:log|the log]]) this month. Blocks [[42]]."
+        h = one(d)["cards"]["41"]["card"]
+        self.assertNotIn("[[att:", h)
+        self.assertIn("<h3>Docs build (the log)", h)
+        self.assertIn("Keep the log", h)
+        self.assertIn("1: Office machine (the log)", h)
+        self.assertIn("why now: Two broken publishes (the log) this month.", h)
+        for old, new in (('esc(c.t.replace(ATT_LINK,"$2"))', "esc(c.t)"),
+                         ('esc(o.title.replace(ATT_LINK,"$2"))', "esc(o.title)"),
+                         ('r.t.trim().replace(ATT_LINK,"$2")', "r.t.trim()"),
+                         ('c.why.trim().replace(ATT_LINK,"$2")', "c.why.trim()")):
+            with self.subTest(old):
+                self.assertIn("[[att:", one(d, mutant_page(old, new))["cards"]["41"]["card"])
+
+    def test_a_dependency_map_is_at_most_eight_deep(self):
+        def deep(n):
+            node = {"n": 41, "name": "leaf"}
+            for i in range(n - 1):
+                node = {"n": 41, "name": "level", "kids": [node]}
+            return dict(SAMPLES["depmap"], body=[node])
+        self.assertEqual(one(with_att(deep(8)))["bad"], [])
+        bad = one(with_att(deep(9)))["bad"]
+        self.assertTrue(any("is deeper than 8 levels" in b for b in bad), bad)
+        self.assertEqual(one(with_att(deep(9)), mutant_page("if(lv>DEP_DEPTH){", "if(false){"))["bad"], [])
+
     def test_a_link_opens_its_attachment(self):
         h = one(example())["cards"]["41"]["card"]
         self.assertIn('(<button type="button" class="attref" data-att="log" data-n="41">the second failed build</button>)', h)
@@ -485,9 +516,68 @@ class AttachRunner(unittest.TestCase):
                 p.write_text(json.dumps(d, indent=1))
                 out = subprocess.run([grep, *args, str(p)], capture_output=True, text=True)
                 self.assertEqual(out.returncode, 0, name)
-        # mutant: a pattern dropped from the skill's grep
+        # a token after a JSON escape: at a line's start (after \\n), after a tab, after a curly quote (\\u201c), and
+        # the runner the same on the real text
+        tok = fake("ghp_", 36, "C")
+        for name, text in (("line start", "first line\n" + tok), ("tab", "x\t" + tok), ("curly quote", "\u201c" + tok + "\u201d"),
+                           ("key", "x\n" + fake("AKIA", 16, "R")), ("api key", "x\t" + fake("sk-", 24, "d"))):
+            with self.subTest(name):
+                d = example()
+                card(d, 41)["attached"][0]["body"]["text"] = text
+                with tempfile.TemporaryDirectory() as tmp:
+                    p = pathlib.Path(tmp) / "cards.json"
+                    p.write_text(json.dumps(d, indent=1))
+                    self.assertEqual(subprocess.run([grep, *args, str(p)], capture_output=True, text=True).returncode, 0, name)
+                self.assertEqual(runner(d)[0], 1, name)
+        # mutant: the JSON-escape boundary gone from the grep: a token after \\n is missed
+        cut = PAGE_SKILL.read_text().replace("|\\\\[nrtbf]|\\\\u[0-9A-Fa-f]{4})(ghp", ")(ghp", 1)
+        self.assertNotEqual(cut, PAGE_SKILL.read_text())
+        d = example()
+        card(d, 41)["attached"][0]["body"]["text"] = "first line\n" + tok
+        with tempfile.TemporaryDirectory() as tmp:
+            p = pathlib.Path(tmp) / "cards.json"
+            p.write_text(json.dumps(d, indent=1))
+            self.assertEqual(subprocess.run([grep, *grep_args(cut), str(p)], capture_output=True, text=True).returncode, 1)
+        # mutants: a pattern dropped from the skill's grep; one dropped from the runner; one changed in the grep
         cut = PAGE_SKILL.read_text().replace("    -e 'glpat-[A-Za-z0-9_-]{20,}' \\\n", "", 1)
-        self.assertTrue(grep_problems(cut, RUNNER_JS.read_text()))
+        self.assertIn("the runner's pattern glpat-[A-Za-z0-9_-]{20,} is not in the grep step", grep_problems(cut, RUNNER_JS.read_text()))
+        js = RUNNER_JS.read_text().replace('  ["a GitLab token", "glpat-[A-Za-z0-9_-]{20,}"],\n', "", 1)
+        self.assertIn("the grep step's pattern glpat-[A-Za-z0-9_-]{20,} is not the runner's", grep_problems(PAGE_SKILL.read_text(), js))
+        changed = PAGE_SKILL.read_text().replace("-e 'xox[abprs]-", "-e 'xox[ab]-", 1)
+        self.assertEqual(len(grep_problems(changed, RUNNER_JS.read_text())), 2)
+        # the step prints line numbers only
+        self.assertIn("    cards.json | cut -d: -f1\n", PAGE_SKILL.read_text())
+
+    def test_the_key_is_echoed_only_when_it_cannot_be_the_value(self):
+        d = example()
+        card(d, 41)["attached"][0]["body"]["text"] = "Zx9Qw8Er7Ty6Ui5Op4Lk-secret: whatever-goes-here-long"
+        code, out = runner(d)[:2]
+        self.assertEqual(code, 1, out)
+        self.assertIn("(an assignment of a secret, key secret)", out)
+        for part in ("Zx9Q", "Op4Lk", "whatever"):
+            self.assertNotIn(part, out)
+        # a plain key still prints
+        card(d, 41)["attached"][0]["body"]["text"] = "db_password = " + "x7" * 10
+        self.assertIn("key db_password)", runner(d)[1])
+        # mutant: every key echoed
+        card(d, 41)["attached"][0]["body"]["text"] = "Zx9Qw8Er7Ty6Ui5Op4Lk-secret: whatever-goes-here-long"
+        js = mutant_runner("&& !/[A-Za-z0-9]{8,}/.test(k.replace(m[1], \"-\")) ? k : m[1];", "? k : m[1];")
+        self.assertIn("Zx9Qw8Er7Ty6Ui5Op4Lk", runner(d, script=js)[1])
+
+    def test_a_long_line_does_not_make_the_assignment_backtrack(self):
+        import time
+        d = example()
+        card(d, 41)["attached"][0]["body"]["text"] = '"token"' * 2400
+        t = time.monotonic()
+        runner(d)
+        self.assertLess(time.monotonic() - t, 3.0)
+        node = shutil.which("node")
+        pat = [p for p in runner_patterns(RUNNER_JS.read_text()) if "password" in p][0]
+        bench = "const r=new RegExp(%s,'i'),s='\"token\"'.repeat(2400),t=Date.now();r.test(s);process.stdout.write(String(Date.now()-t))"
+        ms = int(subprocess.run([node, "-e", bench % json.dumps(pat)], capture_output=True, text=True, timeout=60).stdout)
+        self.assertLess(ms, 500)
+        # the bounds are there: no unbounded star in the assignment
+        self.assertNotIn("*", pat)
 
     def test_the_id_lint_reads_the_shown_texts_never_an_excerpt(self):
         for where, put in (("title", lambda a: a[1].__setitem__("title", "Homes per OQ3")),
@@ -521,6 +611,33 @@ class AttachRunner(unittest.TestCase):
         js = mutant_runner("+ words(rejectedTexts(c)) ", "+ words(rejectedTexts(c)) + words(attachedTexts(c)) ")
         self.assertIn("depth: the card is", runner(d, script=js)[1])
 
+    def test_the_attached_lint_asks_for_a_source(self):
+        d = with_att(SAMPLES["table"], SAMPLES["example"])
+        out = runner(d)[1]
+        self.assertIn("lint: card 41: depth: attachment 1 (Homes) has no source line", out)
+        self.assertNotIn("attachment 2 (A restore) has no source line", out)
+        self.assertNotIn("has no source line", runner(example())[1])
+        js = mutant_runner('if (a.kind !== "example" && !(typeof a.src', 'if (false && !(typeof a.src')
+        self.assertNotIn("has no source line", runner(d, script=js)[1])
+
+    def test_a_page_with_excerpts_names_its_repos(self):
+        self.assertNotIn("lede", runner(example())[1])
+        d = example()
+        d["page"]["lede"] = "Three invented decisions about a documentation site."
+        out = runner(d)[1]
+        self.assertIn("lint: page: lede names no repo, though the page shows excerpts", out)
+        # a Finding's excerpt alone counts too; a page with none needs no repo
+        card(d, 41).pop("attached")
+        card(d, 41)["evidence"] = "Build logs."
+        self.assertIn("lede names no repo", runner(d)[1])
+        card(d, 43)["finding"].pop("excerpt")
+        self.assertNotIn("lede names no repo", runner(d)[1])
+        # mutant: the lint gone
+        d = example()
+        d["page"]["lede"] = "Three invented decisions about a documentation site."
+        js = mutant_runner("  if (xc && !(typeof pg.lede", "  if (false && !(typeof pg.lede")
+        self.assertNotIn("lede names no repo", runner(d, script=js)[1])
+
     def test_the_attached_lint_sizes_them(self):
         d = with_att(*[dict(SAMPLES["table"], title="Table %d" % i) for i in range(7)])
         self.assertIn("lint: card 41: depth: the card carries 7 attachments", runner(d)[1])
@@ -541,12 +658,23 @@ def grep_args(skill):
     return ["-nEi"] + [x for p in GREP_E.findall(block) for x in ("-e", p)]
 
 
-def grep_problems(skill, js):
-    """The skill's grep step against the runner's SECRET_PATTERNS: the same patterns, in order."""
+def runner_patterns(js):
+    """The runner's SECRET_PATTERNS, each JavaScript string literal decoded to the pattern it holds."""
     block = js[js.index("const SECRET_PATTERNS = ["):]
-    want = re.findall(r'\["[^"]+", "([^"]*)"\]', block[:block.index("];")])
-    have = grep_args(skill)[2::2]
-    return [] if have == want and want else ["the grep step's patterns %s are not the runner's %s" % (have, want)]
+    return [json.loads('"' + x + '"') for x in re.findall(r'\["[^"]+", "((?:[^"\\]|\\.)*)"\]', block[:block.index("];")])]
+
+
+def grep_problems(skill, js):
+    """The skill's grep step against the runner's SECRET_PATTERNS, both ways: each of the runner's in the grep, each of
+    the grep's in the runner, in the same order."""
+    want, have = runner_patterns(js), grep_args(skill)[2::2]
+    out = ["the runner's pattern %s is not in the grep step" % p for p in want if p not in have]
+    out += ["the grep step's pattern %s is not the runner's" % p for p in have if p not in want]
+    if not want:
+        out.append("the runner has no patterns")
+    elif not out and have != want:
+        out.append("the grep step's patterns are not in the runner's order")
+    return out
 
 
 @unittest.skipUnless(NODE, "node is not installed")
@@ -560,13 +688,20 @@ class AttachUpgrade(unittest.TestCase):
         k51 = card(kit, 51)
         k51["attached"].append(copy.deepcopy(SAMPLES["table"]))
         k51["attached"].append({"kind": "example", "title": "A mock", "mode": "mock", "body": {"text": "x"}})
+        k51["attached"].append({"kind": "example", "title": "Mock in words", "mode": "mock", "body": ["the page would read: X", "then Y"]})
+        k51["attached"].append({"kind": "depmap", "title": "Waits", "body": [{"n": "52", "name": "thing", "kids": [{"n": " 53 ", "name": "other"}]}]})
         code, out, d = upgrade(kit)[:3]
         self.assertEqual(code, 0, out)
         atts = card(d, 51)["attached"]
-        self.assertEqual([a["kind"] for a in atts], ["example", "table", "example"])
+        self.assertEqual([a["kind"] for a in atts], ["example", "table", "example", "example", "depmap"])
         self.assertEqual(atts[0]["form"], "narrative")
         self.assertEqual(atts[1], SAMPLES["table"])
         self.assertEqual(atts[2]["form"], "mock")
+        # a mode the body does not match: the body decides
+        self.assertEqual(atts[3]["form"], "narrative")
+        self.assertIn('example "Mock in words" read as form narrative (its body is prose; its mode "mock" dropped)', out)
+        # a numeric-string node number is the number
+        self.assertEqual(atts[4]["body"], [{"n": 52, "name": "thing", "kids": [{"n": 53, "name": "other"}]}])
         self.assertIn('example "A restore" read as form narrative', out)
         # the upgraded file passes the page's check and the runner
         code, out = runner(d)[:2]
@@ -575,7 +710,10 @@ class AttachUpgrade(unittest.TestCase):
     def test_a_kind_or_a_shape_it_cannot_map_is_refused(self):
         for put, needle in ((lambda c: c["attached"].append({"kind": "image", "title": "x"}), 'an attachment\'s kind "image" is not one the record has'),
                             (lambda c: c.__setitem__("attached", {"kind": "table"}), "attached is not a list of attachments"),
-                            (lambda c: c["attached"][1].__setitem__("mode", "slides"), 'an example\'s mode "slides" is neither mock nor narrative')):
+                            (lambda c: c["attached"].append({"kind": "depmap", "title": "W", "body": [{"n": "x41", "name": "a"}]}),
+                             'a depmap node\'s n "x41" is not a decision number'),
+                            (lambda c: c["attached"].append({"kind": "depmap", "title": "W", "body": [{"n": 41, "name": "a", "kids": [{"n": 0, "name": "b"}]}]}),
+                             "a depmap node's n 0 is not a decision number")):
             with self.subTest(needle):
                 kit = self.kit()
                 put(card(kit, 51))
@@ -589,6 +727,19 @@ class AttachUpgrade(unittest.TestCase):
         code, out, d = upgrade(kit)[:3]
         self.assertEqual(code, 0, out)
         self.assertNotIn("attached", card(d, 51))
+        # mutants: the body test gone from the example's form; the numeric-string read gone
+        src = UPGRADER.read_text()
+        for old, new in (('y.form = xc ? "mock" : "narrative";', 'y.form = m === "mock" ? "mock" : "narrative";'),
+                         ('if (isStr(o.n) && /^[1-9][0-9]*$/.test(o.n.trim()))', "if (false)")):
+            with self.subTest(old), tempfile.TemporaryDirectory() as tmp:
+                self.assertEqual(src.count(old), 1)
+                js = pathlib.Path(tmp) / "upgrade_cards.js"
+                js.write_text(src.replace(old, new))
+                kit = self.kit()
+                card(kit, 51)["attached"] = [{"kind": "example", "title": "M", "mode": "mock", "body": ["a"]},
+                                             {"kind": "depmap", "title": "W", "body": [{"n": "52", "name": "x"}]}]
+                code, out, d = upgrade(kit, script=js)[:3]
+                self.assertTrue(code == 1 or runner(d)[0] == 1, out)
         # mutant: the kind refusal gone, an unknown kind passes the upgrader
         src = UPGRADER.read_text()
         old = "} else if (!ATT_KINDS.includes(x.kind)) {"
@@ -599,6 +750,21 @@ class AttachUpgrade(unittest.TestCase):
             kit = self.kit()
             card(kit, 51)["attached"].append({"kind": "image", "title": "x"})
             self.assertEqual(upgrade(kit, script=js)[0], 0)
+
+
+@unittest.skipUnless(NODE, "node is not installed")
+class AttachKitRegression(unittest.TestCase):
+    """The reviewer's kit cases (a mock example whose body is prose, a depmap node numbered as a string) upgrade to
+    attachments the page's check() passes."""
+
+    def test_the_upgraded_kit_cases_pass_the_page(self):
+        kit = load(KIT)
+        card(kit, 51)["attached"] += [{"id": "ex", "kind": "example", "title": "A mock", "mode": "mock", "body": ["the page would read: X", "then Y"]},
+                                      {"id": "dm", "kind": "depmap", "title": "Waits", "body": [{"n": "41", "name": "thing"}]}]
+        code, out, d = upgrade(kit)[:3]
+        self.assertEqual(code, 0, out)
+        code, out = runner(d)[:2]
+        self.assertNotEqual(code, 1, out)
 
 
 # the gallery's cards with an Attached line
