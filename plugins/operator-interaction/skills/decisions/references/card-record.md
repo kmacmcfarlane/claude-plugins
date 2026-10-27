@@ -59,6 +59,7 @@ Two kinds of required:
 | `ifleft` | text | optional | **If left:** on an ask for another round: each leftover finding and what it would break |
 | `roundcosts` | text | optional | **A round costs:** on an ask for another round |
 | `ifunanswered` | text | optional | **If unanswered:** a status-quo default |
+| `rejected` | list of `{t, why}` | optional | **Rejected alternatives**: the alternatives weighed and not offered, each `t` its short title, one line, and `why` its reasons, one or more, each one line of text. The last fold on both surfaces, closed, after Background (F2; answer 286 (b) and the operator's prototype feedback of 2026-10-22): its summary the count and the titles, *2: title · title*; open, each title on a bold line with its reasons as bullets under it. Empty or none: no fold. An alternative the operator might still pick is an option, never here |
 | `detail` | object | optional | the card parts' fuller renditions, `[medium, high]` each (§ Levels) |
 
 ## An option
@@ -101,11 +102,12 @@ shapes.
 ## Fields an upgraded card may already carry
 
 The upgrader maps the answer page's working kit into the record, and some of the kit's parts
-have no row above yet: `attached` and `rejected` (`[{t, why}]`). A reader keeps them as
-data and does not show them; each joins the tables above when the page and the chat card show
-it, as the kit's `what`, `finding`, `scope`, `likelihood` and `best` have: `what` maps to `what` and `items`, `finding {what,
+have no row above yet: `attached`. A reader keeps it as
+data and does not show it; it joins the tables above when the page and the chat card show
+it, as the kit's `what`, `finding`, `scope`, `likelihood`, `best` and `rejected` have: `what` maps to `what` and `items`, `finding {what,
 where, code}` to `finding {mechanism, where, excerpt}`, `scope {k, text}` to `scope {level,
-says}`, `likelihood {basis, text}` to `likelihood {kind, seen}`, and `best` to `best`, above. In the kit, `pros` and `cons` were the one-line texts and `prosT` and `consT` the table's
+says}`, `likelihood {basis, text}` to `likelihood {kind, seen}`, `best` to `best`, and
+`rejected [{bold, bullets}]` to `rejected [{t, why}]`, above. In the kit, `pros` and `cons` were the one-line texts and `prosT` and `consT` the table's
 rows; the record names the one-line texts `pro` and `con` and the rows `pros` and `cons`. The
 kit's `plan` is the option's `plan`, above. The
 kit's `evidence` attachments become the record's `evidence`, a flat list of text: their ids are

@@ -80,7 +80,7 @@ stamp.
 | `likelihood {basis, text}` | `likelihood {kind, seen}`: `observed` → `observed`; any other word → `evidence`, the word kept at the head of `seen` as `(<word>) ` |
 | `what` text; a list; `{intro, items[{name, is, per}]}` | `what`; `items[{name}]`; `what: intro`, `items[{name, about: is, per}]` |
 | `finding {what, where, code}` | `finding {mechanism: what, where, excerpt: code}` |
-| `rejected [{bold, bullets}]` | `rejected [{t: bold, why: bullets}]` |
+| `rejected [{bold, bullets}]` | `rejected [{t: bold, why: bullets}]`, shown as the Rejected alternatives fold; a `bold` or a bullet that is not one line of text, or no bullets, refused |
 | `dep {n, letters}` | `dep` as text: `only if [[N]] is (a) or (b)`; no letters: `after [[N]] is answered, whatever its answer` |
 | `impact.effect` | dropped |
 

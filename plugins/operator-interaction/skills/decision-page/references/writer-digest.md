@@ -30,7 +30,8 @@ from a finding (of a review, an audit, a test run or a scan) carries `finding`: 
 how it happens, and its code as an excerpt. Where the work states requirements, a card carries
 `scope`: how it stands against them. A risk decision carries `likelihood`, the event and the
 strongest fact about how often it happens, and `best`, whether acting here is the response that
-matters.
+matters. A card that weighed alternatives it does not offer carries `rejected`: each one's title
+and why it was not offered.
 
 ## Text
 
@@ -109,6 +110,7 @@ it knowingly only on a card upgraded from an older format.
 | `ifleft` | optional | **If left:** on an ask for another round |
 | `roundcosts` | optional | **A round costs:** on an ask for another round |
 | `ifunanswered` | optional | **If unanswered:** a status-quo default |
+| `rejected` | optional | `[{t, why}, …]`, the alternatives weighed and not offered: shown in the **Rejected alternatives** fold, the last of the bottom folds, closed, its summary the count and the titles (*2: title · title*); open, each `t` on a bold line with its `why` reasons as bullets under it. `t` a short title, one line; `why` one or more reasons, each one line of text. An alternative the operator might still pick is an option, never here |
 | `detail` | optional | the levels, below |
 
 `what` is the What part: what is decided, in plain words, after Context. A count of two or
@@ -183,7 +185,7 @@ Levels scale with the decision: a small call carries none; a wide or ⚠ one-way
 medium and high on its visible parts and on the fold items with depth to give. Each level is
 longer than the one below. Soft sizes at a part's top level: Background (`why` + `whyask`)
 ~150 words; each option's plan (or older text) plus its effect, reach, undo and cost ~60–120; `evidence` ~150;
-the card in all ~600–900, the What part (`what` and `items`), the Finding (not its excerpt), the Scope's `says`, the Likelihood's `seen` and `best`, each option's `pro` and `con` and its table's `pros` and `cons` counted in it; a set still lists every item. Never pad: a fact no source holds goes under `open`.
+the card in all ~600–900, the What part (`what` and `items`), the Finding (not its excerpt), the Scope's `says`, the Likelihood's `seen` and `best`, each rejected alternative's `t` and `why`, each option's `pro` and `con` and its table's `pros` and `cons` counted in it; a set still lists every item. Never pad: a fact no source holds goes under `open`.
 
 ## The runner's thresholds
 
@@ -221,7 +223,9 @@ line break, a `title` or `where` not one line of text, a `label` not `{id, name}
 card's own `label`, or an `excerpt` the excerpt rules refuse; a `scope` not an object, its `level`
 not `required`, `shapes` or `outside`, its `says` not one line of text, or none on a `required` or
 `shapes` scope; a `likelihood` not an object, its `kind` not `observed` or `evidence`, its `seen`
-not one line of non-blank text; a `best` not one line of text, or with no `likelihood`; a bad or duplicate `n`; a `rev` or `raised` not a UTC time; a `q` on
+not one line of non-blank text; a `best` not one line of text, or with no `likelihood`; a
+`rejected` not a list of `{t, why}`, a `t` not one line of text, or a `why` not one or more
+reasons, each one line of text; a bad or duplicate `n`; a `rev` or `raised` not a UTC time; a `q` on
 more than one line; options not objects with a single `a`–`z` letter and a title, out of
 order, or not ending `z`; a `rec` not among them, or null without `norec`; a missing field
 required to render; blank `context`; a TLDR bullet, at any level, opening on Rec or
@@ -263,8 +267,8 @@ page-wide one prints `lint: page:`.
 | `page` | `page:` | an id in the page title, the lede, a layer's title, note or shared context, or a `refs` short or question |
 | `group` | `page:` | a bundle (a layer with `shared`) holding fewer than two cards |
 | `refs` | `page:` | a `refs` answer holding an id (left as given when it is the operator's words) |
-| `id` | — | an id in any card text, the What part's `what` and `items`, the Finding's label, `title`, `where` and `mechanism` (never its excerpt), the Scope's `says` and the Likelihood's `seen` and `best` included: a hash, an item tag, a ticket key, a label like OQ3, decision N; a label a card or its finding declares passes with its short name beside it |
-| `count` | — | a count in the flat part, the Finding's `title` and `mechanism`, the Scope's `says`, `best` (never the Likelihood's `seen`, whose observed count is its fact), or a visible level that Context (with its bundle's `shared`) and the What part (`what`, `items` and their number) do not name; one where the card says what is decided points to `items` |
+| `id` | — | an id in any card text, the What part's `what` and `items`, the Finding's label, `title`, `where` and `mechanism` (never its excerpt), the Scope's `says`, the Likelihood's `seen` and `best`, and each rejected alternative's `t` and `why` included: a hash, an item tag, a ticket key, a label like OQ3, decision N; a label a card or its finding declares passes with its short name beside it |
+| `count` | — | a count in the flat part, the Finding's `title` and `mechanism`, the Scope's `says`, `best` (never the Likelihood's `seen`, whose observed count is its fact), a rejected alternative's `t` (never its `why`, in the closed fold), or a visible level that Context (with its bundle's `shared`) and the What part (`what`, `items` and their number) do not name; one where the card says what is decided points to `items` |
 | `named` | — | a named mode, setting, review, plan, document, … not glossed in Context or What |
 | `set` | `shape:` | a set's `items` list of another length than its count (not short of the largest); a set on a card the upgrader carried over, its `rev` kept (refused once a writer revises it) |
 | `tldr` | — | a TLDR bullet, at any level, that may carry the recommendation |
@@ -291,6 +295,6 @@ page-wide one prints `lint: page:`.
 Then the cold read: could you name every item the card acts on, from its What part alone? List
 each noun phrase in the Impact, TLDR, option titles and one lines,
 and each option's `pro` and `con` (visible rows, linted by `count` and `named` though outside
-the flat part's size), the Finding's `title` and `mechanism`, the Scope's `says`, the Likelihood's `seen` and `best`, and its view's `plan`, `pros` and `cons`, that names a specific thing, and point to its gloss in `context`. Over the view the `named` lint reads qualified names only ("content mode"); a bare noun, a phrase opening on a function word ("to plan") or on a verb form ("reaches review") is yours to check here. Of each effect, ask: does
+the flat part's size), the Finding's `title` and `mechanism`, the Scope's `says`, the Likelihood's `seen` and `best`, each rejected alternative's `t`, and its view's `plan`, `pros` and `cons`, that names a specific thing, and point to its gloss in `context`. Over the view the `named` lint reads qualified names only ("content mode"); a bare noun, a phrase opening on a function word ("to plan") or on a verb form ("reaches review") is yours to check here. Of each effect, ask: does
 it name what happens to the thing being built? Could you say how it happens, not only that
 it does?

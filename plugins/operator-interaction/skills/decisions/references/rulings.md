@@ -457,3 +457,19 @@ alternative not taken, in case practice argues for it.
   with no bracketed source, a carried-over basis word, an observed fact with no source) and
   `best` lint (a new card's likelihood with no Best response?). Not taken: Likelihood in words only (267 (b)); Best response? dropped (339 (b)) or
   folded into the Assumptions fold (339 (c)).
+- **Rejected alternatives in a fold, both surfaces** (2026-10-21, answer 286 (b) with words,
+  "alternatives with rejection reasons folded under the options"; the operator's prototype
+  feedback 2 of 2026-10-22, "a bold line for each item with a bullet list instead of
+  sentences", and feedback 1's order, Rejected below Attached; its place set by the v4 layout,
+  signed off with answer 313, and kept by the v5 order of item 9168) — a card that weighed
+  alternatives it does not offer carries them in a **Rejected alternatives** fold, the last of
+  the folds under the options, closed: each alternative's title on a bold line, its reasons as
+  bullets under it. It adds a fold to the 2026-10-12 chat order and the 2026-10-09 page order;
+  it reverses nothing. Designs made in planning and build, not the operator's: the record's
+  `rejected`, `[{t, why}]`, each title and reason one line of text (the page refuses another
+  shape, and the upgrader maps the kit's `[{bold, bullets}]` or refuses it); the fold's name and
+  summary, `▸ Rejected alternatives — N: <title> · <title>` in chat and the same count and titles
+  on the page, a slug there as its number; the chat block's open form, each title on a bold
+  line over its reason bullets, a blank line before each title after the first; the pre-publish
+  runner reading every title and reason for ids, the titles alone in the cold read, and
+  counting both in the card in all.

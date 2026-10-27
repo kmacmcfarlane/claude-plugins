@@ -19,13 +19,13 @@
       - the set: an items list of another length than the count; a carried-over card's set;
       - ids: a machine-readable id anywhere the page shows text (every card field and level, act,
         the page title, the lede, the layer titles and notes, refs, the What part and its items, the Finding but its
-        excerpt, the Scope, the Likelihood and Best response?), whatever Context says; the page is the reader's only context. Backtick spans, https links and slugs are
+        excerpt, the Scope, the Likelihood and Best response?, the Rejected alternatives), whatever Context says; the page is the reader's only context. Backtick spans, https links and slugs are
         not ids, and a source label a card or its finding declares passes with its short name beside it;
       - terms: a count or a named thing in the flat part, or in the medium and high levels of the
         Impact and the TLDR, that Context's summary (with its bundle's shared context, and the What
         part: its text and its items) does not introduce; a count in the places that say what is
         decided points to items; the Finding's title and mechanism are read too (F7), the Scope's says (F8), and the
-        Likelihood's seen and Best response? (F9);
+        Likelihood's seen and Best response? (F9), and each rejected alternative's title (F2);
       - groups: a bundle (a layer with shared context) holding fewer than two cards;
       - the TLDR: a bullet that may carry the recommendation, at every level, headings, bullets
         and sub-bullets in reading order;
@@ -75,13 +75,13 @@ function loadPage() {
   const start = html.indexOf("<script>"), end = html.indexOf(END_MARK);
   if (start < 0 || end < start) fail("the template has no page-free part (its script or the end-of-page-free-part marker is missing): " + tpl);
   try {
-    const page = vm.runInNewContext(html.slice(start + "<script>".length, end) + "\n;({check, recordProblems, bgFirst, assumeOf, proCon, planOf, prosCons, itemsOf, perOf, findingOf, scopeOf, likelihoodOf, bestOf})", {});
+    const page = vm.runInNewContext(html.slice(start + "<script>".length, end) + "\n;({check, recordProblems, bgFirst, assumeOf, proCon, planOf, prosCons, itemsOf, perOf, findingOf, scopeOf, likelihoodOf, bestOf, rejectedOf, rejWhy})", {});
     if (typeof page.check !== "function" || typeof page.recordProblems !== "function" || typeof page.bgFirst !== "function"
       || typeof page.assumeOf !== "function" || typeof page.proCon !== "function" || typeof page.planOf !== "function"
       || typeof page.prosCons !== "function" || typeof page.itemsOf !== "function" || typeof page.perOf !== "function"
       || typeof page.findingOf !== "function" || typeof page.scopeOf !== "function" || typeof page.likelihoodOf !== "function"
-      || typeof page.bestOf !== "function")
-      throw new Error("no check(), recordProblems(), bgFirst(), assumeOf(), proCon(), planOf(), prosCons(), itemsOf(), perOf(), findingOf(), scopeOf(), likelihoodOf() or bestOf()");
+      || typeof page.bestOf !== "function" || typeof page.rejectedOf !== "function" || typeof page.rejWhy !== "function")
+      throw new Error("no check(), recordProblems(), bgFirst(), assumeOf(), proCon(), planOf(), prosCons(), itemsOf(), perOf(), findingOf(), scopeOf(), likelihoodOf(), bestOf(), rejectedOf() or rejWhy()");
     return page;
   } catch (e) { fail("the template's page-free part does not load: " + why(e)); }
 }
@@ -197,6 +197,9 @@ const findingTexts = c => { const f = page.findingOf(c); return f ? [f.title, f.
 const scopeTexts = c => { const s = page.scopeOf(c); return s && typeof s.says === "string" ? [s.says] : []; };
 /* the Likelihood's texts as the page shows them (F9): its seen, then Best response?; the kind is one of two fixed words */
 const likelihoodTexts = c => { const l = page.likelihoodOf(c), b = page.bestOf(c); return l ? [l.seen, b].filter(s => typeof s === "string" && s) : []; };
+/* the Rejected alternatives fold's texts as the page shows them (F2): each shown alternative's title, then its shown
+   reasons */
+const rejectedTexts = c => page.rejectedOf(c).flatMap(r => [r.t, ...page.rejWhy(r)]);
 /* every text in a value, in reading order: a section's heading, then each bullet and its sub-bullets */
 const textsOf = x => typeof x === "string" ? [x] : Array.isArray(x) ? x.flatMap(textsOf)
   : x && typeof x === "object" ? ("h" in x ? [x.h, ...textsOf(x.b)] : "t" in x ? [x.t, ...textsOf(x.sub || [])] : Object.values(x).flatMap(textsOf)) : [];
@@ -426,10 +429,10 @@ function depth(c, say) {
   if (levelsOf(c, "evidence").length && c.basis !== "none" && ev < 60) say("ev", "depth: evidence is " + ev + " words at its fullest: give the basis drill-down near 150, what was observed, inferred and assumed, with the paths and links behind each; or leave it knowingly");
   else if (ev > 225) say("ev", "depth: evidence is " + ev + " words at its fullest: keep it near 150");
   /* the card in all: the flat part and Context at their summary, the fold parts at their top level (the basis reason
-     among them), the What part (its text and its items), the Finding (not its excerpt), the Scope, the Likelihood and Best response?, each option's detail (its plan or text at its top level, and its facets), its inline Pros and Cons
+     among them), the What part (its text and its items), the Finding (not its excerpt), the Scope, the Likelihood and Best response?, the Rejected alternatives fold, each option's detail (its plan or text at its top level, and its facets), its inline Pros and Cons
      rows and the points of its view's Pros | Cons table; not act */
   const pc = opts(c).reduce((n, o) => n + words(page.proCon(o).map(r => r[1])) + words(page.prosCons(o).map(r => r[1])), 0);
-  const all = words(flat(c)) + words(c.context) + words(whatTexts(c)) + bg + ev + words(findingWords(c)) + words(scopeTexts(c)) + words(likelihoodTexts(c)) + words(topOf(c.reason, levelsOf(c, "rec"))) + words(as) + optWords + pc;
+  const all = words(flat(c)) + words(c.context) + words(whatTexts(c)) + bg + ev + words(findingWords(c)) + words(scopeTexts(c)) + words(likelihoodTexts(c)) + words(rejectedTexts(c)) + words(topOf(c.reason, levelsOf(c, "rec"))) + words(as) + optWords + pc;
   if (all > 1350) say("all", "depth: the card is " + all + " words in all: keep it near 600–900; a small call gets a short card");
   if (c.detail && typeof c.detail === "object")
     for (const k of Object.keys(c.detail)) if (!(k in PART))
@@ -515,6 +518,7 @@ function cardTexts(c) {
       f.title, f.where, f.mechanism].filter(s => typeof s === "string")); }
   put("scope", scopeTexts(c));
   put("likelihood", likelihoodTexts(c));
+  put("rejected", rejectedTexts(c));
   if (Array.isArray(c.assume)) for (const a of c.assume) if (a && typeof a === "object") put("assume", [a.rests, a.tw]);
   for (const o of opts(c)) {
     for (const k of ["title", "line", "text", "plan", "effect", "reach", "undo", "cost", "pro", "con", "pros", "cons"]) put("(" + o.k + ")", o[k]);
@@ -572,6 +576,9 @@ function lintCard(c, w, sh, out) {
   { const l = page.likelihoodOf(c), b = page.bestOf(c);
     if (l) terms([l.seen], " (the likelihood)", named, undefined, false);
     if (b) terms([b], " (the likelihood)"); }
+  /* the Rejected alternatives fold (F2), the last bottom fold: its titles, which its summary shows; the reasons sit in
+     the closed fold, as the other folds' text does */
+  terms(page.rejectedOf(c).map(r => r.t), " (rejected alternatives)");
   /* the Pros and Cons rows are visible too, though not in the flat part's budget: the cold read covers them */
   terms(opts(c).flatMap(o => page.proCon(o).map(r => r[1])), " (pros and cons)");
   /* and each option's view (F5), which picking the option opens: its plan in brief and its Pros | Cons table */

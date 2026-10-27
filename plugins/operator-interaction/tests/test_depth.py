@@ -355,12 +355,13 @@ class DecisionPageDepth(unittest.TestCase):
         # the operator (2026-10-14): Options in full repeated each option's More, so it is gone;
         # Dependencies shows only on a card that depends on something (card 41 does not)
         # the v5 layout: the upper folds (Open questions where there is one, Assumptions on every card) above
-        # the Impact; the bottom folds (Background, then Dependencies until the dependency line lands) after
-        # the answer. The Evidence pane is gone into the Assumptions fold
+        # the Impact; the bottom folds (Background, then Dependencies until the dependency line lands, then
+        # Rejected alternatives, last: F2) after the answer. The Evidence pane is gone into the Assumptions fold
         res = run_page(example())
         for c in res["cards"]:
             panes = re.findall(r'<details class="pane"( open)?><summary>([^<]+?)(?: <span class="fsum">.*?</span>)?</summary>', c["html"])
-            want = ["Background"] + (["Dependencies"] if c["n"] != 41 else [])
+            want = (["Background"] + (["Dependencies"] if c["n"] != 41 else [])
+                    + (["Rejected alternatives"] if c["n"] == 41 else []))
             self.assertEqual([p[1] for p in panes], want, c["n"])
             self.assertEqual([p[0] for p in panes], [""] * len(want), c["n"])
             self.assertEqual(upper_folds(c["html"]), (["Open questions"] if c["n"] != 43 else []) + ["Assumptions"],

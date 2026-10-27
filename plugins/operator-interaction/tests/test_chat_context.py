@@ -297,8 +297,10 @@ def empty_fold_problems(where, body):
             continue
         if re.match(r"(?i)^(0 open\b|none\b|nothing\b|—|-)", m.group(3).strip()):
             out.append(f"{where}: an empty {m.group(2)} fold is shown")
-        # an open fold's items are bullets; Background's are its two labelled lines
-        item = {"Background": ("**Why now:**", "**Why ask:**"), "Assumptions": ("**Basis:**",)}.get(m.group(2), ("- ",))
+        # an open fold's items are bullets; Background's are its two labelled lines, and Rejected
+        # alternatives' its bold title lines (F2)
+        item = {"Background": ("**Why now:**", "**Why ask:**"), "Assumptions": ("**Basis:**",),
+                "Rejected alternatives": ("**",)}.get(m.group(2), ("- ",))
         if m.group(1) == "▾" and not (k + 1 < len(body) and body[k + 1].startswith(item)):
             out.append(f"{where}: an open {m.group(2)} fold with nothing under it")
     return out
@@ -335,8 +337,9 @@ BLOCK_BEFORE_BG = ("**If left:**", "**A round costs:**", "**To act on (")
 def check_bg_block(test, where, body):
     """A block's Background fold stands open below its table, after any If left, A round costs
     and To act on (x) part: `▾ Background — why now: …` (one sentence), then **Why now:** and
-    **Why ask:** on the two lines under it, with nothing after them but a ⚠ block's read-back
-    line; no flat why line and no Rec line."""
+    **Why ask:** on the two lines under it, with nothing after them but any open Rejected
+    alternatives fold (F2, the last fold) and a ⚠ block's read-back line; no flat why line and no
+    Rec line."""
     test.assertNotIn("Why you, why now", heads(body), f"{where}: the flat why line")
     bg = [i for i, x in enumerate(body) if x.startswith(BG_OPEN)]
     test.assertEqual(len(bg), 1, f"{where}: one open Background fold")
@@ -350,6 +353,12 @@ def check_bg_block(test, where, body):
     test.assertFalse(SENTENCE_END.search(body[k][len(BG_OPEN):]),
                      f"{where}: the Background summary is more than one sentence")
     after = [x for x in body[k + 3:] if x.strip()]
+    # the Rejected alternatives fold, open, may come next: its line, then its bold titles and reason bullets
+    if after and after[0].startswith("▾ Rejected alternatives — "):
+        j = 1
+        while j < len(after) and (after[j].startswith("- ") or re.match(r"^\*\*[^*].*\*\*$", after[j])):
+            j += 1
+        after = after[j:]
     test.assertFalse(any(x.startswith(BLOCK_BEFORE_BG) for x in after),
                      f"{where}: If left, A round costs or To act on comes after Background")
     test.assertFalse(any(REC_LINE.match(x) for x in body), f"{where}: a Rec line")

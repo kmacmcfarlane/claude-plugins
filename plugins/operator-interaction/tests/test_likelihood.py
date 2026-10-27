@@ -147,7 +147,7 @@ class LikelihoodPage(unittest.TestCase):
             lambda c: c["likelihood"].__setitem__("seen", "a\nb"),
         ],
         "best must be one line of text": [
-            lambda c: c.__setitem__("best", "a b"),
+            lambda c: c.__setitem__("best", "a\u2028b"),
             lambda c: c.__setitem__("best", ["yes"]),
         ],
         "best needs likelihood": [

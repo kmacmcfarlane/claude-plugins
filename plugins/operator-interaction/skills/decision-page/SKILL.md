@@ -6,7 +6,7 @@ description: "Put a set of decisions to the operator as an answer page: a publis
 # Decision page
 
 A set of decisions on one page the operator works through at their own pace: a map of its
-groups, each card a one-line row that opens flat on its essentials (its TLDR, then its Context, then its What, then its Finding when it is raised from one, then its Scope where the work states requirements, then its Likelihood on a risk decision, then its Open questions, folded, then its Impact) with folds for the rest; a
+groups, each card a one-line row that opens flat on its essentials (its TLDR, then its Context, then its What, then its Finding when it is raised from one, then its Scope where the work states requirements, then its Likelihood on a risk decision, then its Open questions, folded, then its Impact) with folds for the rest, the last its Rejected alternatives; a
 click on a part with a more-detail button shows it as terse bullets, then in headed sections,
 each option but (z) shows its **Pros** and **Cons** rows under it, and picking an option, or **More** beside it, opens its view (its Plan in brief, its Pros | Cons table, then its effect, reach, undo and cost); one choice per card enforced by the
 radio buttons, answers saved as they click. You publish it, they answer, you read the answers
@@ -140,6 +140,10 @@ The rules below are what the digest condenses:
   its window and source, or another concrete fact), or the evidence there is and what would
   settle it (`kind` `evidence`); never a bare *no data* or an estimate. `best`, **Best
   response?**, says whether acting here is the most important response to that failure.
+- Where alternatives were weighed and not offered, set `rejected`, `[{t, why}]`: shown in the
+  **Rejected alternatives** fold, the last of the bottom folds, its summary the count and the
+  titles; each `t` a short title on one line, each `why` one or more one-line reasons. An
+  alternative the operator might still pick is an option instead.
 - **No ids on the page.** The page is the operator's only context: refer to another decision
   by its slug, and to an item, a series, a branch or a commit by its short name or title, with
   no id after it, in every field, the page and layer titles included. A fact only an id
@@ -412,7 +416,7 @@ answer page*, and the card rules the page renders.
 - `scripts/check_cards.js` — the pre-publish check under node: the page's own refusals, then
   the set refusal (a card that counts two or more things where it says what is decided, with
   no `items` or too few; a lint on a card the upgrader carried over), then lints for ids anywhere on the page, counts and named
-  things a card's Context and What part do not introduce (the Finding, the Scope and the Likelihood read too), the level shapes, a reach that reads as the recommendation's, an option's effect
+  things a card's Context and What part do not introduce (the Finding, the Scope, the Likelihood and the Rejected alternatives read too), the level shapes, a reach that reads as the recommendation's, an option's effect
   or the Finding's mechanism with no mechanism, and the depth lints (a level not longer than the one below, thin or long
   depth, an option with no reach, what a new card owes), an option with no pro or con, and a likelihood
   with no fact or source (or an estimate, or no Best response? on a new card);
