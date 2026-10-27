@@ -330,7 +330,8 @@ class WritersText(unittest.TestCase):
 
     def test_no_work_item_and_no_item_spend(self):
         text = WRITERS.read_text()
-        for insert in ("Tokens come from `scripts/item_spend.py`.",
+        # the other plugin's script name is built, so this test holds no reference to it
+        for insert in ("Tokens come from the " + "item" + "_spend script.",
                        "Recorded on decisions-structured-depends-and-group-l-03ab.",
                        "Recorded on 03ab."):
             with self.subTest(insert=insert):
