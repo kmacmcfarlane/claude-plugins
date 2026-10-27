@@ -551,7 +551,7 @@ alternative not taken, in case practice argues for it.
   after every decision it depends on that the set shows, in chat and on the answer page; among
   those free to go, the precedence (breaks before return, ⚠ one-way, waiting cost, oldest)
   holds. Across groups the order is unchanged. Designs made in planning and build, not the
-  operator's: a dependency cycle's members fall back to the precedence alone; the page keeps
+  operator's: the members of a dependency cycle are ordered among themselves by the precedence alone; their other dependencies still hold; the page keeps
   `cards` in list order, which is this order, and the pre-publish runner's `deporder` lint, with
   no line start, flags a card placed before a decision in its own layer that its `dep` names,
   skipping pairs in a dependency cycle and targets on another layer or in `refs`. Not taken: one

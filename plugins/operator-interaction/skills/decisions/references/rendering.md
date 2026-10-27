@@ -840,9 +840,9 @@ The precedence is SKILL.md § Order. Four notes on applying it: the groups are t
 caller stores where it stores them (its `group` per decision, the id never shown), and
 related decisions otherwise; a group is placed by its most
 pressing member and kept together; inside a group, each decision goes after every decision it
-depends on that the set shows (its stored `depends`, the targets its dependency line names),
-and among those free to go the precedence holds, so a ⚠ dependent still waits for its target,
-while a dependency cycle's members fall back to the precedence alone; and a deadline
+depends on in the same group (its stored `depends`, the targets its dependency line names),
+and among those free to go the precedence holds, so a deadline or ⚠ dependent still waits for
+its target, and the members of a dependency cycle are ordered among themselves by the precedence alone; their other dependencies still hold. Last, a deadline
 decision placed first "because the return is unknown" costs nothing if the operator is back
 sooner — both get answered — while one placed low can lose the lease.
 

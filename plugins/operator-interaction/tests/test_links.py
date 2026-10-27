@@ -276,15 +276,19 @@ class StoredGroupsAndText(unittest.TestCase):
 
 # ---- the dependency-tree order (03ab F7) ----
 
+CYCLE = ("the members of a dependency cycle are ordered among themselves by the precedence alone; "
+         "their other dependencies still hold")
 ORDER_SKILL = ("**Inside a group, dependents come after what they depend on:** each decision goes after every "
-               "decision it depends on that is shown in the same set, and among those free to go, the same precedence holds.",
-               "The members of a dependency cycle (which the caller's store lints) fall back to the precedence alone.")
-ORDER_RENDERING = ("inside a group, each decision goes after every decision it depends on that the set shows",
+               "decision it depends on in the same group, and among those free to go, the same precedence holds.",
+               "The members of a dependency cycle (a work-item store's lint flags one) are ordered among themselves "
+               "by the precedence alone; their other dependencies still hold.")
+ORDER_RENDERING = ("inside a group, each decision goes after every decision it depends on in the same group",
+                   "so a deadline or ⚠ dependent still waits for its target", CYCLE,
                    "A set shows every open decision its cards name or depend on, each as its own card or line, "
                    "placed by the dependency order above",
                    "The hover tooltip and the click that opens a named card are the answer page's alone")
 ORDER_RULING = ("answer 307 (a)", "sorting by the dep tree makes the most sense to me", "both surfaces",
-                "`deporder`", "Not taken: one precedence inside a group whatever the dependencies")
+                "`deporder`", CYCLE, "Not taken: one precedence inside a group whatever the dependencies")
 CHAT_SET_RULING = ("A set in chat shows every open decision its cards name or depend on; the hover tooltip and "
                    "the jump to a card are page-only, since chat has no hover or click",)
 
@@ -345,7 +349,7 @@ class DependencyOrderText(unittest.TestCase):
         # mutant: the open-target sentence deleted
         cut = body.replace("A set shows every open decision its cards name or depend on", "", 1)
         self.assertNotEqual(cut, body)
-        self.assertIn(ORDER_RENDERING[1], missing(cut, ORDER_RENDERING))
+        self.assertEqual(missing(cut, ORDER_RENDERING), [ORDER_RENDERING[-2]])
 
     def test_the_rulings_bullet_and_the_chat_set_clause(self):
         text = RULINGS.read_text()
@@ -426,6 +430,17 @@ class DepOrderLint(unittest.TestCase):
         js.write_text(js2)
         self.assertEqual(deporder_lines(d, js),
                          ["lint: card 42: depends on [[38]], which comes after it in its group; move it after"])
+
+    def test_a_cycle_closed_through_the_other_layer_is_clean(self):
+        d = example()
+        d["cards"][0]["dep"] = "only if [[42]] is (a)"
+        d["cards"][1]["dep"] = "only if [[43]] is (a)"
+        d["cards"][2]["dep"] = "only if [[41]] is (a)"
+        self.assertEqual(deporder_lines(d), [])
+        # mutant: only a direct back edge read as a cycle, which misses the cycle through 41 and fires on 42
+        js = mutant_runner(" && !reaches(m, me)", " && !(edges.get(m) || []).includes(me)")
+        self.assertEqual(deporder_lines(d, js),
+                         ["lint: card 42: depends on [[43]], which comes after it in its group; move it after"])
 
     def test_a_two_card_cycle_in_one_layer_is_clean(self):
         d = example()

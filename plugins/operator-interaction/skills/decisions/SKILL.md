@@ -265,9 +265,9 @@ placed by its most pressing member:
 4. **Oldest first**; a tie goes to the lower number.
 
 **Inside a group, dependents come after what they depend on:** each decision goes after every
-decision it depends on that is shown in the same set, and among those free to go, the same
-precedence holds. The members of a dependency cycle (which the caller's store lints) fall back
-to the precedence alone. Across groups the order is the precedence's (`references/rendering.md`
+decision it depends on in the same group, and among those free to go, the same precedence
+holds. The members of a dependency cycle (a work-item store's lint flags one) are ordered among
+themselves by the precedence alone; their other dependencies still hold. Across groups the order is the precedence's (`references/rendering.md`
 § Order).
 
 On a cold re-show, a deferred decision whose wake has not come goes last

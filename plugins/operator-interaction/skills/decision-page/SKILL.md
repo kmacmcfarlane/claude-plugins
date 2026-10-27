@@ -90,7 +90,7 @@ The rules below are what the digest condenses:
   `decisions` skill's `references/legacy-cards.md` reads what it leaves. A card in a newer
   format than the template reads stays off the page and is handed back to the caller.
 - One card per decision, in the `decisions` skill's order, so inside a layer each card comes
-  after every card its `dep` names (the runner's `deporder` lint); groups (`layers`) as its
+  after every card in its layer that its `dep` names (the runner's `deporder` lint); groups (`layers`) as its
   groups. A bundle whose items need different answers is a layer carrying its `shared`
   context, each item a whole card (the runner reads a card's Context with it); one answer
   for every item stays one card naming each. Short names (`t`) the operator would say; plain names for items (the

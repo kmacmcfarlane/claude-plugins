@@ -52,7 +52,7 @@ summary, `act`, a tooltip or a slug). `page.doc.url` must start `https://`, or i
 | `page` | no | `{title, lede, doc: {name, url}}`; when any card carries an excerpt (an excerpt-shaped attachment, a Finding's excerpt), the `lede` names the repos they come from; `title` is `(<owner>) <session name>`, else `<repo>: open decisions` (SKILL.md step 2), the `<title>` set to match; `url` must start `https://` |
 | `layers` | yes | `[[key, title, note, shared], …]`, the groups in display order; `shared` optional: a bundle's shared context, the terms and source every card in it uses, in plain words, which a card's Context may lean on; `note` then says what the cards share. A bundle holds two or more whole item cards |
 | `follow` | yes | copied from below as it stands |
-| `cards` | yes | one per decision, in the `decisions` skill's order: inside a layer, each card after every card its `dep` names, then the precedence |
+| `cards` | yes | one per decision, in the `decisions` skill's order: inside a layer, each card after every card in its layer that its `dep` names, then the precedence |
 | `refs` | no | `{"N": {short, q, a, when}}` for a slugged decision not on the page, answered only: one still open goes on the page as a card; never a number that is a card |
 
 `follow`, exactly:
