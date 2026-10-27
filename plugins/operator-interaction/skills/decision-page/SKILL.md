@@ -89,7 +89,8 @@ The rules below are what the digest condenses:
   format only, every `rev` kept byte for byte), which refuses, all or nothing, a card it cannot map; the
   `decisions` skill's `references/legacy-cards.md` reads what it leaves. A card in a newer
   format than the template reads stays off the page and is handed back to the caller.
-- One card per decision, in the `decisions` skill's order; groups (`layers`) as its
+- One card per decision, in the `decisions` skill's order, so inside a layer each card comes
+  after every card in its layer that its `dep` names (the runner's `deporder` lint); groups (`layers`) as its
   groups. A bundle whose items need different answers is a layer carrying its `shared`
   context, each item a whole card (the runner reads a card's Context with it); one answer
   for every item stays one card naming each. Short names (`t`) the operator would say; plain names for items (the
@@ -457,7 +458,8 @@ answer page*, and the card rules the page renders.
   things a card's Context and What part do not introduce (the Finding, the Scope, the Likelihood, the attachments' titles and the Rejected alternatives read too), the level shapes, a reach that reads as the recommendation's, an option's effect
   or the Finding's mechanism with no mechanism, and the depth lints (a level not longer than the one below, thin or long
   depth, an option with no reach, what a new card owes), an option with no pro or con, and a likelihood
-  with no fact or source (or an estimate, or no Best response? on a new card);
+  with no fact or source (or an estimate, or no Best response? on a new card), and a card
+  placed before one in its own layer that it depends on;
   `--record FILE` checks one record
 - `scripts/upgrade_cards.js` — the upgrader under node: an older `cards.json` (the legacy
   shipped shape, or the page's working kit) to `decision-page/5`, format only, every `rev` kept byte for byte,

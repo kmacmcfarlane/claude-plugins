@@ -52,7 +52,7 @@ summary, `act`, a tooltip or a slug). `page.doc.url` must start `https://`, or i
 | `page` | no | `{title, lede, doc: {name, url}}`; when any card carries an excerpt (an excerpt-shaped attachment, a Finding's excerpt), the `lede` names the repos they come from; `title` is `(<owner>) <session name>`, else `<repo>: open decisions` (SKILL.md step 2), the `<title>` set to match; `url` must start `https://` |
 | `layers` | yes | `[[key, title, note, shared], …]`, the groups in display order; `shared` optional: a bundle's shared context, the terms and source every card in it uses, in plain words, which a card's Context may lean on; `note` then says what the cards share. A bundle holds two or more whole item cards |
 | `follow` | yes | copied from below as it stands |
-| `cards` | yes | one per decision, in the `decisions` skill's order |
+| `cards` | yes | one per decision, in the `decisions` skill's order: inside a layer, each card after every card in its layer that its `dep` names, then the precedence |
 | `refs` | no | `{"N": {short, q, a, when}}` for a slugged decision not on the page, answered only: one still open goes on the page as a card; never a number that is a card |
 
 `follow`, exactly:
@@ -346,6 +346,7 @@ page-wide one prints `lint: page:`.
 | `tradeoffs` | `shape:` | an option but `z` with no shown `pro` or `con`; a recommended option with no `con`; a card with two or more options but `z` and none (an upgraded older card may leave it knowingly); a `pro` or `con` past its words |
 | `attached` | `depth:` | a card with more than 6 attachments; an excerpt-shaped attachment body (`excerpt`, `preview`, a `mock` example) past 80 lines or 4096 bytes: cut it and say where; an attachment but an `example` with no shown `src` |
 | `plan` | `depth:` | an option, `z` included, with no shown `plan` (one line when no option has one; an upgraded older card may leave it knowingly, its view showing its `text`); a `plan` past its words; an option with both `plan` and `text`, whose text is not shown |
+| `deporder` | — | a card placed before a card in its own layer that its `dep` names (inside a group, each decision goes after what it depends on); a pair in a dependency cycle is skipped, and a target on another layer, in `refs` or in another repo is never read |
 
 Then the cold read: could you name every item the card acts on, from its What part alone? List
 each noun phrase in the Impact, TLDR, option titles and one lines,

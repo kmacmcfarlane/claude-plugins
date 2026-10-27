@@ -541,5 +541,18 @@ alternative not taken, in case practice argues for it.
   repo named with its repo, in words; no line for a none `dep`; a `dep` that is not one line of
   text refused, and an older `detail.dep` ignored and linted `key`. The writers' split by group
   and the order inside a group are this request's page and order halves, planned beside it.
+  A set in chat shows every open decision its cards name or depend on; the hover tooltip and
+  the jump to a card are page-only, since chat has no hover or click (2026-10-22, the
+  librarian's reading of 335's feedback).
   Not taken: groups worked out at render time from the item and dependencies in prose only; the
   condition on the title line, which the template openers could not take; the Dependencies fold.
+- **Dependents after what they depend on, both surfaces** (2026-10-22, answer 307 (a):
+  "sorting by the dep tree makes the most sense to me") — inside a group, each decision comes
+  after every decision it depends on that the set shows, in chat and on the answer page; among
+  those free to go, the precedence (breaks before return, ⚠ one-way, waiting cost, oldest)
+  holds. Across groups the order is unchanged. Designs made in planning and build, not the
+  operator's: the members of a dependency cycle are ordered among themselves by the precedence alone; their other dependencies still hold; the page keeps
+  `cards` in list order, which is this order, and the pre-publish runner's `deporder` lint, with
+  no line start, flags a card placed before a decision in its own layer that its `dep` names,
+  skipping pairs in a dependency cycle and targets on another layer or in `refs`. Not taken: one
+  precedence inside a group whatever the dependencies.

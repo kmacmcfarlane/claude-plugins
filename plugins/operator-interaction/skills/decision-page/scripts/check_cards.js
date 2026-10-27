@@ -36,6 +36,8 @@
       - attachments (F3): more than ATT_CAP on a card, or an excerpt-shaped body past XC_LINES lines or XC_BYTES
         bytes;
       - groups: a bundle (a layer with shared context) holding fewer than two cards;
+      - the dependency order (03ab F7): a card placed before a card in its own layer that its dep names (deporder,
+        no line start); a pair in a dep cycle is skipped, and a target on another layer or in refs is never read;
       - the TLDR: a bullet that may carry the recommendation, at every level, headings, bullets
         and sub-bullets in reading order;
       - the Background fold's summary: the first sentence of why past BGSUM_CAP words;
@@ -669,11 +671,38 @@ function lintCard(c, w, sh, out) {
   labelName(c, say);
 }
 
+/* ---- the dependency order (03ab F7, answer 307 (a)): inside a group, each card after every card it depends on.
+   A card's dep names its targets as slugs; a target that is a card in the same layer and comes later in cards fires,
+   once per target. A target on another layer, in refs, or in another repo (no slug) is never read; a pair in a dep
+   cycle (the target reaches the card back through the page's own deps) is skipped, its members ordered by the
+   precedence alone ---- */
+const depsOf = c => typeof c.dep !== "string" ? []
+  : [...new Set([...c.dep.matchAll(/\[\[([0-9]+)\]\]/g)].map(m => m[1]))];
+function depOrder(d) {
+  const at = new Map(d.cards.map((c, i) => [String(c.n), i]));
+  const edges = new Map(d.cards.map(c => [String(c.n), depsOf(c).filter(m => at.has(m))]));
+  const reaches = (from, to) => { const seen = new Set(), todo = [from];
+    while (todo.length) { const x = todo.pop(); if (x === to) return true;
+      if (!seen.has(x)) { seen.add(x); todo.push(...(edges.get(x) || [])); } }
+    return false; };
+  return c => { const me = String(c.n), i = at.get(me);
+    return (edges.get(me) || []).filter(m => { const t = d.cards[at.get(m)];
+      return t.L === c.L && at.get(m) > i && !reaches(m, me); }); };
+}
+function deporder(c, late, say) {
+  for (const m of late(c))
+    say("deporder " + m, "depends on [[" + m + "]], which comes after it in its group; move it after"); }
+
 function lint(d) {
   const out = [];
   DECLARED = declare(d.cards);
   pageIds(d, out);
-  for (const c of d.cards) lintCard(c, "lint: card " + c.n + ": ", (d.layers.find(l => l[0] === c.L) || [])[3], out);
+  const late = depOrder(d);
+  for (const c of d.cards) {
+    const w = "lint: card " + c.n + ": ";
+    lintCard(c, w, (d.layers.find(l => l[0] === c.L) || [])[3], out);
+    const seen = new Set();
+    deporder(c, late, (key, line) => { if (!seen.has(key)) { seen.add(key); out.push(w + line); } }); }
   return out;
 }
 

@@ -1332,3 +1332,30 @@ text field that names one, "the test run ([[att:tests|the write tests]])" in the
 Attached fold after Background, each attachment closed until clicked. Not this: the log
 pasted into the card's Context; nor an attachment holding the only statement of what is
 decided.*
+
+---
+
+## 38. Dependents after what they depend on
+
+*Situation: four decisions on the upload service's size cap, 111 to 114, are one stored group.
+They were shown as cards an hour ago and the operator has replied since, so each is now a line
+ending (shown before). Two of them depend on 111: 113 depends on 111 (only if 111 is (a)), and
+112 depends on 111 (after 111 is answered, whatever its answer). By the precedence alone, 113,
+the group's ⚠ one-way, would go first.*
+
+- **111 Cap the upload size at 50 MB?** — rec **(a) cap it** → *uploads over 50 MB are refused with a clear message* · *later: the disk keeps filling; 112 and 113 wait on it* · basis **strong** · *2 h old* *(shown before)*
+- **113 Delete the stored uploads over the cap?** — rec **(b) keep them, refuse new ones** → *the large files already stored stay; no new ones arrive* · *later: the disk stays near full* · ⚠ one-way · basis **partial** · *1 h old* *(shown before)*
+- **112 Tell users the cap on the upload page?** — rec **(a) show it under the upload button** → *users see the limit before they upload* · *later: users meet the limit only as an error* · basis **strong** · *2 h old* *(shown before)*
+- **114 Log every refused upload?** — rec **(a) log them** → *the team sees how often the cap bites* · *later: nothing waits on it* · basis **strong** · *1 h old* *(shown before)*
+
+*Why this order: inside the group, each decision goes after what it depends on, and the
+precedence picks among those free to go. At first only 111 and 114 are free; 111 goes first,
+since two decisions wait on it and 114 blocks nothing. Then 113, the ⚠ one-way, is free and
+goes next; then 112 and 114, oldest first. 111 is still open, so it is in the set: a set shows
+every open decision its cards name or depend on. Across groups nothing changes: the group is
+placed by its most pressing member, 113. On an answer page the cards keep the same order, and
+the runner's `deporder` lint flags a card placed before one in its own group that it depends
+on.*
+
+*Not this: 113 first because it is ⚠ one-way, which asks the operator whether to delete the
+files over a cap before they have said whether there is a cap.*

@@ -255,7 +255,7 @@ group, and related decisions are the rule only where it stores none; a stored gr
 its plain name, its id never shown (`references/rendering.md` § A bundle as a group). A **bundle** whose items need
 different answers is a group of whole item cards (`references/rendering.md` § A bundle as a
 group); when one answer fits every item, it stays one card. Groups go in this order, each
-placed by its most pressing member, and the same precedence holds inside a group:
+placed by its most pressing member:
 
 1. **Breaks before the operator is back** — a stated deadline (a lock, a lease, a due time)
    that falls before their known return; when their return is unknown, **every** stated
@@ -263,6 +263,12 @@ placed by its most pressing member, and the same precedence holds inside a group
 2. **⚠ one-way.**
 3. **Waiting cost** — what it blocks, and who else waits on it.
 4. **Oldest first**; a tie goes to the lower number.
+
+**Inside a group, dependents come after what they depend on:** each decision goes after every
+decision it depends on in the same group, and among those free to go, the same precedence
+holds. The members of a dependency cycle (a work-item store's lint flags one) are ordered among
+themselves by the precedence alone; their other dependencies still hold. Across groups the order is the precedence's (`references/rendering.md`
+§ Order).
 
 On a cold re-show, a deferred decision whose wake has not come goes last
 (`references/rendering.md` § Re-show with what changed).
