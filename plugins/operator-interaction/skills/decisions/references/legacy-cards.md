@@ -173,6 +173,12 @@ else its `raised:`, written to the second (`…T14:05Z` → `…T14:05:00Z`). Th
 outside the card, they keep that `rev`. A fact drawn from outside the card (the item, its
 series, its commits) is new information: a new `rev`.
 
+*On a live answer page.* A decision whose card is on a live answer page is upgraded from that
+page card (`upgrade_cards.js --only N --records`, its page `rev` kept byte for byte), after that
+page's answers are read back; only when the stored block was revised after that `rev`, or the
+card is on no readable page, does it take the stored-lines `rev`. So the answers the page
+already holds for that `rev` still count.
+
 | Stored line | Record |
 |---|---|
 | the headline `decision N: [<label> (<short name>) · ]<question>[ ⚠ one-way] — options: (a) <title> [recommended] …` | `label {id, name}`, `q`, `oneway`, each option's `title`; `rec` the option `[recommended]` closes; a label after the last option (*your preference — no recommendation*) is `norec`, with `rec` null |
@@ -206,7 +212,8 @@ writes the card to the current rules, as a record:
   included, and upgrades to that option's `undo` with `oneway: true`. The plain undo of an
   option reversible at little cost is dropped on the upgrade, which then gives a new `rev`.
 - **An `impact:` line stored before Effect covered the options** (2026-10-14) may give the
-  recommended option's effect alone. In no era is a stored effect shown or carried over.
+  recommended option's effect alone. In no era is a stored card-level effect shown or carried
+  over.
 - **A `stakes:` line**, from before the `impact:` line replaced it, is kept as written and
   read for the Impact's reach and undo; the record drops it.
 - **A card stored before `why ask:` existed** carries none, or, once backfilled under the
@@ -220,8 +227,9 @@ writes the card to the current rules, as a record:
 
 ## A headline with no card
 
-A `decision N:` headline whose only indented lines are `raised:` (and `revised:`) is a
-headline-only decision, never a stored card to backfill as one.
+A `decision N:` headline whose only indented lines are `raised:` (and `revised:`, and one
+`why ask:` line a caller writes under a headline-only decision) is a headline-only decision,
+never a stored card to backfill as one.
 
 ## The cut
 

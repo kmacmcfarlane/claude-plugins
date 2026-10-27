@@ -38,7 +38,7 @@ recommendation alone (the sign test, § What makes a trade-off real).
 | 7 | `precedent` | it sets or changes what happens from now on: a standing rule or default; narrowing or widening a ruled rule; moving a kind or reason across this line; a capability taken on or dropped; work beyond the request; where something lives, unless one standing rule settles it; what the operator sees and when; a rule or answer relayed from another session | except the narrowing an operator's undo asks for (§ How the line moves). A relay is batchable (§ Raised) |
 | 8 | `your-call` | the call is the operator's even with nothing else at stake: it would reverse or narrow their own words, their answers conflict, or it is a product or policy call only they can make | — |
 | 9 | `trade-off` | the open catch-all: the options' consequences really differ on anything not named above, and a reasonable operator could weigh them differently | after the sign test; not when any option would do, when only taste differs and nothing depends on it, when a rule settles it, or when one option is both cheaper and safer |
-| — | `unclassed` | the backfill form (§ Raised), and doubt (below); no other case | when in doubt, ask |
+| — | `unclassed` | the backfill form (§ Raised; the decisions skill's legacy reference, § Stored card lines), and doubt (below); no other case | when in doubt, ask |
 
 **Doubt raises.** Two cases are kept apart:
 
@@ -365,7 +365,7 @@ the tags apart; § The line says when each applies. The spellings are confirmed 
 | `precedent` | what happens from now on: a rule, a default, a capability, wider scope, a placement no rule settles, a relay |
 | `your-call` | the operator's own call: their words, their conflicting answers, a product or policy call |
 | `trade-off` | a real trade-off on anything the reasons above do not name |
-| `unclassed` | the backfill form, or doubt on a named reason |
+| `unclassed` | the backfill form (the decisions skill's legacy reference, § Stored card lines), or doubt on a named reason |
 
 **Kinds** (decided alone; `decided: <time> <kind> — …`):
 

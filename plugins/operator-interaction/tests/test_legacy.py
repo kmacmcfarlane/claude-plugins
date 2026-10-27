@@ -130,6 +130,23 @@ def legacy_problems(legacy):
     return out
 
 
+PAGE_REV = ("A decision whose card is on a live answer page is upgraded from that page card "
+            "(`upgrade_cards.js --only N --records`, its page `rev` kept byte for byte), after "
+            "that page's answers are read back; only when the stored block was revised after "
+            "that `rev`, or the card is on no readable page, does it take the stored-lines `rev`.")
+
+
+def page_rev_problems(legacy):
+    """A stored legacy card also on a live answer page keeps the page's rev."""
+    text = flat(legacy)
+    out = []
+    if "*On a live answer page.*" not in text:
+        out.append("no live-page rule")
+    if PAGE_REV not in text:
+        out.append("the page card's rev is not kept")
+    return out
+
+
 def store_moved_problems(texts):
     """texts: {path: text} of the store files. A moved store clause still found there."""
     return ["%s keeps %r" % (f.name, phrase)
@@ -173,6 +190,13 @@ class LegacyReference(unittest.TestCase):
                   DECISIONS / "references" / "rendering.md", DECISIONS / "references" / "replies.md",
                   DECISIONS / "SKILL.md"):
             self.assertIn("`references/legacy-cards.md`", self.texts[f], f.name)
+
+    def test_a_page_card_keeps_its_page_rev(self):
+        self.assertEqual(page_rev_problems(self.legacy), [])
+        # mutants: the rule deleted; the stored-lines rev taken over the page's
+        self.assertTrue(page_rev_problems(self.legacy.replace("*On a live answer page.*", "")))
+        self.assertTrue(page_rev_problems(flat(self.legacy).replace(
+            "its page `rev` kept byte for byte", "a new `rev`")))
 
     def test_each_store_clause_moved_is_held_here(self):
         for phrase in STORE_HELD:

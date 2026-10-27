@@ -29,7 +29,9 @@ Without the skill, nothing here applies but the `closed N:` line, the `<repo>#N`
 the verbatim rule on every answer line (§ What the store records, **Answered**):
 `decisions needed:`, its store lines and the replies are as SKILL.md § Report and
 `report.md` give them. Without the skill there is no card-record reference, so no card is
-stored: each decision is raised headline-only, `$WI raise <id> -- '<question>'`.
+stored: each decision is raised headline-only, `$WI raise <id> -- '<question> — options: (a) … [recommended] | … | (z) decide later'`, and its one
+indented line, `why ask:` (`decide-alone.md` § Raised), is written under it with `$WI note
+<id> --raw`.
 
 ## What the librarian supplies to the skill
 
@@ -66,7 +68,8 @@ how the librarian raises, revises and reads a record, and what it binds in one.
   The check is the `decision-page` skill's checker in record mode (its `scripts/check_cards.js`),
   run from that skill's base directory as the session's skill list gives it (the directory
   holding its `SKILL.md`), the way that skill's own pre-publish check runs it; fix what it
-  refuses, then raise. `$WI raise` prints N. It writes the record once, then appends the
+  refuses, then raise. The record's `n` is any `n` of 1 or more; `wi` writes the N it gives
+  out over it. `$WI raise` prints N. It writes the record once, then appends the
   headline it builds from the record, `raised:` and the `card:` line; machine lines may ride
   this first raise with `--lines` (**Machine lines**, below). The decision's `group N:` and
   `depends N:` lines are written after the raise (**Grouped and depends**, at raise).
@@ -74,8 +77,8 @@ how the librarian raises, revises and reads a record, and what it binds in one.
   `wi`'s own checks only (it parses, its headline fields, its secrets), and the Report says so
   in one clause: *card records not schema-checked: no decision-page skill* (or *no node*).
   Without the `decisions` skill as well there is no card-record reference: the librarian raises
-  headline-only decisions, `$WI raise <id> -- '<question>'` (§ When it applies, *Without the
-  skill*).
+  headline-only decisions, `$WI raise <id> -- '<question> — options: (a) … [recommended] | … | (z) decide later'`, with the one `why ask:` line under each
+  through `$WI note <id> --raw` (§ When it applies, *Without the skill*).
 - **The headline** is `wi`'s, built from the record's `label` and `q`, never typed:
 
   ```
@@ -153,10 +156,13 @@ how the librarian raises, revises and reads a record, and what it binds in one.
 - **Machine lines** (`delegation:`, `terms:`, `act:`, `grant:`) go under the card's
   **current** `card:` line with `$WI raise <id> --revise N --why '<why>' --lines <lines file>`
   and no `--record`: the record and its `rev` stay unchanged, so its page answers keep
-  counting. `wi` refuses it once N is answered, as it refuses any revision. They may also ride
-  the first raise (`--record <file> --lines <lines file>`). A signed grant names the card's
-  current revision, `card: <record path> rev <rev> sha256:<hex>` as `$WI show <id> --card N`
-  prints it; how a card shows its grants (a `grant: <id>` line under its current `card:`
+  counting. `wi` refuses it once N is answered, as it refuses any revision. The lines file
+  holds one indented line per machine line, each opening with its key (`  delegation: …`).
+  `--revise N --lines` needs a `card:` line for N, so a legacy card is upgraded first (**A
+  legacy card**, below). They may also ride the first raise (`--record <file> --lines <lines
+  file>`), and after a `--revise N --record`, the machine lines that still apply ride that
+  revision's `--lines`. A signed grant names the card's current revision, `card: <record
+  path> rev <rev> sha256:<hex>`, with the values `show --card` prints; how a card shows its grants (a `grant: <id>` line under its current `card:`
   block, added while N is open) is an input for the signed-grants build, which settles it. A
   card a live grant names is never upgraded or revised while the grant runs.
 - **Revised:** `$WI raise <id> --revise N --why '<why>' --record <file>`, the new record
@@ -169,9 +175,10 @@ how the librarian raises, revises and reads a record, and what it binds in one.
   `raised:` (`wi` reads the first one per N), so its age and its order still count from the
   ask. A decision with no `raised:` line yet (a headline-only one getting its card) takes
   `--raised <UTC>`: the time the headline was committed — the commit time, not the ask time,
-  the closest the record holds — to the second, `TZ=UTC git -C "$MAIN" log --reverse
-  --date=format-local:%Y-%m-%dT%H:%M:%SZ --format=%cd -S'decision N:' -- <item file>`, first
-  hit.
+  the closest the record holds — to the second, `TZ=UTC git -C "$WORK_ITEMS_ROOT" log
+  --reverse --date=format-local:%Y-%m-%dT%H:%M:%SZ --format=%cd -S'decision N:' --
+  "$WORK_ITEMS_ROOT/items/<item file>"`, the first hit (the store's own history, which the
+  main checkout lacks when the store is its own repo).
 - **Reading a card:** `$WI show <id> --card N --json` reads the current record (`record`, with
   its `rev` and `sha256`). Every view reads it: a card or block renders it by the card-record
   reference; the list line reads its wait; where a view shows one effect — the Report's
@@ -189,21 +196,25 @@ how the librarian raises, revises and reads a record, and what it binds in one.
   or a ref — into a record by that reference's map, checked, and stored with `$WI raise <id>
   --revise N --why 'format upgrade to decision-card/5, rev kept' --record <file>` (with
   `--raised` where N has no `raised:` line): a format-only upgrade keeps the `rev` the
-  reference gives; a fact drawn from outside the card gives a new one. **An answered card is
-  never upgraded.** A headline whose only indented lines are `raised:` (and `revised:`) is a
-  headline-only decision, never a stored card to backfill as one: at its next touch it gets
+  reference gives; a fact drawn from outside the card gives a new one. A card that is also
+  on a live answer page is upgraded from that page card, its page `rev` kept, so the page's
+  answers still count (that reference's § Stored card lines, *On a live answer page*). **An
+  answered card is never upgraded.** A headline whose only indented lines are `raised:` (and `revised:`, and
+  the one `why ask:` line written without the decisions skill) is a headline-only decision, never a stored card to backfill as one: at its next touch it gets
   its card from the durable record (the item, its series, its commits), with a new `rev`, a
   fact no record holds written *not recorded*, never invented.
 - **The v5 reader rule:** a legacy block for N after a `card:` line for N, in file order (an
   older session's backfill), is compared with the record. A backfill, or nothing the record
   lacks: the record stays current, and `revised: <UTC> — legacy backfill after v5 ignored` is
   appended under that block. A real revision: it is upgraded into a new record with a **new**
-  `rev`.
+  `rev`. While that v5 block stands, every view takes the question, options and rec from the
+  record (`$WI show --card`), never from the last headline line.
 - **A missing or mismatched record file** (`$WI show --card` exits 3): show the headline, and
   say *card record missing (`<path>`); restore it from the store's history*; never backfill
   it.
 - **An older `wi`** (no `--record`): the record stays in the session's scratchpad, the
-  headline is raised headline-only (`$WI raise <id> -- '<question>'`; with no `raise` at all,
+  headline is raised headline-only (`$WI raise <id> -- '<question> — options: (a) … [recommended] | … | (z) decide later'`, the headline `wi` would
+  build from the record; with no `raise` at all,
   `invalid choice: 'raise'`, N is one more than the last decision number the counter grep
   prints, and the headline is written with `$WI note <id> --raw`), the card is shown from the
   scratchpad copy, and `--revise N --record` follows once `wi` updates. Never legacy lines in

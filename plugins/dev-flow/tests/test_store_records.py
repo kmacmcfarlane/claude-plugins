@@ -50,7 +50,19 @@ RULES = [
     ]),
     ("the headline-only fallback", [
         "Without the `decisions` skill as well there is no card-record reference: the librarian "
-        "raises headline-only decisions, `$WI raise <id> -- '<question>'`",
+        "raises headline-only decisions, `$WI raise <id> -- '<question> — options: (a) … "
+        "[recommended] | … | (z) decide later'`, with the one `why ask:` line under each through "
+        "`$WI note <id> --raw`",
+        "and the one `why ask:` line written without the decisions skill) is a headline-only "
+        "decision",
+    ]),
+    ("the record's n", [
+        "The record's `n` is any `n` of 1 or more; `wi` writes the N it gives out over it",
+    ]),
+    ("the raised time", [
+        "`TZ=UTC git -C \"$WORK_ITEMS_ROOT\" log --reverse "
+        "--date=format-local:%Y-%m-%dT%H:%M:%SZ --format=%cd -S'decision N:' -- "
+        "\"$WORK_ITEMS_ROOT/items/<item file>\"`, the first hit",
     ]),
     ("the revise", [
         "**Revised:** `$WI raise <id> --revise N --why '<why>' --record <file>`",
@@ -62,10 +74,14 @@ RULES = [
         "`$WI raise <id> --revise N --why '<why>' --lines <lines file>` and no `--record`: the "
         "record and its `rev` stay unchanged, so its page answers keep counting",
         "**current** `card:` line",
+        "The lines file holds one indented line per machine line, each opening with its key",
+        "`--revise N --lines` needs a `card:` line for N, so a legacy card is upgraded first",
+        "after a `--revise N --record`, the machine lines that still apply ride that revision's "
+        "`--lines`",
     ]),
     ("the grant", [
         "A signed grant names the card's current revision, `card: <record path> rev <rev> "
-        "sha256:<hex>` as `$WI show <id> --card N` prints it",
+        "sha256:<hex>`, with the values `show --card` prints",
         "is an input for the signed-grants build, which settles it",
         "A card a live grant names is never upgraded or revised while the grant runs",
     ]),
@@ -81,6 +97,8 @@ RULES = [
         "revision; never an answer, a list line, a Groom row, a tag-size mention, an estate "
         "sweep or a ref",
         "**An answered card is never upgraded.**",
+        "A card that is also on a live answer page is upgraded from that page card, its page "
+        "`rev` kept, so the page's answers still count",
         "is a headline-only decision, never a stored card to backfill as one",
     ]),
     ("the reader rule", [
@@ -88,6 +106,8 @@ RULES = [
         "A backfill, or nothing the record lacks: the record stays current, and `revised: <UTC> "
         "— legacy backfill after v5 ignored` is appended under that block",
         "A real revision: it is upgraded into a new record with a **new** `rev`",
+        "While that v5 block stands, every view takes the question, options and rec from the "
+        "record (`$WI show --card`), never from the last headline line",
     ]),
     ("the missing file", [
         "**A missing or mismatched record file** (`$WI show --card` exits 3): show the headline, "
@@ -96,6 +116,7 @@ RULES = [
     ]),
     ("the older wi", [
         "**An older `wi`** (no `--record`): the record stays in the session's scratchpad",
+        "the headline `wi` would build from the record",
         "the card is shown from the scratchpad copy, and `--revise N --record` follows once "
         "`wi` updates",
         "Never legacy lines in its place",
@@ -110,6 +131,8 @@ def problems(text):
         for p in phrases:
             if p not in flat_text:
                 out.append(f"{name}: missing {p[:60]!r}")
+    if 'git -C "$MAIN" log --reverse' in flat_text:
+        out.append("the raised time is read from the main checkout's history")
     # no stored card in indented lines is written any more
     if re.search(r"^\s+(what|why now|context|rec|basis|unknown): <", text, re.M):
         out.append("a stored-line card template is still written")
@@ -131,6 +154,11 @@ class StoreRecords(unittest.TestCase):
                 cut = flat_text.replace(p, "")
                 self.assertNotEqual(cut, flat_text, p)
                 self.assertTrue(problems(cut), f"{name}: {p}")
+
+    def test_the_main_checkout_recipe_restored_is_caught(self):
+        cut = self.text.replace('git -C "$WORK_ITEMS_ROOT" log', 'git -C "$MAIN" log')
+        self.assertNotEqual(cut, self.text)
+        self.assertIn("the raised time is read from the main checkout's history", problems(cut))
 
     def test_a_stored_line_template_restored_is_caught(self):
         self.assertIn("a stored-line card template is still written",
