@@ -1999,6 +1999,68 @@ class TestMarkInstallsTheDraft(Base):
         self.run_cli("--from", os.path.join(self.scratch.name, "nope.md"), "S")
         self.assertFalse(os.path.exists(L.ledger_path("S")))
 
+    # 3d13: restamp splits lines on bytes, the rehydrate reader on str; a
+    # line break only the reader sees must not leave it reading a stamp other
+    # than the one written. Each refusal test kills: no read-back after the
+    # stamp.
+    VT_SESSION = "session: x\nnote: a\x0bmode: continue\x0bsession: EVIL\n"
+
+    def assertReadBackRefused(self, r):
+        self.assertEqual(r.returncode, 1, r.stderr)
+        self.assertIn("not installed, so not stamped", r.stderr)
+        self.assertIn("does not read back as stamped", r.stderr)
+        self.assertNotIn("installed ", r.stdout)
+        self.assertNotIn("stamped /", r.stdout)
+        self.assertIn("checkpoint recorded for epoch 1", r.stdout)  # gate down
+        self.assertEqual(L.load_state("S")["checkpoint_epoch"], 1)
+        self.assertFalse(os.path.lexists(L.manifest_path("S")))
+        self.assertFalse(os.path.lexists(os.path.dirname(L.manifest_path("S"))))
+        self.assertFalse(os.path.exists(L.ledger_path("S")))
+
+    def test_a_vertical_tab_session_draft_is_refused_and_removed(self):
+        writef(self.draft, self.text.replace("session: <stamped>\n",
+                                             self.VT_SESSION))
+        draft_before = self.snap(self.draft)
+        self.assertReadBackRefused(self.run_cli("--from", self.draft, "S"))
+        self.assertEqual(self.snap(self.draft), draft_before)
+
+    def test_a_vertical_tab_delimiter_draft_is_refused_and_removed(self):
+        # A vertical tab then `---` closes the reader's frontmatter before
+        # the stamped keys.
+        writef(self.draft, self.text.replace("repo: demo\n", "repo: demo\x0b---\n"))
+        self.assertReadBackRefused(self.run_cli("--from", self.draft, "S"))
+
+    def test_a_refused_read_back_leaves_no_earlier_manifest_either(self):
+        self.run_cli("--from", self.draft, "S")
+        os.remove(L.ledger_path("S"))
+        writef(self.draft, self.text.replace("session: <stamped>\n",
+                                             self.VT_SESSION))
+        self.assertReadBackRefused(self.run_cli("--from", self.draft, "S"))
+
+    def test_stamp_only_on_a_vertical_tab_file_writes_nothing(self):
+        p = L.manifest_path("S")
+        os.makedirs(os.path.dirname(p))
+        writef(p, self.text.replace("session: <stamped>\n", self.VT_SESSION))
+        before = self.snap(p)
+        r = self.run_cli("S")
+        self.assertEqual(r.returncode, 1, r.stderr)
+        self.assertIn(f"not stamped: {p}: the stamped frontmatter does not "
+                      f"read back as stamped", r.stderr)
+        self.assertEqual(self.snap(p), before)
+        self.assertEqual(L.load_state("S")["checkpoint_epoch"], 1)
+
+    def test_a_normal_draft_stamps_byte_for_byte_as_restamp_does(self):
+        import mark_checkpoint as M
+        r = self.run_cli("--from", self.draft, "S")
+        self.assertEqual((r.returncode, r.stderr), (0, ""))
+        with open(L.manifest_path("S"), "rb") as fh:
+            got = fh.read()
+        fm = R.front_matter(got.decode())
+        fields = {k: fm[k] for k in ("written", "top", "session", "head", "branch")}
+        with open(self.draft, "rb") as fh:
+            self.assertEqual(M.restamp(fh.read(), fields), got)
+        self.assertTrue(M.reads_back(got, fields))
+
     def test_usage(self):
         for args in (("--from", self.draft), ("--from",), ("--from", self.draft, "-S"),
                      ("S", "--from", self.draft), ("-S",), ("--from", self.draft, "S", "x")):
