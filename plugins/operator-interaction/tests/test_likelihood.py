@@ -240,7 +240,7 @@ class LikelihoodRunner(unittest.TestCase):
         out = self.lk_lints({"kind": "observed", "seen": "a 40% chance the old links break again, I am fairly confident"})
         text = "\n".join(out)
         self.assertIn('the likelihood holds an estimate ("chance")', text)
-        self.assertIn('the likelihood gives a percentage ("%") with no source in brackets after it', text)
+        self.assertIn('the likelihood gives a share ("%") with no source in brackets beside it', text)
         self.assertIn("an observed likelihood ends on no source in brackets", text)
         self.assertEqual(len(out), 3, out)
 
@@ -255,11 +255,74 @@ class LikelihoodRunner(unittest.TestCase):
                                                                      "a week of usage graphs would show it"}))
         self.assertIn('opens on a carried-over basis word ("(estimated)")', out)
         out = "\n".join(self.lk_lints({"kind": "observed", "seen": "readers hit old links (access log) on two percent of visits"}))
-        self.assertIn('gives a percentage ("percent")', out)
+        self.assertIn('gives a share ("percent")', out)
         # a percentage with its source after it, an observed fact ending on its source, and an evidence line: clean
         for lk in ({"kind": "observed", "seen": "old links were 2 percent of last month's visits (the site's access log)"},
                    {"kind": "evidence", "seen": "no log covers the old links; a week of the access log would show it"}):
             self.assertEqual(self.lk_lints(lk), [], lk)
+
+    def test_the_finish_round_probes(self):
+        def lints(kind, seen):
+            return self.lk_lints({"kind": kind, "seen": seen})
+
+        def has(kind, seen, needle):
+            out = "\n".join(lints(kind, seen))
+            self.assertIn(needle, out, seen)
+        # 1. estimate words
+        for seen in ("a high probability the disk fills; a week of usage graphs would show it",
+                     "the disk almost certainly fills; a week of usage graphs would show it",
+                     "I'd guess the disk fills; a week of usage graphs would show it",
+                     "maybe the disk fills; a week of usage graphs would show it"):
+            has("evidence", seen, "the likelihood holds an estimate")
+        # 2. a basis word only on evidence, never (observed); a bracketed name is no basis word
+        has("evidence", "(estimated) the disk fills; a week of usage graphs would show it", "carried-over basis word")
+        for kind in ("observed", "evidence"):
+            self.assertFalse([x for x in lints(kind, "(CI) fails on every PR touching docs, 14 of 14 (CI history)")
+                              if "basis word" in x], kind)
+        self.assertFalse([x for x in lints("observed", "(estimated) the disk fills in three months (usage graphs)")
+                          if "basis word" in x])
+        # 3. an estimate word in quoted text is the source's, not the writer's
+        self.assertEqual(lints("observed", 'the log shows "connection likely reset" on every retry (ops log)'), [])
+        # 4. a share inside a bracket that holds a word is sourced
+        self.assertEqual(lints("observed", "failed on 3 of 40 deploys (CI history, 7.5%)"), [])
+        has("observed", "a 40% chance the old links break again, I am fairly confident", "gives a share")
+        # 5. no-data phrasings
+        for seen in ("no data available", "no data yet", "none known"):
+            has("evidence", seen, "a bare no data is never the line")
+        # 6. a ratio in words, unsourced only
+        has("evidence", "nine in ten uploads fail; a week of logs would show it", 'gives a share ("nine in ten")')
+        self.assertEqual(lints("observed", "nine in ten uploads fail (CI history)"), [])
+
+    def test_the_finish_round_mutants(self):
+        cases = [
+            # the new estimate words gone
+            ({"kind": "evidence", "seen": "maybe the disk fills; a week of graphs would show it"},
+             "|maybe|perhaps|almost certain(ly)?|guess(ed)?|presumabl[ey])", ")", False),
+            # quoted text read again
+            ({"kind": "observed", "seen": 'the log shows "connection likely reset" on every retry (ops log)'},
+             "const e = unquoted(s).match(LK_ESTIMATE);", "const e = s.match(LK_ESTIMATE);", True),
+            # the basis word on any kind
+            ({"kind": "observed", "seen": "(estimated) the disk fills in three months (usage graphs)"},
+             'if (l.kind === "evidence" && LK_CARRIED.test(s))', "if (LK_CARRIED.test(s))", True),
+            # a share inside a worded bracket no longer sourced
+            ({"kind": "observed", "seen": "failed on 3 of 40 deploys (CI history, 7.5%)"},
+             "if (/[A-Za-z]{2,}/.test(inner.replace(m[0], \" \"))) continue;", "", True),
+            # the ratio in words gone
+            ({"kind": "evidence", "seen": "nine in ten uploads fail; a week of logs would show it"},
+             "|\\b\\w+ in (?:ten|a hundred|\\d+)\\b/gi", "/gi", False),
+            # the new no-data phrasings gone
+            ({"kind": "evidence", "seen": "none known"},
+             "|unknown|not known|none known|tbd)", "|unknown|not known)", False),
+        ]
+        for lk, old, new, lints_under_mutant in cases:
+            with self.subTest(old):
+                before, after = self.lk_lints(lk), self.lk_lints(lk, mutant_runner(old, new))
+                if lints_under_mutant:
+                    self.assertEqual(before, [], lk)
+                    self.assertTrue(after, lk)
+                else:
+                    self.assertTrue(before, lk)
+                    self.assertEqual(after, [], lk)
 
     def test_each_likelihood_lint_is_proved_by_a_mutant(self):
         cases = [
@@ -269,7 +332,7 @@ class LikelihoodRunner(unittest.TestCase):
             ({"kind": "evidence", "seen": "down 2% of the time; a week of logs would show it"},
              "if (p) say(", "if (false) say("),
             ({"kind": "evidence", "seen": "(estimated) the disk fills; a week of graphs would show it"},
-             "if (LK_CARRIED.test(s))", "if (false)"),
+             'if (l.kind === "evidence" && LK_CARRIED.test(s))', "if (false)"),
             ({"kind": "observed", "seen": "readers hit the old links about 300 times last month"},
              'if (l.kind === "observed" && !LK_SOURCE_END.test(s))', "if (false)"),
             ({"kind": "evidence", "seen": "outages are likely; a week of logs would show it"},
@@ -325,7 +388,7 @@ BEST_LINE = re.compile(r"^\*\*Best response\?:\*\* (\S.*)$")
 NO_DATA = re.compile(r"^\W*(no data|unknown|not known|none)\W*$", re.I)
 # the runner's own patterns (check_cards.js, LK_ESTIMATE and LK_PERCENT): an estimate word; a percentage ("%" or
 # "percent") with no bracketed source after it
-ESTIMATE = re.compile(r"\b(likely|unlikely|probabl[ey]|chances?|odds)\b", re.I)
+ESTIMATE = re.compile(r"\b(likely|unlikely|probab(ly|le|ility|ilities)|chances?|odds|maybe|perhaps|almost certain(ly)?|guess(ed)?|presumabl[ey])\b", re.I)
 PERCENT = re.compile(r"(%|\bper\s?cent\b)(?![\s\S]*\()", re.I)
 # Best response?'s one form: its yes or no, then a dash (`no — …`), as rendering.md's example has it
 BEST_YES_NO = re.compile(r"^(yes|no|partly)\b", re.I)

@@ -337,25 +337,40 @@ function mech(c, say) {
    the evidence there is; never a bare no data, never an estimated probability, and a percentage only as an observed
    share with its source. Proxies over the shown seen (the page's own likelihoodOf); a lint, never a refusal, so a
    carried-over card renders ---- */
-const LK_NO_DATA = /^\W*(no data|unknown|not known)\W*$/i;
-const LK_ESTIMATE = /\b(likely|unlikely|probabl[ey]|chances?|odds)\b/i;
-/* a percentage with no bracketed source after it: "%" or "percent", and no "(" anywhere after it */
-const LK_PERCENT = /(%|\bper\s?cent\b)(?![^]*\()/i;
+const LK_NO_DATA = /^\W*(no (data|records?|information)( (available|yet|so far|found))?|unknown|not known|none known|tbd)\W*$/i;
+const LK_ESTIMATE = /\b(likely|unlikely|probab(ly|le|ility|ilities)|chances?|odds|maybe|perhaps|almost certain(ly)?|guess(ed)?|presumabl[ey])\b/i;
+/* quoted text (a log line, a message as written) is not the writer's estimate: read the line without it */
+const unquoted = s => s.replace(/`[^`]*`|"[^"]*"|“[^”]*”/g, " ");
+/* a share: "%", "percent", or a ratio in words ("nine in ten", "one in 40") */
+const LK_SHARE = /%|\bper\s?cent\b|\b\w+ in (?:ten|a hundred|\d+)\b/gi;
+/* the first share with no source: none in a bracket after it, and not inside a bracket that also holds a word
+   ("(CI history, 7.5%)"); null when every share is sourced */
+const unsourcedShare = s => {
+  for (const m of s.matchAll(LK_SHARE)) {
+    const at = m.index, end = at + m[0].length;
+    if (s.slice(end).includes("(")) continue;
+    const open = s.lastIndexOf("(", at), shut = s.lastIndexOf(")", at);
+    if (open > shut) { const close = s.indexOf(")", end), inner = s.slice(open + 1, close < 0 ? s.length : close);
+      if (/[A-Za-z]{2,}/.test(inner.replace(m[0], " "))) continue; }
+    return m[0];
+  }
+  return null;
+};
 /* an observed fact's source, in brackets at the end */
 const LK_SOURCE_END = /\([^()]+\)\W*$/;
-/* the upgrader's carried-over basis word at the head of seen: "(estimated) …" */
-const LK_CARRIED = /^\s*\([A-Za-z][A-Za-z -]*\)\s/;
+/* the upgrader's carried-over basis word at the head of an evidence seen: "(estimated) …", never "(observed) " */
+const LK_CARRIED = /^\s*\((?!observed\))[a-z]+\)\s/;
 function likelihoodLint(c, say) {
   const l = page.likelihoodOf(c);
   if (!l) return;
   const s = l.seen, fix = "name the event, then the strongest fact (a count with its window and source), else the evidence there is and what would settle it";
   if (LK_NO_DATA.test(s))
     say("likelihood no-data", "impact: the likelihood says only \"" + s.trim() + "\": " + fix + "; a bare no data is never the line");
-  const e = s.match(LK_ESTIMATE);
+  const e = unquoted(s).match(LK_ESTIMATE);
   if (e) say("likelihood estimate", "impact: the likelihood holds an estimate (\"" + e[0] + "\"): give an observed fact instead, or the evidence there is; or leave it knowingly");
-  const p = s.match(LK_PERCENT);
-  if (p) say("likelihood percent", "impact: the likelihood gives a percentage (\"" + p[0] + "\") with no source in brackets after it: a percentage is an observed share, with its source and window; or leave it knowingly");
-  if (LK_CARRIED.test(s))
+  const p = unsourcedShare(s);
+  if (p) say("likelihood percent", "impact: the likelihood gives a share (\"" + p + "\") with no source in brackets beside it: a percentage is an observed share, with its source and window; or leave it knowingly");
+  if (l.kind === "evidence" && LK_CARRIED.test(s))
     say("likelihood carried", "impact: the likelihood opens on a carried-over basis word (\"" + s.trim().match(/^\([^)]*\)/)[0] + "\"): " + fix + ", and drop the word");
   if (l.kind === "observed" && !LK_SOURCE_END.test(s))
     say("likelihood source", "impact: an observed likelihood ends on no source in brackets: give where the fact comes from, (the provider's status page); or leave it knowingly");
