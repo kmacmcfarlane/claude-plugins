@@ -1306,6 +1306,103 @@ estate sweep pass it by. The target is one token, never containing a
 space. `wi` does not parse it yet; a reader splits it with
 `^closed (\d+): (acted|rule|superseded by) (\S+)$`.
 
+## Groups and dependencies: `group` / `depends`
+
+Which decisions belong together, and which one waits on another's answer, are kept as body
+lines, so a caller (a chat block, an answer page's writers) reads them from the store instead
+of working them out each time. Every line here is one physical line at column 0, never
+wrapped, appended (`wi note <id> --raw -- '<line>'`, or Bash), never indented and never
+inserted between a `decision N:` headline and its card. A line inside a fenced code block,
+an indented line, and a line that does not match its pattern below are not read.
+
+**A group** is an entity with a stable id, so a rename never orphans its members. Its
+**entity line** names it; a bundle's (a group whose cards share their context) also carries
+what its members share and the shared context, written once here and never on the members:
+
+```
+group g-<MMDD>-<hhh>: <plain name>
+group g-<MMDD>-<hhh>: <plain name> · shares: <what its members share> · context: <shared context>
+```
+
+The last entity line per id wins, so a rename is one appended entity line and the members
+follow it unchanged. The entity line goes in the item where the group was created, and its
+repeats stay in that item. A reader looks an id up across the whole store, `items/` and
+then `archive/*/`, so archiving that item never orphans the group. The `shares` and
+`context` parts come together or not at all; neither the name nor the shares part holds a
+`·` (reword it). The name is plain words, never an id.
+
+Each decision's **member line** says which group it is in. It goes in the item that holds
+`decision N:`, after its card, like every other line keyed by N; the last member line per N
+wins, so a regroup is one appended member line:
+
+```
+group N: g-<MMDD>-<hhh>
+```
+
+A member line holding a name instead of an id is malformed. A decision with no member line
+reads its item's default group: the item's `short_display_name`, else its title, with no
+id. A member line naming an id with no entity line in the store has no group.
+
+**The id** is `g-<MMDD>-<hhh>`, for example `g-1022-a3f`: the UTC month and day it was made,
+then the first three hex characters of the SHA-256 of `<UTC time to the second> <item id>
+<plain name>`. Group ids are not numbers and take nothing from the decision counter
+(§ Allocating a decision number): there is no group counter and no lock. Make one with this
+line (GNU and BSD tools alike):
+
+```bash
+t=$(date -u +%Y-%m-%dT%H:%M:%SZ); md=$(printf %s "$t" | cut -c6-7,9-10)
+printf 'g-%s-%s\n' "$md" "$(printf '%s %s %s' "$t" "<item id>" "<plain name>" | { sha256sum 2>/dev/null || shasum -a 256; } | cut -c1-3)"
+```
+
+Before writing it, check that it is not taken; a hit means drawing again a second later
+(run `unset -f grep find` first in a shell where those are functions):
+
+```bash
+grep -rqE '^group <id>:' <root>/items <root>/archive && echo taken
+```
+
+A store makes a few groups a day, so 4,096 hashes a day keep a same-day collision rare; the
+date only spreads the ids out. A **duplicate** is entity lines for one id in two different
+items, which only a collision the check missed leaves (two sessions in the same second).
+The session that finds one deletes the entity line it wrote, the one deletion these lines
+allow, since the id was never valid there, and re-creates its group under a new id, with
+new member lines for its members. Repeats of one id within one item are renames (last
+wins), never a duplicate. A group id is store-internal: it is never shown to the operator,
+on any surface, where the group goes by its plain name; only store lines and agent briefs
+carry it.
+
+**A dependency** says decision N presupposes another's answer:
+
+```
+depends N: <target>[, <target>…][ — <why>]
+depends N: none[ — <why>]
+```
+
+A target is `M`, `M (x)`, `<repo>#M` or `<repo>#M (x)` (§ Operator questions, Another
+repo's decision). `x` is one option letter, `a` to `y`: depending on a *decide later* means
+nothing, so `(z)` is not written. A letter means "only if M is answered (x)"; no letter
+means "after M is answered, whatever its answer". Targets on the same M are alternatives
+(any listed letter); targets on different Ms all apply: `depends 42: 41 (a), 41 (c), 47`
+reads only if 41 is answered (a) or (c), and after 47 whatever its answer. The last line
+per N is the whole set, and `none` empties it; with no line, N depends on nothing. A target
+closed `superseded by M` (§ Closed), or carrying a legacy `withdrawn K: reframed as M`,
+resolves to M, following the chain; the resolved edge keeps no letter.
+
+**Reading them.** A reader splits the lines with these patterns, `T` standing for one
+target, `(?:[A-Za-z0-9._-]+#)?\d+(?: \([a-y]\))?`:
+
+- group entity: `^group (g-\d{4}-[0-9a-f]{3}): ([^·\s][^·]*?)(?: · shares: ([^·\s][^·]*?) · context: (\S.*))?$`
+- group member: `^group (\d+): (g-\d{4}-[0-9a-f]{3})$`
+- depends: `^depends (\d+): (none|T(?:, T)*)(?: — (\S.*))?$`
+- each target: `(?:([A-Za-z0-9._-]+)#)?(\d+)(?: \(([a-y])\))?`
+
+None of these lines is `decision N:` or `answer N:`, so they open no question and answer
+none: `needs-input`, the decision counter and the estate sweep pass them by. `wi` does not
+parse them yet. They are written once `wi raise` has printed N, with `wi note --raw`, never
+through `raise --lines`, which takes only indented machine card lines. Who writes them, and
+when, is the caller's rules (the librarian-mode convention): one session, the store's
+writer, never a dispatched agent.
+
 ## Shown and seen: `shown N:` / `seen N:`
 
 Each time decision N is put in front of the operator, the session that
@@ -1418,8 +1515,10 @@ kind's rules; this table is where a reader finds them all.
 | seen | `seen N: <UTC> <turn \| page \| doc>` | 0 | the session that displayed it | `SEEN_RE` | landed (held: § Shown and seen) |
 | decided | `decided: <UTC> <class> — … · authority: … · reopen: …` | 0 | the caller | no (§ Decided alone gives a reader's split) | landed |
 | open question | `open question: <text>`, closed by `open question: <text> → decision N` or `open question dropped: <text> — <why>` | 0 | the caller (the librarian-mode convention) | no | landed |
-| group, depends | `group g-<MMDD>-<hhh>: …`, `group N: g-…`, `depends N: …` | 0 | the session that writes the decisions | that plan's patterns | planned (the depends-and-groups plan) |
-| writer run | `writer-run: …` | 0 | the librarian | no | planned (the depends-and-groups plan) |
+| group | `group g-<MMDD>-<hhh>: <plain name>[ · shares: <what its members share> · context: <shared context>]` | 0, in the item where the group was created | the session that writes the decisions, never a dispatched agent | no (§ Groups and dependencies gives a reader's patterns) | landed; last line per id wins |
+| group member | `group N: g-<MMDD>-<hhh>` | 0 | the session that writes the decisions, never a dispatched agent | no (§ Groups and dependencies gives a reader's pattern) | landed; last line per N wins |
+| depends | `depends N: <M[ (x)] \| <repo>#M[ (x)] \| none>[, …][ — <why>]` | 0 | the session that writes the decisions, never a dispatched agent | no (§ Groups and dependencies gives a reader's patterns) | landed; last line per N is the whole set |
+| writer run | `writer-run: <UTC> <page short name> w<k>/<K> — cards <n> · tokens <input>/<output> · lints <n> [<keys>]` | 0 | the librarian, one line per answer-page writer (the librarian-mode convention gives its place and sources) | no | landed |
 | delegation | `delegation dl-…: …`, its revoke and `revoke-ack` lines | 0 | the session that grants it | the answer-changes plan's patterns | planned (the answer-changes plan) |
 
 - **A row's state.** A plan that adds a line kind lists it here as *planned*; the commit that

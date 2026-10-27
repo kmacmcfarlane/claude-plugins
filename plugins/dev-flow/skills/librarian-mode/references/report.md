@@ -40,7 +40,9 @@ decision N: <question> — options: (a) … [recommended] | (b) … | (z) decide
 
 The question may open on a source label and its short name, `F7 (oversize upload) · `;
 the line still opens `decision N:`. The reply is `answer N: <reply>`; on re-entry continue
-from the highest N (`rehydrate.md` § Step 3), else 1.
+from the highest N (`rehydrate.md` § Step 3), else 1. Group ids are not numbers: they are a
+short time plus a hash (`decisions.md` § What the store records, **Grouped and depends**),
+and take nothing from this counter.
 
 ## With the decisions skill
 
