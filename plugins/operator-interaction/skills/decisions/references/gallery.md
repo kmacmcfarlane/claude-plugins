@@ -1076,3 +1076,77 @@ On an answer page the same card shows a Finding part in the same place, its code
 block that shows every character as typed. Not this: the finding above the card, before the
 title (265 (a)'s provisional reading, replaced by 337 (a)); nor a Finding of "F3: XSS in the
 welcome email", a label with no mechanism.*
+
+---
+
+## 34. A scope line against the requirements
+
+*Situation: the operator's brief for a booking app's new settings page lists its acceptance
+criteria, and one of them says every setting must be reachable from the keyboard. Building
+the page turned up a choice the criteria decide, so the card says how it stands against them on
+its own **Scope:** line, after **What:**, before the folds and the Impact (answer 266 (b)).*
+
+**98 — Keep the custom colour picker on the settings page?**
+**Context:** the settings page you asked for has a custom colour picker for the calendar's event colours, and the browser's own colour field is the plain alternative; the page's acceptance criteria are the brief's list of what it must do. You approved the page's layout yesterday · you decide which picker ships.
+**What:** which colour picker the settings page ships with for event colours.
+**Scope:** *required* — every setting can be reached and changed from the keyboard alone, the brief's third criterion
+▸ Assumptions — basis: **strong** · 1 assumption with its tripwire
+**Impact:** later: the settings page does not ship this week · reach: everyone who sets an event colour
+- (a) Keep the custom picker and make it keyboard-ready
+  *→ the picker gains arrow-key moves and a focus ring, so a keyboard user can pick any colour; before, the swatches took mouse clicks only · cost: about two days*
+  *pros: the look you approved stays as it is*
+  *cons: two more days before the page ships*
+- **(b) Use the browser's own colour field**
+  *→ the swatches go, and the field opens the browser's colour dialog, which every browser already drives from the keyboard · cost: about an hour*
+  *pros: the criterion is met today, by the browser itself*
+  *cons: the dialog looks different in each browser, not like the approved layout*
+- (z) Decide later — *the settings page waits; event colours stay fixed*
+
+▸ Background — why now: the settings page is the last part of this release, and it cannot ship while a criterion is unmet.
+
+*The criterion goes on the Scope line, in plain words, not in Context, and the line opens on its
+level: *required*, *shapes the work* (it decides something the work itself creates, such as
+the page's layout), or *outside the criteria* (no criterion covers it). The title carries no
+scope tag. A card from work with no stated requirements has no Scope line. On an answer page the
+same card shows a Scope part in the same place, its level a small boxed word. Not this: a
+Scope of *required* with no criterion after it; nor the criterion quoted in Context with no
+Scope line.*
+
+---
+
+## 35. A risk, with its likelihood and best response
+
+*Situation: a shop's checkout failed during the payment provider's last outage, and the
+operator asked whether to add a second provider as a fallback. The options trade against a
+failure that may or may not happen again, so the card says how often it has happened, from the
+provider's own record, and whether a fallback is the response that matters (answers 267 (a) and
+339 (a)).*
+
+**99 — Add a second payment provider for outages?**
+**Context:** the shop takes card payments through one payment provider, and checkout failed while that provider was down last month; a queued retry would hold a failed payment and try it again once the provider answers. You asked for a fallback after that outage · you decide how checkout meets the next one.
+**What:** how the shop's checkout handles the payment provider being down.
+**Likelihood:** *(observed)* the payment provider went down twice in the last twelve months, each time for under an hour (the provider's public status page)
+**Best response?:** no — a queued retry covers both outages; a second provider is a bigger change for the same hours
+▸ Assumptions — basis: **partial** · 1 assumption with its tripwire
+**Impact:** later: checkout fails again at the next outage · reach: every customer who pays during an outage
+- (a) Add a second provider and switch to it on failure
+  *→ a payment the first provider refuses with an outage error goes to the second, so checkout keeps working; before, the customer saw an error and left · cost: a second contract, about two weeks of work and a monthly fee*
+  *pros: checkout works through a long outage too*
+  *cons: two providers to keep in step, for about two hours of downtime a year*
+- **(b) Queue failed payments and retry them**
+  *→ a payment that fails with an outage error is held, the customer sees "payment pending", and it is retried every minute until the provider answers; before, the order was lost · cost: about three days of work*
+  *pros: covers every outage on record, at a fraction of the work*
+  *cons: an outage longer than a few hours leaves orders pending until it ends*
+- (z) Decide later — *checkout stays as it is; the next outage fails it again*
+
+▸ Background — why now: you asked for a fallback after last month's outage, and the next release closes on Friday.
+
+*The Likelihood names the event it counts (the provider going down), then the strongest fact
+found, a count with its window and its source, and Best response? says whether the fallback the
+operator asked about is the response that matters. With no record to count from, the line
+gives the evidence there is and what would settle it, under *(evidence)*: **Likelihood:**
+*(evidence)* no outage log covers the provider before this year; its status page would show
+the last two years. On an answer page the same card shows a Likelihood part in the same place,
+its kind a small boxed word, with Best response? under it. Not this: a Likelihood of "no data";
+nor "outages are unlikely", an estimate with no fact; nor "a 2% chance", a percentage with no
+source.*

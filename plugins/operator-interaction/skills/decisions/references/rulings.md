@@ -414,3 +414,46 @@ alternative not taken, in case practice argues for it.
   taken: the page card opening on the finding and chat showing it above the card (337 (b),
   265 (a) as given), which would have reversed *TLDR first* for findings cards; the finding
   right after the TLDR (337 (c)).
+- **A Scope line against the requirements, both surfaces** (2026-10-20, answer 266 (b), from the
+  operator's words relayed on 2026-10-16, a card wants "a top line describing how in-scope the
+  change is" to the work's conditions of satisfaction; its place set by the v4 layout, signed off
+  with answer 313 on 2026-10-22) — wherever the work states requirements, a card carries its
+  own **Scope:** line, after What and any Finding and before the folds above the Impact, never
+  folded: *required*, with the criterion in plain words; *shapes the work*, with what it shapes;
+  or *outside the criteria*. The criterion goes on that line, not in Context; the title carries
+  no scope tag and the page no scope pill; the line is left out where the work states no
+  requirements. It reorders the 2026-10-12 chat order and the 2026-10-09 page order (*TLDR
+  first*) by adding a part after What, as 266 (b) named on its card. Designs made in planning
+  and build, not the operator's: the record's `scope`, `{level, says}`, its levels
+  `required`, `shapes` and `outside` (the page refuses another, and a `required` or
+  `shapes` scope with no `says`); the page's level as a small boxed word; the chat line's
+  form, `**Scope:** *level* — says`; the pre-publish runner reading `says` for ids and in the
+  cold read, and counting it in the card in all. Not taken: the scope word on the title line, a
+  pill on the page (266 (a)); a line only on decisions outside the criteria (266 (c)).
+- **Likelihood, widened, and Best response?, both surfaces** (2026-10-20, answer 267 (a),
+  widened: "Provide or determine counts (or other forms of concrete facts) where possible, but
+  fall back to describing the evidence available"; Best response? kept as a second line of the
+  Likelihood part by answer 339 (a), 2026-10-22; their place set by the v4 layout, signed off
+  with answer 313) — a risk decision, one whose options trade against a failure that may or may
+  not happen, carries **Likelihood:** after the Scope (else What or Finding) and before the folds
+  above the Impact, never folded: it names the event it counts, then a count or another
+  concrete fact where there is one, else a description of the evidence available, and
+  **Best response?:** under it, whether acting here is the most important response to that
+  failure, and if not, what is. A bare *no data* is never the line; estimated probabilities
+  stay banned (*No confidence percentage*, 2026-09-24, about the agent's confidence, stands: an
+  observed count is evidence). It changes the evidence-basis design sentence that said
+  likelihood only in words, never as a number. Designs made in planning and build, not the
+  operator's: a reading of answer 267's words, "counts (or other forms of concrete facts)", as
+  an order of preference (an observed count with its window and source; else another fact:
+  when it last happened, an observed share, whether the failing path is reachable, a
+  reproduction, whether a guard exists; else the evidence there is and what would settle it),
+  and a percentage only as an observed share with its source and window; the record's `likelihood`, `{kind,
+  seen}`, its kinds `observed` and `evidence` (the page refuses another), and `best` beside it
+  (the page refuses one with no `likelihood`); the page's kind as a small boxed word; the chat
+  lines' form, `**Likelihood:** *(kind)* seen` and `**Best response?:** best`; the pre-publish
+  runner reading both for ids, `best` whole and `seen` for named things in the cold read (an
+  observed count in `seen` is its fact, not a set Context names), and counting both in the card
+  in all, and its `likelihood` lint (a bare no data, an estimate word, a percentage
+  with no bracketed source, a carried-over basis word, an observed fact with no source) and
+  `best` lint (a new card's likelihood with no Best response?). Not taken: Likelihood in words only (267 (b)); Best response? dropped (339 (b)) or
+  folded into the Assumptions fold (339 (c)).

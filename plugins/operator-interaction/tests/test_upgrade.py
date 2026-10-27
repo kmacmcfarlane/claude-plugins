@@ -247,9 +247,15 @@ class Upgrade(unittest.TestCase):
         # and the plan lint on a (z) the kit gave no plan. Its what is the What part now (F6): no lint
         self.assertIn(rcode, (0, 2), rout)
         self.assertNotIn("what present", rout)
+        # and the likelihood lint (F9) on the kit's carried-over likelihoods: card 52's basis word kept at the head of
+        # seen, card 53's observed fact with no bracketed source; neither has a best, which a carried-over card may lack
         self.assertTrue(all(ASSUME_LINT in x or "(pros and cons)" in x or "per gives only the recommended" in x
                             or "(an option's view)" in x or any(t in x for t in PLAN_LINTS)
+                            or "card 52: impact: the likelihood opens on a carried-over basis word" in x
+                            or "card 53: impact: an observed likelihood ends on no source" in x
                             for x in rout.splitlines()), rout)
+        self.assertIn('card 52: impact: the likelihood opens on a carried-over basis word ("(estimated)")', rout)
+        self.assertNotIn("has no best", rout)
         # the kit's plans come over as the option's plan in brief, and its view opens on them
         self.assertTrue(all(o.get("plan") for c in d["cards"] for o in c["options"] if o["k"] != "z"))
         h = run_page(d)["cards"][0]["more"]["a"]

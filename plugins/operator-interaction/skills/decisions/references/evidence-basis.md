@@ -67,5 +67,23 @@ same preference three renders apart gets the same word.
 
 How well founded a claim is and how likely an outcome is are different questions. A
 well-observed claim can still describe an uncertain outcome ("the race condition may still
-occur"). When likelihood matters, say it in words on the option's impact line (*likely*,
-*unlikely*), never as a number, and never folded into the basis word.
+occur"). Never fold likelihood into the basis word.
+
+On a **risk decision**, one whose options trade against a failure that may or may not happen,
+the card's **Likelihood:** line (`references/rendering.md` § Card) names the event it counts,
+in plain words, then gives the strongest concrete fact available (answer 267 (a), widened), in
+this order:
+
+- an observed count with its window and source (*two outages in twelve months, the provider's
+  status page*): kind *observed*;
+- else another concrete fact, kind *observed*: when it last happened; an observed share with
+  its source; whether the failing path is reachable, and from where (*any signed-in user can
+  reach it*); a reproduction; whether a guard already exists;
+- else, kind *evidence*, a description of the evidence there is and what would settle it (*no
+  incident log covers this service; the code path is reachable from public uploads; a week of
+  request logs would show it*).
+
+An observed count is a fact, not a confidence. A bare *no data* is never the line; an
+estimated probability never appears, and a percentage only as an observed share with its
+source and window. Under it, **Best response?:** says whether acting here is the most
+important response to that failure, and if not, what is.

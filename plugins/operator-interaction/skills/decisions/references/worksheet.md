@@ -38,6 +38,7 @@ observable measures it today; leave it alone rather than guess.
 | Reversibility | two-way (a revert, an edit, a re-run undoes it) / one-way (it cannot be taken back, or only at real cost) | you — say how you know; be humble when reversal depends on systems you cannot see |
 | Blast radius | narrow (your own branch, sandbox or task) / wide (shared history, other people, other sessions, published artifacts, spend) | you, from what the change touches |
 | Others rely on it before review | yes / no — will another agent, session or person act on the outcome before the operator sees it? | you |
+| Risk | whether the options trade against a failure that may or may not happen; if so, the event, the strongest fact found about how often it happens (a count with its window and source, else another concrete fact, else the evidence there is and what would settle it) and how it was looked for, and whether acting here is the most important response to that failure, and if not, what is: the card's **Likelihood:** and **Best response?:** lines (`references/rendering.md` § Card) | you, from incident records, logs, status pages and the code path; the caller, where it keeps them |
 
 Judge **reversibility and blast radius together**; never add them up as two scores. A
 decision is wide when any of its options is. A decision
@@ -130,6 +131,7 @@ after; otherwise it is asked.
 |---|---|---|
 | Source | the document or session the decision comes from (a plan, a review, a run's record), and whether the operator has read it | you |
 | Source label | the label the source gives the item a decision is raised from (a finding's F7), and its short name: the source's own title for it, or two to six plain words you write (`references/rendering.md` § Source labels) | you, from the source |
+| Requirements | the work's stated requirements (acceptance criteria, conditions of satisfaction, a brief's must-haves), or none; where there are some, where this decision stands against them: *required* (the criterion it rests on, in plain words), *shapes the work* (what in the work it decides) or *outside the criteria*, the card's **Scope:** line (`references/rendering.md` § Card) | the caller, who holds the requirements; you, from them |
 | Items | when the decision acts on several things: each one, and whether they need different answers (then a group, one card each) or one answer fits all (then one card) | you |
 | Terms | each label, number, acronym or term of art the card would use that the operator has not used themselves, and the words each stands for | you, from the source |
 | Operator actions | per option: what the operator must do to carry it out, or *answer only* | you |
@@ -215,7 +217,9 @@ only the card, as someone who has seen nothing else, and for each option ask:
 Then, for the card as a whole: if it decides on a set, could you name every item it acts on,
 from its **What:** bullets alone? A count with no list under it fails, unless the card names
 the set by a rule that picks out its members (*the pages that cite the retired setup guide*):
-that passes, since the reader can name each one from it.
+that passes, since the reader can name each one from it. On a risk decision: does its
+**Likelihood:** name what it is the likelihood of, and give a fact or the evidence, never a
+bare *no data* or an estimate?
 
 Then check every label, number or acronym on it against SKILL.md § The floor, item 1: defined
 where it first appears — in its **Context:** — or replaced by its words; a source label

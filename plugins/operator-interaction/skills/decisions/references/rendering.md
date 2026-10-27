@@ -114,7 +114,8 @@ Every card and block carries a **Context** section, shaped like the answer page'
 field (the `decision-page` skill's `references/cards-schema.md`), in the page's order: the
 title first, which does the page TLDR's work, then **Context:**, then **What:** (what is
 decided, and for a set each item, § Card), then **Finding:** on a card raised from a finding
-(§ Card), then the folds above the Impact (▸ Open questions when anything is open, then
+(§ Card), then **Scope:** where the work states requirements, then **Likelihood:** and
+**Best response?:** on a risk decision (§ Card), then the folds above the Impact (▸ Open questions when anything is open, then
 ▸ Assumptions, § Folds), then the Impact and the options. A list line and a tag-size mention
 carry no Context: a line stays a line.
 
@@ -299,6 +300,9 @@ Example:
 **Finding:** F7 (short name): the finding's own title — `path/to/file:40-52` *(only on a card raised from a finding)*
 how it happens, who meets it and when, the before and after, in one to three sentences
 *(then its excerpt, verbatim, in a fenced block tagged with its language)*
+**Scope:** *required* — the criterion it rests on, in plain words *(only where the work states requirements)*
+**Likelihood:** *(observed)* the event it counts, then the strongest fact: a count with its window and source *(only on a risk decision)*
+**Best response?:** whether acting here is the most important response to that failure, and if not, what is
 ▸ Open questions — 2 open: what is not known yet, cut at about 12 words
 ▸ Assumptions — basis: **partial** · 2 assumptions with tripwires
 **Impact:** later: wait · reach: who or what · ⚠ undo: (a) how, at what cost, or why not
@@ -320,8 +324,9 @@ how it happens, who meets it and when, the before and after, in one to three sen
 ```
 
 - **The order is the page's**: the title, then **Context:**, then **What:** with a set's
-  item bullets, then **Finding:** on a card raised from a finding, then the ▸ Open questions
-  line when anything is open, then the
+  item bullets, then **Finding:** on a card raised from a finding, then **Scope:** where the
+  work states requirements, then **Likelihood:** and **Best response?:** on a risk decision,
+  then the ▸ Open questions line when anything is open, then the
   ▸ Assumptions line (§ Folds), then **Impact:** — and under them the options, any **To act
   on (x):** part, a round ask's **If left:** and **A round costs:**, any **If unanswered:**,
   then the ▸ Background line (§ Context, § Folds). There is no Rec line.
@@ -365,6 +370,38 @@ how it happens, who meets it and when, the before and after, in one to three sen
   and its one Finding may cover the set, naming each by its label with its location (*F2
   `app/middleware/log.py:22-25` · F1 `config/production.yaml:7`*), then how each happens,
   and the excerpt the choice turns on.
+- **Scope:** wherever the work states requirements (acceptance criteria, conditions of
+  satisfaction, a brief's must-haves), how the decision stands against them, on a line of its
+  own after **What:** and any **Finding:**, before the folds and the Impact, never folded (the
+  record's `scope`; answer 266 (b), its place in the v4 layout). It opens on its level in
+  italics, one of three: *required*, then ` — ` and the criterion it rests on, in plain words
+  (**Scope:** *required* — any contributor can publish without waiting on one person); *shapes
+  the work*, then ` — ` and what in the work it decides (**Scope:** *shapes the work* — the
+  layout of the settings page); *outside the criteria*, when no criterion covers it, its text
+  optional. The criterion goes on this line, not in Context. The line is left out where the
+  work states no requirements; the title carries no scope tag. An *outside* decision usually
+  also carries the caller's work-beyond-the-request class in its Why ask: the line does not
+  replace it.
+- **Likelihood:** on a **risk decision**, one whose options trade against a failure that may
+  or may not happen, how often that failure happens, after **Scope:** (else **What:** or
+  **Finding:**), before the folds and the Impact, never folded (the record's `likelihood`;
+  answer 267 (a), widened: "provide or determine counts (or other forms of concrete facts)
+  where possible, but fall back to describing the evidence available"). It opens on its kind
+  in italics and brackets, then names the event it counts, in plain words, then gives the
+  strongest concrete fact there is (`references/evidence-basis.md` § Keep it apart from
+  likelihood): *(observed)* — an observed count with its window and source (**Likelihood:**
+  *(observed)* the payment provider went down twice in the last twelve months, each time for
+  under an hour (the provider's public status page)), or another concrete fact: when it last
+  happened, an observed share with its source, whether the failing path is reachable and from
+  where, a reproduction, whether a guard already exists; *(evidence)* — when no such fact
+  exists, the evidence there is and what would settle it (*no incident log covers this
+  service; the code path is reachable from public uploads; a week of request logs would show
+  it*). A bare *no data* is never the line; an estimated probability never appears, and a
+  percentage only as an observed share with its source and window.
+- **Best response?:** the Likelihood part's second line, on every risk card (answer 339 (a)):
+  whether acting here is the most important response to that failure, and if not, what is
+  (**Best response?:** no — a queued retry covers both outages; a second provider is a bigger
+  change for the same hours). It needs a Likelihood line above it.
 - **Context:** one or two sentences at the page's summary size, on every card each time it
   is shown: the terms the card uses, then the resume cue (§ Context). Read from the store
   when the caller keeps one.
@@ -456,6 +493,8 @@ how it happens, who meets it and when, the before and after, in one to three sen
 - …
 **What:** …
 **Finding:** … *(as on a card: its head line, its mechanism, its excerpt fenced)*
+**Scope:** … *(as on a card)*
+**Likelihood:** … *(as on a card, with its **Best response?:** line under it)*
 
 ▾ Open questions — 1 open: what is not known yet
 - what is not known yet, one line
@@ -503,7 +542,8 @@ how it happens, who meets it and when, the before and after, in one to three sen
 - The block opens as a card does, in the page's order: the title, then **Context:** as a
   bullet list at the page's medium size, its first bullet the card's Context and the rest the
   context the reader may have lost (§ Context), shown on every block, warm reader or cold;
-  then **What:**, with a set's item bullets, and **Finding:** when it has one, as on a card.
+  then **What:**, with a set's item bullets, and **Finding:**, **Scope:**, and **Likelihood:**
+  with **Best response?:**, when it has them, as on a card.
 - The folds above the Impact come next, open (`▾`, § Folds): ▸ Open questions when anything
   is open, then ▸ Assumptions with its **Basis:** line, the basis drill-down and each
   assumption with its tripwire. Then the card's **Impact:**
@@ -705,7 +745,7 @@ new numbered decision that names the line it reopens.
 
 When a decision comes back (a wake fired, a context reset, `tell me`, `dig into`), open it
 with what changed since the operator last saw it, then the card or block as usual — its
-stored **Context:**, its **What:**, any **Finding:**, any ▸ Open questions line, its ▸ Assumptions line and its
+stored **Context:**, its **What:**, any **Finding:**, **Scope:** and **Likelihood:**, any ▸ Open questions line, its ▸ Assumptions line and its
 Impact line (and a block's table), right after the *while it waited* line:
 
 **62 — back, as you asked ("until the load test finishes"):** move the job queue to the new
@@ -751,7 +791,7 @@ open decision the reader is cold on at card level or above, never as a line only
 paged (SKILL.md § Levels, the line-only rule), each opening with what changed while it
 waited (*nothing changed* is worth saying, and so is *impact unchanged*). Under it the card
 runs **Context:** (its stored Context, ending on where the operator left it), **What:**,
-any **Finding:**, any ▸ Open questions line, the ▸ Assumptions line, **Impact:**, the options, then the ▸ Background line from its
+any **Finding:**, **Scope:** and **Likelihood:**, any ▸ Open questions line, the ▸ Assumptions line, **Impact:**, the options, then the ▸ Background line from its
 stored *why now* (the fold holding its stored *why now* and *why ask*); a block's **Context:** bullets open with the same
 Context. A stored card in an earlier form is read, and revised where it lacks a floor field,
 by `references/legacy-cards.md`. A deferred decision whose

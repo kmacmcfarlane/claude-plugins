@@ -25,7 +25,10 @@ first); this file sets only the layout.
   option where they differ, `(a) …; (b) …`), then, on a card raised from a finding,
   **Finding:** (its label and short name, its title, where it lives, how it happens, and its
   excerpt in a fenced block (the `decisions` skill's rendering § Card: a fence-safe fence,
-  characters tagged)), then ⚠ one-way when it is and
+  characters tagged)), then, where the work states requirements, **Scope:** (its level,
+  *required*, *shapes the work* or *outside the criteria*, then the criterion or what it
+  shapes), then, on a risk decision, **Likelihood:** (its kind, *(observed)* or *(evidence)*,
+  then the line) and **Best response?:**, then ⚠ one-way when it is and
   **Impact:**, across all the options, describing the system the work builds, never the review or
   the process (what waiting holds up is its `later:` line), one facet a line (`later: …`, `reach: …`,
   `⚠ undo: …` only when an option is one-way or costly, `cost: …` where given, each on its own

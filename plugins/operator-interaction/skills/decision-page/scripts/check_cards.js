@@ -19,12 +19,13 @@
       - the set: an items list of another length than the count; a carried-over card's set;
       - ids: a machine-readable id anywhere the page shows text (every card field and level, act,
         the page title, the lede, the layer titles and notes, refs, the What part and its items, the Finding but its
-        excerpt), whatever Context says; the page is the reader's only context. Backtick spans, https links and slugs are
+        excerpt, the Scope, the Likelihood and Best response?), whatever Context says; the page is the reader's only context. Backtick spans, https links and slugs are
         not ids, and a source label a card or its finding declares passes with its short name beside it;
       - terms: a count or a named thing in the flat part, or in the medium and high levels of the
         Impact and the TLDR, that Context's summary (with its bundle's shared context, and the What
         part: its text and its items) does not introduce; a count in the places that say what is
-        decided points to items; the Finding's title and mechanism are read too (F7);
+        decided points to items; the Finding's title and mechanism are read too (F7), the Scope's says (F8), and the
+        Likelihood's seen and Best response? (F9);
       - groups: a bundle (a layer with shared context) holding fewer than two cards;
       - the TLDR: a bullet that may carry the recommendation, at every level, headings, bullets
         and sub-bullets in reading order;
@@ -35,6 +36,10 @@
       - an Impact reach that reads as the recommended option's alone; an item's per that gives the
         recommended option's outcome alone;
       - the mechanism: an option's effect, or the Finding's mechanism, of a bare label, MECH_MIN words or fewer (rule 268);
+      - the likelihood (F9, answer 267 (a), widened): a shown seen that is a bare no data, holds an estimate word, a
+        percentage with no bracketed source after it, opens on a carried-over basis word ("(estimated) "), or, on an
+        observed one, ends on no bracketed source; a likelihood with no shown best on a new card (not one the upgrader
+        carried over with its rev);
       - the system: a process phrase (a review comment, another round, your time, a blocked
         session) in an option's effect or reach, or the Impact's reach, which describe the thing
         the work builds (rule 259);
@@ -70,12 +75,13 @@ function loadPage() {
   const start = html.indexOf("<script>"), end = html.indexOf(END_MARK);
   if (start < 0 || end < start) fail("the template has no page-free part (its script or the end-of-page-free-part marker is missing): " + tpl);
   try {
-    const page = vm.runInNewContext(html.slice(start + "<script>".length, end) + "\n;({check, recordProblems, bgFirst, assumeOf, proCon, planOf, prosCons, itemsOf, perOf, findingOf})", {});
+    const page = vm.runInNewContext(html.slice(start + "<script>".length, end) + "\n;({check, recordProblems, bgFirst, assumeOf, proCon, planOf, prosCons, itemsOf, perOf, findingOf, scopeOf, likelihoodOf, bestOf})", {});
     if (typeof page.check !== "function" || typeof page.recordProblems !== "function" || typeof page.bgFirst !== "function"
       || typeof page.assumeOf !== "function" || typeof page.proCon !== "function" || typeof page.planOf !== "function"
       || typeof page.prosCons !== "function" || typeof page.itemsOf !== "function" || typeof page.perOf !== "function"
-      || typeof page.findingOf !== "function")
-      throw new Error("no check(), recordProblems(), bgFirst(), assumeOf(), proCon(), planOf(), prosCons(), itemsOf(), perOf() or findingOf()");
+      || typeof page.findingOf !== "function" || typeof page.scopeOf !== "function" || typeof page.likelihoodOf !== "function"
+      || typeof page.bestOf !== "function")
+      throw new Error("no check(), recordProblems(), bgFirst(), assumeOf(), proCon(), planOf(), prosCons(), itemsOf(), perOf(), findingOf(), scopeOf(), likelihoodOf() or bestOf()");
     return page;
   } catch (e) { fail("the template's page-free part does not load: " + why(e)); }
 }
@@ -187,6 +193,10 @@ const whatTexts = c => [c.what, ...page.itemsOf(c).flatMap(x => [x.name, x.where
 /* the Finding's texts a cold reader reads (F7): its title and its mechanism, as the page shows them; its label is
    glossed by its own short name, where is a location and the excerpt is verbatim, so none of those is read for terms */
 const findingTexts = c => { const f = page.findingOf(c); return f ? [f.title, f.mechanism].filter(s => typeof s === "string") : []; };
+/* the Scope's text as the page shows it (F8): its says; the level is one of three fixed words */
+const scopeTexts = c => { const s = page.scopeOf(c); return s && typeof s.says === "string" ? [s.says] : []; };
+/* the Likelihood's texts as the page shows them (F9): its seen, then Best response?; the kind is one of two fixed words */
+const likelihoodTexts = c => { const l = page.likelihoodOf(c), b = page.bestOf(c); return l ? [l.seen, b].filter(s => typeof s === "string" && s) : []; };
 /* every text in a value, in reading order: a section's heading, then each bullet and its sub-bullets */
 const textsOf = x => typeof x === "string" ? [x] : Array.isArray(x) ? x.flatMap(textsOf)
   : x && typeof x === "object" ? ("h" in x ? [x.h, ...textsOf(x.b)] : "t" in x ? [x.t, ...textsOf(x.sub || [])] : Object.values(x).flatMap(textsOf)) : [];
@@ -323,6 +333,52 @@ function mech(c, say) {
     say("mech finding", "impact: the finding's mechanism is " + words(fm) + " words (\"" + fm.trim() + "\"): say how it happens, who meets it and when; or leave it knowingly");
 }
 
+/* ---- the likelihood lint (F9, answer 267 (a), widened): the Likelihood's line gives the strongest concrete fact, else
+   the evidence there is; never a bare no data, never an estimated probability, and a percentage only as an observed
+   share with its source. Proxies over the shown seen (the page's own likelihoodOf); a lint, never a refusal, so a
+   carried-over card renders ---- */
+const LK_NO_DATA = /^\W*(no (data|records?|information)( (available|yet|so far|found))?|unknown|not known|none known|tbd)\W*$/i;
+const LK_ESTIMATE = /\b(likely|unlikely|probab(ly|le|ility|ilities)|chances?|odds|maybe|perhaps|almost certain(ly)?|guess(ed)?|presumabl[ey])\b/i;
+/* quoted text (a log line, a message as written) is not the writer's estimate: read the line without it */
+const unquoted = s => s.replace(/`[^`]*`|"[^"]*"|“[^”]*”/g, " ");
+/* a share: "%", "percent", or a ratio in words ("nine in ten", "one in 40") */
+const LK_SHARE = /%|\bper\s?cent\b|\b\w+ in (?:ten|a hundred|\d+)\b/gi;
+/* the first share with no source: none in a bracket after it, and not inside a bracket that also holds a word
+   ("(CI history, 7.5%)"); null when every share is sourced */
+const unsourcedShare = s => {
+  for (const m of s.matchAll(LK_SHARE)) {
+    const at = m.index, end = at + m[0].length;
+    if (s.slice(end).includes("(")) continue;
+    const open = s.lastIndexOf("(", at), shut = s.lastIndexOf(")", at);
+    if (open > shut) { const close = s.indexOf(")", end), inner = s.slice(open + 1, close < 0 ? s.length : close);
+      if (/[A-Za-z]{2,}/.test(inner.replace(m[0], " "))) continue; }
+    return m[0];
+  }
+  return null;
+};
+/* an observed fact's source, in brackets at the end */
+const LK_SOURCE_END = /\([^()]+\)\W*$/;
+/* the upgrader's carried-over basis word at the head of an evidence seen: "(estimated) …", never "(observed) " */
+const LK_CARRIED = /^\s*\((?!observed\))[a-z]+\)\s/;
+function likelihoodLint(c, say) {
+  const l = page.likelihoodOf(c);
+  if (!l) return;
+  const s = l.seen, fix = "name the event, then the strongest fact (a count with its window and source), else the evidence there is and what would settle it";
+  if (LK_NO_DATA.test(s))
+    say("likelihood no-data", "impact: the likelihood says only \"" + s.trim() + "\": " + fix + "; a bare no data is never the line");
+  const e = unquoted(s).match(LK_ESTIMATE);
+  if (e) say("likelihood estimate", "impact: the likelihood holds an estimate (\"" + e[0] + "\"): give an observed fact instead, or the evidence there is; or leave it knowingly");
+  const p = unsourcedShare(s);
+  if (p) say("likelihood percent", "impact: the likelihood gives a share (\"" + p + "\") with no source in brackets beside it: a percentage is an observed share, with its source and window; or leave it knowingly");
+  if (l.kind === "evidence" && LK_CARRIED.test(s))
+    say("likelihood carried", "impact: the likelihood opens on a carried-over basis word (\"" + s.trim().match(/^\([^)]*\)/)[0] + "\"): " + fix + ", and drop the word");
+  if (l.kind === "observed" && !LK_SOURCE_END.test(s))
+    say("likelihood source", "impact: an observed likelihood ends on no source in brackets: give where the fact comes from, (the provider's status page); or leave it knowingly");
+  /* Best response? (answer 339 (a)): owed by a new card beside its likelihood; one the upgrader carried over may lack it */
+  if (!page.bestOf(c) && !carried(c))
+    say("best", "impact: the likelihood has no best: say on Best response? whether acting here is the most important response to that failure, and if not, what is; or leave it knowingly on a card carried over by the upgrader");
+}
+
 /* the Finding's words in the card in all: its title, where and mechanism; never its excerpt, which has its own size */
 const findingWords = c => { const f = page.findingOf(c); return f ? [f.title, f.where, f.mechanism].filter(s => typeof s === "string") : []; };
 /* ---- the depth lints (decision 198): sizes read at each part's top level, words split on whitespace ---- */
@@ -370,10 +426,10 @@ function depth(c, say) {
   if (levelsOf(c, "evidence").length && c.basis !== "none" && ev < 60) say("ev", "depth: evidence is " + ev + " words at its fullest: give the basis drill-down near 150, what was observed, inferred and assumed, with the paths and links behind each; or leave it knowingly");
   else if (ev > 225) say("ev", "depth: evidence is " + ev + " words at its fullest: keep it near 150");
   /* the card in all: the flat part and Context at their summary, the fold parts at their top level (the basis reason
-     among them), the What part (its text and its items), the Finding (not its excerpt), each option's detail (its plan or text at its top level, and its facets), its inline Pros and Cons
+     among them), the What part (its text and its items), the Finding (not its excerpt), the Scope, the Likelihood and Best response?, each option's detail (its plan or text at its top level, and its facets), its inline Pros and Cons
      rows and the points of its view's Pros | Cons table; not act */
   const pc = opts(c).reduce((n, o) => n + words(page.proCon(o).map(r => r[1])) + words(page.prosCons(o).map(r => r[1])), 0);
-  const all = words(flat(c)) + words(c.context) + words(whatTexts(c)) + bg + ev + words(findingWords(c)) + words(topOf(c.reason, levelsOf(c, "rec"))) + words(as) + optWords + pc;
+  const all = words(flat(c)) + words(c.context) + words(whatTexts(c)) + bg + ev + words(findingWords(c)) + words(scopeTexts(c)) + words(likelihoodTexts(c)) + words(topOf(c.reason, levelsOf(c, "rec"))) + words(as) + optWords + pc;
   if (all > 1350) say("all", "depth: the card is " + all + " words in all: keep it near 600–900; a small call gets a short card");
   if (c.detail && typeof c.detail === "object")
     for (const k of Object.keys(c.detail)) if (!(k in PART))
@@ -457,6 +513,8 @@ function cardTexts(c) {
   { const f = page.findingOf(c);
     if (f) put("finding", [f.label && typeof f.label === "object" && typeof f.label.id === "string" ? f.label.id + " (" + f.label.name + ")" : null,
       f.title, f.where, f.mechanism].filter(s => typeof s === "string")); }
+  put("scope", scopeTexts(c));
+  put("likelihood", likelihoodTexts(c));
   if (Array.isArray(c.assume)) for (const a of c.assume) if (a && typeof a === "object") put("assume", [a.rests, a.tw]);
   for (const o of opts(c)) {
     for (const k of ["title", "line", "text", "plan", "effect", "reach", "undo", "cost", "pro", "con", "pros", "cons"]) put("(" + o.k + ")", o[k]);
@@ -495,8 +553,8 @@ function lintCard(c, w, sh, out) {
   const seen = new Set(), say = (key, line) => { if (!seen.has(key)) { seen.add(key); out.push(w + line); } };
   for (const [at, s] of cardTexts(c)) for (const x of ids(s)) say("id " + x[0], idLine(x, at));
   /* the terms a visible text uses, against Context's summary; at is "" for the flat part, or " (part, level)" */
-  const terms = (fields, at, namer = named, fix = "say what the WORD things are, or list them, in context") => {
-    for (const s of fields) for (const x of counts(s)) if (!ctxNums.has(x.n))
+  const terms = (fields, at, namer = named, fix = "say what the WORD things are, or list them, in context", withCounts = true) => {
+    if (withCounts) for (const s of fields) for (const x of counts(s)) if (!ctxNums.has(x.n))
       say("count " + x.n, "\"" + x.word + "\"" + at + " counts things its context does not name: " + fix.replace("WORD", x.word));
     for (const s of fields) for (const t of namer(s)) if (!ctxLow.includes(t))
       say("named " + t, "\"" + t + "\"" + at + " is not glossed in its context: give it a one-line gloss in context, what it is and where it comes from");
@@ -506,6 +564,14 @@ function lintCard(c, w, sh, out) {
   terms(flat(c), "");
   /* the Finding, never folded, after What (F7): its title and mechanism */
   terms(findingTexts(c), " (the finding)");
+  /* the Scope, never folded, after the Finding (F8): its says */
+  terms(scopeTexts(c), " (the scope)");
+  /* the Likelihood and Best response?, never folded, after the Scope (F9). An observed count in seen is the fact the
+     line exists to give (how often the event happens, with its window and source), not a set Context must name: seen
+     is read for named things only; Best response? is read whole */
+  { const l = page.likelihoodOf(c), b = page.bestOf(c);
+    if (l) terms([l.seen], " (the likelihood)", named, undefined, false);
+    if (b) terms([b], " (the likelihood)"); }
   /* the Pros and Cons rows are visible too, though not in the flat part's budget: the cold read covers them */
   terms(opts(c).flatMap(o => page.proCon(o).map(r => r[1])), " (pros and cons)");
   /* and each option's view (F5), which picking the option opens: its plan in brief and its Pros | Cons table */
@@ -529,6 +595,7 @@ function lintCard(c, w, sh, out) {
   recOnly(c, say);
   systemOnly(c, say);
   mech(c, say);
+  likelihoodLint(c, say);
   depth(c, say);
   oneway(c, say);
   tradeoffs(c, say);

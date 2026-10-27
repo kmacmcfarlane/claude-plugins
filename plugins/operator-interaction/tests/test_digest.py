@@ -307,6 +307,13 @@ class WriterDigest(unittest.TestCase):
         self.assertIn("lint `assume` missing", lint_problems(self.js, gone))
         moved = self.digest.replace("| `assume` | `depth:` |", "| `assume` | `shape:` |")
         self.assertTrue(lint_problems(self.js, moved))
+        # the likelihood and best lints (F9): their rows, and their start
+        for key in ("likelihood", "best"):
+            self.assertEqual(runner_lints(self.js)[key], {"impact:"})
+            gone = self.digest.replace("| `%s` | `impact:` |" % key, "| %s | `impact:` |" % key)
+            self.assertIn("lint `%s` missing" % key, lint_problems(self.js, gone))
+            moved = self.digest.replace("| `%s` | `impact:` |" % key, "| `%s` | `depth:` |" % key)
+            self.assertTrue(lint_problems(self.js, moved))
         # the trade-offs lint (F4): its row, and its start
         self.assertEqual(runner_lints(self.js)["tradeoffs"], {"shape:"})
         gone = self.digest.replace("| `tradeoffs` | `shape:` |", "| tradeoffs | `shape:` |")

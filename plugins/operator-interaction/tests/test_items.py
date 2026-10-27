@@ -94,9 +94,9 @@ class WhatPartPage(unittest.TestCase):
             self.assertEqual(card[:at].count("<details") - card[:at].count("</details>"), 1, b["n"])
         # mutant: the part placed inside the Assumptions fold
         html = PAGE.read_text()
-        old = "+whatPart(c)+findingPart(c)+openFold(c)+assumeFold(c,P)"
+        old = "+whatPart(c)+findingPart(c)+scopePart(c)+likelihoodPart(c)+openFold(c)+assumeFold(c,P)"
         self.assertEqual(html.count(old), 1)
-        script = page_free_script().replace(old, "+findingPart(c)+openFold(c)+assumeFold(c,P).replace('<div>','<div>'+whatPart(c))")
+        script = page_free_script().replace(old, "+findingPart(c)+scopePart(c)+likelihoodPart(c)+openFold(c)+assumeFold(c,P).replace('<div>','<div>'+whatPart(c))")
         b = run_page(example(), script)["blocks"][1]
         at = b["card"].index('<div class="what">')
         self.assertNotEqual(b["card"][:at].count("<details") - b["card"][:at].count("</details>"), 1)
@@ -580,7 +580,7 @@ class WhatPartChat(unittest.TestCase):
     def test_the_card_and_block_templates_put_what_after_context(self):
         text = RENDERING.read_text()
         card = fenced(text, "**N — Title as a question?**\n**Context:**")
-        self.assertEqual(heads(card)[:4], ["Context", "What", "Finding", "Impact"])
+        self.assertEqual(heads(card)[:6], ["Context", "What", "Finding", "Scope", "Likelihood", "Impact"])
         self.assertEqual(what_problems("rendering.md card", card), [])
         self.assertTrue(item_bullets(card), "the card template shows a set's item bullet")
         block = fenced(text, "**N — Title as a question?** ⚠ one-way")
