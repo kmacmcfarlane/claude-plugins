@@ -77,6 +77,13 @@ def run_page(data, script=None):
     return json.loads(out.stdout)
 
 
+def before_attached(html):
+    """A card's html before its Attached fold (F3), whose table attachment is the one <table> a card may hold: the
+    card's own parts never draw one."""
+    k = html.find('<details class="pane"><summary>Attached')
+    return html if k < 0 else html[:k]
+
+
 def example():
     return json.loads(EXAMPLE.read_text())
 
@@ -213,7 +220,7 @@ class DecisionPageImpact(unittest.TestCase):
             self.assertIn("<i>later:</i>", v["line"])
             self.assertIn('<span class="lbl">Wait</span>', v["more"]["z"])
             self.assertNotIn("Options in full", v["card"])
-            self.assertNotIn("<table", v["card"])
+            self.assertNotIn("<table", before_attached(v["card"]))
         warn = res["views"][1]
         self.assertIn("The first CI publish waits for this answer.", warn["more"]["z"])
         self.assertIn("Twelve lines of redirect config to keep.", warn["more"]["a"])

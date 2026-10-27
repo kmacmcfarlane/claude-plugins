@@ -9,6 +9,11 @@
       so this refuses exactly what the page refuses (decision-page/5, each card a decision-card/5
       record plus L and dep). With --record, the card checks alone (no layer, no slug check), and
       the page-only L and dep refused in a record;
+   1a. the attachment refusals, the runner's own (F3): a [[att:id|label]] link to an id the card does not attach,
+      or a [[att: that is not that form (the page shows its label as plain text); and a secret in an attachment or
+      in the Finding's excerpt (a private key block, a token with a known prefix, a password, token or secret
+      assignment with a long value), named by where it is and its key, never its value. SECRET_PATTERNS are the
+      ones the skill's grep step runs without node;
    1b. the set refusal, the runner's own (never the page's, so an older published page still renders): a
       card whose title, first TLDR bullet, or an option's title or line (but (z)'s) counts two or more
       things, with no items or fewer items than the largest count (the What part lists every item of a
@@ -19,13 +24,17 @@
       - the set: an items list of another length than the count; a carried-over card's set;
       - ids: a machine-readable id anywhere the page shows text (every card field and level, act,
         the page title, the lede, the layer titles and notes, refs, the What part and its items, the Finding but its
-        excerpt, the Scope, the Likelihood and Best response?, the Rejected alternatives), whatever Context says; the page is the reader's only context. Backtick spans, https links and slugs are
+        excerpt, the Scope, the Likelihood and Best response?, the Rejected alternatives, each attachment but its
+        excerpt-shaped body), whatever Context says; the page is the reader's only context. Backtick spans, https links and slugs are
         not ids, and a source label a card or its finding declares passes with its short name beside it;
       - terms: a count or a named thing in the flat part, or in the medium and high levels of the
         Impact and the TLDR, that Context's summary (with its bundle's shared context, and the What
         part: its text and its items) does not introduce; a count in the places that say what is
         decided points to items; the Finding's title and mechanism are read too (F7), the Scope's says (F8), and the
-        Likelihood's seen and Best response? (F9), and each rejected alternative's title (F2);
+        Likelihood's seen and Best response? (F9), each rejected alternative's title (F2), and each attachment's
+        title (F3), which the Attached fold's summary shows;
+      - attachments (F3): more than ATT_CAP on a card, or an excerpt-shaped body past XC_LINES lines or XC_BYTES
+        bytes;
       - groups: a bundle (a layer with shared context) holding fewer than two cards;
       - the TLDR: a bullet that may carry the recommendation, at every level, headings, bullets
         and sub-bullets in reading order;
@@ -75,13 +84,14 @@ function loadPage() {
   const start = html.indexOf("<script>"), end = html.indexOf(END_MARK);
   if (start < 0 || end < start) fail("the template has no page-free part (its script or the end-of-page-free-part marker is missing): " + tpl);
   try {
-    const page = vm.runInNewContext(html.slice(start + "<script>".length, end) + "\n;({check, recordProblems, bgFirst, assumeOf, proCon, planOf, prosCons, itemsOf, perOf, findingOf, scopeOf, likelihoodOf, bestOf, rejectedOf, rejWhy})", {});
+    const page = vm.runInNewContext(html.slice(start + "<script>".length, end) + "\n;({check, recordProblems, bgFirst, assumeOf, proCon, planOf, prosCons, itemsOf, perOf, findingOf, scopeOf, likelihoodOf, bestOf, rejectedOf, rejWhy, attachedOf})", {});
     if (typeof page.check !== "function" || typeof page.recordProblems !== "function" || typeof page.bgFirst !== "function"
       || typeof page.assumeOf !== "function" || typeof page.proCon !== "function" || typeof page.planOf !== "function"
       || typeof page.prosCons !== "function" || typeof page.itemsOf !== "function" || typeof page.perOf !== "function"
       || typeof page.findingOf !== "function" || typeof page.scopeOf !== "function" || typeof page.likelihoodOf !== "function"
-      || typeof page.bestOf !== "function" || typeof page.rejectedOf !== "function" || typeof page.rejWhy !== "function")
-      throw new Error("no check(), recordProblems(), bgFirst(), assumeOf(), proCon(), planOf(), prosCons(), itemsOf(), perOf(), findingOf(), scopeOf(), likelihoodOf(), bestOf(), rejectedOf() or rejWhy()");
+      || typeof page.bestOf !== "function" || typeof page.rejectedOf !== "function" || typeof page.rejWhy !== "function"
+      || typeof page.attachedOf !== "function")
+      throw new Error("no check(), recordProblems(), bgFirst(), assumeOf(), proCon(), planOf(), prosCons(), itemsOf(), perOf(), findingOf(), scopeOf(), likelihoodOf(), bestOf(), rejectedOf(), rejWhy() or attachedOf()");
     return page;
   } catch (e) { fail("the template's page-free part does not load: " + why(e)); }
 }
@@ -200,6 +210,18 @@ const likelihoodTexts = c => { const l = page.likelihoodOf(c), b = page.bestOf(c
 /* the Rejected alternatives fold's texts as the page shows them (F2): each shown alternative's title, then its shown
    reasons */
 const rejectedTexts = c => page.rejectedOf(c).flatMap(r => [r.t, ...page.rejWhy(r)]);
+/* the Attached fold's texts as the page shows them (F3), but an excerpt-shaped body (verbatim data, never read for ids
+   or terms, as the Finding's excerpt is not): each shown attachment's title and source line, then its body's text */
+const XC_KINDS = new Set(["excerpt", "preview"]);
+const depTexts = x => !x || typeof x !== "object" ? [] : [x.name, x.rel, x.note, ...(Array.isArray(x.kids) ? x.kids.flatMap(depTexts) : [])];
+const attTexts = a => {
+  const b = a.body, xc = XC_KINDS.has(a.kind) || (a.kind === "example" && a.form === "mock");
+  const body = xc ? [] : a.kind === "table" || a.kind === "matrix" ? (b && typeof b === "object" ? [...(b.cols || []), ...(Array.isArray(b.rows) ? b.rows.flat() : [])] : [])
+    : a.kind === "steps" || a.kind === "checks" ? (Array.isArray(b) ? b.flatMap(x => x && typeof x === "object" ? [x.t, x.d] : []) : [])
+    : a.kind === "depmap" ? (Array.isArray(b) ? b.flatMap(depTexts) : []) : [].concat(b);
+  return [a.title, a.src, a.pointer, ...body].filter(x => typeof x === "string");
+};
+const attachedTexts = c => page.attachedOf(c).flatMap(attTexts);
 /* every text in a value, in reading order: a section's heading, then each bullet and its sub-bullets */
 const textsOf = x => typeof x === "string" ? [x] : Array.isArray(x) ? x.flatMap(textsOf)
   : x && typeof x === "object" ? ("h" in x ? [x.h, ...textsOf(x.b)] : "t" in x ? [x.t, ...textsOf(x.sub || [])] : Object.values(x).flatMap(textsOf)) : [];
@@ -430,7 +452,7 @@ function depth(c, say) {
   else if (ev > 225) say("ev", "depth: evidence is " + ev + " words at its fullest: keep it near 150");
   /* the card in all: the flat part and Context at their summary, the fold parts at their top level (the basis reason
      among them), the What part (its text and its items), the Finding (not its excerpt), the Scope, the Likelihood and Best response?, the Rejected alternatives fold, each option's detail (its plan or text at its top level, and its facets), its inline Pros and Cons
-     rows and the points of its view's Pros | Cons table; not act */
+     rows and the points of its view's Pros | Cons table; not act, and not the attachments (F3), which keep their own size */
   const pc = opts(c).reduce((n, o) => n + words(page.proCon(o).map(r => r[1])) + words(page.prosCons(o).map(r => r[1])), 0);
   const all = words(flat(c)) + words(c.context) + words(whatTexts(c)) + bg + ev + words(findingWords(c)) + words(scopeTexts(c)) + words(likelihoodTexts(c)) + words(rejectedTexts(c)) + words(topOf(c.reason, levelsOf(c, "rec"))) + words(as) + optWords + pc;
   if (all > 1350) say("all", "depth: the card is " + all + " words in all: keep it near 600–900; a small call gets a short card");
@@ -490,6 +512,23 @@ function plan(c, say) {
     say("plan " + k, "depth: (" + k + ") has no plan: give it a Plan in brief (plan: 2–4 sentences, what choosing it sets in motion), the first part of its view; or leave it knowingly on an upgraded older card, whose view shows its text instead");
 }
 
+/* ---- the attachments' size (F3, the attachments proposal's limits): at most ATT_CAP on a card; an excerpt-shaped body
+   about XC_LINES lines or XC_BYTES bytes at most, a longer one cut with the cut said where it is ---- */
+const ATT_CAP = 6, XC_LINES = 80, XC_BYTES = 4096;
+function attachedSize(c, say) {
+  const as = page.attachedOf(c);
+  if (as.length > ATT_CAP) say("attached", "depth: the card carries " + as.length + " attachments: keep it to about " + ATT_CAP + "; point to the rest from one summary, or leave it knowingly");
+  /* a source line: src, else an excerpt-shaped body's own src, as the page shows it */
+  const shownSrc = v => typeof v === "string" && !!v.trim() && !["none", "n/a", "-"].includes(v.trim().toLowerCase());
+  as.forEach((a, i) => { const b = a.body;
+    if (a.kind !== "example" && !shownSrc(a.src) && !(isExcerptObj(b) && shownSrc(b.src)))
+      say("attached src " + i, "depth: attachment " + (i + 1) + " (" + a.title + ") has no source line: say in src where it came from (a path and range at a commit, a command and when it ran, the full text's place, where it was cited); or leave it knowingly");
+    if (!(XC_KINDS.has(a.kind) || (a.kind === "example" && a.form === "mock")) || !b || typeof b.text !== "string") return;
+    const n = b.text.replace(/\r\n?/g, "\n").replace(/\n$/, "").split("\n").length, bytes = Buffer.byteLength(b.text, "utf8");
+    if (n > XC_LINES || bytes > XC_BYTES)
+      say("attached " + i, "depth: attachment " + (i + 1) + " (" + a.title + ") is " + n + " lines, " + bytes + " bytes: keep an excerpt to about " + XC_LINES + " lines or " + XC_BYTES + " bytes; cut it and say in the text where the cut is and where the rest is, or leave it knowingly"); });
+}
+
 /* ---- the source label's short name: plain words, about 2 to 6 ---- */
 function labelName(c, say) {
   /* the card's label, else its finding's (F7): either is shown with its short name */
@@ -519,6 +558,7 @@ function cardTexts(c) {
   put("scope", scopeTexts(c));
   put("likelihood", likelihoodTexts(c));
   put("rejected", rejectedTexts(c));
+  put("attached", attachedTexts(c));
   if (Array.isArray(c.assume)) for (const a of c.assume) if (a && typeof a === "object") put("assume", [a.rests, a.tw]);
   for (const o of opts(c)) {
     for (const k of ["title", "line", "text", "plan", "effect", "reach", "undo", "cost", "pro", "con", "pros", "cons"]) put("(" + o.k + ")", o[k]);
@@ -529,11 +569,19 @@ function cardTexts(c) {
     put("detail." + k, k === "impact" && Array.isArray(c.detail.impact) ? c.detail.impact.map(l => l && typeof l === "object" ? IMP.map(f => l[f]) : l) : c.detail[k]);
   return out;
 }
+const LEDE_REPO = /\brepo(s|sitory|sitories)?\b/i;
 function pageIds(d, out) {
   const say = line => out.push("lint: page: " + line), seen = new Set();
   const look = (at, s) => { if (typeof s === "string") for (const x of ids(s)) if (!seen.has(at + x[0])) { seen.add(at + x[0]); say(idLine(x, at)); } };
   const pg = d.page && typeof d.page === "object" ? d.page : {};
   look("the page title", pg.title); look("the lede", pg.lede);
+  /* excerpts on a page (an excerpt-shaped attachment, a Finding's excerpt): its lede names the repos they come from, so the
+     operator knows what a share would expose. A heuristic: the lede holds the word repo, repos, repository or
+     repositories */
+  const xc = d.cards.some(c => (c.finding && typeof c.finding === "object" && c.finding.excerpt != null)
+    || page.attachedOf(c).some(a => XC_KINDS.has(a.kind) || (a.kind === "example" && a.form === "mock")));
+  if (xc && !(typeof pg.lede === "string" && LEDE_REPO.test(pg.lede)))
+    say("lede names no repo, though the page shows excerpts: say in the lede which repos they come from (e.g. 'excerpts from the <name> repo'), so a share's reach is known; or leave it knowingly");
   for (const l of d.layers) { look("the title of layer " + l[0], l[1]); look("the note of layer " + l[0], l[2]);
     look("the shared context of layer " + l[0], l[3]);
     /* a bundle groups two or more item cards (rule 263) */
@@ -579,6 +627,9 @@ function lintCard(c, w, sh, out) {
   /* the Rejected alternatives fold (F2), the last bottom fold: its titles, which its summary shows; the reasons sit in
      the closed fold, as the other folds' text does */
   terms(page.rejectedOf(c).map(r => r.t), " (rejected alternatives)");
+  /* the Attached fold (F3): its titles, which its summary shows; the rest sits in the closed fold */
+  terms(page.attachedOf(c).map(a => a.title), " (attached)");
+  attachedSize(c, say);
   /* the Pros and Cons rows are visible too, though not in the flat part's budget: the cold read covers them */
   terms(opts(c).flatMap(o => page.proCon(o).map(r => r[1])), " (pros and cons)");
   /* and each option's view (F5), which picking the option opens: its plan in brief and its Pros | Cons table */
@@ -697,6 +748,62 @@ function setCheck(c) {
 }
 function setProblems(c, w) { const s = setCheck(c); return s && s.refuse ? [w + ": " + s.text] : []; }
 
+/* ---- the attachment refusals (F3): the runner's own, so an older published page still renders ---- */
+/* a link to an attachment: [[att:id|label]], the id one the card attaches. The page shows any other as its label, or
+   as written; here it is refused. Every text of the card is read, but excerpts (verbatim data, never parsed) */
+const ATT_LINK_AT = /\[\[att:/g, ATT_LINK_FULL = /^\[\[att:([a-z0-9-]+)\|[^\]\r\n]+\]\]/;
+const isExcerptObj = v => v && typeof v === "object" && !Array.isArray(v) && typeof v.text === "string" && Object.keys(v).every(k => k === "text" || k === "lang" || k === "src");
+const stringsAt = (v, at, out) => { if (typeof v === "string") out.push([at, v]);
+  else if (Array.isArray(v)) v.forEach((x, i) => stringsAt(x, at + "[" + i + "]", out));
+  else if (v && typeof v === "object" && !isExcerptObj(v)) for (const k of Object.keys(v)) stringsAt(v[k], at ? at + "." + k : k, out);
+  return out; };
+function attLinkProblems(c, w) {
+  const ids = new Set(page.attachedOf(c).map(a => a.id).filter(x => typeof x === "string")), out = [];
+  for (const [at, s] of stringsAt(c, "", [])) for (const m of s.matchAll(ATT_LINK_AT)) {
+    const f = s.slice(m.index).match(ATT_LINK_FULL);
+    if (!f) out.push(w + ": " + at + " has a link to an attachment not written [[att:id|label]]: the id in lower-case letters, digits and -, then | and the words the link shows");
+    else if (!ids.has(f[1])) out.push(w + ": " + at + " links attachment " + f[1] + ", which the card does not attach: give that attachment its id, or drop the link");
+  }
+  return out;
+}
+/* a secret in an attachment (any of its text, excerpts included) or in the Finding's excerpt: refused, never a lint.
+   Each pattern is POSIX ERE as well as JavaScript, case-insensitive, read a line at a time: the decision-page skill's
+   grep step runs these same patterns over cards.json where there is no node. The problem names where it is and,
+   for an assignment, its key: never the value. The grep reads cards.json as JSON, where a line break, a tab or a
+   character outside ASCII before a token is an escape (\n, \t, \u201c): a token's left boundary takes those too. The
+   assignment's quantifiers are bounded, so a long line cannot make it backtrack. The patterns are a net, not a proof: a value holding a backslash, quote or space in its first 16 characters, a key running more than 80 characters past its keyword, or more than 80 spaces around its = or : passes both; the cold read's item 6 is the check for those. */
+const SECRET_PATTERNS = [
+  ["a private key block", "-----BEGIN[ A-Z]*PRIVATE KEY-----"],
+  ["a GitHub token", "(^|[^A-Za-z0-9]|\\\\[nrtbf]|\\\\u[0-9A-Fa-f]{4})(ghp|gho|ghu|ghs|ghr)_[A-Za-z0-9]{30,}"],
+  ["a GitHub token", "github_pat_[A-Za-z0-9_]{30,}"],
+  ["a GitLab token", "glpat-[A-Za-z0-9_-]{20,}"],
+  ["a Slack token", "xox[abprs]-[A-Za-z0-9-]{10,}"],
+  ["an AWS access key", "(^|[^A-Za-z0-9]|\\\\[nrtbf]|\\\\u[0-9A-Fa-f]{4})AKIA[0-9A-Z]{16}"],
+  ["a Google API key", "AIza[0-9A-Za-z_-]{35}"],
+  ["an API key", "(^|[^A-Za-z0-9]|\\\\[nrtbf]|\\\\u[0-9A-Fa-f]{4})sk-[A-Za-z0-9_-]{20,}"],
+  ["an assignment of a secret", "[A-Za-z0-9_-]{0,40}(password|passwd|secret|token|api[_-]?key|access[_-]?key)[A-Za-z0-9_-]{0,80}.?.? {0,80}[:=] {0,80}.?.?[A-Za-z0-9_./+=-]{16,}"],
+];
+/* the key an assignment names, echoed only when it cannot be part of the value: a name of at most 41 characters that,
+   with its keyword taken out, holds no run of 8 or more letters and digits; else null, and the problem names only the
+   keyword it holds, leaving <name> for the writer to fill with the real key */
+const safeKey = m => { const k = (m[0].match(/^[A-Za-z0-9_-]+/) || [""])[0];
+  return /^[A-Za-z_][A-Za-z0-9_-]{0,40}$/.test(k) && !/[A-Za-z0-9]{8,}/.test(k.replace(m[1], "-")) ? k : null; };
+const SECRET_RE = SECRET_PATTERNS.map(([name, ere]) => [name, new RegExp(ere, "i")]);
+function secretProblems(c, w) {
+  const out = [], look = (at, v) => { const all = (o, p) => { if (typeof o === "string") o.split(/\r\n?|\n/).forEach((line, i) => {
+      for (const [name, re] of SECRET_RE) { const m = line.match(re); if (!m) continue;
+        const asg = name === "an assignment of a secret", key = asg ? safeKey(m) : "";
+        out.push(w + ": " + p + " line " + (i + 1) + " looks like it holds a secret (" + name + (key ? ", key " + key : asg ? ", its key holds " + m[1] : "") + "): never its value on the page; say where it is kept and under which key, [redacted: key " + (key || "<name>") + " in <where it is kept>]");
+        break; } });
+    else if (Array.isArray(o)) o.forEach((x, i) => all(x, p + "[" + i + "]"));
+    else if (o && typeof o === "object") for (const k of Object.keys(o)) all(o[k], p + "." + k); };
+    all(v, at); };
+  if (Array.isArray(c.attached)) c.attached.forEach((a, i) => look("attached " + (i + 1), a));
+  if (c.finding && typeof c.finding === "object" && c.finding.excerpt != null) look("finding.excerpt", c.finding.excerpt);
+  return out;
+}
+const attRefusals = (c, w) => [...attLinkProblems(c, w), ...secretProblems(c, w)];
+
 /* ---- the run ---- */
 const page = loadPage();
 const args = process.argv.slice(2);
@@ -711,8 +818,9 @@ try { bad = record ? page.recordProblems(d) : page.check(d); } catch (e) { fail(
 if (bad.length) { process.stdout.write(bad.join("\n") + "\n"); process.exit(1); }
 try {
   DECLARED = declare(record ? [d] : d.cards);
-  bad = record ? setProblems(d, "record " + d.n) : d.cards.flatMap(c => setProblems(c, "card " + c.n));
-} catch (e) { fail("the set check stopped on this file: " + why(e)); }
+  bad = record ? [...attRefusals(d, "record " + d.n), ...setProblems(d, "record " + d.n)]
+    : d.cards.flatMap(c => [...attRefusals(c, "card " + c.n), ...setProblems(c, "card " + c.n)]);
+} catch (e) { fail("the attachment and set checks stopped on this file: " + why(e)); }
 if (bad.length) { process.stdout.write(bad.join("\n") + "\n"); process.exit(1); }
 let lines = [];
 try {

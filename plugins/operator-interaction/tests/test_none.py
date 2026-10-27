@@ -38,6 +38,15 @@ def panes(html):
     return re.findall(r'<details class="pane"(?: open)?><summary>([^<]+?)(?: <span class="fsum">.*?</span>)?</summary>', html)
 
 
+def table_problems(html):
+    """A <table> in the template outside the attachment table renderer (F3's table and matrix kinds, in attBody): no
+    card part but an attachment draws one."""
+    body = html[html.index("function attBody("):]
+    body = body[:body.index("\n}\n")]
+    rest = html.replace(body, "")
+    return ["a <table outside attBody"] if "<table" in rest else []
+
+
 @unittest.skipUnless(NODE, "node is not installed")
 class DecisionPageNone(unittest.TestCase):
 
@@ -65,7 +74,9 @@ class DecisionPageNone(unittest.TestCase):
         self.assertNotIn("Options in full", html)
         self.assertNotIn("optionsInFull", html)
         self.assertNotIn("impactTable", html)
-        self.assertNotIn("<table", html)
+        self.assertEqual(table_problems(html), [])
+        # mutant: an impactTable reintroduced draws a <table> outside the attachment renderer
+        self.assertTrue(table_problems(html.replace("/* its source line:", "const impactTable=c=>'<table></table>';\n/* its source line:", 1)))
 
     def test_no_dep_no_dependencies_fold(self):
         for dep in (None, "", "none", "None."):

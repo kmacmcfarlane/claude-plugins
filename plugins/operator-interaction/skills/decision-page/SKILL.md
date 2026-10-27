@@ -6,7 +6,7 @@ description: "Put a set of decisions to the operator as an answer page: a publis
 # Decision page
 
 A set of decisions on one page the operator works through at their own pace: a map of its
-groups, each card a one-line row that opens flat on its essentials (its TLDR, then its Context, then its What, then its Finding when it is raised from one, then its Scope where the work states requirements, then its Likelihood on a risk decision, then its Open questions, folded, then its Impact) with folds for the rest, the last its Rejected alternatives; a
+groups, each card a one-line row that opens flat on its essentials (its TLDR, then its Context, then its What, then its Finding when it is raised from one, then its Scope where the work states requirements, then its Likelihood on a risk decision, then its Open questions, folded, then its Impact) with folds for the rest, among them its Attached material and, last, its Rejected alternatives; a
 click on a part with a more-detail button shows it as terse bullets, then in headed sections,
 each option but (z) shows its **Pros** and **Cons** rows under it, and picking an option, or **More** beside it, opens its view (its Plan in brief, its Pros | Cons table, then its effect, reach, undo and cost); one choice per card enforced by the
 radio buttons, answers saved as they click. You publish it, they answer, you read the answers
@@ -140,6 +140,17 @@ The rules below are what the digest condenses:
   its window and source, or another concrete fact), or the evidence there is and what would
   settle it (`kind` `evidence`); never a bare *no data* or an estimate. `best`, **Best
   response?**, says whether acting here is the most important response to that failure.
+- Where the decision rests on material the card can only name (the code it changes, a log,
+  a comparison, check results, a runbook, how decisions wait on each other), set `attached`:
+  each `{id, kind, title, src, body}` (`references/cards-schema.md` § An attachment: the ten
+  kinds, each body's shape and its source line), shown in the **Attached** fold after
+  Background, each entry closed until opened; about six a card, never counted in the card in
+  all, and nothing the decision needs moves into one. A text field links one with
+  `[[att:id|label]]`. Never a secret's value, personal data or another party's private
+  material in one: a secret is where it is kept and under which key,
+  `[redacted: key api_token in /etc/app/env]`. **When any card carries an excerpt** (an
+  excerpt-shaped attachment, a Finding's excerpt), the page's `lede` names the repos they come
+  from, so the operator knows what a share would expose (the runner's `lede` lint).
 - Where alternatives were weighed and not offered, set `rejected`, `[{t, why}]`: shown in the
   **Rejected alternatives** fold, the last of the bottom folds, its summary the count and the
   titles; each `t` a short title on one line, each `why` one or more one-line reasons. An
@@ -272,6 +283,26 @@ The rules below are what the digest condenses:
   On a republish, the depth lines on a card the operator has answered are left knowingly: that
   card keeps its depth as it stands (step 3). Without node, check by reading, and run the cold
   read. A single record is checked the same way with `--record <file>`.
+- **The secret grep.** The page has no secret check of its own, and the runner's needs node.
+  Without node, run this one grep over the working copy's `cards.json` before publishing; its
+  patterns are the runner's (a private key block, a token with a known prefix, a `password`,
+  `token`, `secret` or API key assignment with a long value). It prints line numbers only, so no
+  value reaches the screen: open each line it names; one in an attachment or an excerpt is a
+  secret until shown otherwise, and is replaced by where it is kept and under which key, never
+  its value. Report a hit by its card and key only, never by the line itself. The patterns are a net, not a proof: a value holding a backslash, quote or space in its first 16 characters, a key running more than 80 characters past its keyword, or more than 80 spaces around its `=` or `:` passes both; the cold read's item 6 is the check for those.
+
+  ```bash
+  grep -nEi -e '-----BEGIN[ A-Z]*PRIVATE KEY-----' \
+    -e '(^|[^A-Za-z0-9]|\\[nrtbf]|\\u[0-9A-Fa-f]{4})(ghp|gho|ghu|ghs|ghr)_[A-Za-z0-9]{30,}' \
+    -e 'github_pat_[A-Za-z0-9_]{30,}' \
+    -e 'glpat-[A-Za-z0-9_-]{20,}' \
+    -e 'xox[abprs]-[A-Za-z0-9-]{10,}' \
+    -e '(^|[^A-Za-z0-9]|\\[nrtbf]|\\u[0-9A-Fa-f]{4})AKIA[0-9A-Z]{16}' \
+    -e 'AIza[0-9A-Za-z_-]{35}' \
+    -e '(^|[^A-Za-z0-9]|\\[nrtbf]|\\u[0-9A-Fa-f]{4})sk-[A-Za-z0-9_-]{20,}' \
+    -e '[A-Za-z0-9_-]{0,40}(password|passwd|secret|token|api[_-]?key|access[_-]?key)[A-Za-z0-9_-]{0,80}.?.? {0,80}[:=] {0,80}.?.?[A-Za-z0-9_./+=-]{16,}' \
+    cards.json | cut -d: -f1
+  ```
 
 ## Step 3: Publish
 
@@ -414,9 +445,11 @@ answer page*, and the card rules the page renders.
 - `assets/index.html` — the page template
 - `assets/cards.example.json` — invented example data
 - `scripts/check_cards.js` — the pre-publish check under node: the page's own refusals, then
-  the set refusal (a card that counts two or more things where it says what is decided, with
-  no `items` or too few; a lint on a card the upgrader carried over), then lints for ids anywhere on the page, counts and named
-  things a card's Context and What part do not introduce (the Finding, the Scope, the Likelihood and the Rejected alternatives read too), the level shapes, a reach that reads as the recommendation's, an option's effect
+  the attachment refusals (a link to an attachment the card does not hold; a secret in an
+  attachment or the Finding's excerpt), the set refusal (a card that counts two or more things
+  where it says what is decided, with no `items` or too few; a lint on a card the upgrader
+  carried over), then lints for ids anywhere on the page, counts and named
+  things a card's Context and What part do not introduce (the Finding, the Scope, the Likelihood, the attachments' titles and the Rejected alternatives read too), the level shapes, a reach that reads as the recommendation's, an option's effect
   or the Finding's mechanism with no mechanism, and the depth lints (a level not longer than the one below, thin or long
   depth, an option with no reach, what a new card owes), an option with no pro or con, and a likelihood
   with no fact or source (or an estimate, or no Best response? on a new card);

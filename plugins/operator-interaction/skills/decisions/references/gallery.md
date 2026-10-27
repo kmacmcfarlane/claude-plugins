@@ -814,6 +814,7 @@ card, in its **To act on (a):** part.*
 4. Tell me the last line it prints: `3 of 3 pages signed in`, or which pages failed.
 
 ▸ Background — why now: the sign-in fix stays unreleased until the check runs.
+▸ Attached — 1: Rolling the fix back if the check fails
 
 *Not this: "(a) run it — from the check folder, paste the prompt, tell me; I'll give you the
 steps". The folder is never located, the prompt is never shown and the steps are deferred:
@@ -920,6 +921,7 @@ for err := w.write(b); err != nil; err = w.write(b) {
 - (z) Decide later — *it waits; the merge waits on this finding*
 
 ▸ Background — why now: the merge waits on this finding, and a failing disk still draws a retry storm until then.
+▸ Attached — 3: Last night's write log · The write tests on the change · Who a failing disk reaches
 
 **53 — F9 (stale temp files) · Remove an aborted upload's temp file?**
 **Context:** each upload is written to a temporary file first and moved into place when it completes; an aborted upload's file is never moved or deleted. Raised when the review turned it up · you decide whether the cleanup goes in before the merge.
@@ -939,6 +941,7 @@ When a client aborts, the handler returns without moving or deleting the upload'
 - (z) Decide later — *it waits; the temp directory keeps growing until the disk fills*
 
 ▸ Background — why now: the merge waits on this finding, and the temp directory grows about 40 GB a week.
+▸ Attached — 1: Temp directory size by server
 
 - **51 F3 (oversize upload) · Check an upload's size before reading it?** — rec **(a) check the declared size first** → *an oversize upload is refused before any of it is read* · *later: the merge waits* · basis **strong** · *10 min old*
 - **52 F7 (retry storm) · Add a backoff to failed disk writes?** — rec **(a) add a backoff** → *a failing disk gets a few writes a second* · *later: the merge waits* · basis **partial** · *10 min old*
@@ -946,7 +949,7 @@ When a client aborts, the handler returns without moving or deleting the upload'
 
 *Reply with a letter (`51: a`) or in your own words · `later [when]` · `tell me [what]` · `expand` · `dig into [what]` · `you decide` · `drop`*
 
-*Each card is whole — its own Context, What, Finding, Assumptions fold line, Impact, options and Background fold line — so each finding gets its own impact and its own answer, and `ok 51-53` still takes all three recommendations. The heading adds what the three share and replaces nothing on them. Each effect says how the failure happens and what changes after the fix, not just its name: F3's says a 2 GB upload fills the server's memory first.*
+*Each card is whole — its own Context, What, Finding, Assumptions fold line, Impact, options, Background fold line and, where the decision rests on material, its Attached fold line — so each finding gets its own impact and its own answer, and `ok 51-53` still takes all three recommendations. The heading adds what the three share and replaces nothing on them. Each effect says how the failure happens and what changes after the fix, not just its name: F3's says a 2 GB upload fills the server's memory first.*
 
 *Not this: one card, "Fix the upload-service housekeeping before the merge?", with options "(a) fix all", "(b) fix some" and "(z) later". It names a category, not the three findings, gives no impact for any one of them, and has no way to answer F3 differently from F7: the operator cannot decide it without asking what the findings are. Nor one card with a pick per finding (`51: F3 a, F7 b`): its picks would be lettered sub-decisions under one number.*
 
@@ -1184,3 +1187,47 @@ cannot be picked: one the operator might still want is an option instead. A card
 no alternatives has no line. On an answer page the same card ends on a Rejected alternatives
 fold, last of its bottom folds. Not this: an alternative named in Context or in an option's
 cons to say why it lost; nor a (c) option that exists only to be argued against.*
+
+---
+
+## 37. Attached, opened
+
+*Situation: decision 52 (§ 29) is on screen. Its last fold line, `▸ Attached — 3: Last night's write log · The write tests on the change · Who a failing disk reaches`,
+says what it carries. The operator replies "52: tell me attached"; the answer opens the fold.*
+
+*Read as: 52 → tell me (attached).*
+
+**52 — Attached**
+
+▾ Attached — 3: Last night's write log · The write tests on the change · Who a failing disk reaches
+**Last night's write log** · *excerpt* — `logs/upload-1026.txt:2210-2214` `at 3f2a9c1`
+```log
+02:14:07.112 write failed: retrying
+02:14:07.113 write failed: retrying
+02:14:07.113 write failed: retrying
+02:14:07.114 write failed: retrying
+```
+
+**The write tests on the change** · *check results: 2 pass · 1 fail · 0 pending* — run on the review's branch this morning
+- **pass** a write to a healthy disk succeeds first time
+- **pass** a write that fails once succeeds on the retry
+- **fail** a disk that fails every write — 412 tries in one second, and no pause between them
+
+**Who a failing disk reaches** · *who's affected* — the upload service's deploy map
+
+| Who | Today | With (a) |
+|---|---|---|
+| uploads on that server | stall behind the retries | wait up to 30 seconds, then succeed or fail |
+| the other servers | none | none |
+
+*Each attachment is its own entry: a bold head line with its title, its kind and where it came
+from, then its body in its kind's shape, a blank line before each head after the first. The
+excerpt is fenced as on the Finding line, at most about 15 lines; the checks carry their tally
+in the head and one line each, led by the status; the table stands after a blank line, so it is
+never read into its head. The card itself stays readable with the fold closed: the finding and
+its excerpt are on the card, and the attachments are what the operator opens to check it. A
+text field that names one, "the test run ([[att:tests|the write tests]])" in the record, reads
+"the test run (*the write tests (attached)*)" in chat. On an answer page the same card shows an
+Attached fold after Background, each attachment closed until clicked. Not this: the log
+pasted into the card's Context; nor an attachment holding the only statement of what is
+decided.*

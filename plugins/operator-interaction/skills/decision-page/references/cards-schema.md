@@ -6,7 +6,7 @@ envelope, a page card, an excerpt and the answers collection. **Each card is a c
 `decision-card/5`, whose fields are the `decisions` skill's `references/card-record.md`; a
 page card adds its layer `L` and its dependency line `dep`. `assets/cards.example.json` is a
 complete, invented example: three decisions, each opening on its TLDR, then its Context, then
-its What (one with its Scope, one with its Likelihood and Best response?, one with its Finding), then its Open questions fold, then its Assumptions fold, then its Impact; the wide card ends on a Rejected alternatives fold. Its levels scale with the decision: a wide card with
+its What (one with its Scope, one with its Likelihood and Best response?, one with its Finding), then its Open questions fold, then its Assumptions fold, then its Impact; the wide card carries three attachments (an excerpt, a table and check results, one named by a link in its evidence) and ends on a Rejected alternatives fold. Its levels scale with the decision: a wide card with
 every part a click from more detail, a ⚠ one-way card (every option with its reach, its
 one-way option flagged) levelled too, and a small call raised from a source's labelled item
 with no recommendation and no levels, whose Finding shows its excerpt. One option carries the steps the operator takes to act
@@ -39,6 +39,8 @@ object, has a `kind` other than `observed` or `evidence`, or a `seen` that is no
 non-blank text; a `best` that is not one line of text, or one on a card with no `likelihood`;
 a `rejected` that is not a list of `{t, why}`, an alternative with no `t` as text or one holding a
 line break, or a `why` that is not a list of one or more reasons, each one line of text;
+an `attached` that is not a list, or an attachment the attachment rules refuse (§ An
+attachment);
 an option but (z) with no effect; on a ⚠ card, an option but (z) with no reach; an option
 field that is not text; a `plan`, `pro` or `con` holding a line break (CR, LF, NEL, a line or
 paragraph separator, a vertical tab or form feed); a `pros` or `cons` that is not a list of
@@ -60,7 +62,7 @@ option's `detail` that is not `[medium, high]`; a `detail.tldr` bullet that carr
 recommendation, at either level, its headings, bullets and sub-bullets counted in reading
 order. Every text field is escaped wherever it reaches the page, attributes and ids included.
 
-Text fields are plain text: the page escapes them. Two marks are rendered:
+Text fields are plain text: the page escapes them. Three marks are rendered:
 
 - `` `code` `` in backticks shows as code;
 - `[[N]]` is a **decision slug**: it renders as *N · short name*; a click opens its card when
@@ -69,7 +71,12 @@ Text fields are plain text: the page escapes them. Two marks are rendered:
   question, the answer and when), which a tap or click pins on a decision not on the page and
   a second tap, a tap elsewhere or Escape closes. N must be a card or a `refs` entry (its card's `t`, or the entry's
   `short`, is the short name): the page refuses any other N. Use a slug wherever a card
-  mentions another decision by number.
+  mentions another decision by number;
+- `[[att:id|label]]` is a **link to an attachment** (F3): it shows `label` with a dotted
+  underline, and a click opens the card's Attached fold and the attachment `id`, scrolls to it
+  and marks it briefly. `id` must be one of the card's own attachments: the pre-publish runner
+  refuses any other, and the page shows its label as plain text, so an older or hand-edited
+  page still reads. Anywhere off a card (the lede, a layer's note) it is its label.
 
 **No ids on the page.** The page is the reader's only context: they are not in the
 conversation. Refer to another decision by its slug, and to an item, a series, a branch or a
@@ -85,7 +92,7 @@ to type or open. The runner lints an id anywhere the page shows text (SKILL.md s
 | Key | Type | Required | What |
 |---|---|---|---|
 | `format` | `"decision-page/5"` | yes | the envelope's stamp: the template reads only this one (answer 343 (a)) |
-| `page` | object | no | `title` (the heading and tab title; set by SKILL.md step 2's title rule), `lede` (one or two sentences: what this set of decisions is about; slugs allowed), `doc` (`{name, url}`, a reading copy; `url` must start `https://`, otherwise it is not shown) |
+| `page` | object | no | `title` (the heading and tab title; set by SKILL.md step 2's title rule), `lede` (one or two sentences: what this set of decisions is about; slugs allowed; when any card carries an excerpt, an excerpt-shaped attachment or a Finding's excerpt, it names the repos they come from, so the operator knows what a share would expose: the runner's `lede` lint), `doc` (`{name, url}`, a reading copy; `url` must start `https://`, otherwise it is not shown) |
 | `layers` | array | yes | the groups, in display order: `[key, title, note, shared]` each, `shared` optional. `note` is one sentence under the group heading, after *What they share:*. `shared`, text, marks a **bundle** (the `decisions` skill's `references/rendering.md` § A bundle as a group): the shared context, the terms and the source every card in it uses, in plain words, shown in a closed **Shared context** fold under the heading; each item is a whole card, whose Context may lean on it (the runner reads a card's Context with its bundle's shared context). A bundle holds two or more cards; one answer for every item stays one card naming each |
 | `follow` | array | yes | the six follow-ups, exactly as in the example, in that order: `[key, label, placeholder, words prompt]`. Keys `later`, `tell me`, `expand`, `dig into`, `you decide`, `drop`; placeholders `[when]` on `later`, `[what]` on `tell me` and `dig into`, empty on the rest |
 | `cards` | array | yes | one card per decision, in list order (the `decisions` skill's order) |
@@ -146,7 +153,11 @@ Each record field maps to a part of the `decisions` skill's card (its `reference
   and in the row's rec pill; there is no Recommendation part and no Rec line;
 - the folds: **Background** (`why`, then `whyask` with `class` first; the first of the bottom
   folds; closed, its summary is *why now:* and the first sentence of `why`, a slug as its
-  number, which the runner's `bgsum` lint keeps to about 25 words), then **Dependencies**
+  number, which the runner's `bgsum` lint keeps to about 25 words), then **Attached**
+  (`attached`; F3, answers 264 (a), 291 (a) and 286 (b)): closed, its summary the count and the
+  titles, *2: title · title*; open, each attachment its own entry, closed, showing its title, a
+  kind pill and its source line, and opening on a click to its body in its kind's shape
+  (§ An attachment), then **Dependencies**
   (`dep`), then **Rejected alternatives** (`rejected`; F2, answer 286 (b)), the last: closed,
   its summary the count and the titles, *2: title · title*, a slug as its number; open, each
   alternative's `t` on a bold line with its `why` reasons as bullets under it. The evidence is
@@ -190,8 +201,10 @@ review, plan or document, an item or a label. For each one, point to its gloss i
 Finding's `title` and `mechanism`, the Scope's `says`, the Likelihood's `seen` for named things
 and `best`, included), and ids wherever they are (the What part and its items, the Finding but
 its excerpt, the Scope, the Likelihood and Best response?, and each rejected alternative's `t` and
-`why` included); each rejected alternative's `t` is read for counts and named things too (its
-reasons sit in the closed fold, as the other folds' text does); an observed count in
+`why`, and each attachment's title, source line and text but an excerpt-shaped body,
+included); each rejected alternative's `t` and each attachment's `title` are read for counts
+and named things too, as their folds' summaries show them (the rest sits in the closed folds,
+as the other folds' text does); an observed count in
 `seen` is the fact the line gives, so the count lint leaves it; those lints are proxies, and plain-word terms stay the cold read's. The same holds for
 the medium and high renditions of the Impact and the TLDR, and each option's view (its `plan` and
 the points of its Pros | Cons table, which picking the option opens), checked against
@@ -231,6 +244,7 @@ whitespace-split:
 | The Scope: its `says`, one line | counts in the card in all |
 | The Likelihood: its `seen` and `best`, one line each | count in the card in all |
 | Rejected alternatives: each `t` and its `why` reasons, a line each | count in the card in all |
+| Attached: about six a card; an excerpt-shaped body about 80 lines or 4 KB | never in the card in all: an attachment is opened when needed (the runner's `attached` lint) |
 | Background: `why` + `whyask`, each at its top level | ~150 |
 | Each option but `z`: its top `plan` (or older `text`) + its effect, reach, undo and cost | ~60–120 |
 | An option's `plan`, Plan in brief | 2–4 sentences, at most ~100 words |
@@ -274,7 +288,7 @@ muted, with its short name, in every view. It opens every card on its TLDR, then
 then its What, then its Finding when it has one, then its Scope and its Likelihood when it has them, then its Open questions, then its Assumptions, then its Impact: a page is read away from the conversation, so its
 reader is treated as cold. Any part with `detail` toggles its level on a click, on its button
 or on its text (never on a link or a control, nor while text is selected, so it can be
-copied); the folds (Open questions and Assumptions above the Impact, Background,
+copied); the folds (Open questions and Assumptions above the Impact, Background, Attached,
 Dependencies and Rejected alternatives after the answer) keep their order and stay closed; each option has a **More** button at its right, outside its label, which opens or closes the
 option's view alone. **Picking an option** (its radio) opens its view and closes the card's other
 open one, as **More** would (the operator: "Selecting an option opens it as if More is pressed");
@@ -294,7 +308,7 @@ don't display it*). A part, facet or field that is missing, blank, or says only 
 the page, by one test in the template: a `dep` (no Dependencies fold), an `open` list (no Open
 questions fold), a `what` and `items` (no What part), a `finding`'s `mechanism` (no Finding part)
 and its `title` or `where`, a `scope`'s `says` (its level word alone), a `likelihood`'s `seen` (no
-Likelihood part, and no Best response? with it), a `best` (no Best response? line), a `rejected` list (no Rejected alternatives fold), an
+Likelihood part, and no Best response? with it), a `best` (no Best response? line), an `attached` list (no Attached fold) or an attachment's `title` (that attachment left out), a `rejected` list (no Rejected alternatives fold), an
 alternative's `t` (that alternative left out) or a `why` reason, an item's `where`, `about` or `per` entry, an Impact `cost`, at every level, an option's effect, reach or cost, an
 `evidence`, `ifleft`, `roundcosts`, `ifunanswered`, an option's one line, its `pro` or `con`
 (a none one has no row). A writer may simply
@@ -317,8 +331,9 @@ What each older era held, and what a republish writes into it, is the `decisions
 ## An excerpt
 
 An excerpt is verbatim multi-line text (code, a log, a diff, a config block, test output),
-shown as a code block. The finding's `excerpt` carries one (F7); the excerpt attachment will,
-and each checks and draws it the same way. An excerpt is never read by the id lint or the cold
+shown as a code block. The finding's `excerpt` carries one (F7), and so does the `body` of an
+`excerpt` or `preview` attachment and of a `mock` example (F3); each checks and draws it the
+same way. An excerpt is never read by the id lint or the cold
 read: it is the source's text as it stands.
 
 | Key | Type | Required | What |
@@ -356,6 +371,69 @@ the page.
 **Safety.** Never a secret's value: the line shows `[redacted: key <name> in <path>]`. Never
 personal data from any source (logs, fixtures, configs, test output), and nothing from a third
 party's private source. Never Claude Code's source, prompts or internal names.
+
+## An attachment
+
+Material a decision rests on, carried with the card in `attached` and opened when needed (F3;
+answer 264 (a) adopted the attachments draft as written; 291 (a), with the operator's words,
+folds them closed with links to them; 286 (b), with the operator's words, set the kinds below).
+It keeps the card short and puts what the card talks about one step away. Nothing the decision
+needs moves into one: an attachment never counts in the card in all, and the floor stays on the
+card.
+
+| Key | Type | Required | What |
+|---|---|---|---|
+| `id` | string | no | lower-case letters, digits and `-`, each its own on the card: what a `[[att:id\|label]]` link names |
+| `kind` | string | yes | one of the kinds below; the page refuses any other, `evidence` included (it is the card's own `evidence`, in the Assumptions fold) |
+| `title` | string | yes | one line: what it shows on this card |
+| `src` | string | no | one line, its source line: where it came from; a `preview` needs one |
+| `body` | by kind | yes but on `link` | its content, in the shape of its kind |
+| `url` | string | on `link` | one `https://` address, shown as the link |
+| `pointer` | string | no; `summary` only | one line: where the full text lives, shown as *Full text:* |
+| `form` | string | on `example` | `mock` (drawn as a code block) or `narrative` (drawn as prose) |
+
+| Kind | Carries | `body` | Drawn as | Source line |
+|---|---|---|---|---|
+| `excerpt` | verbatim lines (code, a log, a diff, a config block, test output, a quoted draft) | an excerpt (§ An excerpt) | a code block | a path and range at a commit, or the command and when it ran |
+| `summary` | a few lines in the writer's words, and a `pointer` | text or a list of paragraphs | prose, then *Full text:* and the pointer | the full text's place |
+| `link` | a public page (vendor docs, a changelog, a standard) and why it matters | its note: text or paragraphs, optional | the `url` as a link, then the note | where it was cited |
+| `example` | invented text showing what an option would mean in a case | `mock`: an excerpt; `narrative`: text or paragraphs | a code block, or prose | always *invented to illustrate*: the page shows it, then any `src` |
+| `preview` | a text mock of the changed card or output, never HTML or an image | an excerpt | a code block | *invented to illustrate*, or the command that produced it |
+| `table` | a comparison grid | `{cols, rows}`: `cols` one-line headings, each row a list of one-line cells, one per column | a table, scrolling sideways in its own box | its sources |
+| `matrix` | who is affected | `{cols, rows}`, as `table` | a table | its sources |
+| `steps` | a runbook | a non-empty list of `{t, d}`: `t` one line, `d` text, optional | a numbered list, each step bold with its detail under it | the plan section |
+| `checks` | check results | a non-empty list of `{s, t, d}`: `s` `pass`, `fail` or `pending`, `t` one line, `d` text, optional | a tally (*2 pass · 0 fail · 1 pending*), then a status list, each led by its status | how and when they ran |
+| `depmap` | how decisions wait on each other | a non-empty list of nodes `{n, name, rel, note, self, kids}`: `n` a decision number, `name` its short name, one line; `rel` and `note` one line, optional; `self` true on this card's own node; `kids` a non-empty list of nodes | a tree: each node its relation, then *N · name* (a card on the page opens on a click), then its note, its children nested under it | the store or the series |
+
+Alternatives considered and assumptions with tripwires, which 286 (b) also named, are card
+folds (Rejected alternatives, Assumptions), not attachment kinds. A new kind that fits a shape
+above is one row here and in the writer digest, one value in the page's list (`ATT_KINDS`) and
+the upgrader's, its chat line in the `decisions` skill's `references/rendering.md` § Folds,
+and one test case; one that needs a new shape (an image, a chart) is a page change through the
+`artifact-design` skill, with its own escaping tests.
+
+**The page refuses** an `attached` that is not a list, and an attachment that is not an object;
+whose `kind` is not in the list; that holds a field its kind does not have; whose `id` is off its
+shape or used twice on the card; whose `title` is not one line of text or whose `src` is not one
+line; and whose `body` is off its kind's shape: an excerpt the excerpt rules refuse (§ An
+excerpt), a `preview` with no source line in its `src` or its excerpt's `src`, an `example` with no
+`form` of the two, a `summary` or `narrative` body that is not text or a non-empty list of
+paragraphs, a `pointer` of more than one line, a `link` with no `https://` `url`, a table with
+no headings or no rows or a row of another width or a cell holding a line break, a step or a
+check with no one-line `t` or a field it does not have, a status not one of the three, and a
+node with no decision number or name.
+
+**Every text is escaped** (the title, the source line, the pointer, prose, cells, steps,
+statuses and nodes, through the same escaping as every field, the marks above rendered in
+them); an excerpt-shaped body is drawn by the code-block renderer, verbatim and never parsed.
+**Safety:** what a private page may carry is the attachments draft's rule: excerpts of code,
+configs, test output and logs from the repos its decisions are about; never a secret's value
+(where it is kept and under which key, `[redacted: key api_token in /etc/app/env]`), never
+personal data from any source (logs, fixtures, configs, test output), never material from a
+third party's private source, never Claude Code's source, prompts or internal names. The
+pre-publish runner refuses a line in an attachment, or in the Finding's excerpt, that looks
+like a secret, naming where it is and its key, never the value; without node, SKILL.md step 2's
+grep step runs the same patterns over `cards.json`. The patterns are a net, not a proof: a value holding a backslash, quote or space in its first 16 characters, a key running more than 80 characters past its keyword, or more than 80 spaces around its `=` or `:` passes both; the cold read's item 6 is the check for those.
 
 ## The answers collection
 

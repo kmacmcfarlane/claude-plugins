@@ -30,14 +30,16 @@ from a finding (of a review, an audit, a test run or a scan) carries `finding`: 
 how it happens, and its code as an excerpt. Where the work states requirements, a card carries
 `scope`: how it stands against them. A risk decision carries `likelihood`, the event and the
 strongest fact about how often it happens, and `best`, whether acting here is the response that
-matters. A card that weighed alternatives it does not offer carries `rejected`: each one's title
-and why it was not offered.
+matters. A card whose decision rests on material it can only name carries `attached`: an
+excerpt, a table, check results and the like, each opened when needed. A card that weighed
+alternatives it does not offer carries `rejected`: each one's title and why it was not offered.
 
 ## Text
 
-Every text field is plain text: the page escapes it, and only two marks render: `` `code` ``
-in backticks, and `[[N]]`, a decision slug (a decision on the page, or a `refs` key; the page
-refuses any other N). Links
+Every text field is plain text: the page escapes it, and only three marks render: `` `code` ``
+in backticks; `[[N]]`, a decision slug (a decision on the page, or a `refs` key; the page
+refuses any other N); and `[[att:id|label]]`, a dotted link that opens the card's attachment
+`id` (an id the card does not attach is refused by the runner; the page shows the label). Links
 (`https://` only) are clickable in the medium and high levels, in the fold parts at every
 level and in an option's **More** detail; nowhere else (not a heading, a visible part's
 summary, `act`, a tooltip or a slug). `page.doc.url` must start `https://`, or it is not shown.
@@ -47,7 +49,7 @@ summary, `act`, a tooltip or a slug). `page.doc.url` must start `https://`, or i
 | Key | Required | Shape |
 |---|---|---|
 | `format` | yes | `"decision-page/5"` |
-| `page` | no | `{title, lede, doc: {name, url}}`; `title` is `(<owner>) <session name>`, else `<repo>: open decisions` (SKILL.md step 2), the `<title>` set to match; `url` must start `https://` |
+| `page` | no | `{title, lede, doc: {name, url}}`; when any card carries an excerpt (an excerpt-shaped attachment, a Finding's excerpt), the `lede` names the repos they come from; `title` is `(<owner>) <session name>`, else `<repo>: open decisions` (SKILL.md step 2), the `<title>` set to match; `url` must start `https://` |
 | `layers` | yes | `[[key, title, note, shared], …]`, the groups in display order; `shared` optional: a bundle's shared context, the terms and source every card in it uses, in plain words, which a card's Context may lean on; `note` then says what the cards share. A bundle holds two or more whole item cards |
 | `follow` | yes | copied from below as it stands |
 | `cards` | yes | one per decision, in the `decisions` skill's order |
@@ -110,6 +112,7 @@ it knowingly only on a card upgraded from an older format.
 | `ifleft` | optional | **If left:** on an ask for another round |
 | `roundcosts` | optional | **A round costs:** on an ask for another round |
 | `ifunanswered` | optional | **If unanswered:** a status-quo default |
+| `attached` | optional | `[{id, kind, title, src, body, …}, …]`, the material the decision rests on (§ An attachment): shown in the **Attached** fold, the second of the bottom folds, after Background, closed, its summary the count and the titles (*2: title · title*); open, each attachment its own entry, closed, its title, a kind pill and its source line. `evidence` is no attachment kind: it is the card's `evidence`. At most about six; they never count in the card in all |
 | `rejected` | optional | `[{t, why}, …]`, the alternatives weighed and not offered: shown in the **Rejected alternatives** fold, the last of the bottom folds, closed, its summary the count and the titles (*2: title · title*); open, each `t` on a bold line with its `why` reasons as bullets under it. `t` a short title, one line; `why` one or more reasons, each one line of text. An alternative the operator might still pick is an option, never here |
 | `detail` | optional | the levels, below |
 
@@ -154,8 +157,8 @@ older option with no `plan` shows its `text` at its fullest in the plan's place.
 ## An excerpt
 
 Verbatim multi-line text (code, a log, a diff, test output), drawn as a code block: the
-finding's `excerpt` (the excerpt attachment will carry one too). The id lint and the cold read
-never read it.
+finding's `excerpt`, and the `body` of an `excerpt` or `preview` attachment or a `mock` example.
+The id lint and the cold read never read it.
 
 | Key | Required | Shape |
 |---|---|---|
@@ -166,6 +169,41 @@ never read it.
 Nothing in an excerpt renders as a mark: backticks, `[[N]]`, links, HTML tags and fences show
 as typed. Never a secret's value (`[redacted: key <name> in <path>]`), personal data, or
 another party's private material.
+
+## An attachment
+
+Material the decision rests on, carried with the card and opened when needed (F3; answers 264
+(a), 291 (a) and 286 (b)): never what the decision needs to be read, which stays on the card.
+
+| Key | Required | Shape |
+|---|---|---|
+| `id` | no | lower-case letters, digits and `-`, each its own on the card: what a `[[att:id\|label]]` link names |
+| `kind` | yes | one of the kinds below |
+| `title` | yes | one line: what it shows on this card |
+| `src` | no | one line, its source line: where it came from (below); a `preview` needs one |
+| `body` | yes but on `link` | its content, in the shape of its kind (below) |
+| `url` | on `link` | one `https://` address |
+| `pointer` | no; `summary` only | one line: where the full text lives |
+| `form` | on `example` | `mock` (a code block) or `narrative` (prose) |
+
+| Kind | Carries | `body` | Source line |
+|---|---|---|---|
+| `excerpt` | verbatim lines, a draft included | an excerpt | a path and range at a commit, or a command and when it ran |
+| `summary` | a few lines in your words, and a `pointer` | text or a list of paragraphs | the full text's place |
+| `link` | a public page and why it matters | its note, text (optional) | where it was cited |
+| `example` | invented text showing what an option means in a case | `mock`: an excerpt; `narrative`: text or paragraphs | always *invented to illustrate* (the page shows it) |
+| `preview` | a text mock of the changed output, never HTML or an image | an excerpt | *invented to illustrate*, or the command |
+| `table` | a comparison grid | `{cols, rows}`: one-line headings, each row one one-line cell per column | its sources |
+| `matrix` | who is affected | `{cols, rows}`, as `table` | its sources |
+| `steps` | a runbook | `[{t, d}]`: `t` one line, `d` text | the plan section |
+| `checks` | check results, with a tally | `[{s, t, d}]`: `s` `pass`, `fail` or `pending`, `t` one line, `d` text | how and when they ran |
+| `depmap` | how decisions wait on each other | `[{n, name, rel, note, self, kids}]`: `n` a decision number, `name` its short name, `rel` and `note` one line, `kids` nodes | the store or the series |
+
+No other kind and no other field: the page refuses them. Every text but an excerpt renders the
+marks above; an excerpt renders none. **Never a secret's value**, in any attachment or the
+Finding's excerpt: the runner refuses a line that looks like one (below), and without node the
+skill's grep step runs the same patterns. Never personal data or another party's private
+material.
 
 ## Levels and their shapes
 
@@ -185,7 +223,7 @@ Levels scale with the decision: a small call carries none; a wide or ⚠ one-way
 medium and high on its visible parts and on the fold items with depth to give. Each level is
 longer than the one below. Soft sizes at a part's top level: Background (`why` + `whyask`)
 ~150 words; each option's plan (or older text) plus its effect, reach, undo and cost ~60–120; `evidence` ~150;
-the card in all ~600–900, the What part (`what` and `items`), the Finding (not its excerpt), the Scope's `says`, the Likelihood's `seen` and `best`, each rejected alternative's `t` and `why`, each option's `pro` and `con` and its table's `pros` and `cons` counted in it; a set still lists every item. Never pad: a fact no source holds goes under `open`.
+the card in all ~600–900, the What part (`what` and `items`), the Finding (not its excerpt), the Scope's `says`, the Likelihood's `seen` and `best`, each rejected alternative's `t` and `why`, each option's `pro` and `con` and its table's `pros` and `cons` counted in it (never the attachments, which keep their own sizes); a set still lists every item. Never pad: a fact no source holds goes under `open`.
 
 ## The runner's thresholds
 
@@ -206,6 +244,9 @@ The lints fire past these values, except `mech`, which fires at or under its val
 | words in the Background fold's summary | 25 |
 | words in a pro or con | 25 |
 | words in a plan in brief | 100 |
+| attachments on a card | 6 |
+| lines in an attachment's excerpt | 80 |
+| bytes in an attachment's excerpt | 4096 |
 
 ## The checks
 
@@ -225,7 +266,12 @@ not `required`, `shapes` or `outside`, its `says` not one line of text, or none 
 `shapes` scope; a `likelihood` not an object, its `kind` not `observed` or `evidence`, its `seen`
 not one line of non-blank text; a `best` not one line of text, or with no `likelihood`; a
 `rejected` not a list of `{t, why}`, a `t` not one line of text, or a `why` not one or more
-reasons, each one line of text; a bad or duplicate `n`; a `rev` or `raised` not a UTC time; a `q` on
+reasons, each one line of text; an `attached` not a list, an attachment of a kind not in the
+list (`evidence` included), a field its kind does not have, an `id` off its shape or used twice,
+a `title` or `src` not one line, or a `body` off its kind's shape (§ An attachment: an excerpt
+the excerpt rules refuse, a `preview` with no source line, an `example` with no `form`, a
+`link` with no `https://` `url`, a table row of another width, a check status not one of the
+three, a node with no decision number); a bad or duplicate `n`; a `rev` or `raised` not a UTC time; a `q` on
 more than one line; options not objects with a single `a`–`z` letter and a title, out of
 order, or not ending `z`; a `rec` not among them, or null without `norec`; a missing field
 required to render; blank `context`; a TLDR bullet, at any level, opening on Rec or
@@ -244,6 +290,13 @@ with blank `text`, a `lang` off its label shape or a `src` of more than one line
 neither text nor a non-empty list of text; a malformed `detail` (a bullet neither text nor
 `{t, sub}`, a section not `{h, b}`, both `t` and `h`, bullets and sections mixed, an Impact
 level with none of its four facets), or an option's `detail` not `[medium, high]`.
+
+**The attachment refusals** (the runner's alone, exit 1, after the page's own): a
+`[[att:id|label]]` link, in any text but an excerpt, to an id the card does not attach, or a
+`[[att:` not in that form; and a line in an attachment or the Finding's excerpt that looks like
+a secret (a private key block, a token with a known prefix, a `password`, `token`, `secret` or
+API key assignment with a long value), named by where it is and its key, never its value:
+write `[redacted: key <name> in <where it is kept>]` there instead.
 
 **The set refusal** (the runner's alone, exit 1, after the page's own; the page never refuses
 it, so an older published page still renders): a card whose `t`, first TLDR bullet, or an
@@ -266,9 +319,10 @@ page-wide one prints `lint: page:`.
 |---|---|---|
 | `page` | `page:` | an id in the page title, the lede, a layer's title, note or shared context, or a `refs` short or question |
 | `group` | `page:` | a bundle (a layer with `shared`) holding fewer than two cards |
+| `lede` | `page:` | a page with an excerpt (an excerpt-shaped attachment, a Finding's excerpt) whose `lede` names no repo: it holds none of the words repo, repos, repository, repositories |
 | `refs` | `page:` | a `refs` answer holding an id (left as given when it is the operator's words) |
-| `id` | — | an id in any card text, the What part's `what` and `items`, the Finding's label, `title`, `where` and `mechanism` (never its excerpt), the Scope's `says`, the Likelihood's `seen` and `best`, and each rejected alternative's `t` and `why` included: a hash, an item tag, a ticket key, a label like OQ3, decision N; a label a card or its finding declares passes with its short name beside it |
-| `count` | — | a count in the flat part, the Finding's `title` and `mechanism`, the Scope's `says`, `best` (never the Likelihood's `seen`, whose observed count is its fact), a rejected alternative's `t` (never its `why`, in the closed fold), or a visible level that Context (with its bundle's `shared`) and the What part (`what`, `items` and their number) do not name; one where the card says what is decided points to `items` |
+| `id` | — | an id in any card text, the What part's `what` and `items`, the Finding's label, `title`, `where` and `mechanism` (never its excerpt), the Scope's `says`, the Likelihood's `seen` and `best`, each rejected alternative's `t` and `why`, and each attachment's `title`, `src`, `pointer` and text (never an excerpt-shaped body) included: a hash, an item tag, a ticket key, a label like OQ3, decision N; a label a card or its finding declares passes with its short name beside it |
+| `count` | — | a count in the flat part, the Finding's `title` and `mechanism`, the Scope's `says`, `best` (never the Likelihood's `seen`, whose observed count is its fact), a rejected alternative's `t` (never its `why`, in the closed fold), an attachment's `title` (never its body, in the closed fold), or a visible level that Context (with its bundle's `shared`) and the What part (`what`, `items` and their number) do not name; one where the card says what is decided points to `items` |
 | `named` | — | a named mode, setting, review, plan, document, … not glossed in Context or What |
 | `set` | `shape:` | a set's `items` list of another length than its count (not short of the largest); a set on a card the upgrader carried over, its `rev` kept (refused once a writer revises it) |
 | `tldr` | — | a TLDR bullet, at any level, that may carry the recommendation |
@@ -290,11 +344,12 @@ page-wide one prints `lint: page:`.
 | `key` | `depth:` | a `detail` key the page does not show |
 | `oneway` | `oneway:` | a ⚠ card with no option flagged one-way; a flagged option while the Impact carries no undo |
 | `tradeoffs` | `shape:` | an option but `z` with no shown `pro` or `con`; a recommended option with no `con`; a card with two or more options but `z` and none (an upgraded older card may leave it knowingly); a `pro` or `con` past its words |
+| `attached` | `depth:` | a card with more than 6 attachments; an excerpt-shaped attachment body (`excerpt`, `preview`, a `mock` example) past 80 lines or 4096 bytes: cut it and say where; an attachment but an `example` with no shown `src` |
 | `plan` | `depth:` | an option, `z` included, with no shown `plan` (one line when no option has one; an upgraded older card may leave it knowingly, its view showing its `text`); a `plan` past its words; an option with both `plan` and `text`, whose text is not shown |
 
 Then the cold read: could you name every item the card acts on, from its What part alone? List
 each noun phrase in the Impact, TLDR, option titles and one lines,
 and each option's `pro` and `con` (visible rows, linted by `count` and `named` though outside
-the flat part's size), the Finding's `title` and `mechanism`, the Scope's `says`, the Likelihood's `seen` and `best`, each rejected alternative's `t`, and its view's `plan`, `pros` and `cons`, that names a specific thing, and point to its gloss in `context`. Over the view the `named` lint reads qualified names only ("content mode"); a bare noun, a phrase opening on a function word ("to plan") or on a verb form ("reaches review") is yours to check here. Of each effect, ask: does
+the flat part's size), the Finding's `title` and `mechanism`, the Scope's `says`, the Likelihood's `seen` and `best`, each rejected alternative's `t`, each attachment's `title`, and its view's `plan`, `pros` and `cons`, that names a specific thing, and point to its gloss in `context`. Over the view the `named` lint reads qualified names only ("content mode"); a bare noun, a phrase opening on a function word ("to plan") or on a verb form ("reaches review") is yours to check here. Of each effect, ask: does
 it name what happens to the thing being built? Could you say how it happens, not only that
 it does?

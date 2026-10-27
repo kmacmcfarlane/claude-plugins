@@ -173,8 +173,9 @@ A part a reader may not need opens folded, on one line:
   open it.
 - **Open.** `tell me <name>` (`tell me open questions`) answers with the fold open, and
   `expand` and a block show it open: the line as `▾ <name> — <summary>`, its content under
-  it, one bullet an item (Assumptions' Basis line first, Background's two labelled lines, and
-  Rejected alternatives' bold title lines, each over its reasons, below).
+  it, one bullet an item (Assumptions' Basis line first, Background's two labelled lines,
+  Attached's bold head lines, each over its body, and Rejected alternatives' bold title lines,
+  each over its reasons, below).
 - **Empty.** A fold with nothing in it is left out, line and all (none is not shown).
 
 **▸ Open questions** — what is still open about the decision (SKILL.md § The floor, item 9;
@@ -219,6 +220,54 @@ rewritten where the caller stores *why now*, never cut, and the summary is compo
 open, and `expand` and a block show it open: `▾ Background — why now: …`, then **Why now:**
 and **Why ask:** (the class first) on two lines under it. The answer page folds it the same
 way, first of its bottom folds (the `decision-page` skill's `references/cards-schema.md`).
+
+**▸ Attached** — the material the decision rests on, carried with the card and opened when
+needed (the card record's `attached`; answer 264 (a), the attachments draft as written; 291 (a),
+with the operator's words: "I like the ▸ symbol to show a folded item", attachments collapsed by
+default, a reference to one a link to it; 286 (b), with the operator's words, its kinds): the
+second fold under the options, after ▸ Background and before ▸ Rejected alternatives, on a card
+whose decision rests on material it can only name (the code it changes, a log, a comparison,
+check results, a runbook, how decisions wait on each other). Its summary is
+`N: <title> · <title>`, the count and each title, in order:
+`▸ Attached — 2: Last night's write log · The write tests on the change`. `tell me attached`
+answers with it open, and `expand` and a block show it open; `tell me <title>` (`52: tell me
+the write log`) answers with the fold line and that one attachment under it. Open, each
+attachment is a bold head line, `**<title>** · *<kind>* — <its source line>`, then its body in
+the shape of its kind, and a blank line before each head line after the first, so a head is
+never read into the body above it:
+
+| Kind | Its body in chat |
+|---|---|
+| `excerpt`, `preview`, an `example` in `mock` form | a fenced block tagged with its language, verbatim, the Finding's fence rule; about 15 lines inline and three such blocks a card at most: a longer one shows its first lines and says where the rest is, and more go by their source line alone |
+| `summary` | its lines, then `full text:` and its pointer in `code` |
+| `link` | the `https://` address, then ` — ` and why it matters |
+| `example`, `narrative` form | its lines; the head's source line is always *invented to illustrate* |
+| `table`, `matrix` | a blank line, then a markdown table, its headings first (a `\|` in a cell) |
+| `steps` | a numbered list, `1. **step** — its detail` |
+| `checks` | the tally in the head, `*check results: 2 pass · 1 fail · 0 pending*`, then one bullet a check, led by its status in bold: `- **fail** what was checked — what it showed` |
+| `depmap` | an indented list, a node a bullet, `- waits on: 41 (short name) — note`, its children indented two spaces under it |
+
+A link to an attachment in the card's text, `[[att:id|label]]` in the record, reads
+*label (attached)* in chat, and `tell me <label>` opens it. Nothing the decision needs moves into
+an attachment: the card stays readable with every fold closed. An attachment carries no
+secret's value (where it is kept and under which key, never the value: run the `decision-page`
+skill's secret grep on its lines before the card goes out), no personal data and nothing from
+another party's private source; a card stored where it is pushed to a public repo keeps its
+attachments as pointers only, a private repo's in plain words. The answer page folds it the
+same way, second of its bottom folds, each attachment its own entry, closed.
+
+````
+▾ Attached — 2: Last night's write log · The write tests on the change
+**Last night's write log** · *excerpt* — `logs/upload-1026.txt:2210-2214`
+```log
+02:14:07.112 write failed: retrying
+02:14:07.113 write failed: retrying
+```
+
+**The write tests on the change** · *check results: 1 pass · 1 fail · 0 pending* — run on the review's branch this morning
+- **pass** a write that fails once succeeds on the retry
+- **fail** a disk that fails every write — 412 tries in one second
+````
 
 **▸ Rejected alternatives** — the alternatives weighed and not offered, each with why (the
 card record's `rejected`; answer 286 (b), "alternatives with rejection reasons folded under the
@@ -343,6 +392,7 @@ how it happens, who meets it and when, the before and after, in one to three sen
 2. …
 
 ▸ Background — why now: the first sentence of why it is up now, about 25 words at most
+▸ Attached — 2: an attachment's title · another's *(only where the decision rests on material)*
 ▸ Rejected alternatives — 1: an alternative weighed and not offered *(only where one was)*
 ```
 
@@ -352,8 +402,8 @@ how it happens, who meets it and when, the before and after, in one to three sen
   then the ▸ Open questions line when anything is open, then the
   ▸ Assumptions line (§ Folds), then **Impact:** — and under them the options, any **To act
   on (x):** part, a round ask's **If left:** and **A round costs:**, any **If unanswered:**,
-  then the ▸ Background line (§ Context, § Folds), and last any ▸ Rejected alternatives line
-  (§ Folds). There is no Rec line.
+  then the ▸ Background line (§ Context, § Folds), then any ▸ Attached line, and last any
+  ▸ Rejected alternatives line (§ Folds). There is no Rec line.
 - **Title:** the question. A decision raised from one labelled item of a source opens its
   title on the label and its short name: **41 — F7 (oversize upload) · Cap the upload
   size?** (§ Source labels).
@@ -464,6 +514,9 @@ how it happens, who meets it and when, the before and after, in one to three sen
   ask may point at the lines above it: *cap — the finding under If left*. The caller's store
   keeps *why now* and *why ask* as its own fields, as written; the fold shows them, and the
   card carries no separate why line.
+- **▸ Attached:** on a card whose decision rests on material it can only name, a closed fold
+  after ▸ Background, its summary the count and the titles (§ Folds). Each attachment is a
+  title, its kind, its source line and its body; none, no line.
 - **▸ Rejected alternatives:** on a card that weighed alternatives it does not offer, the
   last line, a closed fold after ▸ Background, its summary the count and the titles (§ Folds).
   Each alternative is a short title and its reasons, one line each; none weighed, no line.
@@ -563,6 +616,10 @@ how it happens, who meets it and when, the before and after, in one to three sen
 **Why now:** …
 **Why ask:** *class* — …
 
+▾ Attached — 1: an attachment's title *(only where the decision rests on material)*
+**an attachment's title** · *its kind* — its source line
+its body, in the shape of its kind (§ Folds)
+
 ▾ Rejected alternatives — 1: an alternative weighed and not offered *(only where one was)*
 **an alternative weighed and not offered**
 - why it was not offered, one bullet a reason
@@ -591,7 +648,8 @@ how it happens, who meets it and when, the before and after, in one to three sen
 - Under them run a round ask's **If left:** and **A round costs:**, then any **To act
   on (x):** part; then the Background fold stands open, as § Folds places it, first after
   the options and their parts: `▾ Background — why now: …` with its **Why now:** and **Why
-  ask:** lines under it; then, last of the folds, any Rejected alternatives fold, open, each
+  ask:** lines under it; then any Attached fold, open, each attachment's bold head line over its
+  body; then, last of the folds, any Rejected alternatives fold, open, each
   title in bold over its reason bullets; only the read-back line, on a ⚠ block, follows them.
 - A block **includes** the basis drill-down (the tags and links), in its open Assumptions
   fold. `expand` on a block is
@@ -684,7 +742,7 @@ does not say what is decided (SKILL.md § The floor, item 1).
 
 - **The items need different answers: a group.** One card per item, each whole: its own
   number, Context, What, ▸ Assumptions line, Impact, options, ▸ Background line and any
-  ▸ Rejected alternatives line, as any card
+  ▸ Attached and ▸ Rejected alternatives lines, as any card
   (SKILL.md § Critical, each one whole). An item card's Context may be short and lean on
   the heading for shared terms; it still ends on its cue. The cards sit under one heading:
 
@@ -825,7 +883,7 @@ paged (SKILL.md § Levels, the line-only rule), each opening with what changed w
 waited (*nothing changed* is worth saying, and so is *impact unchanged*). Under it the card
 runs **Context:** (its stored Context, ending on where the operator left it), **What:**,
 any **Finding:**, **Scope:** and **Likelihood:**, any ▸ Open questions line, the ▸ Assumptions line, **Impact:**, the options, then the ▸ Background line from its
-stored *why now* (the fold holding its stored *why now* and *why ask*) and any ▸ Rejected alternatives line; a block's **Context:** bullets open with the same
+stored *why now* (the fold holding its stored *why now* and *why ask*) and any ▸ Attached and ▸ Rejected alternatives lines; a block's **Context:** bullets open with the same
 Context. A stored card in an earlier form is read, and revised where it lacks a floor field,
 by `references/legacy-cards.md`. A deferred decision whose
 wake has not come is a card too, opening with its wake: *deferred until the release; no

@@ -755,7 +755,8 @@ class DecisionPageRunner(unittest.TestCase):
                     lambda d: last_b(d["cards"][0]["detail"]["why"][1]).append(t),
                     lambda d: d["cards"][0]["options"][0].__setitem__("reach", t),
                     lambda d: d["cards"][0]["options"][1]["act"].append("Ask " + t),
-                    lambda d: d["page"].__setitem__("lede", t),
+                    # the lede still names the repo its excerpts come from (the lede lint, F3)
+                    lambda d: d["page"].__setitem__("lede", t + " Excerpts from the docs-site repo."),
                     lambda d: d["layers"][0].__setitem__(2, t)):
             d = example()
             put(d)

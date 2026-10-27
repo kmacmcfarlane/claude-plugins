@@ -48,6 +48,9 @@ THRESHOLDS = {
     "words in the Background fold's summary": r"\bBGSUM_CAP = (\d+)",
     "words in a pro or con": r"\bPROCON_CAP = (\d+)",
     "words in a plan in brief": r"\bPLAN_CAP = (\d+)",
+    "attachments on a card": r"\bATT_CAP = (\d+)",
+    "lines in an attachment's excerpt": r"\bXC_LINES = (\d+)",
+    "bytes in an attachment's excerpt": r"\bXC_BYTES = (\d+)",
 }
 
 

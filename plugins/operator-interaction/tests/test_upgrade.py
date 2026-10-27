@@ -253,6 +253,8 @@ class Upgrade(unittest.TestCase):
                             or "(an option's view)" in x or any(t in x for t in PLAN_LINTS)
                             or "card 52: impact: the likelihood opens on a carried-over basis word" in x
                             or "card 53: impact: an observed likelihood ends on no source" in x
+                            # the kit's lede names no repo, and its card 53 shows a Finding's excerpt (F3)
+                            or x.startswith("lint: page: lede names no repo")
                             for x in rout.splitlines()), rout)
         self.assertIn('card 52: impact: the likelihood opens on a carried-over basis word ("(estimated)")', rout)
         self.assertNotIn("has no best", rout)
@@ -289,7 +291,8 @@ class Upgrade(unittest.TestCase):
         self.assertEqual(c["evidence"], ["Health report — Observed: the disk logs rising read errors.",
                                          "Observed: it is four years old."])
         self.assertEqual([x["kind"] for x in c["attached"]], ["example"])
-        self.assertEqual(c["attached"][0]["form"], "invented to illustrate")
+        # the kit's mode "invented to illustrate" is no form: the kit drew every example as paragraphs (F3)
+        self.assertEqual(c["attached"][0]["form"], "narrative")
         self.assertNotIn("mode", c["attached"][0])
         self.assertEqual(d[52]["evidence"], ["Free space — The disk's free space drops about one percent a night."])
         # scope, finding, rejected

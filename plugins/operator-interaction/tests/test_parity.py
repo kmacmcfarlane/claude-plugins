@@ -446,7 +446,7 @@ TITLE_HARNESS = r"""
 const d = JSON.parse(require("fs").readFileSync(0, "utf8"));
 process.stdout.write(JSON.stringify(d.cards.map(c => titleHtml(c))));
 """
-TITLE_DEF = "const titleHtml=c=>esc(c.t)+srcLabel(c);"
+TITLE_DEF = 'const titleHtml=c=>esc(c.t.replace(ATT_LINK,"$2"))+srcLabel(c);'
 
 
 def title_problems(h, t, label_id):
@@ -470,7 +470,7 @@ class LabelAfterTitle(unittest.TestCase):
     def test_mutant_label_first(self):
         script = page_free_script()
         self.assertIn(TITLE_DEF, script)
-        mutant = script.replace(TITLE_DEF, "const titleHtml=c=>srcLabel(c)+esc(c.t);")
+        mutant = script.replace(TITLE_DEF, 'const titleHtml=c=>srcLabel(c)+esc(c.t.replace(ATT_LINK,"$2"));')
         titles = node_page(example(), TITLE_HARNESS, mutant)
         self.assertEqual(title_problems(titles[2], "Theme colour", "D3"), ["the title does not come first"])
 

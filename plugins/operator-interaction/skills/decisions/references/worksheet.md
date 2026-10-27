@@ -59,6 +59,7 @@ goes on that option, never on the decision.
 | Novelty | seen before (a recurring decision, a template) / new | you |
 | Options diverge | the options lead to materially different outcomes / they converge (any would do) | you |
 | Options exist | yes / not yet — then it is an open question, not a decision | you |
+| Attached | the material the decision rests on that the card can only name (the code it changes, a log, a comparison, check results, a runbook, how decisions wait on each other), each its title, its kind and where it came from, or none: the card's ▸ Attached fold (`references/rendering.md` § Folds); nothing the decision needs, and never a secret's value | you |
 | Rejected alternatives | each alternative you weighed and do not offer, a short title and why it was not offered, one line a reason, or none: the card's ▸ Rejected alternatives fold (`references/rendering.md` § Folds); one the operator might still pick is an option instead | you |
 | Assumptions | what the recommendation rests on that you did not check, each with its tripwire, the sign that would change the call; none for a call with no recommendation: the card's ▸ Assumptions fold, with the basis (`references/rendering.md` § Folds) | you |
 | Still open | what is not known yet about this decision, one line each, or nothing: the card's ▸ Open questions fold (`references/rendering.md` § Folds) | you |
@@ -214,6 +215,8 @@ only the card, as someone who has seen nothing else, and for each option ask:
 4. If it is one-way or costly to undo, does it carry `⚠ undo:`; if it carries one, is it?
 5. If the option is the operator's to carry out, does the card meet SKILL.md § The floor,
    what it takes to act, from the card alone?
+6. Is there no secret value on the card, its attachments and excerpts included? A secret is
+   where it is kept and under which key, never its value.
 
 Then, for the card as a whole: if it decides on a set, could you name every item it acts on,
 from its **What:** bullets alone? A count with no list under it fails, unless the card names

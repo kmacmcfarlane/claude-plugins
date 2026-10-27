@@ -20,7 +20,8 @@
    --records DIR     also writes DIR/<N>.json per card: the card record, without the page-only L and dep.
 
    All or nothing: any card it cannot fully map (no q, a field it does not know, an unknown scope level, a rejected list not
-   of {bold, bullets}, unequal assumption lists, a writer marker, a newer stamp) stops the run: exit 1, every problem listed with its card,
+   of {bold, bullets}, an attached that is not a list, an attachment of a kind the record has not, a depmap node's n that
+   is not a number, unequal assumption lists, a writer marker, a newer stamp) stops the run: exit 1, every problem listed with its card,
    nothing written. On success it prints a line per card (rev kept byte for byte, or new) and every
    value it moved with a note, and exits 0. It reads JSON and writes JSON; it never evaluates content.
    Writes: OUT's directory is made, OUT is written first, then each record; every file goes to a temp name in its
@@ -35,6 +36,8 @@ const NONE = new Set(["", "none", "none.", "n/a", "n/a.", "-", "–", "—"]);
 const isNone = v => v == null || (typeof v === "string" && NONE.has(v.trim().toLowerCase()));
 const isObj = v => !!v && typeof v === "object" && !Array.isArray(v);
 const isStr = v => typeof v === "string";
+/* an excerpt as the page reads one: {text, lang?, src?}, its text a string */
+const isExcerpt = v => isObj(v) && isStr(v.text) && Object.keys(v).every(k => k === "text" || k === "lang" || k === "src");
 const REV_SECONDS = /^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$/;
 const REV_MINUTES = /^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}Z$/;
 const LETTER = /^[a-z]$/;
@@ -127,6 +130,8 @@ const KIT_KNOWN = new Set(["n", "rev", "L", "t", "label", "oneway", "tldr", "dep
 const KIT_OPTION = new Set(["k", "text", "line", "pros", "cons", "plan", "effect", "reach", "undo", "oneway", "cost", "prosT", "consT"]);
 const SCOPE = {"shapes the work": "shapes", "required": "required", "outside the criteria": "outside"};
 const MARKER = "@@WRITE";
+/* the record's attachment kinds (F3; the page's ATT_KINDS): the kit's evidence attachments become the card's evidence */
+const ATT_KINDS = ["excerpt", "summary", "link", "example", "preview", "table", "matrix", "steps", "checks", "depmap"];
 
 function hasMarker(v) { return isStr(v) ? v.includes(MARKER) : Array.isArray(v) ? v.some(hasMarker) : isObj(v) ? Object.values(v).some(hasMarker) : false; }
 function lettersPhrase(ls) { const xs = ls.map(l => "(" + l + ")"); return xs.length < 2 ? xs.join("") : xs.slice(0, -1).join(", ") + " or " + xs[xs.length - 1]; }
@@ -188,6 +193,8 @@ function fromKit(c, bad, note) {
   const ev = [];
   if (isStr(c.evidence)) ev.push(c.evidence); else if (Array.isArray(c.evidence)) ev.push(...c.evidence);
   const att = [];
+  /* attachments (F3): a null attached is none, never refused; anything else that is not a list is */
+  if (c.attached != null && !Array.isArray(c.attached)) bad.push("attached is not a list of attachments: nothing maps it");
   for (const x of Array.isArray(c.attached) ? c.attached : []) {
     if (!isObj(x)) { bad.push("an attachment is not an object"); continue; }
     if (x.kind === "evidence") {
@@ -201,11 +208,34 @@ function fromKit(c, bad, note) {
       if (isStr(x.body)) ev.push(t + x.body);
       else if (Array.isArray(x.body)) x.body.forEach((b, i) => ev.push((i ? "" : t) + b));
       else bad.push("an evidence attachment's body is neither text nor a list");
+    } else if (!ATT_KINDS.includes(x.kind)) {
+      bad.push("an attachment's kind " + JSON.stringify(x.kind) + " is not one the record has (" + ATT_KINDS.join(", ") + "): nothing maps it");
     } else {
-      /* an own-key copy onto a null-prototype object: a "__proto__" key stays a plain key, never a prototype */
+      /* an own-key copy onto a null-prototype object: a "__proto__" key stays a plain key, never a prototype. The
+         attachment's fields are the record's as they stand: only an example's mode and a depmap node's n move */
       const y = Object.create(null);
       for (const k of Object.keys(x)) y[k] = x[k];
-      if (x.kind === "example" && "mode" in y) { y.form = y.mode; delete y.mode; }
+      /* an example's form follows its body, as the page draws it: an excerpt is a mock, anything else narrative (the kit
+         drew every example as paragraphs), whatever its mode; a mode the form does not match is said and dropped */
+      if (x.kind === "example" && !("form" in y)) {
+        const m = y.mode, xc = isExcerpt(y.body);
+        delete y.mode;
+        y.form = xc ? "mock" : "narrative";
+        if (m !== y.form) note.moved.push("example " + JSON.stringify(x.title) + " read as form " + y.form + " (its body is " + (xc ? "an excerpt" : "prose") + (m != null ? "; its mode " + JSON.stringify(m) + " dropped" : "") + ")");
+      }
+      /* a dependency map's node numbers: a numeric string is the number it spells; anything else is refused */
+      if (x.kind === "depmap" && Array.isArray(y.body)) {
+        const node = v => {
+          if (!isObj(v)) return v;
+          const o = Object.create(null);
+          for (const k of Object.keys(v)) o[k] = v[k];
+          if (isStr(o.n) && /^[1-9][0-9]*$/.test(o.n.trim())) { note.moved.push("depmap node " + JSON.stringify(o.n) + " read as the number " + o.n.trim()); o.n = Number(o.n.trim()); }
+          else if (!isPosInt(o.n)) bad.push("a depmap node's n " + JSON.stringify(o.n) + " is not a decision number: nothing maps it");
+          if (Array.isArray(o.kids)) o.kids = o.kids.map(node);
+          return o;
+        };
+        y.body = y.body.map(node);
+      }
       att.push(y);
     }
   }

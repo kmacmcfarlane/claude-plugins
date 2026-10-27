@@ -52,7 +52,10 @@ first); this file sets only the layout.
   Reach, Undo and Cost; then **Background**, the first fold
   after the options, a bold line with **Why now:** and **Why ask:** (class first) under it (a
   doc cannot fold, so the fold's content sits there, where the page keeps it closed), then
-  Depends on, then **Rejected alternatives**, last: each alternative's title on a bold line,
+  **Attached**: each attachment's title on a bold line with its kind and source line, then its
+  body as the chat card shows it (the `decisions` skill's `references/rendering.md` § Folds: an
+  excerpt as a code block, a table as a table, steps numbered, checks one line each led by
+  the status); then Depends on, then **Rejected alternatives**, last: each alternative's title on a bold line,
   its reasons as bullets under it. That is the card-in-all measure of
   `references/cards-schema.md` § Size, with Context at its high. A level in sections shows
   each heading as a bold line, its bullets under it.
