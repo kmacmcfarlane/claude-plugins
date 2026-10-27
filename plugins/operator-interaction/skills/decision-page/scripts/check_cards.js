@@ -162,7 +162,7 @@ const DET = new Set(["the","this","that","these","those","each","every","a","an"
 const NAMED = /\b([a-z][a-z-]*)\s+(mode|setting|review|plan|document|doc|spec|policy|flag|profile|template|track|phase|stage)\b/gi;
 const named = s => { const t = strip(s); return [...t.matchAll(NAMED)].flatMap(m => { const w = m[1].toLowerCase();
   const possessive = w === "s" && m.index > 0 && /['’]/.test(t[m.index - 1]);
-  return possessive ? [] : [DET.has(w) || W[w] ? m[2].toLowerCase() : (m[1] + " " + m[2]).toLowerCase()]; }); };
+  return possessive || FUNC.has(w) ? [] : [DET.has(w) || W[w] ? m[2].toLowerCase() : (m[1] + " " + m[2]).toLowerCase()]; }); };
 /* over an option's view (its plan and its table's points, prose where the nouns are often verbs: "to plan", "and
    review", "reaches review"), a match is dropped when its first word is a function word or a verb form, as DET
    drops a determiner, and the bare noun left is not read: only a qualified name ("content mode") fires. A verb form
