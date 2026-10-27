@@ -79,13 +79,16 @@ Work
   § Operator questions, lists them — one row per decision, never several folded into one
   row. With the `operator-interaction:decisions` skill loaded, the row ends with an
   effect at that skill's tag size, under about 10 words, read from the last card stored
-  for N (`decisions.md` § What the store records): the recommended option's own effect from
-  its option line, since the card has no card-level effect. The row already shows
+  for N, its card record (`$WI show <id> --card N --json`; `decisions.md` § What the store
+  records, **Reading a card**): the recommended option's own effect from the record's
+  option, since the card has no card-level effect. The row already shows
   `rec (x)`, so the arrow follows that letter and the letter is not repeated: `— rec (b) →
   <effect>`. With no recommendation, each option's effect in a few words, `→ (a) …; (b) …`,
-  from the option lines, never from the `impact:` line. It is read
-  from the store since `wi needs-input` prints the headline only; a card without one is
-  backfilled as that section says before the row is printed. A deferred one also shows its last `wake N:`,
+  from the options, never from a card-level effect. A legacy card (no `card:` line) gives
+  the recommended option's effect from its option line, read as written, and never from the
+  `impact:` line; a Groom row is no touch, so it never upgrades or backfills the card, and a
+  card with no effect stored ends the row at its rec. It is read from the store since `wi
+  needs-input` prints the headline only. A deferred one also shows its last `wake N:`,
   and stays a Groom row until the wake comes.
   With the `operator-interaction:decisions` skill loaded, a decision is put to the operator
   in full only when `decisions.md` § The Report's item 4 selects it (raised since the last

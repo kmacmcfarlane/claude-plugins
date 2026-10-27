@@ -6,6 +6,11 @@ title on it. The librarian stores what its views read, so the headline's questio
 the label and its short name first (feature C3 of the decision-card feedback plan), while
 the decision number stays the handle that `wi` and the counter read (`^decision [0-9]`).
 
+Since the store keeps card records (feature K3 of the v5 card layout plan), the headline is
+`wi`'s, built from the record's `label` and `q`: `decisions.md` names that template and keeps
+the example headline, so the counter and `wi` read it unchanged. A headline stored before the
+rule, its label in `what:`, is read by the decisions skill's legacy reference.
+
 Standard library only. Run from plugins/dev-flow:
 
     python3 -m unittest discover -s tests -q
@@ -20,6 +25,19 @@ DECISIONS = REFS / "decisions.md"
 REPORT = REFS / "report.md"
 EXAMPLE = "decision 41: F7 (oversize upload) · Cap the upload size? — options: "
 COUNTER = re.compile(r"^decision [0-9]")
+TEMPLATE = "decision N: [<label.id> (<label.name>) · ]<q>[ ⚠ one-way] — options: "
+
+
+def template_problems(text):
+    """The headline template is `wi`'s, label first, built from the record."""
+    out = []
+    tmpl = next((x for x in text.splitlines() if x.strip().startswith("decision N: ")), "")
+    if not tmpl.strip().startswith(TEMPLATE):
+        out.append("no label-first headline template")
+    if "**The headline** is `wi`'s, built from the record's `label` and `q`, never typed" \
+            not in " ".join(text.split()):
+        out.append("the headline is not named as wi's")
+    return out
 
 
 def flat(path):
@@ -29,10 +47,12 @@ def flat(path):
 class HeadlineLabel(unittest.TestCase):
 
     def test_the_headline_template_takes_the_label_first(self):
-        tmpl = next(x for x in DECISIONS.read_text().splitlines()
-                    if x.strip().startswith("decision N: "))
-        self.assertIn("decision N: [<label> (<short name>) · ]<question, one line> — options:",
-                      tmpl)
+        self.assertEqual(template_problems(DECISIONS.read_text()), [])
+        # mutants: the template typed by the librarian again; the label after the question
+        text = DECISIONS.read_text()
+        self.assertTrue(template_problems(text.replace(TEMPLATE, "decision N: <q> — options: ")))
+        self.assertTrue(template_problems(text.replace("built from the record's `label` and `q`",
+                                                       "typed by the librarian")))
 
     def test_the_example_headline_still_reads_as_a_decision(self):
         text = DECISIONS.read_text()
@@ -45,7 +65,9 @@ class HeadlineLabel(unittest.TestCase):
         text = flat(DECISIONS)
         self.assertNotIn("rides in the card's `what:` line", text)
         self.assertNotIn("the label rides at the end of `what:`", text)
-        self.assertIn("A headline stored before this rule", text)
+        # the dated clause moved to the decisions skill's legacy reference
+        self.assertNotIn("A headline stored before this rule", text)
+        self.assertIn("its record carries that label and its short name, `label {id, name}`", text)
 
     def test_the_counter_names_the_label_first(self):
         text = flat(REPORT)

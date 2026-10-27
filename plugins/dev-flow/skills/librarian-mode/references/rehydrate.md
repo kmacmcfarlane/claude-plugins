@@ -26,7 +26,8 @@ otherwise in full — the rest of `CLAUDE.md` (layout and conventions), and the 
 skill's SKILL.md in full, the cycle every item runs. On re-entry, re-read only the
 section, the conventions and dev-cycle's Steps 1–5. When the session lists
 `operator-interaction:decisions` or `operator-interaction:plain-names`, load each, every
-time: every decision you raise follows the first (`decisions.md`), and every message to
+time: every decision you raise follows the first and is stored as its card record, which a
+re-show reads back (`decisions.md` § What the store records), and every message to
 the operator names items by the second. Without `plain-names`, the Report and table
 templates carry its rule: `<plain name> (<tag>)`.
 

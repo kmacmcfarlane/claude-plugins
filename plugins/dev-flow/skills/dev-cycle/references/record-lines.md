@@ -221,8 +221,10 @@ interrupted run up again; a line that is missing reads there as not recorded:
   `operator-interaction:decisions` skill, a natural-language reply is recorded with the
   echo's reading, `answer N: <reply> (read as: <reading>)`.
 - A caller's stored card — under librarian-mode with the `operator-interaction:decisions`
-  skill, `decision N:` is followed by the card as indented lines, as the `librarian-mode`
-  skill's `references/decisions.md` § What the store records gives them. Indented lines are
+  skill, `decision N:` is followed by indented lines, `raised:` and the `card:` line naming
+  its card record (a legacy card: the card itself as indented lines), as the
+  `librarian-mode` skill's `references/decisions.md` § What the store records gives them.
+  Indented lines are
   not record lines: nothing matches them as `decision`, `answer` or `wake`, and `wi
   needs-input` reads only the headline.
 - `wake N: <time | event | next Report>` — a caller's deferral ("decide later") of
