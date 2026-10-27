@@ -815,6 +815,17 @@ class DecisionPageRunner(unittest.TestCase):
         d["cards"][0]["context"] = d["cards"][0]["context"][:-1] + "; content mode serves pages as text."
         self.assert_clean(d)
 
+    def test_the_s_of_a_possessive_is_no_qualifier_of_a_named_thing(self):
+        for ap in ("'", "\u2019"):
+            with self.subTest(apostrophe=ap):
+                d = example()
+                d["cards"][0]["options"][0]["title"] = "Rename the dev cycle" + ap + "s phase to stage"
+                code, out, _ = runner(d)
+                self.assertNotIn('"s phase"', out)
+        d = example()
+        d["cards"][0]["options"][0]["title"] = "Turn on content mode"
+        self.assert_lint(d, '"content mode" is not glossed')
+
     def test_a_named_thing_drops_its_determiner(self):
         d = with_tldr("The plan stays")
         out = self.assert_lint(d, '"plan" is not glossed')
