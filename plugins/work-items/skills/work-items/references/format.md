@@ -902,14 +902,16 @@ recorded after the fact goes on an indented `verbatim N …` line under the
 answer, which, indented, matches neither marker.
 
 **A follow-up is never an answer line.** An `answer N:` line holds a final
-answer only: an option, words, `you decide`, `drop`, a reframe. `later`,
-`hold` and `dig into` write a `wake N:` line (`wake N: <time | event | next
-Report>`; § Decision line kinds, or the caller's rules); `tell me` and
-`expand` write none. `wi` reads any `answer N:` line as answered, so a
-follow-up stored as one hides an open decision from `needs-input`. A line
-stored that way before this rule is rewritten as a `wake N:` line, the
-original kept whole on an indented `verbatim N (moved <UTC>, from its
-answer line): <the original line>` line under it.
+answer only: an option, words, `you decide`, `drop`, a reframe. `later`
+(the `(z)` option too, by its letter or its words), `hold` and `dig into`
+write a `wake N:` line (`wake N: <time | event | next Report>`; § Decision
+line kinds, or the caller's rules); `tell me` and `expand` write none. `wi`
+reads any `answer N:` line as answered, so a follow-up stored as one hides
+an open decision from `needs-input`. A `later`, `hold` or `dig into` stored
+as an answer line before this rule, on a decision with no later final
+answer, is rewritten as its `wake N:` line, the original kept whole on an
+indented `verbatim N (moved <UTC>, from its answer line): <the original
+line>` line under it; one followed by a final answer is left as written.
 
 **One counter.** Every question a caller puts to the operator takes its N
 from the store's one counter, the `counters:` block in `store.yaml` that
@@ -1286,17 +1288,18 @@ closed N: superseded by <M | <repo>#M>
 
 `acted` names the commit or the item that carried the answer out; `rule`
 the file the answer became a standing rule in; `superseded by` the later
-decision that replaced it. A reframe closes as `superseded by M` at once,
-with its answer line: `answer N: reframed as decision M …` and `closed N:
-superseded by M`, written together. An older `withdrawn N: reframed as M`
-line (no grammar of its own) is read the same way, as that answer and that
-closed line; it is never written again. An answer carried out by several changes is
-closed when the last of them lands; one that changes nothing closes as
-`acted <the id of the item it was recorded on>`. A `drop` answer
-(`answer N: drop …`, the word `drop` unquoted) needs no `closed N:` line
-and counts as closed — a plain reply quoted as `answer N: "drop …"` is not
-one; any other answered decision with no `closed N:` line is answered but
-not closed. When N repeats, the last line is its state.
+decision that replaced it. A reframe closes as `superseded by M` at
+once, with its answer line: `answer N: reframed as decision M …` and
+`closed N: superseded by M`, written together. An older `withdrawn N:
+reframed as M` line (no grammar of its own) is read the same way, as
+that answer and that closed line; it is never written again. An answer
+carried out by several changes is closed when the last of them lands;
+one that changes nothing closes as `acted <the id of the item it was
+recorded on>`. A `drop` answer (`answer N: drop …`, the word `drop`
+unquoted) needs no `closed N:` line and counts as closed — a plain reply
+quoted as `answer N: "drop …"` is not one; any other answered decision
+with no `closed N:` line is answered but not closed. When N repeats, the
+last line is its state.
 `closed N:` is neither `decision N:` nor `answer N:`, so it opens no
 question and answers none: `needs-input`, the decision counter and the
 estate sweep pass it by. The target is one token, never containing a
@@ -1426,6 +1429,8 @@ kind's rules; this table is where a reader finds them all.
   legacy, read by the decisions skill's legacy reference; any other contract with no stamp
   is its version 1. Event lines are never versioned: they grow by optional tokens or ` · `
   fields, and a change that breaks a reader takes a new keyword.
+- **Not decision lines.** Item-level log lines a decision may cause (`dispatch:`,
+  `agent:`, `result:`) carry no N and are not decision lines.
 - **`card:` in two places.** It is a line kind here, under a headline in an item, and a key
   in the signed-grants plan's statement (a file under `grants/`). Neither reader reads the
   other's file.

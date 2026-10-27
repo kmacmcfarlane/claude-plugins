@@ -41,8 +41,12 @@ class FollowUps(unittest.TestCase):
         rule = bullet(self.text, "**A follow-up is never an answer line.**")
         self.assertIn("An `answer N:` line holds a final answer only", rule)
         self.assertIn("A follow-up from an answer page or a tick-box doc is recorded by the "
-                      "same rule: the read-back hands it over as `kind: follow-up`, and it "
-                      "becomes a `wake N:` line, never an answer line.", rule)
+                      "same rule: the read-back hands it over as `kind: follow-up` (as it does "
+                      "`you decide` and `drop`, which are final answers and keep their answer "
+                      "lines), and it is recorded as the bullets below give: a `wake N:` line "
+                      "for `later` and `dig into`, nothing for `tell me` and `expand`; never an "
+                      "answer line.", rule)
+        self.assertIn("`later` (the `(z)` option too, by its letter or its words)", rule)
 
     def test_later_hold_and_dig_into_write_a_wake_line(self):
         self.assertIn("`wake N: <time | event | next Report>`. There is no `answer N:`",
@@ -56,8 +60,17 @@ class FollowUps(unittest.TestCase):
         self.assertIn("Neither writes an `answer N:` line", bullet(self.text, "**`tell me`:**"))
 
     def test_a_follow_up_stored_as_an_answer_is_moved(self):
+        text = flat(self.text)
         self.assertIn("` verbatim N (moved <UTC time>, from its answer line): <the original "
-                      "line>`", flat(self.text))
+                      "line>`", text)
+        self.assertIn("**A `later`, `hold` or `dig into` stored as an answer line** before the "
+                      "follow-up rule (below), on a decision with no later final answer, is "
+                      "rewritten", text)
+        self.assertIn("one followed by a final answer is left as written", text)
+
+    def test_a_chat_showing_names_its_rev(self):
+        self.assertIn("with `rev <rev>` from its last `card:` line when it has one",
+                      bullet(self.text, "**Shown:**"))
 
 
 class Reframes(unittest.TestCase):

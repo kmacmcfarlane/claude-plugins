@@ -193,7 +193,8 @@ renders what the operator read instead of composing it again.
   keeps the first card's `raised:` (`wi` reads the first one per N), so its age and its
   order still count from the ask.
 - **Shown:** right before a message goes out that renders decisions at card or block
-  level, append `shown N: <UTC time> chat` for each decision it renders that way, the time
+  level, append `shown N: <UTC time> chat` for each decision it renders that way, with
+  `rev <rev>` from its last `card:` line when it has one, the time
   from `date -u +%Y-%m-%dT%H:%M:%SZ`: a Report's decisions block, an Intake ask, a
   decision raised between Reports, a re-show, a `tell me` or `dig into` re-render. A list
   line, a tag-size mention or a Groom row writes none. For an answer page, append one
@@ -270,9 +271,11 @@ renders what the operator read instead of composing it again.
     Indented, it matches neither `^decision` nor `^answer`. Interim `verbatim N` lines
     written before this rule, in other shapes, are left as written; this shape applies
     from now on.
-  - **A follow-up stored as an answer line** before the follow-up rule (below) is
-    rewritten as its `wake N:` line, the original kept whole on one indented line under
-    it: `  verbatim N (moved <UTC time>, from its answer line): <the original line>`.
+  - **A `later`, `hold` or `dig into` stored as an answer line** before the follow-up
+    rule (below), on a decision with no later final answer, is rewritten as its `wake N:`
+    line, the original kept whole on one indented line under it: `  verbatim N (moved <UTC
+    time>, from its answer line): <the original line>`; one followed by a final answer is
+    left as written.
 - **A one-way choice on a ⚠ decision** (the chosen option's line carries `⚠ undo:`, or, on
   a card stored before the marker, a plain `undo:` saying it cannot be undone, or only at
   real cost): repeat the choice back first. Record `answer N:` only when the operator confirms
@@ -280,12 +283,15 @@ renders what the operator read instead of composing it again.
   Nothing acts before that. A reversible choice on a ⚠ decision is echoed and recorded
   at once.
 - **A follow-up is never an answer line.** An `answer N:` line holds a final answer only
-  (an option, words, `you decide`, `drop`, a reframe); `later`, `hold`, `dig into`, `tell
-  me` and `expand` are recorded as the bullets below give, never as `answer N:`. `wi` reads
-  any `answer N:` line as answered, so a follow-up stored as one drops the decision from
-  `wi needs-input` while it is still open. A follow-up from an answer page or a tick-box
-  doc is recorded by the same rule: the read-back hands it over as `kind: follow-up`, and
-  it becomes a `wake N:` line, never an answer line.
+  (an option, words, `you decide`, `drop`, a reframe); `later` (the `(z)` option too, by
+  its letter or its words), `hold`, `dig into`, `tell me` and `expand` are recorded as the
+  bullets below give, never as `answer N:`. `wi` reads any `answer N:` line as answered, so
+  a follow-up stored as one drops the decision from `wi needs-input` while it is still
+  open. A follow-up from an answer page or a tick-box doc is recorded by the same rule: the
+  read-back hands it over as `kind: follow-up` (as it does `you decide` and `drop`, which
+  are final answers and keep their answer lines), and it is recorded as the bullets below
+  give: a `wake N:` line for `later` and `dig into`, nothing for `tell me` and `expand`;
+  never an answer line.
 - **`later [when]`:** `wake N: <time | event | next Report>`. There is no `answer N:`, so the
   decision stays open and `wi needs-input` keeps listing it. Deferred again, it gets another
   `wake N:`; the last one wins (`grep -n '^wake N:'`, last hit). At the wake, re-show it
