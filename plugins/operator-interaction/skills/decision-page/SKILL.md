@@ -6,7 +6,7 @@ description: "Put a set of decisions to the operator as an answer page: a publis
 # Decision page
 
 A set of decisions on one page the operator works through at their own pace: a map of its
-groups, each card a one-line row that opens flat on its essentials (its TLDR, then its Context, then its What, then its Finding when it is raised from one, then its Scope where the work states requirements, then its Likelihood on a risk decision, then its Open questions, folded, then its Impact) with folds for the rest, among them its Attached material and, last, its Rejected alternatives; a
+groups, each card a one-line row that opens flat on its essentials (its TLDR, then its Context, then its What, then its Finding when it is raised from one, then its Scope where the work states requirements, then its Likelihood on a risk decision, then its Open questions and its Assumptions, folded, then its Impact, then its round lines and its options) with folds after the answer for the rest: its Background, its Attached material, its Dependencies and, last, its Rejected alternatives; a
 click on a part with a more-detail button shows it as terse bullets, then in headed sections,
 each option but (z) shows its **Pros** and **Cons** rows under it, and picking an option, or **More** beside it, opens its view (its Plan in brief, its Pros | Cons table, then its effect, reach, undo and cost); one choice per card enforced by the
 radio buttons, answers saved as they click. You publish it, they answer, you read the answers

@@ -286,7 +286,9 @@ is its Wait: the lede says so, and the runner's `process` lint catches a process
 option's effect or reach, or the Impact's reach. A card with a `label` shows it after its title,
 muted, with its short name, in every view. It opens every card on its TLDR, then its Context,
 then its What, then its Finding when it has one, then its Scope and its Likelihood when it has them, then its Open questions, then its Assumptions, then its Impact: a page is read away from the conversation, so its
-reader is treated as cold. Any part with `detail` toggles its level on a click, on its button
+reader is treated as cold. After the Impact come the round lines (*If left:*, *A round costs:*, *If unanswered:*), then
+the answer (each option with its line, its **Pros** and **Cons** rows and **More**; the follow-ups; the words), then
+*Clear answer*, then the bottom folds (the v5 order, F11; `tests/test_layout.py` pins it). Any part with `detail` toggles its level on a click, on its button
 or on its text (never on a link or a control, nor while text is selected, so it can be
 copied); the folds (Open questions and Assumptions above the Impact, Background, Attached,
 Dependencies and Rejected alternatives after the answer) keep their order and stay closed; each option has a **More** button at its right, outside its label, which opens or closes the
