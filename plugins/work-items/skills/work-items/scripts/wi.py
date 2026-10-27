@@ -308,6 +308,130 @@ def _no_showing():
             "unseen": None}
 
 
+# 03ab F2: the group and depends lines (format.md § Groups and
+# dependencies), column-0 lines read the way the shown and seen lines are:
+# read-only, into the JSON views and lint only. `wi` reports what is
+# written; the reading rules (the item default, a superseded target) are
+# the caller's.
+GROUP_ENTITY_RE = re.compile(
+    r"^group (g-\d{4}-[0-9a-f]{3}): ([^·\s][^·]*?)"
+    r"(?: · shares: ([^·\s][^·]*?) · context: (\S.*))?$")
+GROUP_MEMBER_RE = re.compile(r"^group (\d+): (g-\d{4}-[0-9a-f]{3})$")
+_TARGET = r"(?:[A-Za-z0-9._-]+#)?\d+(?: \([a-y]\))?"
+DEPENDS_RE = re.compile(r"^depends (\d+): (none|" + _TARGET + r"(?:, "
+                        + _TARGET + r")*)(?: — (\S.*))?$")
+TARGET_RE = re.compile(r"(?:([A-Za-z0-9._-]+)#)?(\d+)(?: \(([a-y])\))?")
+# the lines lint holds to the patterns above; any other line is not one
+LINK_CANDIDATE_RE = re.compile(r"^(?:(group) (?:\d+|g-[^:\s]*)|(depends) \d+):")
+
+
+def _link_scan(item):
+    """[(kind, line index, data)] for every unfenced column-0 group or
+    depends line, in file order: ("entity", i, (id, name, shares,
+    context)), ("member", i, (N, id)), ("depends", i, (N, [target])) with
+    each target {"n", "repo", "letter"} and `none` an empty list, and
+    ("malformed", i, "group" | "depends") for a candidate line matching
+    none of its patterns. The entity name and shares are trimmed of
+    trailing spaces; the context is kept as written."""
+    lines = item.body.replace("\r\n", "\n").split("\n")
+    fenced = set()
+    for i, j in _fence_spans(lines):
+        fenced.update(range(i, j + 1))
+    out = []
+    for i, line in enumerate(lines):
+        if i in fenced:
+            continue
+        m = GROUP_ENTITY_RE.match(line)
+        if m:
+            gid, name, shares, context = m.groups()
+            out.append(("entity", i, (gid, name.rstrip(),
+                                      shares.rstrip() if shares else None,
+                                      context)))
+            continue
+        m = GROUP_MEMBER_RE.match(line)
+        if m:
+            out.append(("member", i, (int(m.group(1)), m.group(2))))
+            continue
+        m = DEPENDS_RE.match(line)
+        if m:
+            targets = [] if m.group(2) == "none" else [
+                {"n": int(t.group(2)), "repo": t.group(1),
+                 "letter": t.group(3)}
+                for t in (TARGET_RE.fullmatch(s)
+                          for s in m.group(2).split(", "))]
+            out.append(("depends", i, (int(m.group(1)), targets)))
+            continue
+        m = LINK_CANDIDATE_RE.match(line)
+        if m:
+            out.append(("malformed", i, m.group(1) or m.group(2)))
+    return out
+
+
+def decision_links(item):
+    """{N: {"group": id, "depends": [target]}} from the item's member and
+    depends lines, the last line per N winning each key; a key is absent
+    when N has no such line."""
+    out = {}
+    for kind, _, data in _link_scan(item):
+        if kind == "member":
+            out.setdefault(data[0], {})["group"] = data[1]
+        elif kind == "depends":
+            out.setdefault(data[0], {})["depends"] = data[1]
+    return out
+
+
+def _no_link(root, path):
+    """True when `path` is a regular file under `root` reached through real
+    directories only (items/<f>, archive/<y>/<f>): each level lstat-ed, no
+    link followed. A store-wide read takes only such files, so it never
+    follows a link into or out of the store."""
+    try:
+        rel = Path(path).relative_to(root)
+        level = Path(root)
+        for part in rel.parts[:-1]:
+            level = level / part
+            if not stat.S_ISDIR(os.lstat(level).st_mode):
+                return False
+        return stat.S_ISREG(os.lstat(path).st_mode)
+    except (OSError, ValueError):
+        return False
+
+
+def group_entities(root, items):
+    """{id: {"name", "shares", "context", "path", "line"}}, the store-wide
+    group lookup over `items` in lookup order (items/, then archive/*/):
+    the first item holding an id wins, and within it the last entity line.
+    An item reached through a link is not read."""
+    out, owner = {}, {}
+    for it in items:
+        if not _no_link(root, it.path):
+            continue
+        for kind, i, data in _link_scan(it):
+            if kind != "entity":
+                continue
+            gid, name, shares, context = data
+            if owner.setdefault(gid, it.path) != it.path:
+                continue
+            out[gid] = {"name": name, "shares": shares, "context": context,
+                        "path": it.path, "line": i}
+    return out
+
+
+def link_fields(links, n, entities):
+    """A decision record's `group` and `depends` (format.md § Groups and
+    dependencies): `group` {"id", "name", "shares", "context"}, resolved
+    store-wide, its three values null for an id with no entity line, and
+    null with no member line; `depends` the last line's targets, [] after
+    `none`, null with no line."""
+    rec = links.get(n, {})
+    gid, group = rec.get("group"), None
+    if gid is not None:
+        ent = entities.get(gid) or {}
+        group = {"id": gid, "name": ent.get("name"),
+                 "shares": ent.get("shares"), "context": ent.get("context")}
+    return {"group": group, "depends": rec.get("depends")}
+
+
 class WiError(Exception):
     def __init__(self, code, msg):
         super().__init__(msg)
@@ -5365,24 +5489,36 @@ def needs_input(items):
     return out
 
 
-def _json_decisions(it, asks):
-    """needs-input --json's decision records: text, raised and showings."""
+def _json_decisions(it, asks, entities):
+    """needs-input --json's decision records: text, raised, showings, and
+    group and depends (03ab F2)."""
     raised, shown = decision_raised(it), decision_showings(it)
+    links = decision_links(it)
     return [dict({"n": n, "text": text, "raised": raised.get(n)},
-                 **shown.get(n, _no_showing()))
+                 **shown.get(n, _no_showing()),
+                 **link_fields(links, n, entities))
             for kind, n, text in asks if kind == "decision"]
 
 
 def cmd_needs_input(args):
     root = resolve_root(args.root)
-    rows = needs_input(rank_ready(load_all(root)))
+    items = load_all(root)
+    rows = needs_input(rank_ready(items))
     if args.json:
+        # the group lookup is store-wide, archive/ included, read leniently
+        # (DepIndex's archive read), and only when a decision is listed; an
+        # archived file reached through a link is never opened
+        archive = root / "archive"
+        entities = group_entities(root, items + load_paths(
+            [p for p in (sorted(archive.glob("*/*.md")) if archive.is_dir()
+                         else []) if _no_link(root, p)],
+            lenient=True)) if rows else {}
         print(json.dumps([{"id": it.id, "title": it.get("title"),
                            "short_display_name":
                                it.meta.get("short_display_name"),
                            "status": it.get("status"),
                            "grooming": it.get("grooming"),
-                           "decisions": _json_decisions(it, asks)}
+                           "decisions": _json_decisions(it, asks, entities)}
                           for it, asks in rows], indent=1))
         return 0 if rows else 2
     for it, asks in rows:
@@ -5541,8 +5677,11 @@ def estate_store(store, base, top, stale_after, now, cap=ESTATE_CAP):
                         for it in ready[:top]]
         open_items = [it for it in items
                       if it.get("status") not in ("done", "dropped")]
+        # 03ab F2: the group lookup, store-wide, no link followed
+        entities = group_entities(store, items + archived)
         for it in rank_ready(open_items):
             raised, shown = decision_raised(it), decision_showings(it)
+            links = decision_links(it)
             for n, text in unanswered_decisions(it):
                 when = raised.get(n)
                 dt = _parse_when(when) if when else None
@@ -5551,7 +5690,8 @@ def estate_store(store, base, top, stale_after, now, cap=ESTATE_CAP):
                     "short_display_name": it.meta.get("short_display_name"),
                     "n": n, "text": text, "raised": when,
                     "age_days": (now - dt).days if dt else None},
-                    **shown.get(n, _no_showing())))
+                    **shown.get(n, _no_showing()),
+                    **link_fields(links, n, entities)))
             if estate_is_security(it):
                 rec["security"].append({
                     "id": it.id, "title": it.get("title"),
@@ -7213,6 +7353,164 @@ def _lint_cards_tree(root):
     return out
 
 
+def this_repo_name(root):
+    """The name a `<repo>#N` target uses for this store's own repo (format.md
+    § Operator questions, Another repo's decision): the last path part of
+    the host repo's `origin` remote, without `.git`; else the main
+    checkout's directory name (a linked worktree's main checkout, not the
+    worktree); outside git, the store's parent directory, where a
+    checkout's top would be. None when git does not answer: then no
+    `<repo>#N` target is taken for this repo's own."""
+    host = _host_repo(root)
+    if host is HOST_UNKNOWN:
+        return None
+    if host is None:
+        return Path(os.path.realpath(root)).parent.name or None
+    r = _git(host, "remote", "get-url", "origin", extra_env={"LC_ALL": "C"})
+    if r is not None and r.returncode == 0 and r.stdout.strip():
+        last = re.split(r"[/:\\]", r.stdout.strip().rstrip("/"))[-1]
+        last = last[:-4] if last.endswith(".git") else last
+        if last:
+            return last
+    r = _git(host, "rev-parse", "--path-format=absolute", "--git-common-dir",
+             extra_env={"LC_ALL": "C"})
+    if r is not None and r.returncode == 0 and r.stdout.strip():
+        common = Path(os.path.realpath(r.stdout.strip()))
+        if common.name == ".git":
+            return common.parent.name
+    return host.name
+
+
+_LINK_FORMS = {
+    "group": "`group g-<MMDD>-<hhh>: <plain name>[ · shares: <what its "
+             "members share> · context: <shared context>]` or `group N: "
+             "g-<MMDD>-<hhh>`",
+    "depends": "`depends N: <M[ (x)] | <repo>#M[ (x)]>[, …][ — <why>]` or "
+               "`depends N: none[ — <why>]`, x one of a to y",
+}
+_LINK_REF = "(the work-items format reference, § Groups and dependencies)"
+
+
+def _lint_links(root, items, texts, repo_name=this_repo_name):
+    """03ab F2: the group and depends lines, store-wide over items/ and
+    archive/ (an item reached through a link reported, never read):
+    malformed, orphan, unknown id, no members, duplicate id, dangling,
+    self and cycle. Each finding names the path and line. Only the last
+    member line and the last depends line per N are held to the store
+    (unknown id, dangling, self, cycle), so an appended line clears them;
+    a `<repo>#M` target naming another repo is checked only for its
+    syntax, and `<this repo>#M` is read as M."""
+    out, usable = [], []
+    for it in items:
+        if _no_link(root, it.path):
+            usable.append(it)
+        else:
+            out.append(f"{it.path}: reached through a symbolic link; its "
+                       "group and depends lines are not read, and it counts "
+                       "for none of them store-wide")
+    decided = set()          # every N with a `decision N:` line, store-wide
+    holds = {}               # item path -> its decision Ns
+    scans = []
+    for it in usable:
+        text = texts.get(it.path, "")
+        off = text[:len(text) - len(it.body)].count("\n")
+        lines = it.body.replace("\r\n", "\n").split("\n")
+        fenced = set()
+        for i, j in _fence_spans(lines):
+            fenced.update(range(i, j + 1))
+        mine = {int(m.group(1)) for i, ln in enumerate(lines)
+                if i not in fenced and (m := DECISION_RE.match(ln))}
+        holds[it.path] = mine
+        decided |= mine
+        scans.append((it, off, _link_scan(it)))
+    entity_items, named = {}, set()   # id -> [(path, where)], ids named
+    last_member, last_depends = {}, {}  # N -> (path, where, data)
+    for it, off, scan in scans:
+        for kind, i, data in scan:
+            where = f"{it.path}:{off + i + 1}"
+            if kind == "malformed":
+                out.append(f"{where}: malformed {data} line, not read; it "
+                           f"reads {_LINK_FORMS[data]} {_LINK_REF}")
+            elif kind == "entity":
+                seen = entity_items.setdefault(data[0], [])
+                if not any(p == it.path for p, _ in seen):
+                    seen.append((it.path, where))
+            else:
+                n = data[0]
+                if kind == "member":
+                    named.add(data[1])
+                if n not in holds[it.path]:
+                    word = "group" if kind == "member" else "depends"
+                    out.append(f"{where}: orphan {word} line: this item "
+                               f"holds no `decision {n}:` line; move it to "
+                               "the item that does")
+                elif kind == "member":
+                    last_member[n] = (where, data[1])
+                else:
+                    last_depends[n] = (where, data[1])
+    for gid, seen in entity_items.items():
+        if gid not in named:
+            out.append(f"{seen[0][1]}: group {gid} has no members: no member "
+                       f"line (`group N: {gid}`) names it anywhere in the "
+                       "store")
+        for path, where in seen[1:]:
+            out.append(f"{where}: duplicate group id {gid}: its entity line "
+                       f"is also in {seen[0][0]} (a hash collision); the "
+                       "session that wrote this line deletes it and "
+                       "re-creates its group under a new id, with new member "
+                       f"lines for its members {_LINK_REF}")
+    for n, (where, gid) in sorted(last_member.items()):
+        if gid not in entity_items:
+            out.append(f"{where}: decision {n}: unknown group id {gid}, with "
+                       "no entity line in items/ or archive/")
+    own = None   # this repo's name, asked of git only when a target needs it
+    edges = {}
+    for n, (where, targets) in sorted(last_depends.items()):
+        for t in targets:
+            m = t["n"]
+            if t["repo"] is not None:
+                if own is None:
+                    own = [repo_name(root)]
+                if t["repo"] != own[0]:
+                    continue     # another repo's decision: syntax only
+            label = f"{t['repo']}#{m}" if t["repo"] else str(m)
+            if m == n:
+                out.append(f"{where}: decision {n} depends on itself "
+                           f"({label})")
+                continue
+            if m not in decided:
+                out.append(f"{where}: decision {n}: dangling target {label}, "
+                           "with no `decision " f"{m}:` line in items/ or "
+                           "archive/")
+            edges.setdefault(n, []).append(m)
+    # cycles among the last depends sets (closed lines are not parsed, so
+    # a cycle that runs only through a superseded decision is not seen);
+    # each back edge of the walk is one cycle, reported once, from its
+    # lowest N, at that N's depends line
+    # (an explicit stack, so a long chain never meets the recursion limit)
+    state = {}
+    for start in sorted(edges):
+        if state.get(start):
+            continue
+        state[start], path, todo = 1, [start], [iter(edges[start])]
+        while todo:
+            m = next(todo[-1], None)
+            if m is None:
+                state[path.pop()] = 2
+                todo.pop()
+            elif state.get(m) == 1:
+                cyc = path[path.index(m):]
+                k = cyc.index(min(cyc))
+                cyc = cyc[k:] + cyc[:k]
+                out.append(f"{last_depends[cyc[0]][0]}: depends cycle: "
+                           + " -> ".join(str(x) for x in cyc + [cyc[0]]))
+            elif not state.get(m):
+                state[m] = 1
+                path.append(m)
+                todo.append(iter(edges.get(m, [])))
+    return out
+
+
 def card_problems(root, items, texts):
     """Every card-record finding of lint (3b51 W4), each a problem,
     escaped so no name reaches the terminal raw."""
@@ -7296,6 +7594,8 @@ def cmd_lint(args):
     # 3b51 W4: card records, paired across items/ and archive/, shaped
     # and secret-scanned under cards/
     problems.extend(card_problems(root, items, texts))
+    # 03ab F2: the group and depends lines, store-wide
+    problems.extend(_name_safe(p) for p in _lint_links(root, items, texts))
     # cycle detection over deps
     state = {}
 

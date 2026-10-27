@@ -174,7 +174,7 @@ plugins/
       install-statusline-hub/scripts/  # install_hub.py, the installer
   work-items/          # Repo-durable work items + the work-source provider interface
     skills/
-      work-items/      # wi CLI (incl. `wi estate`, the cross-repo sweep), references/{format,provider-interface}.md, tests/
+      work-items/      # wi CLI (incl. `wi estate`, the cross-repo sweep), references/{format,provider-interface}.md, tests/ (test_links.py: the group and depends lines in `needs-input --json`, `estate --json` and `wi lint`)
       work-items/scripts/  # wi.py, the wi CLI; wi, its shell launcher (copied to ~/.local/bin by wi install-launcher, on request)
       work-review/     # the on-demand cross-repo review, written from `wi estate`
 ```

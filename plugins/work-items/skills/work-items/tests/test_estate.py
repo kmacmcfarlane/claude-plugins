@@ -607,7 +607,7 @@ class TestJsonShape(EstateCase):
         self.assertEqual(set(r["decisions"][0]),
                          {"id", "title", "short_display_name", "n", "text",
                           "raised", "age_days", "first_shown", "last_shown",
-                          "last_seen", "unseen"})
+                          "last_seen", "unseen", "group", "depends"})
         self.assertIsInstance(r["decisions"][0]["age_days"], int)
         self.assertEqual(set(r["stale"][0]),
                          {"id", "title", "short_display_name", "owner",
