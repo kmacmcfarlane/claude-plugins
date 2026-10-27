@@ -335,6 +335,19 @@ class WriterDigest(unittest.TestCase):
         self.assertIn("An option: `plan` Required is 'optional', the schema's 'of a new card'",
                       required_problems(self.record, cut, "An option"))
 
+    def test_the_deporder_lint_has_no_start(self):
+        # the dependency order (03ab F7): its row, and no line start
+        self.assertEqual(runner_lints(self.js)["deporder"], {""})
+        self.assertEqual(lint_problems(self.js, self.digest), [])
+        gone = self.digest.replace("| `deporder` | — |", "| deporder | — |")
+        self.assertIn("lint `deporder` missing", lint_problems(self.js, gone))
+        moved = self.digest.replace("| `deporder` | — |", "| `deporder` | `shape:` |")
+        self.assertTrue(lint_problems(self.js, moved))
+        # the runner given a start: the digest's dash no longer matches
+        started = self.js.replace(', "depends on [[" + m', ', "order: depends on [[" + m', 1)
+        self.assertNotEqual(started, self.js)
+        self.assertTrue(lint_problems(started, self.digest))
+
     def test_thresholds(self):
         self.assertEqual(threshold_problems(self.js, self.digest), [])
 

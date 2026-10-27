@@ -14,6 +14,11 @@ blank line keeping it out of the TLDR bullet above it; the SKILL.md clauses; no 
 the chat references; the plain-names sentence; no Dependencies fold left in the skills' text;
 the rulings bullet. The page's line is `test_layout.py`'s `DependencyLine`.
 
+The dependency-tree order (03ab F7, answer 307 (a)): inside a group, each decision after what
+it depends on, then the precedence. Checked here: the SKILL.md rule, the rendering § Order note
+and its open-target sentence, the rulings bullet, the gallery's worked order (example 38), and
+the runner's `deporder` lint on the example and on fixtures, each proved by a mutation.
+
 Run from the plugin dir: python3 -m unittest discover -s tests -q
 """
 
@@ -22,7 +27,9 @@ import unittest
 
 from test_chat_context import (GALLERY, RENDERING, SKILL_MD, TLDR_OPENER, fenced, lazy_problems,
                                order_problems, parts, views)
-from test_impact import DECISIONS
+from test_impact import DECISIONS, NODE, example
+from test_context import runner
+from test_items import mutant_runner
 
 PLUGIN = DECISIONS.parent.parent
 RULINGS = DECISIONS / "references" / "rulings.md"
@@ -265,6 +272,170 @@ class StoredGroupsAndText(unittest.TestCase):
         self.assertIn(RULING_CLAUSES[-1], missing(ruling_bullet(cut), RULING_CLAUSES))
         undated = text.replace("writers by group** (2026-10-21", "writers by group** (", 1)
         self.assertEqual(missing(ruling_bullet(undated), RULING_CLAUSES), list(RULING_CLAUSES))
+
+
+# ---- the dependency-tree order (03ab F7) ----
+
+ORDER_SKILL = ("**Inside a group, dependents come after what they depend on:** each decision goes after every "
+               "decision it depends on that is shown in the same set, and among those free to go, the same precedence holds.",
+               "The members of a dependency cycle (which the caller's store lints) fall back to the precedence alone.")
+ORDER_RENDERING = ("inside a group, each decision goes after every decision it depends on that the set shows",
+                   "A set shows every open decision its cards name or depend on, each as its own card or line, "
+                   "placed by the dependency order above",
+                   "The hover tooltip and the click that opens a named card are the answer page's alone")
+ORDER_RULING = ("answer 307 (a)", "sorting by the dep tree makes the most sense to me", "both surfaces",
+                "`deporder`", "Not taken: one precedence inside a group whatever the dependencies")
+CHAT_SET_RULING = ("A set in chat shows every open decision its cards name or depend on; the hover tooltip and "
+                   "the jump to a card are page-only, since chat has no hover or click",)
+
+
+def section_text(path, heading):
+    text = path.read_text()
+    start = text.index(heading)
+    end = text.find("\n## ", start + 1)
+    return text[start:end if end > 0 else len(text)]
+
+
+def order_ruling(text):
+    start = text.find("- **Dependents after what they depend on, both surfaces** (2026-10-22")
+    if start < 0:
+        return ""
+    end = text.find("\n- **", start + 1)
+    return text[start:end if end > 0 else len(text)]
+
+
+def gallery_order_problems(text):
+    """Gallery example 38: every "X depends on Y" its prose states has Y's list line before X's.
+    Empty when clean; the section must state at least one dependency and list both ends."""
+    start = text.find("## 38. Dependents after what they depend on")
+    if start < 0:
+        return ["no example 38"]
+    end = text.find("\n## ", start + 1)
+    body = text[start:end if end > 0 else len(text)]
+    at = {}
+    for line in body.splitlines():
+        m = re.match(r"^- \*\*(\d+) ", line)
+        if m:
+            at.setdefault(m.group(1), len(at))
+    pairs = set(re.findall(r"\b(\d+) depends on (\d+)\b", body))
+    if not pairs:
+        return ["example 38 states no dependency"]
+    out = []
+    for x, y in sorted(pairs):
+        if x not in at or y not in at:
+            out.append(f"{x} or {y} has no list line")
+        elif at[y] > at[x]:
+            out.append(f"{x} is listed before {y}, which it depends on")
+    return out
+
+
+class DependencyOrderText(unittest.TestCase):
+
+    def test_skill_md_states_the_order_inside_a_group(self):
+        text = SKILL_MD.read_text()
+        self.assertEqual(missing(section_text(SKILL_MD, "## Order"), ORDER_SKILL), [])
+        # mutant: the paragraph deleted from the file's text
+        start = text.index("**Inside a group, dependents come after")
+        end = text.index("\n\n", start)
+        self.assertEqual(missing(text[:start] + text[end:], ORDER_SKILL), list(ORDER_SKILL))
+
+    def test_rendering_order_states_the_rule_and_the_open_targets(self):
+        body = section_text(RENDERING, "## Order")
+        self.assertEqual(missing(body, ORDER_RENDERING), [])
+        # mutant: the open-target sentence deleted
+        cut = body.replace("A set shows every open decision its cards name or depend on", "", 1)
+        self.assertNotEqual(cut, body)
+        self.assertIn(ORDER_RENDERING[1], missing(cut, ORDER_RENDERING))
+
+    def test_the_rulings_bullet_and_the_chat_set_clause(self):
+        text = RULINGS.read_text()
+        self.assertEqual(missing(order_ruling(text), ORDER_RULING), [])
+        self.assertEqual(missing(ruling_bullet(text), CHAT_SET_RULING), [])
+        # mutants: the bullet deleted (its heading gone); the chat-set clause cut from its bullet
+        gone = text.replace("- **Dependents after what they depend on, both surfaces**", "- **Something else**", 1)
+        self.assertEqual(missing(order_ruling(gone), ORDER_RULING), list(ORDER_RULING))
+        cut = text.replace("A set in chat shows every open decision", "A set shows", 1)
+        self.assertNotEqual(cut, text)
+        self.assertEqual(missing(ruling_bullet(cut), CHAT_SET_RULING), list(CHAT_SET_RULING))
+
+    def test_the_gallery_works_an_order_through(self):
+        text = GALLERY.read_text()
+        self.assertEqual(gallery_order_problems(text), [])
+        # mutant: the dependent ⚠ line moved above its target, the order the precedence alone gives
+        lines = text.splitlines()
+        a = next(i for i, x in enumerate(lines) if x.startswith("- **111 "))
+        b = next(i for i, x in enumerate(lines) if x.startswith("- **113 "))
+        lines[a], lines[b] = lines[b], lines[a]
+        self.assertIn("113 is listed before 111, which it depends on", gallery_order_problems("\n".join(lines)))
+
+
+def deporder_lines(d, script=None):
+    code, out, err = runner(d, script=script) if script else runner(d)
+    if code == 1:
+        raise AssertionError("refused: " + out + err)
+    return [x for x in out.splitlines() if "which comes after it in its group" in x]
+
+
+def moved(d, n, before):
+    """The cards with card n moved to just before card `before`."""
+    cs = d["cards"]
+    c = next(x for x in cs if x["n"] == n)
+    cs.remove(c)
+    cs.insert(next(i for i, x in enumerate(cs) if x["n"] == before), c)
+    return d
+
+
+@unittest.skipUnless(NODE, "node is not installed")
+class DepOrderLint(unittest.TestCase):
+
+    LINE = "lint: card 43: depends on [[42]], which comes after it in its group; move it after"
+
+    def same_layer(self):
+        d = example()
+        d["cards"][2]["dep"] = "only if [[42]] is (a)"
+        self.assertEqual([c["n"] for c in d["cards"]], [41, 42, 43])
+        self.assertEqual(d["cards"][1]["L"], d["cards"][2]["L"])
+        return d
+
+    def test_the_example_is_clean(self):
+        self.assertEqual(deporder_lines(example()), [])
+
+    def test_a_dependent_before_its_target_in_one_layer_fires(self):
+        self.assertEqual(deporder_lines(self.same_layer()), [])
+        self.assertEqual(deporder_lines(moved(self.same_layer(), 43, 42)), [self.LINE])
+        # mutant: the position test always true, which fires on the right order too
+        js = mutant_runner("&& at.get(m) > i &&", "&& true &&")
+        self.assertEqual(deporder_lines(self.same_layer(), js), [self.LINE])
+
+    def test_the_same_order_across_two_layers_is_clean(self):
+        d = moved(example(), 42, 41)  # 42 depends on 41, which is in another layer
+        self.assertEqual(deporder_lines(d), [])
+        # mutant: the layer test dropped
+        js = mutant_runner("return t.L === c.L && ", "return ")
+        self.assertEqual(deporder_lines(moved(example(), 42, 41), js),
+                         ["lint: card 42: depends on [[41]], which comes after it in its group; move it after"])
+
+    def test_a_dep_on_a_ref_is_clean(self):
+        d = example()
+        d["cards"][1]["dep"] = "only if [[38]] is (a)"
+        self.assertEqual(deporder_lines(d), [])
+        # mutant: a ref read as a later card in the same layer
+        js = mutant_runner("const t = d.cards[at.get(m)];\n      return t.L === c.L && at.get(m) > i",
+                           "const t = d.cards[at.get(m)] || c;\n      return t.L === c.L && (at.has(m) ? at.get(m) : 1e9) > i")
+        js2 = js.read_text().replace("depsOf(c).filter(m => at.has(m))", "depsOf(c)")
+        js.write_text(js2)
+        self.assertEqual(deporder_lines(d, js),
+                         ["lint: card 42: depends on [[38]], which comes after it in its group; move it after"])
+
+    def test_a_two_card_cycle_in_one_layer_is_clean(self):
+        d = example()
+        d["cards"][1]["dep"] = "only if [[43]] is (a)"
+        d["cards"][2]["dep"] = "only if [[42]] is (b)"
+        self.assertEqual(deporder_lines(d), [])
+        # mutant: the cycle skip removed, which fires on 42
+        js = mutant_runner(" && !reaches(m, me)", "")
+        self.assertEqual(deporder_lines(d, js),
+                         ["lint: card 42: depends on [[43]], which comes after it in its group; move it after"])
 
 
 if __name__ == "__main__":

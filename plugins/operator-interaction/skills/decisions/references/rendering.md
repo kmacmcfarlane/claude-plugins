@@ -836,12 +836,22 @@ folded into one card.
 
 ## Order
 
-The precedence is SKILL.md § Order. Three notes on applying it: the groups are the ones the
+The precedence is SKILL.md § Order. Four notes on applying it: the groups are the ones the
 caller stores where it stores them (its `group` per decision, the id never shown), and
 related decisions otherwise; a group is placed by its most
-pressing member and kept together, the same precedence holding inside it; and a deadline
+pressing member and kept together; inside a group, each decision goes after every decision it
+depends on that the set shows (its stored `depends`, the targets its dependency line names),
+and among those free to go the precedence holds, so a ⚠ dependent still waits for its target,
+while a dependency cycle's members fall back to the precedence alone; and a deadline
 decision placed first "because the return is unknown" costs nothing if the operator is back
 sooner — both get answered — while one placed low can lose the lease.
+
+A set shows every open decision its cards name or depend on, each as its own card or line,
+placed by the dependency order above: a target in the same group comes before its dependent,
+and one in another group keeps its own group's place. An answered target needs no card of its
+own; the dependency line still names it. The hover tooltip and the click
+that opens a named card are the answer page's alone, since chat has neither (the
+`decision-page` skill). Gallery example 38 works an order through.
 
 ## Labels
 
