@@ -16,6 +16,9 @@ today.*
 **Decisions** — *5 · one ⚠ one-way*
 
 **41 — Resume the paused nightly backup?**
+- whether the paused nightly backup finishes its snapshot tonight or is aborted
+- the storage lease lapses at 17:45, and the half-written snapshot with it
+
 **Context:** the snapshot is the backup's copy of the database, written to shared storage; the storage lease is the backup's hold on that space, and it lapses at 17:45. You last saw the backup running normally last night · you decide whether it finishes tonight or starts again.
 **What:** the nightly backup of the reporting database paused halfway through its snapshot and holds a storage lease.
 ▸ Assumptions — basis: **strong** · 1 assumption with its tripwire
@@ -33,11 +36,15 @@ today.*
 ▸ Background — why now: the storage lease lapses at ~17:45 (90 min from 16:15), and the snapshot is lost with it.
 
 **43 — Remove the deprecated `/v1/export` endpoint?** ⚠ one-way
+- whether the old `/v1/export` endpoint is removed in Thursday's API cleanup release
+- two partner integrations still call it, and their exports fail once it is gone
+
 **Context:**
 - The API cleanup release is the batch of API changes cut on Thursday; you left it at last quarter's launch of `/v2/export` · you decide whether `/v1` goes in this release
 - Two partner integrations still call `/v1/export`
   - their exports fail once it is removed, until they move to `/v2`
 - A removed public endpoint cannot quietly come back for the clients that already adapted
+
 **What:** whether to delete the old export endpoint `/v1/export`, replaced last quarter by `/v2/export`.
 
 ▾ Open questions — 1 open: whether the two partners have a switch to `/v2` planned
@@ -101,6 +108,9 @@ today.*
 *If you pick (a), I'll repeat it back and act only once you confirm: it can't be undone.*
 
 **45 — Units on the storage dashboard: MiB or MB?** · *your preference — no recommendation*
+- which units the storage dashboard shows sizes in: binary (MiB) or decimal (MB)
+- the two read about 5% apart for the same disk
+
 **Context:** the operating system's tools count in binary units and the storage provider bills in decimal ones, so the same disk reads about 5% apart in the two. You left it at the dashboard mock-up, which had placeholder units · you decide which units it shows.
 **What:** show sizes in binary units (MiB, 1,048,576 bytes) or decimal units (MB, 1,000,000 bytes).
 ▸ Assumptions — basis: **strong**
@@ -117,7 +127,7 @@ today.*
 
 ▸ Background — why now: the new dashboard needs one unit before it ships.
 
-*Gallery note — layout and order: the cards and the block come first, each opening on its title, then its Context, then its What (what is decided), then its impact (a line on a card; on the block, the line and then a table), the compact list and the hint last, so the list is what is on screen when the agent stops. Why this order: 41 breaks before you are back; the API cleanup group comes next because it holds a ⚠, with 44 kept beside 43; then 42, which blocks the docs build, before 45, which blocks nothing. 44 and 42 stay list lines: you are warm on both, both are two-way and narrow on a strong basis, 44's options converge and 42 is a template you have seen. 41, 43 and 45 are cold, so each is at least a card; 43 is a block because this is its first showing. Each card and the block carries its Context — the terms it uses, then where you left it — and would carry it for a warm reader too; the block's runs to bullets, its first the card-size Context and the rest what a reader coming back may have lost. The list lines carry none. In each card and the block the options keep their letter order and only the recommended one is bold: 43's (b) stays second, and 45, with no recommendation, bolds none. No Impact line carries an effect: each starts at what waiting costs, and on a card each option carries its own effect, reach and cost on the italic line under it, a facet that does not apply left out; on the block the table's rows carry them. 43's block shows what is still open, whether the partners plan to switch, as an open ▾ Open questions fold above its Impact; 41 and 45 have nothing open, so they have no fold. Every card and the block then carry their ▸ Assumptions line just above the Impact: the basis word, and how many assumptions the recommendation rests on, each with its tripwire; 45, with no recommendation, names none, so its line is the basis alone; the block shows the fold open, its Basis line, its evidence and each assumption with its tripwire. No card ends on a Rec line: the bold option is the recommendation, and what is not known is never an assumption. Undo shows only where it bites: 41's (b), whose restart costs about 3 hours, and 43's (a), which no hotfix fully takes back, each marked ⚠ on its option and on the Impact line; 45's options, each one config line from the other, carry none, and on the block 43's reversible rows read `—`. On each card, why now and why ask sit in a closed ▸ Background fold, the first under the options, its summary the first sentence of why now, so the card reads the choices first; the block shows the fold open (▾), its two lines under its table and its options' views. 43 weighed one more way out, moving the partners itself, and does not offer it: its ▾ Rejected alternatives fold, open on the block, comes last, the title in bold and the reason as a bullet under it; on a card it would be one closed line after ▸ Background. Under 43's table, each option's view in letter order, (z) too: its title, its *plan in brief:* line, then its `Pros | Cons` table, the points in full; the facets stay in the table's row above, so the view does not repeat them, and (z), with no upside, leaves its Pros cell empty. Every list line carries an effect and what waiting costs, the line-only ones too: the recommended option's after its label, and 45's each option's, since it has no recommendation; no list line carries an option's reach, undo or cost; only 43 has a ⚠ slot, and no line has a stakes word.*
+*Gallery note — layout and order: the cards and the block come first, each opening on its title, then its TLDR (one or two bullets: what is decided and what rides on it, never the recommendation), then its Context, then its What (what is decided, in full), then its impact (a line on a card; on the block, the line and then a table), the compact list and the hint last, so the list is what is on screen when the agent stops. Why this order: 41 breaks before you are back; the API cleanup group comes next because it holds a ⚠, with 44 kept beside 43; then 42, which blocks the docs build, before 45, which blocks nothing. 44 and 42 stay list lines: you are warm on both, both are two-way and narrow on a strong basis, 44's options converge and 42 is a template you have seen. 41, 43 and 45 are cold, so each is at least a card; 43 is a block because this is its first showing. Each card and the block carries its Context — the terms it uses, then where you left it — and would carry it for a warm reader too; the block's runs to bullets, its first the card-size Context and the rest what a reader coming back may have lost. The list lines carry none. In each card and the block the options keep their letter order and only the recommended one is bold: 43's (b) stays second, and 45, with no recommendation, bolds none. No Impact line carries an effect: each starts at what waiting costs, and on a card each option carries its own effect, reach and cost on the italic line under it, a facet that does not apply left out; on the block the table's rows carry them. 43's block shows what is still open, whether the partners plan to switch, as an open ▾ Open questions fold above its Impact; 41 and 45 have nothing open, so they have no fold. Every card and the block then carry their ▸ Assumptions line just above the Impact: the basis word, and how many assumptions the recommendation rests on, each with its tripwire; 45, with no recommendation, names none, so its line is the basis alone; the block shows the fold open, its Basis line, its evidence and each assumption with its tripwire. No card ends on a Rec line: the bold option is the recommendation, and what is not known is never an assumption. Undo shows only where it bites: 41's (b), whose restart costs about 3 hours, and 43's (a), which no hotfix fully takes back, each marked ⚠ on its option and on the Impact line; 45's options, each one config line from the other, carry none, and on the block 43's reversible rows read `—`. On each card, why now and why ask sit in a closed ▸ Background fold, the first under the options, its summary the first sentence of why now, so the card reads the choices first; the block shows the fold open (▾), its two lines under its table and its options' views. 43 weighed one more way out, moving the partners itself, and does not offer it: its ▾ Rejected alternatives fold, open on the block, comes last, the title in bold and the reason as a bullet under it; on a card it would be one closed line after ▸ Background. Under 43's table, each option's view in letter order, (z) too: its title, its *plan in brief:* line, then its `Pros | Cons` table, the points in full; the facets stay in the table's row above, so the view does not repeat them, and (z), with no upside, leaves its Pros cell empty. Every list line carries an effect and what waiting costs, the line-only ones too: the recommended option's after its label, and 45's each option's, since it has no recommendation; no list line carries an option's reach, undo or cost; only 43 has a ⚠ slot, and no line has a stakes word.*
 
 - **41 Resume the paused nightly backup?** — rec **(a) resume** → *the snapshot finishes in about 15 minutes* · *later: the snapshot is lost at 17:45 and the backup starts over* · basis **strong** · *25 min old, storage lease lapses ~17:45 (90 min from 16:15)*
 - **43 Remove the deprecated `/v1/export` endpoint?** — rec **(b) keep it, with a sunset date** → *nothing breaks; every response announces removal in 90 days* · *later: misses Thursday's API cleanup release* · ⚠ one-way · basis **partial** · *6 h old*
@@ -134,6 +144,9 @@ today.*
 *Situation: one decision, the operator watching live. The options diverge, so it is a card, not a line.*
 
 **46 — Retry the failed preview deploy?**
+- whether to retry the failed preview deploy or show yesterday's build
+- this afternoon's design review needs a preview
+
 **Context:** the preview is a test copy of the site with the search-page change in it; the base image is the ready-made system it is built on, pulled from a registry. You asked for the preview this morning · you decide whether to retry it or show yesterday's build.
 **What:** the preview deploy of the search-page change failed while pulling its base image.
 ▸ Assumptions — basis: **strong** · 1 assumption with its tripwire
@@ -157,6 +170,9 @@ today.*
 ## 3. One-way but narrow (no ⚠)
 
 **47 — Delete last month's unused staging snapshot `stg-0814`?**
+- whether the unused staging snapshot `stg-0814` is deleted, for good
+- staging storage is at 85% of its quota and fills about 2% a day
+
 **Context:** staging is the test copy of the live system; `stg-0814` is a full copy of its database taken on August 14 for a migration test that has finished. Raised when the staging storage alert turned it up · you decide whether it goes.
 **What:** delete the staging database snapshot from August 14, which nothing restores from.
 ▸ Assumptions — basis: **strong** · 1 assumption with its tripwire
@@ -207,6 +223,9 @@ Its justification never does, because what is left, what has been spent and what
 costs change every time. The first time in a session, a card:*
 
 **48 — Raise the retry-policy change's budget for another round?** · *template: budget cap*
+- whether the retry-policy change gets more budget for another review round
+- one finding is open: after a restart, a job that fails on every run is retried forever
+
 **Context:** the retry-policy change sets how often a failed job is tried again; its budget is the spend its build may use before rounds stop and come back to you. You left it when you asked for the change · you decide whether it gets more.
 **What:** the change has spent $21 of its $20 budget over four reviews; the last review left one finding open, so it cannot land as it is.
 ▸ Assumptions — basis: **strong** · 1 assumption with its tripwire
@@ -251,6 +270,9 @@ line (no effect), options, their impacts, the label, and no recommendation.
 ## 7. Outside my authority
 
 **78 — Allow a run the reviewer waived to ship to users?** · *no recommendation — outside my authority*
+- whether a report run with one waived check ships to users on Friday
+- the waived section would reach every user of the report unchecked
+
 **Context:** a waived check is one a reviewer let through without it passing; here it covers the report's regional totals, the waived section. Raised when the release checklist turned it up · you decide whether that section reaches users on Friday.
 **What:** a report run passed with one check waived; shipping it puts the waived output in front of users.
 ▸ Open questions — 1 open: how users use the waived section of the report
@@ -300,6 +322,9 @@ line (no effect), options, their impacts, the label, and no recommendation.
 *Read as: a reframe of 79 — the question is whether to cache at all. New decision 81 replaces 79:*
 
 **81 — Cache at all, or fix the slow query first?**
+- whether the slow product-listing query gets a cache, or is made fast first
+- the listing page loads in about 2 seconds
+
 **Context:** the product-listing query is the database query behind the listing page; a cache would keep its answers and serve repeat reads, and an index is the database's lookup table that can make the query itself fast. You left it at which caching library to adopt (79) · you decide whether to cache at all.
 **What:** whether to put a cache in front of the product-listing query, or first make the query itself fast.
 ▸ Open questions — 1 open: the listing's write load, which sets how often a cache goes stale
@@ -359,6 +384,9 @@ the list: 41, 43 and 45 are unchanged, so they are not rendered again and their 
 **Decisions** — *5 · one ⚠ one-way*
 
 **44 — Deprecation notice: "deprecated" or "scheduled for removal"?**
+- which word the `/v1/export` deprecation notice uses
+- partners read it in the response header and the release notes
+
 **Context:** the notice is the warning partners read before an endpoint goes; the three before it, on older endpoints, all said "deprecated". You left it at the wording we talked over an hour ago · you decide which word this one uses.
 **What:** the wording of the notice in the `/v1/export` response header and in the release notes.
 ▸ Assumptions — basis: **strong** · 1 assumption with its tripwire
@@ -412,6 +440,7 @@ into: it is echoed, with no read-back, because it acts on nothing.*
 *At 10:30:*
 
 **46 — back, as you asked ("after the standup"):** retry the failed preview deploy?
+*While it waited (1 h): the registry is healthy again, and the design review moved to 14:00. Options and recommendation unchanged; impact changed: waiting now costs the 14:00 review its preview.*
 *While it waited (1 h): the registry is healthy again, and the design review moved to 14:00. Options and recommendation unchanged; impact changed: waiting now costs the 14:00 review its preview.*
 *…followed by the card.*
 
@@ -476,6 +505,9 @@ status page (a preference). The operator replies "ok 51-55".*
 ## 19. A status-quo default
 
 **56 — Open the pull request now, or wait for the benchmark run?**
+- whether the retry-policy change goes to review now or once its benchmark run is in
+- the benchmark finishes in about 25 minutes, and would show a slowdown in retrying jobs
+
 **Context:** the retry-policy change sets how often a failed job is tried again; the benchmark run times it against the current code. You asked for it today and have not seen it since · you decide whether the reviewers start now or after the benchmark.
 **What:** the retry-policy change is ready; its benchmark run finishes in about 25 minutes.
 ▸ Open questions — 1 open: whether the benchmark shows a slowdown in retrying jobs
@@ -506,20 +538,25 @@ cost: 62 blocks the worker rollout, 63 blocks the docs site build, 61 blocks not
 wide and the reader is cold, so it is a block (with no read-back: it is not ⚠). The store kept
 each card with its raised-at time, so each is rendered from the stored card, plus what changed
 while it waited — not composed again. Each stored card holds the Context written when it
-was raised, so under *while it waited* each card runs its What, that Context and its Impact
-line, and 62's block its What, its Context as bullets (the stored card-size Context first),
-its open question as an open ▾ Open questions fold, its Impact line and its table; *while it
+was raised, so under *while it waited* each card runs its TLDR, that Context, its What and its
+Impact line, and 62's block its TLDR, its Context as bullets (the stored card-size Context
+first), its What, its open question as an open ▾ Open questions fold, its Impact line and its
+table; *while it
 waited* says whether the impact changed.*
 
 **Decisions** — *3 open · shown again after a context reset*
 
 **62 — back, as you asked ("until the load test finishes"):** move the job queue to the new message broker?
 *While it waited (1 day): the load test finished — the new broker held three times peak load with no lost messages. Options and recommendation unchanged; impact unchanged.*
+- whether every worker service moves to the new message broker now, or one goes first
+- the worker rollout waits on it
+
 **Context:**
 - The new broker has carried the email worker alone for two weeks as a trial; you left it at that trial · you decide whether every worker moves now or one goes first
 - The switch is a config change in each service
 - The old queue keeps running for a week as a fallback
   - after that week it is shut down
+
 **What:** switch every worker service from the old job queue to the new message broker.
 
 ▾ Open questions — 1 open: whether the two workers not read rely on the old queue's ordering
@@ -568,6 +605,9 @@ waited* says whether the impact changed.*
 
 **63 — Vendor the web font or fetch it from the CDN?**
 *While it waited (1 day): the CDN outage that prompted vendoring ended, and the provider published its fix. Recommendation changed from (a) vendor to (b) fetch, because the outage is over; impact unchanged: each option does what it did.*
+- whether the docs site's web font ships in the repo or loads from the font CDN
+- the docs site build is on hold until it is settled
+
 **Context:** the font CDN is the font provider's download service, which each page fetches from; vendoring keeps a 400 KB copy of the font in the repo instead. You left it when the CDN outage blanked the docs site's font · you decide where the font comes from in future.
 **What:** ship the docs site's web font inside the repo (vendor), or load it from the font CDN (fetch).
 ▸ Assumptions — basis: **strong** · 1 assumption with its tripwire
@@ -586,6 +626,9 @@ waited* says whether the impact changed.*
 
 **61 — Turn on strict type checking across the repo?**
 *While it waited (1 day): nothing changed; impact unchanged.*
+- whether the type checker's strict mode is turned on for every package
+- loosely typed code keeps growing while it is off
+
 **Context:** strict mode is the type checker's setting that refuses loosely typed code; the 31 warnings are what it flags today, all in the two packages the review named. You left it at the review that flagged loose types in two packages · you decide whether the whole repo goes strict, not just those two.
 **What:** enable the type checker's strict mode for every package.
 ▸ Assumptions — basis: **strong** · 1 assumption with its tripwire
@@ -668,6 +711,9 @@ those records. The decisions block stays last.*
 - **Done: left the Windows install steps to a follow-up item, "Windows install steps"** — *scope · two-way (pull it back in any time), nobody waits on it · the class "scope", which your rules let me decide · undo: say "pull it back in"*
 
 **85 — Ship the install script as one file or as a package?**
+- whether users get the new install script as one file or as a package
+- the command-line guide's install section waits on it
+
 **Context:** the install script sets the command-line tool up on a user's machine; the package manager is the system's own installer, which keeps what it installs up to date. It came from the guide's install section, which waits on it · you decide how users get the script.
 **What:** how users get the new install script: one file they download and run, or a package from the package manager.
 ▸ Open questions — 1 open: how many users lack the package manager
@@ -788,6 +834,9 @@ operator's own browser — something only they can do. Whatever (a) asks of them
 card, in its **To act on (a):** part.*
 
 **86 — Run the staging sign-in check from your own browser?**
+- whether you check the sign-in fix on staging from your own browser before it ships
+- a wrong fix would stop real users signing in
+
 **Context:** the staging site is the test copy of the live site; the sign-in check is a script that reuses your browser's signed-in session and opens three pages behind sign-in. It came from the merged sign-in fix, which waits on it · you decide whether to run it or release on the automated tests.
 **What:** a one-off check that the fixed sign-in works with a real account on the staging site. It needs the signed-in session in your everyday browser, which I cannot reach.
 ▸ Assumptions — basis: **strong** · 1 assumption with its tripwire
@@ -829,6 +878,9 @@ says what each option removes, in words; the plan's label trails as a tag at mos
 the operator opens the plan.*
 
 **87 — How far should the docs cleanup reach this week?**
+- how far this week's docs cleanup reaches
+- the link checker fails the docs build until it lands
+
 **Context:** the cleanup plan sorts its work into two levels; the second covers 12 pages that three other teams own. It came from the failing link checker · you decide how far this week's cleanup reaches.
 **What:** how much of the docs cleanup to do now: only the broken links and the unused images, or also the pages that still cite the retired setup guide.
 ▸ Assumptions — basis: **strong** · 1 assumption with its tripwire
@@ -869,6 +921,9 @@ the number stays the handle. Each card shows its finding after **What:** (exampl
 **Shared context:** the review is today's code review of the upload-service change you asked for; it labels each finding with a number, and these three are the ones it left for you, the rest being fixed.
 
 **51 — F3 (oversize upload) · Check an upload's size before reading it?**
+- whether the upload handler checks an upload's declared size before reading it
+- one oversize upload can stall every other upload on a server
+
 **Context:** the declared size is the length a client sends ahead of the upload; the handler ignores it, reads the whole file into memory and only then compares it with the 50 MB limit. Raised when the review turned it up · you decide whether the check moves first.
 **What:** whether the upload handler checks the size a client declares before it reads the upload, in `upload/handler.go`.
 **Finding:** F3 (oversize upload): the handler reads the whole upload before it checks the size — `upload/handler.go:40-45`
@@ -896,6 +951,9 @@ func (h *Handler) Upload(w http.ResponseWriter, r *http.Request) {
 ▸ Background — why now: the merge waits on this finding.
 
 **52 — F7 (retry storm) · Add a backoff to failed disk writes?**
+- whether a failed disk write waits before it is tried again
+- a disk that fails every write draws hundreds of writes a second
+
 **Context:** a backoff is a wait that grows after each failed try; today the writer tries again at once, with no wait. Raised when the review turned it up · you decide whether the backoff goes in before the merge.
 **What:** whether a failed write to disk waits before it is tried again, in the upload service's storage writer.
 **Finding:** F7 (retry storm): a failed write is tried again at once — `storage/writer.go:88-95`
@@ -924,6 +982,9 @@ for err := w.write(b); err != nil; err = w.write(b) {
 ▸ Attached — 3: Last night's write log · The write tests on the change · Who a failing disk reaches
 
 **53 — F9 (stale temp files) · Remove an aborted upload's temp file?**
+- whether an aborted upload's temporary file is deleted
+- leftover files grow the upload servers' disks about 40 GB a week
+
 **Context:** each upload is written to a temporary file first and moved into place when it completes; an aborted upload's file is never moved or deleted. Raised when the review turned it up · you decide whether the cleanup goes in before the merge.
 **What:** whether the upload service deletes the temporary file an aborted upload leaves on disk.
 **Finding:** F9 (stale temp files): an aborted upload's temporary file is never removed — `upload/tempfile.go:21-30`
@@ -949,7 +1010,7 @@ When a client aborts, the handler returns without moving or deleting the upload'
 
 *Reply with a letter (`51: a`) or in your own words · `later [when]` · `tell me [what]` · `expand` · `dig into [what]` · `you decide` · `drop`*
 
-*Each card is whole — its own Context, What, Finding, Assumptions fold line, Impact, options, Background fold line and, where the decision rests on material, its Attached fold line — so each finding gets its own impact and its own answer, and `ok 51-53` still takes all three recommendations. The heading adds what the three share and replaces nothing on them. Each effect says how the failure happens and what changes after the fix, not just its name: F3's says a 2 GB upload fills the server's memory first.*
+*Each card is whole — its own TLDR, Context, What, Finding, Assumptions fold line, Impact, options, Background fold line and, where the decision rests on material, its Attached fold line — so each finding gets its own impact and its own answer, and `ok 51-53` still takes all three recommendations. The heading adds what the three share and replaces nothing on them. Each effect says how the failure happens and what changes after the fix, not just its name: F3's says a 2 GB upload fills the server's memory first.*
 
 *Not this: one card, "Fix the upload-service housekeeping before the merge?", with options "(a) fix all", "(b) fix some" and "(z) later". It names a category, not the three findings, gives no impact for any one of them, and has no way to answer F3 differently from F7: the operator cannot decide it without asking what the findings are. Nor one card with a pick per finding (`51: F3 a, F7 b`): its picks would be lettered sub-decisions under one number.*
 
@@ -977,6 +1038,9 @@ maintainers have archived. The decision is about what partner apps meet, so that
 Impact names, with the mechanism spelled out and the term glossed.*
 
 **88 — Stop exposing the archived date library from the client package?**
+- whether the client package's public functions stop using the archived date library's types
+- every partner app that imports the client must install that library today
+
 **Context:** an archived library is one whose maintainers have stopped releasing it, security fixes included; the client package is what partner apps import to call our API. Raised when the dependency audit turned it up · you decide whether the client's public types change in the next major release.
 **What:** whether the client package's public functions switch from the archived date library's types to the standard library's, in the next major release.
 **Finding:** the client's public functions take and return the archived library's date type — `client/api.py:12-19`
@@ -1018,12 +1082,16 @@ plain name with what it is, and gives each one's outcome only where the options 
 differently; the two fixes are filed under either real option, so they carry none.*
 
 **96 — File the four proposed docs work items?**
+- which of the proposed docs work items go in the docs queue
+- the search and link fixes wait until something is filed
+
 **Context:** the research pass on the docs site you asked for proposed four work items; filing one adds it to the docs queue the team works through in order. You have not seen the list · you decide which of the four go in the queue.
 **What:** which of the four proposed work items are filed in the docs queue.
 - Fix the search index, in the docs build — it skips every page added since March
 - Redirect the moved guides, in the site config — old links to ten guides return not found
 - Split the install page — it runs to forty screens on a phone · *(a) filed; (b) left out*
 - Add a dark theme — readers asked for it twice · *(a) filed; (b) left out*
+
 ▸ Assumptions — basis: **strong** · 1 assumption with its tripwire
 **Impact:** later: none of the four is queued, so the search and link fixes wait too · reach: the docs queue and the site's readers
 - (a) File all four
@@ -1050,6 +1118,9 @@ differently; the two fixes are filed under either real option, so they carry non
 happens, then its code — and before the folds and the Impact (answer 337 (a)).*
 
 **97 — F3 (unescaped display name) · Escape the display name in the welcome email?**
+- whether the welcome email escapes the display name a user types at signup
+- a name typed as a link becomes a live link in an email from us
+
 **Context:** the parcel tracker sends a welcome email built from an HTML template, and the display name is what a user types at signup. Today's code review of the signup change numbered its findings, and F3 (unescaped display name) is the one left for you · you decide how the template shows the name.
 **What:** whether the welcome email's template escapes the display name, so any tags in it show as plain text, and whether names already stored are cleaned too.
 **Finding:** F3 (unescaped display name): the template turns escaping off for the name — `templates/welcome.html:14-16` `at 3f2a9c1`
@@ -1095,6 +1166,9 @@ the page turned up a choice the criteria decide, so the card says how it stands 
 its own **Scope:** line, after **What:**, before the folds and the Impact (answer 266 (b)).*
 
 **98 — Keep the custom colour picker on the settings page?**
+- which colour picker the settings page ships with
+- the brief requires every setting to work from the keyboard alone
+
 **Context:** the settings page you asked for has a custom colour picker for the calendar's event colours, and the browser's own colour field is the plain alternative; the page's acceptance criteria are the brief's list of what it must do. You approved the page's layout yesterday · you decide which picker ships.
 **What:** which colour picker the settings page ships with for event colours.
 **Scope:** *required* — every setting can be reached and changed from the keyboard alone, the brief's third criterion
@@ -1131,6 +1205,9 @@ provider's own record, and whether a fallback is the response that matters (answ
 339 (a)).*
 
 **99 — Add a second payment provider for outages?**
+- how the shop's checkout handles its payment provider being down
+- checkout failed during the provider's last outage
+
 **Context:** the shop takes card payments through one payment provider, and checkout failed while that provider was down last month; a queued retry would hold a failed payment and try it again once the provider answers. You asked for a fallback after that outage · you decide how checkout meets the next one.
 **What:** how the shop's checkout handles the payment provider being down.
 **Likelihood:** *(observed)* the payment provider went down twice in the last twelve months, each time for under an hour (the provider's public status page)

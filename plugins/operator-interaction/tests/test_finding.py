@@ -426,7 +426,7 @@ class FindingChat(unittest.TestCase):
 
     def test_the_templates_put_the_finding_after_what(self):
         text = RENDERING.read_text()
-        card = fenced(text, "**N — Title as a question?**\n**Context:**")
+        card = fenced(text, "**N — Title as a question?**\n- the TLDR")
         self.assertEqual(heads(card)[:6], ["Context", "What", "Finding", "Scope", "Likelihood", "Impact"])
         k = next(i for i, x in enumerate(card) if x.startswith("**Finding:**"))
         self.assertRegex(card[k], r"^\*\*Finding:\*\* F7 \(short name\): .+ — `[^`]+`")
