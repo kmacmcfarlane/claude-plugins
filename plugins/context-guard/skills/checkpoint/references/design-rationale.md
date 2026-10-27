@@ -223,6 +223,13 @@ the transcripts as reply-line prompts; and a counter would write new state on th
 every-prompt path or spend window on every checkpoint. If the count is ever repeated, keep
 it metadata-only: read the records' fields, never their content.
 
+The close prints the `/compact <guidance>` as a line to paste in both modes, not only for a
+handoff (operator feedback, relayed 2026-10-26): a *continue* close used to carry the
+opener, the manifest path and an echo whose window part said "as recommended above", so the
+command lived only in Step 5's prose and the operator had to ask for it. The guidance
+names the manifest path, the open item, every hold and every REFUSED line, so it pastes
+unedited; the opener stays a separate line, since it serves `/clear` or a new session.
+
 **Added later: the mid-turn check** (`PostToolUse`, `hooks/turn_gate.py`). The layers above
 see only turn boundaries, and an unattended turn has none: one 53-minute tool loop filled a
 1M window from 860K to 999K with nothing able to speak to the model (2026-09-02). The check
