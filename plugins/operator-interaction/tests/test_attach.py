@@ -904,7 +904,7 @@ class AttachChat(unittest.TestCase):
 
     def test_the_templates_carry_the_fold(self):
         text = RENDERING.read_text()
-        card_t = fenced(text, "**N — Title as a question?**\n**Context:**")
+        card_t = fenced(text, "**N — Title as a question?**\n- the TLDR")
         self.assertTrue(any(x.startswith("▸ Attached — 2: ") for x in card_t))
         self.assertEqual(att_problems("rendering.md card", card_t), [])
         block = fenced(text, "**N — Title as a question?** ⚠ one-way")

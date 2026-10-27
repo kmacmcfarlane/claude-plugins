@@ -186,34 +186,42 @@ Smallest to largest, each showing more of the impact in facet order (templates i
   Wait, its class when the caller names classes, ⚠ one-way when it is, basis, its age and
   any deadline; a round ask, its justification; a line-only decision, its
   why ask.
-- **Card** — in the answer page's order: the title, then **Context:**, then **What:** (what
+- **Card** — in the answer page's order (the v5 order): the title; then the TLDR, one or two
+  terse bullets saying what is decided and what rides on it, never the recommendation; then
+  the dependency line's slot (no card draws it yet); then **Context:**, then **What:** (what
   is decided, and a set's items one bullet each), then, on a decision raised from a finding,
   **Finding:** (its label and short name, its title, where it lives, how it happens, and its
   excerpt in a fenced block), then, where the work states requirements, **Scope:** (*required*
   and the criterion, *shapes the work* and what, or *outside the criteria*), then, on a risk
-  decision, **Likelihood:** and **Best response?:**, then the ▸ Open questions fold line when
-  anything is open,
-  then the ▸ Assumptions fold line (the basis word and the assumptions with their
-  tripwires), then an **Impact:** line, with no effect of its own; then the options, each with its
-  own impact (effect, reach, a one-way or costly option's `⚠ undo:`, cost) on an italic line
-  under it and its `*pros: …*` and `*cons: …*` lines under that, decide later, any **To act on (x):** part, a round ask's justification, the
-  ▸ Background fold line (why now and why ask), then, on a card whose decision rests on
-  material it can only name, the ▸ Attached fold line (their count and titles), and last, on a
-  card that weighed alternatives it does not offer, the ▸ Rejected alternatives fold line
-  (their count and titles); there is
-  no Rec line, the recommended option being the bold one. Its **Context:** is one or
-  two sentences, the page's summary size: the terms the card uses, then the resume cue
-  (where you left it · what you decide now). It is written for every decision when it is
-  raised, stored with the card where the caller keeps one, and shown every time the card is
-  shown, warm reader or cold (`references/rendering.md` § Context).
-- **Block** — a card whose Context is fuller, a bullet list at the page's medium
-  size that adds the context the reader may have lost, whose folds are shown open (▾), and
-  whose Impact line is followed by
-  a table (a row per option, its effect, reach, undo and cost, plus a Wait row) in place of
-  the options' impact lines, then each option's *plan in brief:* and its `Pros | Cons` table,
-  then the Background fold open, why now and why ask on two
-  lines, then any Attached fold open, each attachment's bold head line over its body, then
-  any Rejected alternatives fold open, each title in bold over its reasons as bullets; its Assumptions fold, open, carries the basis drill-down with evidence links.
+  decision, **Likelihood:** and **Best response?:**; then the ▸ Open questions fold line when
+  anything is open, then the ▸ Assumptions fold line (the basis word and the assumptions with
+  their tripwires); then an **Impact:** line, with no effect of its own; then the options,
+  each with its own impact (effect, reach, a one-way or costly option's `⚠ undo:`, cost) on
+  an italic line under it and its `*pros: …*` and `*cons: …*` lines under that, and decide
+  later; then any **To act on (x):** part, a round ask's justification and any **If
+  unanswered:** line (the page puts these round lines above its options, and each To act
+  on under its own option; chat puts both after the options; the page also keeps a
+  Dependencies fold until stored dependencies land); then the ▸ Background fold line (why now and
+  why ask), then, on a card whose decision rests on material it can only name, the
+  ▸ Attached fold line (their count and titles), and last, on a card that weighed
+  alternatives it does not offer, the ▸ Rejected alternatives fold line (their count and
+  titles). A part with nothing to say is left out; what is shown keeps this order. There is
+  no Rec line, the recommended option being the bold one. Its **Context:** is one or two
+  sentences, the page's summary size: the terms the card uses, then the resume cue (where
+  you left it · what you decide now). It is written for every decision when it is raised,
+  stored with the card where the caller keeps one, and shown every time the card is shown,
+  warm reader or cold (`references/rendering.md` § Context).
+- **Block** — the card with every fold open (▾), in the card's order: the title, the TLDR,
+  then **Context:** at the page's medium size, a bullet list that adds the context the reader
+  may have lost; What, Finding, Scope and Likelihood as on a card; the Open questions fold
+  open, then the Assumptions fold open with its basis drill-down and evidence links; the
+  Impact line, followed by a table (a row per option, its effect, reach, undo and cost, plus
+  a Wait row) in place of the options' impact lines;
+  then each option's *plan in brief:* and its `Pros | Cons` table; then any To act on part
+  and round lines; then the Background fold
+  open, why now and why ask on two lines, then any Attached fold open, each attachment's bold
+  head line over its body, then any Rejected alternatives fold open, each title in bold over
+  its reasons as bullets; and, on a ⚠ block, the read-back line last.
 
 **The line-only rule.** A decision may stay a list line only when all of these hold: the
 reader is warm; the stakes are low (two-way and narrow); the basis is strong (for a

@@ -579,7 +579,7 @@ class WhatPartChat(unittest.TestCase):
 
     def test_the_card_and_block_templates_put_what_after_context(self):
         text = RENDERING.read_text()
-        card = fenced(text, "**N — Title as a question?**\n**Context:**")
+        card = fenced(text, "**N — Title as a question?**\n- the TLDR")
         self.assertEqual(heads(card)[:6], ["Context", "What", "Finding", "Scope", "Likelihood", "Impact"])
         self.assertEqual(what_problems("rendering.md card", card), [])
         self.assertTrue(item_bullets(card), "the card template shows a set's item bullet")

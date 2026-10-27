@@ -475,7 +475,7 @@ class LikelihoodChat(unittest.TestCase):
 
     def test_the_templates_put_the_likelihood_after_the_scope(self):
         text = RENDERING.read_text()
-        card = fenced(text, "**N — Title as a question?**\n**Context:**")
+        card = fenced(text, "**N — Title as a question?**\n- the TLDR")
         self.assertEqual(heads(card)[:6], ["Context", "What", "Finding", "Scope", "Likelihood", "Impact"])
         k = next(i for i, x in enumerate(card) if x.startswith("**Likelihood:**"))
         self.assertTrue(card[k].startswith("**Likelihood:** *(observed)* the event it counts"), card[k])

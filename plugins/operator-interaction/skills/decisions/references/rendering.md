@@ -112,12 +112,13 @@ after a dash on the option's own line, a plain `undo:` — is read by
 
 Every card and block carries a **Context** section, shaped like the answer page's `context`
 field (the `decision-page` skill's `references/cards-schema.md`), in the page's order: the
-title first, which does the page TLDR's work, then **Context:**, then **What:** (what is
+title first, then the TLDR, the same one or two bullets as the page's (§ Card), then
+**Context:**, then **What:** (what is
 decided, and for a set each item, § Card), then **Finding:** on a card raised from a finding
 (§ Card), then **Scope:** where the work states requirements, then **Likelihood:** and
 **Best response?:** on a risk decision (§ Card), then the folds above the Impact (▸ Open questions when anything is open, then
-▸ Assumptions, § Folds), then the Impact and the options. A list line and a tag-size mention
-carry no Context: a line stays a line.
+▸ Assumptions, § Folds), then the Impact and the options, then the folds under them. A list
+line and a tag-size mention carry no Context and no TLDR: a line stays a line.
 
 What it holds, in this order:
 
@@ -131,8 +132,8 @@ What it holds, in this order:
   when the audit you asked for turned it up*. Never what changed
   since: that is *while it waited*, which opens a re-show (§ Re-show with what changed).
 
-It does not restate what is decided: **What:**, right after it, says that, and lists a set's
-items.
+It does not restate what is decided: the TLDR above it says that in brief, and **What:**,
+right after it, says it in full and lists a set's items.
 
 Its size follows the page's detail levels:
 
@@ -365,9 +366,13 @@ Example:
 
 ```
 **N — Title as a question?**
+- the TLDR: what is decided, in a terse bullet
+- what rides on it *(a second bullet at most; never the recommendation)*
+
 **Context:** the terms, items and counts the card uses, each in plain words; then where you left it · what you decide now.
 **What:** what is decided, in plain words; items by plain name, the id as a trailing tag; other ids glossed.
 - an item's plain name, where it lives — what it is, in a few words · *(a) its outcome; (b) its outcome*
+
 **Finding:** F7 (short name): the finding's own title — `path/to/file:40-52` *(only on a card raised from a finding)*
 how it happens, who meets it and when, the before and after, in one to three sentences
 *(then its excerpt, verbatim, in a fenced block tagged with its language)*
@@ -396,14 +401,37 @@ how it happens, who meets it and when, the before and after, in one to three sen
 ▸ Rejected alternatives — 1: an alternative weighed and not offered *(only where one was)*
 ```
 
-- **The order is the page's**: the title, then **Context:**, then **What:** with a set's
-  item bullets, then **Finding:** on a card raised from a finding, then **Scope:** where the
-  work states requirements, then **Likelihood:** and **Best response?:** on a risk decision,
-  then the ▸ Open questions line when anything is open, then the
-  ▸ Assumptions line (§ Folds), then **Impact:** — and under them the options, any **To act
-  on (x):** part, a round ask's **If left:** and **A round costs:**, any **If unanswered:**,
-  then the ▸ Background line (§ Context, § Folds), then any ▸ Attached line, and last any
-  ▸ Rejected alternatives line (§ Folds). There is no Rec line.
+- **The order is the page's** (the v5 order, item 9168), part by part:
+  1. the title;
+  2. the TLDR, one or two bullets;
+  3. the dependency line's slot, after the TLDR, kept for a line naming the decisions this
+     one waits on: no card draws it yet;
+  4. **Context:**, then **What:** with a set's item bullets, then **Finding:** on a card
+     raised from a finding, then **Scope:** where the work states requirements, then
+     **Likelihood:** and **Best response?:** on a risk decision;
+  5. the ▸ Open questions line when anything is open, then the ▸ Assumptions line (§ Folds);
+  6. **Impact:**;
+  7. the options, each with its facet line, its `*pros:*` and its `*cons:*` line;
+  8. any **To act on (x):** part, then a round ask's **If left:** and **A round costs:**,
+     then any **If unanswered:**;
+  9. the ▸ Background line (§ Context, § Folds), then any ▸ Attached line, and last any
+     ▸ Rejected alternatives line (§ Folds).
+
+  A part with nothing to say is left out, and what is shown keeps this order. The
+  differences from the answer page are stated: the page puts the round lines (**If left:**,
+  **A round costs:**, **If unanswered:**) after the Impact, above its options, and each
+  **To act on (x):** under its own option; chat puts both after the options, where they are
+  read with the choice; the page also keeps a Dependencies fold, between Attached and
+  Rejected alternatives, until stored dependencies land. There is no Rec line.
+- **CommonMark.** A blank line goes between a bullet and a bold head or fold line that
+  follows it (the TLDR's last bullet and **Context:**, a set's last item and the next part),
+  so the line is never read into the bullet above it.
+- **TLDR:** under the title, one or two terse bullets: what is decided, and what rides on it
+  (the card record's `tldr`; answer 336 (a), the same TLDR as the answer page on every chat
+  card). It never carries the recommendation, which the options mark, and it is not the
+  Context: the terms and the resume cue stay on the **Context:** line under it. An older
+  stored card (no `format`) with no TLDR shows none (nothing is invented), and gains one
+  when next revised; the record's `tldr` is the writer's to fill.
 - **Title:** the question. A decision raised from one labelled item of a source opens its
   title on the label and its short name: **41 — F7 (oversize upload) · Cap the upload
   size?** (§ Source labels).
@@ -566,11 +594,15 @@ how it happens, who meets it and when, the before and after, in one to three sen
 
 ```
 **N — Title as a question?** ⚠ one-way
+- the TLDR, as on a card
+- what rides on it
+
 **Context:**
 - the card's Context: the terms the block uses, then where you left it · what you decide now
 - a fact the reader may have lost: what was tried, what was answered before
   - a sub-bullet, two at most
 - …
+
 **What:** …
 **Finding:** … *(as on a card: its head line, its mechanism, its excerpt fenced)*
 **Scope:** … *(as on a card)*
@@ -612,6 +644,10 @@ how it happens, who meets it and when, the before and after, in one to three sen
 **To act on (b):** *(only for an option that asks the operator to act, as on a card)*
 1. …
 
+**If left:** … *(a round ask's two lines and any status-quo line, as on a card)*
+**A round costs:** …
+**If unanswered:** …
+
 ▾ Background — why now: the first sentence of why now
 **Why now:** …
 **Why ask:** *class* — …
@@ -627,8 +663,13 @@ its body, in the shape of its kind (§ Folds)
 *If you pick (a), I'll repeat it back and act only once you confirm: it can't be undone.*
 ```
 
-- The block opens as a card does, in the page's order: the title, then **Context:** as a
-  bullet list at the page's medium size, its first bullet the card's Context and the rest the
+- **The block is the card with every fold open** (`▾`), in the card's order (§ Card), with
+  four things more: Context at the page's medium, the Impact table under the Impact line,
+  each option's plan in brief and `Pros | Cons` table under that, and, on a ⚠ block, the
+  read-back line last. A blank line goes between a bullet and a bold head or fold line that
+  follows it, as on a card.
+- The block opens as a card does, in the page's order: the title, then the TLDR, then
+  **Context:** as a bullet list at the page's medium size, its first bullet the card's Context and the rest the
   context the reader may have lost (§ Context), shown on every block, warm reader or cold;
   then **What:**, with a set's item bullets, and **Finding:**, **Scope:**, and **Likelihood:**
   with **Best response?:**, when it has them, as on a card.
@@ -645,8 +686,8 @@ its body, in the shape of its kind (§ Folds)
   are its table row: its title in bold as its own line, then its *plan in brief:* line, then
   its **Pros | Cons** table (§ An option's view). An option with no points on either side has
   no table; an older option with no plan shows its text after its title instead.
-- Under them run a round ask's **If left:** and **A round costs:**, then any **To act
-  on (x):** part; then the Background fold stands open, as § Folds places it, first after
+- Under them run any **To act on (x):** part, then a round ask's **If left:** and **A round
+  costs:**, then any **If unanswered:**, as on a card; then the Background fold stands open, as § Folds places it, first after
   the options and their parts: `▾ Background — why now: …` with its **Why now:** and **Why
   ask:** lines under it; then any Attached fold, open, each attachment's bold head line over its
   body; then, last of the folds, any Rejected alternatives fold, open, each
@@ -836,13 +877,16 @@ new numbered decision that names the line it reopens.
 
 When a decision comes back (a wake fired, a context reset, `tell me`, `dig into`), open it
 with what changed since the operator last saw it, then the card or block as usual — its
-stored **Context:**, its **What:**, any **Finding:**, **Scope:** and **Likelihood:**, any ▸ Open questions line, its ▸ Assumptions line and its
+stored TLDR, its stored **Context:**, its **What:**, any **Finding:**, **Scope:** and **Likelihood:**, any ▸ Open questions line, its ▸ Assumptions line and its
 Impact line (and a block's table), right after the *while it waited* line:
 
 **62 — back, as you asked ("until the load test finishes"):** move the job queue to the new
 message broker?
 *While it waited (1 day): the load test finished with no lost messages; nothing else changed.
 Options and recommendation unchanged; impact unchanged.*
+- every worker moves from the old job queue to the new message broker
+- the worker rollout waits on it
+
 **Context:** the new broker has carried the email worker alone for two weeks as a trial, and the load test was the last check before the rest move. You left it at that trial · you decide whether every worker moves now or one goes first.
 **What:** switch every worker service from the old job queue to the new message broker.
 ▸ Open questions — 1 open: whether the two workers not read rely on the old queue's ordering
@@ -881,7 +925,7 @@ the caller stores the new card.
 open decision the reader is cold on at card level or above, never as a line only except as
 paged (SKILL.md § Levels, the line-only rule), each opening with what changed while it
 waited (*nothing changed* is worth saying, and so is *impact unchanged*). Under it the card
-runs **Context:** (its stored Context, ending on where the operator left it), **What:**,
+runs its TLDR, then **Context:** (its stored Context, ending on where the operator left it), **What:**,
 any **Finding:**, **Scope:** and **Likelihood:**, any ▸ Open questions line, the ▸ Assumptions line, **Impact:**, the options, then the ▸ Background line from its
 stored *why now* (the fold holding its stored *why now* and *why ask*) and any ▸ Attached and ▸ Rejected alternatives lines; a block's **Context:** bullets open with the same
 Context. A stored card in an earlier form is read, and revised where it lacks a floor field,

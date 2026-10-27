@@ -391,7 +391,7 @@ class RejectedChat(unittest.TestCase):
 
     def test_the_templates_end_on_the_fold(self):
         text = RENDERING.read_text()
-        card_t = fenced(text, "**N — Title as a question?**\n**Context:**")
+        card_t = fenced(text, "**N — Title as a question?**\n- the TLDR")
         self.assertTrue(card_t[-1].startswith("▸ Rejected alternatives — 1: "), card_t[-1])
         self.assertEqual(fold_problems("rendering.md card", card_t), [])
         block = fenced(text, "**N — Title as a question?** ⚠ one-way")

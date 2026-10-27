@@ -1,5 +1,17 @@
 """Every card and block in chat carries a Context section, in the answer page's order.
 
+The chat card runs in the v5 order (d84f F10, item 9168), as the page card does (F11,
+`test_layout.py`): the title; the TLDR, one or two bullets (answer 336 (a)); the dependency
+line's slot (03ab F3's, drawn by no card yet); Context, What, Finding, Scope, Likelihood; the
+upper folds, ▸ Open questions then ▸ Assumptions; the Impact; the options; To act on and the
+round lines (after the options in chat; the page puts its round lines above its options and
+each To act on under its own option); the bottom folds, ▸ Background, ▸ Attached, ▸ Rejected
+alternatives (the page also keeps a Dependencies fold until stored dependencies land). A block is the card with every fold
+open (▾), its Impact table under the Impact line, each option's view under that, and a ⚠
+block's read-back line last. The order check reads only the parts a view holds (d84f `08`
+§ M1), so a part left out is never misplaced; a bullet is never followed at once by a bold
+head or a fold line, which CommonMark would read into it.
+
 The decisions skill's cards and blocks follow the page's `context` field: the title, then
 Context, then What (F6, answer 290 (a): Context above What), then the Impact and the options. A card's Context is
 one or two sentences at the page's summary size, ending on the resume cue; a block's is a
@@ -51,6 +63,27 @@ LEGACY = REFS / "legacy-cards.md"
 # a fold line: closed on a card, open (its items under it) in a block
 FOLD = re.compile(r"^([▸▾]) ([A-Z][^—]+) — (.+)$")
 OPEN_SUMMARY = re.compile(r"^(\d+) open: \S")
+# a fold line's form (F10): its mark, a capitalised name, a dash and a summary
+FOLD_FORM = re.compile(r"^[▸▾] [A-Z][^—]+ — .+$")
+# (a group's Shared context is a bold line under its heading, not a fold, so it is not named here)
+FOLD_NAMES = ("Open questions", "Assumptions", "Background", "Attached", "Rejected alternatives")
+UPPER_FOLDS = ("Open questions", "Assumptions")
+BOTTOM_FOLDS = ("Background", "Attached", "Rejected alternatives")
+
+# the v5 order of a chat card's parts (F10); a block adds its table after the Impact, its options'
+# views in the options' place, and its read-back line last
+ORDER = ["title", "TLDR", "depends", "Context", "What", "Finding", "Scope", "Likelihood",
+         "Open questions", "Assumptions", "Impact", "table", "options", "To act on", "If left",
+         "A round costs", "If unanswered", "Background", "Attached", "Rejected alternatives", "read-back"]
+HEAD_PARTS = {"**Context:**": "Context", "**What:**": "What", "**Finding:**": "Finding",
+              "**Scope:**": "Scope", "**Likelihood:**": "Likelihood", "**Best response?:**": "Likelihood",
+              "**Impact:**": "Impact", "| Impact |": "table", "**To act on (": "To act on",
+              "**If left:**": "If left", "**A round costs:**": "A round costs",
+              "**If unanswered:**": "If unanswered", "*depends:": "depends"}
+OPTION_BULLET = re.compile(r"^- (\*\*)?\([a-z]\) ")
+OPTION_VIEW = re.compile(r"^\*\*\([a-z]\) [^*]+\*\*$")  # a block's option view, its title in bold
+TLDR_OPENER = "**N — Title as a question?**\n- the TLDR"
+BLOCK_OPENER = "**N — Title as a question?** ⚠ one-way"
 
 
 def fenced(text, opener):
@@ -117,24 +150,144 @@ def context_of(body):
     return None, []
 
 
+def parts(body):
+    """The parts a view holds, one entry per line that opens or carries one, in the order they
+    appear: the title (its first line), the TLDR (bullets under the title, before any other
+    part), the bold heads, the fold lines by name, the options (a bullet each on a card, a bold
+    title line each in a block's views), the table and the read-back line. Lines inside a part
+    (Context's bullets, a fold's contents, an option's facet lines) carry none."""
+    out = ["title"]
+    for line in body[1:]:
+        m = FOLD.match(line)
+        if m:
+            part = m.group(2)
+        elif line.startswith(READ_BACK):
+            part = "read-back"
+        elif OPTION_BULLET.match(line) or OPTION_VIEW.match(line):
+            part = "options"
+        elif line.startswith("- ") and out[-1] in ("title", "TLDR"):
+            part = "TLDR"
+        else:
+            part = next((p for h, p in HEAD_PARTS.items() if line.startswith(h)), None)
+        if part:
+            out.append(part)
+    return out
+
+
+def order_problems(where, body):
+    """A view's parts out of the v5 order, reading only the parts it holds: each part at or after
+    the one before it in ORDER; one or two TLDR bullets at most; the upper folds before the
+    Impact and the bottom folds after the options; every fold line in its form, a name from
+    FOLD_NAMES and a summary. Returns the problems, empty when clean."""
+    out = []
+    ps = parts(body)
+    for a, b in zip(ps, ps[1:]):
+        if b not in ORDER:
+            out.append(f"{where}: a fold named {b!r}")
+        elif a in ORDER and ORDER.index(b) < ORDER.index(a):
+            out.append(f"{where}: {b} after {a}")
+    if ps.count("TLDR") > 2:
+        out.append(f"{where}: {ps.count('TLDR')} TLDR bullets, more than two")
+    imp = ps.index("Impact") if "Impact" in ps else None
+    opts = [i for i, p in enumerate(ps) if p == "options"]
+    for i, p in enumerate(ps):
+        if p in UPPER_FOLDS and imp is not None and i > imp:
+            out.append(f"{where}: the {p} fold after the Impact")
+        if p in BOTTOM_FOLDS and opts and i < opts[-1]:
+            out.append(f"{where}: the {p} fold above the options")
+    for line in body:
+        if not line.startswith(("▸", "▾")):
+            continue
+        m = FOLD.match(line)
+        if not FOLD_FORM.match(line) or not m or not m.group(3).strip(" *"):
+            out.append(f"{where}: a fold line off its form: {line[:50]!r}")
+        elif m.group(2) not in FOLD_NAMES:
+            out.append(f"{where}: a fold line named {m.group(2)!r}")
+    return out
+
+
+def tldr_problems(where, body):
+    """A view's TLDR: one or two bullets right under its title (answer 336 (a)). A bullet moved
+    below Context reads as Context's own, so the view then has no TLDR. Returns the problems."""
+    n = parts(body).count("TLDR")
+    out = [] if n in (1, 2) else [f"{where}: {n} TLDR bullets under the title, not one or two"]
+    for b in tldr_bullets(body):
+        if re.match(r"(?i)^(rec|recommend|suggest)", b):
+            out.append(f"{where}: a TLDR bullet carries the recommendation: {b[:40]!r}")
+        if len(b.split()) > TLDR_WORDS:
+            out.append(f"{where}: a TLDR bullet runs {len(b.split())} words, over {TLDR_WORDS}")
+    return out
+
+
+TLDR_WORDS = 14  # a TLDR bullet is terse: 14 words at most
+
+
+def tldr_bullets(body):
+    """The text of a view's TLDR bullets, the bullets right under its title (and any while it
+    waited line)."""
+    out = []
+    for line in body[1:]:
+        if line.startswith("*While it waited"):
+            continue
+        if not line.startswith("- "):
+            break
+        out.append(line[2:])
+    return out
+
+
+def lazy_problems(where, body):
+    """A bullet, or a line indented under one (its continuation), followed at once by a bold
+    head or a fold line, with no blank line between: in CommonMark the line is read into the
+    bullet (a lazy continuation). Returns the problems."""
+    out = []
+    for a, b in zip(body, body[1:]):
+        if re.match(r"^ *- |^ +\S", a) and b.startswith(("**", "▸ ", "▾ ")):
+            out.append(f"{where}: {b[:30]!r} runs into the bullet above it")
+    return out
+
+
 class Templates(unittest.TestCase):
     """rendering.md's card and block templates run in the page's order."""
 
-    def test_the_card_template_runs_context_what_impact(self):
-        card = fenced(RENDERING.read_text(), "**N — Title as a question?**\n**Context:**")
+    def test_the_card_template_runs_in_the_v5_order(self):
+        card = fenced(RENDERING.read_text(), TLDR_OPENER)
+        self.assertEqual(parts(card),
+                         ["title", "TLDR", "TLDR", "Context", "What", "Finding", "Scope", "Likelihood",
+                          "Likelihood", "Open questions", "Assumptions", "Impact", "options", "options",
+                          "options", "To act on", "Background", "Attached", "Rejected alternatives"])
+        self.assertEqual(order_problems("rendering.md card", card), [])
+        self.assertEqual(lazy_problems("rendering.md card", card), [])
+        # the dependency line's slot is kept and drawn by no card yet (03ab F3 has not landed)
+        self.assertNotIn("depends", parts(card))
+        flat = " ".join(RENDERING.read_text().split())
+        self.assertIn("the dependency line's slot, after the TLDR", flat)
+        self.assertIn("chat puts both after the options", flat)
+        self.assertIn("the page also keeps a Dependencies fold", flat)
+        self.assertNotIn("The one difference from the answer page", flat)
+        self.assertIn("**TLDR:** under the title, one or two terse bullets", flat)
         self.assertEqual(heads(card)[:6], ["Context", "What", "Finding", "Scope", "Likelihood", "Impact"])
         self.assertNotIn("Why now", heads(card))
         self.assertNotIn("Why ask", heads(card))
         self.assertNotIn("cold reader only", "\n".join(card))
 
     def test_the_card_template_folds_background_under_the_options(self):
-        card = fenced(RENDERING.read_text(), "**N — Title as a question?**\n**Context:**")
+        card = fenced(RENDERING.read_text(), "**N — Title as a question?**\n- the TLDR")
         check_bg_line(self, "rendering.md card", card)
 
     def test_the_block_template_runs_context_bullets_what_table(self):
-        block = fenced(RENDERING.read_text(), "**N — Title as a question?** ⚠ one-way")
-        self.assertEqual(heads(block)[:10],
-                         ["Context", "What", "Finding", "Scope", "Likelihood", "Basis", "Impact", "table", "Why now", "Why ask"])
+        block = fenced(RENDERING.read_text(), BLOCK_OPENER)
+        self.assertEqual(heads(block)[:8],
+                         ["Context", "What", "Finding", "Scope", "Likelihood", "Basis", "Impact", "table"])
+        # F10: the card with every fold open, its table and its options' views, the read-back last
+        self.assertEqual(parts(block),
+                         ["title", "TLDR", "TLDR", "Context", "What", "Finding", "Scope", "Likelihood",
+                          "Open questions", "Assumptions", "Impact", "table", "options", "options",
+                          "To act on", "If left", "A round costs", "If unanswered",
+                          "Background", "Attached", "Rejected alternatives", "read-back"])
+        self.assertEqual(order_problems("rendering.md block", block), [])
+        self.assertEqual(lazy_problems("rendering.md block", block), [])
+        self.assertFalse([x for x in block if x.startswith("▸ ")], "a closed fold in the block")
+        self.assertTrue(block[-1].startswith(READ_BACK))
         check_bg_block(self, "rendering.md block", block)
         k = next(i for i, x in enumerate(block) if x.startswith("**Context:**"))
         self.assertTrue(block[k + 1].startswith("- the card's Context"), block[k + 1])
@@ -154,7 +307,7 @@ class Templates(unittest.TestCase):
 
     def test_the_templates_fold_open_questions_above_the_impact(self):
         text = RENDERING.read_text()
-        card = fenced(text, "**N — Title as a question?**\n**Context:**")
+        card = fenced(text, "**N — Title as a question?**\n- the TLDR")
         self.assertEqual(open_question_problems("rendering.md card", card), [])
         self.assertTrue(any(x.startswith("▸ Open questions — ") for x in card))
         block = fenced(text, "**N — Title as a question?** ⚠ one-way")
@@ -167,7 +320,7 @@ class Templates(unittest.TestCase):
 
     def test_the_templates_fold_assumptions_above_the_impact(self):
         text = RENDERING.read_text()
-        card = fenced(text, "**N — Title as a question?**\n**Context:**")
+        card = fenced(text, "**N — Title as a question?**\n- the TLDR")
         self.assertEqual(assume_problems("rendering.md card", card), [])
         block = fenced(text, "**N — Title as a question?** ⚠ one-way")
         self.assertEqual(assume_problems("rendering.md block", block, block=True), [])
@@ -413,6 +566,31 @@ class GalleryContexts(unittest.TestCase):
         self.assertGreaterEqual(kinds.count("card"), 12)
         self.assertGreaterEqual(kinds.count("block"), 2)
 
+    def test_every_card_and_block_runs_in_the_v5_order(self):
+        # F10: every view in the v5 order, reading only the parts it holds (08 § M1); each opens on its TLDR
+        seen = 0
+        for n, kind, body in views(GALLERY):
+            seen += 1
+            self.assertEqual(order_problems(f"gallery.md:{n}", body) + tldr_problems(f"gallery.md:{n}", body), [])
+        self.assertGreaterEqual(seen, 20)
+
+    def test_a_bullet_never_runs_into_the_head_or_fold_line_under_it(self):
+        for n, kind, body in views(GALLERY):
+            self.assertEqual(lazy_problems(f"gallery.md:{n}", body), [])
+
+    def test_the_fold_lines_keep_their_form(self):
+        lines = []
+        for n, kind, body in views(GALLERY):
+            lines += [(f"gallery.md:{n}", x) for x in body if x.startswith(("▸", "▾"))]
+        text = RENDERING.read_text()
+        # (the open Attached example sits in a four-backtick fence, which `fenced` does not read)
+        for opener in (TLDR_OPENER, BLOCK_OPENER, "▾ Assumptions — ", "▾ Rejected alternatives — "):
+            lines += [("rendering.md", x) for x in fenced(text, opener) if x.startswith(("▸", "▾"))]
+        self.assertGreaterEqual(len(lines), 60)
+        for where, x in lines:
+            self.assertRegex(x, FOLD_FORM, where)
+            self.assertIn(FOLD.match(x).group(2), FOLD_NAMES, where)
+
     def test_every_card_and_block_runs_context_what_impact(self):
         # Context above What (the v4 layout, answer 290 (a), F6)
         for n, kind, body in views(GALLERY):
@@ -577,6 +755,67 @@ class Groups(unittest.TestCase):
 
 class Checks(unittest.TestCase):
     """Each check fails on the form it exists to catch, so a clean run means something."""
+
+    V5 = ["**41 — Resume the backup?**", "- whether the paused backup finishes tonight", "",
+          "**Context:** y · z", "**What:** x", "▸ Open questions — 1 open: whether the lease can be extended",
+          "▸ Assumptions — basis: **strong** · 1 assumption with its tripwire", "**Impact:** later: w",
+          "- **(a) Resume**", "  *→ it finishes*", "- (z) Decide later — *it waits*", "",
+          "▸ Background — why now: the lease lapses at five.", "▸ Attached — 1: the lease terms",
+          "▸ Rejected alternatives — 1: buy more storage"]
+
+    def test_the_v5_order_check_catches_each_misplacement(self):
+        v = list(self.V5)
+        self.assertEqual(order_problems("good", v) + tldr_problems("good", v), [])
+        at = {k: next(i for i, x in enumerate(v) if x.startswith(k))
+              for k in ("**Context:**", "**What:**", "▸ Open questions", "▸ Assumptions", "**Impact:**",
+                        "▸ Background", "▸ Attached", "▸ Rejected")}
+
+        def swap(a, b):
+            m = list(v)
+            m[at[a]], m[at[b]] = m[at[b]], m[at[a]]
+            return m
+
+        def move(k, to):  # the line at k, moved to just before the line `to`
+            m = list(v)
+            x = m.pop(at[k])
+            m.insert(m.index(to), x)
+            return m
+
+        mutants = {
+            "Context after What": swap("**Context:**", "**What:**"),
+            "Assumptions after the Impact": swap("▸ Assumptions", "**Impact:**"),
+            "Attached after Rejected": swap("▸ Attached", "▸ Rejected"),
+            "a fold line with no summary": v[:at["▸ Attached"]] + ["▸ Attached"] + v[at["▸ Attached"] + 1:],
+            "a fold line with an empty summary": v[:at["▸ Attached"]] + ["▸ Attached — "] + v[at["▸ Attached"] + 1:],
+            "a fold of another name": v[:at["▸ Attached"]] + ["▸ Notes — 1: a note"] + v[at["▸ Attached"] + 1:],
+            "the TLDR under Context": [v[0]] + v[2:at["**Context:**"] + 1] + [v[1]] + v[at["**Context:**"] + 1:],
+            "three TLDR bullets": v[:2] + [v[1], v[1]] + v[2:],
+            "Background above the options": move("▸ Background", "- **(a) Resume**"),
+            "Open questions under the Impact": move("▸ Open questions", "- **(a) Resume**"),
+        }
+        for name, m in mutants.items():
+            self.assertNotEqual(m, v, name)
+            self.assertTrue(order_problems("mutant", m) + tldr_problems("mutant", m), name)
+
+    def test_a_bullet_running_into_a_head_is_caught(self):
+        v = list(self.V5)
+        self.assertEqual(lazy_problems("good", v), [])
+        self.assertTrue(lazy_problems("mutant", v[:2] + v[3:]))  # no blank line after the TLDR
+        self.assertTrue(lazy_problems("mutant", v[:5] + ["- an item", "▸ Assumptions — basis: **strong**"]))
+        # an option's indented cons line, then a bold head at once
+        self.assertTrue(lazy_problems("mutant", ["- **(a) Resume**", "  *cons: it waits*", "**If left:** x"]))
+        self.assertEqual(lazy_problems("good", ["- **(a) Resume**", "  *cons: it waits*", "", "**If left:** x"]), [])
+
+    def test_a_tldr_bullet_is_terse_and_carries_no_recommendation(self):
+        v = list(self.V5)
+        self.assertEqual(tldr_problems("good", v), [])
+        self.assertEqual(tldr_bullets(v), ["whether the paused backup finishes tonight"])
+        for name, b in {"rec": "- rec (a): resume it now",
+                        "recommend": "- Recommended: resume it now",
+                        "suggest": "- suggest resuming now, before the lease lapses",
+                        "15 words": "- " + " ".join(["word"] * 15)}.items():
+            self.assertTrue(tldr_problems("mutant", [v[0], b] + v[2:]), name)
+        self.assertEqual(tldr_problems("good", [v[0], "- " + " ".join(["word"] * 14)] + v[2:]), [])
 
     CARD = ["**41 — Resume the backup?**", "**Context:** y · z", "**What:** x",
             "▸ Assumptions — basis: **strong** · 1 assumption with its tripwire", "**Impact:** → a",
