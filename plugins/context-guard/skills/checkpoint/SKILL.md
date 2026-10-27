@@ -440,8 +440,9 @@ install is undone, so an earlier manifest is kept as it was. It stamps only a ma
 written in the last 30 minutes, corrects a `session:` copied from the manifest it
 replaced, and leaves one it already stamped as it is (the format spec's machine-fields
 rule has the rest). Anything it will not stamp gets a `not stamped` warning, and a
-`session:` warning names the id it found — fix the file, not the warning, and run it again. Stamping makes a new version of the manifest, so nothing
-may rewrite it after this step.
+`session:` warning names the id it found — fix the file, not the warning, and run it
+again. Stamping makes a new version of the manifest, so nothing may rewrite it after this
+step.
 
 Without this the gate keeps firing and a deferred auto-compaction stays deferred.
 

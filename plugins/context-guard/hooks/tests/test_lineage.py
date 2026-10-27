@@ -2040,10 +2040,33 @@ class TestMarkInstallsTheDraft(Base):
         os.remove(L.ledger_path("S"))
         with open(L.manifest_path("S"), "rb") as fh:
             earlier = fh.read()
+        mtime = os.stat(L.manifest_path("S")).st_mtime_ns
+        time.sleep(0.01)
         writef(self.draft, self.text.replace("session: <stamped>\n",
                                              self.VT_SESSION))
         self.assertReadBackRefused(self.run_cli("--from", self.draft, "S"),
                                    earlier=earlier)
+        self.assertEqual(os.stat(L.manifest_path("S")).st_mtime_ns, mtime)
+
+    def test_a_restored_old_manifest_is_not_re_dated_by_a_later_mark(self):
+        # Kills: the restore not keeping the earlier file's mtime, so a plain
+        # mark after a refused re-install would seal a 2-hour-old manifest
+        # as this checkpoint's.
+        p = L.manifest_path("S")
+        self.run_cli("--from", self.draft, "S")
+        old = time.time() - 2 * 3600
+        os.utime(p, (old, old))
+        before = self.snap(p)
+        writef(self.draft, self.text.replace("session: <stamped>\n",
+                                             self.VT_SESSION))
+        r = self.run_cli("--from", self.draft, "S")
+        self.assertIn("does not read back as stamped", r.stderr)
+        self.assertEqual(self.snap(p), before)
+        # About 120 min; the exact minute is bounded by the run (run_timed).
+        r = run_timed(self, p, lambda: self.run_cli("S"))
+        self.assertIn(f"not stamped: {p} was last written ", r.stderr)
+        self.assertNotIn("stamped /", r.stdout)
+        self.assertEqual(self.snap(p), before)
 
     def test_stamp_only_on_a_vertical_tab_file_writes_nothing(self):
         p = L.manifest_path("S")

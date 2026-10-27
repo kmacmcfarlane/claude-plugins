@@ -639,8 +639,9 @@ def main(argv):
 
 
 def _store_snapshot(sid):
-    """The bytes of this session's own store manifest before an install, or
-    None when there is none that is really ours (own_store_manifest)."""
+    """(bytes, os.stat) of this session's own store manifest before an
+    install, or None when there is none that is really ours
+    (own_store_manifest)."""
     want = this_session(sid)
     if not L._SAFE_SID.fullmatch(want or ""):
         return None
@@ -648,15 +649,18 @@ def _store_snapshot(sid):
     try:
         if os.path.lexists(p) and own_store_manifest(p, want):
             with open(p, "rb") as fh:
-                return fh.read()
+                return fh.read(), os.fstat(fh.fileno())
     except OSError:
         pass
     return None
 
 
-def _restore(target, data):
-    """Put `data` back at `target` atomically: a temp file in its own
-    directory, 0600, os.replace'd in."""
+def _restore(target, prev):
+    """Put a _store_snapshot back at `target` atomically: a temp file in its
+    own directory, 0600, its times set back to the snapshot's (so the stamp
+    window still sees how old it is, as copy_legacy keeps its source's),
+    os.replace'd in."""
+    data, st = prev
     fd, tmp = tempfile.mkstemp(dir=os.path.dirname(target), prefix=".HANDOFF.",
                                suffix=".tmp")
     try:
@@ -665,6 +669,7 @@ def _restore(target, data):
             fh.flush()
             os.fsync(fh.fileno())
         os.chmod(tmp, 0o600)
+        os.utime(tmp, ns=(st.st_atime_ns, st.st_mtime_ns))
         os.replace(tmp, target)
         tmp = None
     finally:
