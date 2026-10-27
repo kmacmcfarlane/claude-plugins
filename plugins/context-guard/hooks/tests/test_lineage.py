@@ -2005,16 +2005,19 @@ class TestMarkInstallsTheDraft(Base):
     # stamp.
     VT_SESSION = "session: x\nnote: a\x0bmode: continue\x0bsession: EVIL\n"
 
-    def assertReadBackRefused(self, r):
-        self.assertEqual(r.returncode, 1, r.stderr)
-        self.assertIn("not installed, so not stamped", r.stderr)
-        self.assertIn("does not read back as stamped", r.stderr)
+    def assertReadBackRefused(self, r, earlier=None):
+        self.assertNotInstalled(r, "does not read back as stamped")
         self.assertNotIn("installed ", r.stdout)
-        self.assertNotIn("stamped /", r.stdout)
-        self.assertIn("checkpoint recorded for epoch 1", r.stdout)  # gate down
-        self.assertEqual(L.load_state("S")["checkpoint_epoch"], 1)
-        self.assertFalse(os.path.lexists(L.manifest_path("S")))
-        self.assertFalse(os.path.lexists(os.path.dirname(L.manifest_path("S"))))
+        self.assertEqual(r.stderr.count("does not read back as stamped"), 1)
+        p = L.manifest_path("S")
+        if earlier is None:
+            self.assertFalse(os.path.lexists(p))
+            self.assertFalse(os.path.lexists(os.path.dirname(p)))
+        else:
+            with open(p, "rb") as fh:
+                self.assertEqual(fh.read(), earlier)
+            self.assertEqual(os.stat(p).st_mode & 0o777, 0o600)
+            self.assertEqual(os.listdir(os.path.dirname(p)), ["HANDOFF.md"])
         self.assertFalse(os.path.exists(L.ledger_path("S")))
 
     def test_a_vertical_tab_session_draft_is_refused_and_removed(self):
@@ -2030,12 +2033,17 @@ class TestMarkInstallsTheDraft(Base):
         writef(self.draft, self.text.replace("repo: demo\n", "repo: demo\x0b---\n"))
         self.assertReadBackRefused(self.run_cli("--from", self.draft, "S"))
 
-    def test_a_refused_read_back_leaves_no_earlier_manifest_either(self):
+    def test_a_refused_read_back_keeps_the_earlier_manifest(self):
+        # Kills: the install not undone (the earlier manifest put back) on a
+        # refused read-back.
         self.run_cli("--from", self.draft, "S")
         os.remove(L.ledger_path("S"))
+        with open(L.manifest_path("S"), "rb") as fh:
+            earlier = fh.read()
         writef(self.draft, self.text.replace("session: <stamped>\n",
                                              self.VT_SESSION))
-        self.assertReadBackRefused(self.run_cli("--from", self.draft, "S"))
+        self.assertReadBackRefused(self.run_cli("--from", self.draft, "S"),
+                                   earlier=earlier)
 
     def test_stamp_only_on_a_vertical_tab_file_writes_nothing(self):
         p = L.manifest_path("S")
@@ -2043,7 +2051,7 @@ class TestMarkInstallsTheDraft(Base):
         writef(p, self.text.replace("session: <stamped>\n", self.VT_SESSION))
         before = self.snap(p)
         r = self.run_cli("S")
-        self.assertEqual(r.returncode, 1, r.stderr)
+        self.assertEqual(r.returncode, 0, r.stderr)
         self.assertIn(f"not stamped: {p}: the stamped frontmatter does not "
                       f"read back as stamped", r.stderr)
         self.assertEqual(self.snap(p), before)
@@ -2051,15 +2059,34 @@ class TestMarkInstallsTheDraft(Base):
 
     def test_a_normal_draft_stamps_byte_for_byte_as_restamp_does(self):
         import mark_checkpoint as M
-        r = self.run_cli("--from", self.draft, "S")
-        self.assertEqual((r.returncode, r.stderr), (0, ""))
-        with open(L.manifest_path("S"), "rb") as fh:
-            got = fh.read()
-        fm = R.front_matter(got.decode())
-        fields = {k: fm[k] for k in ("written", "top", "session", "head", "branch")}
+        for name, text in (("LF", self.text),
+                           ("CRLF", self.text.replace("\n", "\r\n"))):
+            with open(self.draft, "wb") as fh:
+                fh.write(text.encode())
+            r = self.run_cli("--from", self.draft, "S")
+            self.assertEqual((r.returncode, r.stderr), (0, ""), name)
+            with open(L.manifest_path("S"), "rb") as fh:
+                got = fh.read()
+            fm = R.front_matter(R.decode_text(got))
+            fields = {k: fm[k]
+                      for k in ("written", "top", "session", "head", "branch")}
+            with open(self.draft, "rb") as fh:
+                self.assertEqual(M.restamp(fh.read(), fields), got, name)
+            self.assertTrue(M.reads_back(got, fields), name)
+            self.assertEqual(got.count(b"\r\n") > 0, name == "CRLF")
+
+    def test_read_back_decodes_as_the_reader_does(self):
+        # Kills: reads_back decoding on its own rather than through the
+        # reader's decode_text, which read_text (the session-start read)
+        # also uses.
+        import mark_checkpoint as M
+        raw = b"---\nsession: S\n---\n"
         with open(self.draft, "rb") as fh:
-            self.assertEqual(M.restamp(fh.read(), fields), got)
-        self.assertTrue(M.reads_back(got, fields))
+            self.assertEqual(R.read_text(self.draft), R.decode_text(fh.read()))
+        with mock.patch.object(R, "decode_text",
+                               return_value="---\nsession: OTHER\n---\n"):
+            self.assertFalse(M.reads_back(raw, {"session": "S"}))
+        self.assertTrue(M.reads_back(raw, {"session": "S"}))
 
     def test_usage(self):
         for args in (("--from", self.draft), ("--from",), ("--from", self.draft, "-S"),

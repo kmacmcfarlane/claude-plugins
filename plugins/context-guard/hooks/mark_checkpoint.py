@@ -71,12 +71,12 @@ head, branch, top and session, and an mtime within rehydrate.STAMP_TOUCH_S of it
 `written:`) is left as it is, so repeated marks do not re-date it.
 Stamping never fails the checkpoint: every problem is a warning, and the gate
 record (L.mark_checkpoint) is exactly what it would be without a manifest.
-One problem also exits 1 (3d13): a stamp that would not read back as stamped
-(reads_back: the rehydrate reader splits a line, say at a vertical tab, that
+That includes a stamp that would not read back as stamped (reads_back,
+3d13: the rehydrate reader splits a line, say at a vertical tab, that
 restamp keeps whole, so it would see another `session:`, or its frontmatter
-would end before the stamp). Nothing is written; a draft installed by
-`--from` this run is removed again, so the store holds no unstamped copy;
-the gate still stands down.
+would end before the stamp): nothing is stamped, and a draft installed by
+`--from` this run is undone - the store file it replaced is put back byte
+for byte, or, when there was none, the installed copy is removed.
 
 One transitional warning rides on the store path (legacy_copy_warning,
 8cc2-F3b-3): when this session's store manifest was copied from its own
@@ -98,7 +98,7 @@ key rehydrate.py re-injects by, so an id copied from the manifest being
 replaced (the predecessor's, after /clear or a handoff) makes this session's
 own manifest foreign to it and hands its goal to the other session.
 """
-import glob, io, os, re, sys, tempfile, time
+import glob, os, re, sys, tempfile, time
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import lib_context as L
 
@@ -176,15 +176,14 @@ READ_BACK_REFUSAL = ("the stamped frontmatter does not read back as stamped "
 
 def reads_back(new, fields, forbid=()):
     """Whether `new` (restamp's bytes) reads back, the way the rehydrate hook
-    reads a manifest (rehydrate.front_matter over universal-newline text),
+    reads a manifest (rehydrate.front_matter over rehydrate.decode_text),
     with every key in `fields` equal to the value stamped and no key in
     `forbid`. restamp splits lines on bytes and the reader on str, so a line
     break only the reader sees (a vertical tab inside a value) could hand the
     reader a different `session:`, or end its frontmatter before the stamp.
     The one check behind both writers: this mark path and spin_off.py."""
     import rehydrate as R
-    fm = R.front_matter(io.TextIOWrapper(io.BytesIO(new), encoding="utf-8",
-                                         errors="replace").read())
+    fm = R.front_matter(R.decode_text(new))
     return all(fm.get(k) == str(v) for k, v in fields.items()) and \
         not any(k in fm for k in forbid)
 
@@ -442,7 +441,8 @@ def stamp_manifest(sid, cwd=None, environ=None, now=None):
 def _stamp(sid, cwd=None, environ=None, now=None):
     """stamp_manifest's work: (stdout lines, warning lines, read_back), where
     read_back is True only when the stamp was refused because it would not
-    read back as stamped (reads_back) - the one case main exits non-zero for.
+    read back as stamped (reads_back) - the one case in which main undoes
+    the install it made this run.
     Never raises."""
     out, warn = [], []
     try:
@@ -588,8 +588,9 @@ def main(argv):
                  f"check the session id — nothing recorded.")
     # Stamp first, in its own guard: it must precede anything that pins a
     # version, and nothing it does may keep the gate from standing down.
-    installed, refused, target = [], [], None
+    installed, refused, target, prev = [], [], None, None
     if draft is not None:
+        prev = _store_snapshot(sid)
         try:
             target = install_draft(draft, sid)
             installed.append(f"installed {draft} as {target}")
@@ -607,15 +608,18 @@ def main(argv):
     except Exception:
         stamped, warns, read_back = [], [], False
     if read_back and installed:
-        # The stamp would not read back as stamped: take the installed copy
-        # out again, so the store holds no unstamped half of this checkpoint
-        # (a draft that already was the store file is left as it was).
-        if os.path.realpath(draft) != os.path.realpath(target):
+        # The stamp would not read back as stamped: undo the install, so the
+        # store holds what it held before this run - the earlier manifest
+        # put back as it was, or no file when there was none.
+        if prev is not None:
+            _restore(target, prev)
+        else:
             _remove_install(target)
         installed = []
-        warns = [f"mark_checkpoint.py: not installed, so not stamped: "
-                 f"{READ_BACK_REFUSAL}; nothing left in the store. Fix the "
-                 f"draft's frontmatter and run this again."]
+        warns = [w for w in warns if READ_BACK_REFUSAL not in w] + [
+            f"mark_checkpoint.py: not installed, so not stamped: "
+            f"{READ_BACK_REFUSAL}; the store holds what it held before. Fix "
+            f"the draft's frontmatter and run this again."]
     elif installed:
         try:
             # The ledger's pointer to the manifest: the Write that used to
@@ -632,10 +636,43 @@ def main(argv):
         print(s)
     for w in warns + session_warnings(sid):
         print(w, file=sys.stderr)
-    if read_back:
-        # The gate still stands down (a HARD-blocked session must be able to),
-        # but the caller must see that no manifest was stamped.
-        sys.exit(1)
+
+
+def _store_snapshot(sid):
+    """The bytes of this session's own store manifest before an install, or
+    None when there is none that is really ours (own_store_manifest)."""
+    want = this_session(sid)
+    if not L._SAFE_SID.fullmatch(want or ""):
+        return None
+    p = store_manifest_path(want)
+    try:
+        if os.path.lexists(p) and own_store_manifest(p, want):
+            with open(p, "rb") as fh:
+                return fh.read()
+    except OSError:
+        pass
+    return None
+
+
+def _restore(target, data):
+    """Put `data` back at `target` atomically: a temp file in its own
+    directory, 0600, os.replace'd in."""
+    fd, tmp = tempfile.mkstemp(dir=os.path.dirname(target), prefix=".HANDOFF.",
+                               suffix=".tmp")
+    try:
+        with os.fdopen(fd, "wb") as fh:
+            fh.write(data)
+            fh.flush()
+            os.fsync(fh.fileno())
+        os.chmod(tmp, 0o600)
+        os.replace(tmp, target)
+        tmp = None
+    finally:
+        if tmp:
+            try:
+                os.unlink(tmp)
+            except OSError:
+                pass
 
 
 def _remove_install(target):

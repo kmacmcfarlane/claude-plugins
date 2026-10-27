@@ -433,14 +433,14 @@ prints the same path and writes nothing — the format spec's "Where it lives" h
 commands' argv contracts.) A draft that is missing or over 30 minutes old (this
 checkpoint did not write it — rewrite it), or a store path that is not really this
 session's (a link planted there), is refused with `not installed, so not stamped`:
-nothing is written to the store, and the gate still stands down — fix it and run the
-command again. A draft whose frontmatter would not read back as stamped (a vertical tab or
-other line break inside a value) is refused the same way, `does not read back as stamped`,
-with exit 1: the installed copy is removed again. It stamps only a manifest written in
-the last 30 minutes, corrects a `session:` copied from the manifest it replaced, and leaves one it already stamped as it is
-(the format spec's machine-fields rule has the rest). Anything it will not stamp gets a
-`not stamped` warning, and a `session:` warning names the id it found — fix the file, not
-the warning, and run it again. Stamping makes a new version of the manifest, so nothing
+the store is left as it was, and the gate still stands down — fix it and run the command
+again. A draft whose frontmatter would not read back as stamped (a vertical tab or other
+line break inside a value) is refused the same way, `does not read back as stamped`: the
+install is undone, so an earlier manifest is kept as it was. It stamps only a manifest
+written in the last 30 minutes, corrects a `session:` copied from the manifest it
+replaced, and leaves one it already stamped as it is (the format spec's machine-fields
+rule has the rest). Anything it will not stamp gets a `not stamped` warning, and a
+`session:` warning names the id it found — fix the file, not the warning, and run it again. Stamping makes a new version of the manifest, so nothing
 may rewrite it after this step.
 
 Without this the gate keeps firing and a deferred auto-compaction stays deferred.

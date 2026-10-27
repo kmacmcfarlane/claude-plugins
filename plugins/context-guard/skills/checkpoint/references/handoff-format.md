@@ -42,13 +42,14 @@ outside the store.
   minutes ago (the stamp's own window, judged by the draft, since the installed copy is
   always new: a previous checkpoint's draft is never sealed as this one's), when the id is not a plain one, or when the
   store path, the file or its `<sid>/` directory, is a link that resolves anywhere but
-  itself. It refuses the same way, but with exit 1, when the stamped frontmatter would not
-  read back as stamped (`does not read back as stamped`: a vertical tab or other line break
-  inside a value splits a line for the session-start reader that the stamp keeps whole, so
-  the reader would see another `session:`, or its frontmatter would end before the stamp);
-  the installed copy is removed again, so the store holds none of this checkpoint. Without
-  `--from` the same check leaves the file unstamped and exits 1. An installed manifest is
-  recorded in the ledger as `P installed HANDOFF.md -> <path>`. Without `--from` it only stamps (and stands the gate down), as before. Any other
+  itself. It refuses the same way when the stamped frontmatter would not read back as
+  stamped (`does not read back as stamped`: a vertical tab or other line break inside a
+  value splits a line for the session-start reader that the stamp keeps whole, so the
+  reader would see another `session:`, or its frontmatter would end before the stamp): the
+  install is undone, so an earlier manifest of this session is kept byte for byte, and
+  with none the installed copy is removed. An installed manifest is recorded in the ledger
+  as `P installed HANDOFF.md -> <path>`. Without `--from` it only stamps (and stands the
+  gate down), as before, and the same check leaves the file unstamped. Any other
   argument shape, or an id starting with `-`, is a usage error. An empty or blank id (an
   unset `$CLAUDE_CODE_SESSION_ID`) is refused, exit 1, nothing recorded.
 - **`handoff_path.py --path [<session_id>]`** — prints the store path and does nothing
