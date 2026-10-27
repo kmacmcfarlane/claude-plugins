@@ -56,8 +56,10 @@ near the model window is unaffected. The compaction gate never uses the derived 
 auto-compact window: it defers only on the depth it used before the window mirror.
 
 **Automatic compaction waits for a full window.** Claude Code also starts an automatic
-compaction when a session sits idle, at any fill: observed from transcripts on Claude Code
-2.1.292, the idle attempts arrived about 54 minutes after the last turn ended. The
+compaction when a session sits idle, once its context reaches the idle-compaction threshold
+(documented default 200,000 tokens, so by default never on a 200K window:
+https://code.claude.com/docs/en/settings-reference#idlecompaction): observed from transcripts on Claude Code 2.1.292, the idle attempts
+arrived about 54 minutes after the last turn ended. The
 compaction gate defers every automatic attempt while more than the DUE line remains
 (~150K on 1M, 70K on 200K), so an idle session is not compacted at 30% or 80% fill. Before
 a checkpoint this epoch it always does; after one, only while the session is idle at its
@@ -73,11 +75,35 @@ one fails the request in flight. An unknown depth always lets it through. Manual
 to checkpoint, fires only at or under DUE, once per epoch: a deferral above DUE relays
 nothing.
 
+**The gate does not stop every idle compaction.** Once a checkpoint has recorded this epoch
+and DUE or less remains, an idle attempt goes through like any other. That is a fill of
+about 85% or more on 1M (130K left, for example). Idle compaction applies only once the
+context reaches its threshold, documented as 200,000 tokens by default, so by default it does
+not happen on a 200K window (https://code.claude.com/docs/en/settings-reference#idlecompaction). Observed on
+Claude Code 2.1.309 (work item 699d): a session that had checkpointed and then sat idle at
+~870K of 1M was compacted about 54 minutes after its last turn. Claude Code then showed a
+notice that it had compacted while idle, before the prompt cache expired, and that
+`"idleCompaction": false` in settings.json turns this off. If you do not want a session you
+stepped away from compacted at any fill, set that key yourself. The settings reference
+lists it under memory and context: a Boolean, default `true`, settable in any settings
+file (https://code.claude.com/docs/en/settings-reference#idlecompaction). Documented there too: Claude Code ignores the key before v2.1.290,
+where turning `autoCompactEnabled` off is what stops idle compaction, and from v2.1.302
+`/config` has an Idle compaction row that sets it. The middle option, documented on the
+same page, raises the threshold instead of turning idle compaction off:
+`CLAUDE_CODE_IDLE_COMPACT_MIN_TOKENS`, a token count, with values below 100000 raised to
+100000 (https://code.claude.com/docs/en/settings-reference#change-the-idle-compaction-threshold).
+context-guard never writes `settings.json`. The key does not change the gate: any automatic attempt that does
+arrive is still deferred above DUE, and still let through at or under DUE once a checkpoint
+has recorded.
+
 Two caveats. Without any status-line reading for the session, the depth is inferred from
 the transcript, and the window is guessed at 200K until the session passes ~190K. On a 1M
-model DUE and HARD are then measured against 200K: an idle attempt at ~130K–160K is held
-until a checkpoint and let through after one, and one at ~160K–190K is let through with or
-without one. A stale reading still sets the real window. With the `statusline-hub` plugin
+model DUE and HARD are then measured against 200K: an automatic attempt at ~130K–160K is
+held until a checkpoint and let through after one, and one at ~160K–190K is let through with
+or without one. None of these is an idle attempt by default: with the documented default
+idle-compaction threshold of 200,000 tokens, idle compaction does not run at that size
+unless the threshold is lowered
+(https://code.claude.com/docs/en/settings-reference#idlecompaction). A stale reading still sets the real window. With the `statusline-hub` plugin
 recording the status line, the gate measures against the real window. And when the
 auto-compact window is lowered (`/autocompact 900k`), Claude Code's own attempt at that
 window is measured against the model window like any other: at 900K of 1M, 100K remains,
