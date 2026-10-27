@@ -58,7 +58,7 @@
     {
       "format": "decision-card/5",
       "n": 41,
-      "rev": "2026-10-27T09:00:00Z",
+      "rev": "2026-10-27T14:00:00Z",
       "L": "direction",
       "t": "Docs build home",
       "context": "The docs site is built and published from one maintainer's laptop, where a stale cache (a leftover copy of an old build) broke two publishes this month, and clearing it once ([[38]]) held a week. CI is the shared build service that already runs on every merge to `main`.",
@@ -86,6 +86,9 @@
       ],
       "evidence": "Build logs for both failed publishes show the same stale cache directory.",
       "ifunanswered": "I leave the build on the laptop and carry on with other work.",
+      "rejected": [
+        {"t": "Build on a shared office machine", "why": ["it is still one machine whose cache can go stale", "publishing would wait on whoever looks after that machine"]}
+      ],
       "open": [
         "whether anyone publishes from a fork"
       ],

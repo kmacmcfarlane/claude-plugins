@@ -173,8 +173,8 @@ A part a reader may not need opens folded, on one line:
   open it.
 - **Open.** `tell me <name>` (`tell me open questions`) answers with the fold open, and
   `expand` and a block show it open: the line as `▾ <name> — <summary>`, its content under
-  it, one bullet an item (Assumptions' Basis line first, and Background's two labelled lines,
-  below).
+  it, one bullet an item (Assumptions' Basis line first, Background's two labelled lines, and
+  Rejected alternatives' bold title lines, each over its reasons, below).
 - **Empty.** A fold with nothing in it is left out, line and all (none is not shown).
 
 **▸ Open questions** — what is still open about the decision (SKILL.md § The floor, item 9;
@@ -219,6 +219,26 @@ rewritten where the caller stores *why now*, never cut, and the summary is compo
 open, and `expand` and a block show it open: `▾ Background — why now: …`, then **Why now:**
 and **Why ask:** (the class first) on two lines under it. The answer page folds it the same
 way, first of its bottom folds (the `decision-page` skill's `references/cards-schema.md`).
+
+**▸ Rejected alternatives** — the alternatives weighed and not offered, each with why (the
+card record's `rejected`; answer 286 (b), "alternatives with rejection reasons folded under the
+options", and the operator's prototype feedback of 2026-10-22, "a bold line for each item with
+a bullet list instead of sentences"): the last fold on the card, after ▸ Background, on a card
+that weighed any. Its summary is `N: <title>; <title>`, the count and each title, in order:
+`▸ Rejected alternatives — 2: A second payment provider on standby; Take payment on delivery`.
+`tell me rejected` (or `tell me rejected alternatives`) answers with it open, and `expand` and a
+block show it open: under the line, each alternative's title in bold on a line of its own,
+then its reasons, one bullet each. A rejected alternative is never an option: it cannot be
+picked, and an alternative the operator might still want is an option instead. The answer
+page folds it the same way, last of its bottom folds.
+
+```
+▾ Rejected alternatives — 2: A second payment provider on standby; Take payment on delivery
+**A second payment provider on standby**
+- the same contract and fee as (a), for a provider that only waits
+**Take payment on delivery**
+- the shop sells downloads, so there is no delivery to pay on
+```
 
 ## Tag size
 
@@ -321,6 +341,7 @@ how it happens, who meets it and when, the before and after, in one to three sen
 2. …
 
 ▸ Background — why now: the first sentence of why it is up now, about 25 words at most
+▸ Rejected alternatives — 1: an alternative weighed and not offered *(only where one was)*
 ```
 
 - **The order is the page's**: the title, then **Context:**, then **What:** with a set's
@@ -329,7 +350,8 @@ how it happens, who meets it and when, the before and after, in one to three sen
   then the ▸ Open questions line when anything is open, then the
   ▸ Assumptions line (§ Folds), then **Impact:** — and under them the options, any **To act
   on (x):** part, a round ask's **If left:** and **A round costs:**, any **If unanswered:**,
-  then the ▸ Background line (§ Context, § Folds). There is no Rec line.
+  then the ▸ Background line (§ Context, § Folds), and last any ▸ Rejected alternatives line
+  (§ Folds). There is no Rec line.
 - **Title:** the question. A decision raised from one labelled item of a source opens its
   title on the label and its short name: **41 — F7 (oversize upload) · Cap the upload
   size?** (§ Source labels).
@@ -440,6 +462,9 @@ how it happens, who meets it and when, the before and after, in one to three sen
   ask may point at the lines above it: *cap — the finding under If left*. The caller's store
   keeps *why now* and *why ask* as its own fields, as written; the fold shows them, and the
   card carries no separate why line.
+- **▸ Rejected alternatives:** on a card that weighed alternatives it does not offer, the
+  last line, a closed fold after ▸ Background, its summary the count and the titles (§ Folds).
+  Each alternative is a short title and its reasons, one line each; none weighed, no line.
 - **Context, kept.** Write it when the decision is raised, not at the re-show, so it is
   there when the reader has gone cold. When the caller's store keeps the card, it is stored
   with it (§ Context). With no store, keep it with your notes on the decision; with nowhere
@@ -536,6 +561,10 @@ how it happens, who meets it and when, the before and after, in one to three sen
 **Why now:** …
 **Why ask:** *class* — …
 
+▾ Rejected alternatives — 1: an alternative weighed and not offered *(only where one was)*
+**an alternative weighed and not offered**
+- why it was not offered, one bullet a reason
+
 *If you pick (a), I'll repeat it back and act only once you confirm: it can't be undone.*
 ```
 
@@ -560,7 +589,8 @@ how it happens, who meets it and when, the before and after, in one to three sen
 - Under them run a round ask's **If left:** and **A round costs:**, then any **To act
   on (x):** part; then the Background fold stands open, as § Folds places it, first after
   the options and their parts: `▾ Background — why now: …` with its **Why now:** and **Why
-  ask:** lines under it; only the read-back line, on a ⚠ block, follows it.
+  ask:** lines under it; then, last of the folds, any Rejected alternatives fold, open, each
+  title in bold over its reason bullets; only the read-back line, on a ⚠ block, follows them.
 - A block **includes** the basis drill-down (the tags and links), in its open Assumptions
   fold. `expand` on a block is
   answered: *already at full detail — `tell me [what]` for something specific?*
@@ -651,7 +681,8 @@ endpoints. A card that names only their category (*housekeeping*, *the review's 
 does not say what is decided (SKILL.md § The floor, item 1).
 
 - **The items need different answers: a group.** One card per item, each whole: its own
-  number, Context, What, ▸ Assumptions line, Impact, options and ▸ Background line, as any card
+  number, Context, What, ▸ Assumptions line, Impact, options, ▸ Background line and any
+  ▸ Rejected alternatives line, as any card
   (SKILL.md § Critical, each one whole). An item card's Context may be short and lean on
   the heading for shared terms; it still ends on its cue. The cards sit under one heading:
 
@@ -792,7 +823,7 @@ paged (SKILL.md § Levels, the line-only rule), each opening with what changed w
 waited (*nothing changed* is worth saying, and so is *impact unchanged*). Under it the card
 runs **Context:** (its stored Context, ending on where the operator left it), **What:**,
 any **Finding:**, **Scope:** and **Likelihood:**, any ▸ Open questions line, the ▸ Assumptions line, **Impact:**, the options, then the ▸ Background line from its
-stored *why now* (the fold holding its stored *why now* and *why ask*); a block's **Context:** bullets open with the same
+stored *why now* (the fold holding its stored *why now* and *why ask*) and any ▸ Rejected alternatives line; a block's **Context:** bullets open with the same
 Context. A stored card in an earlier form is read, and revised where it lacks a floor field,
 by `references/legacy-cards.md`. A deferred decision whose
 wake has not come is a card too, opening with its wake: *deferred until the release; no

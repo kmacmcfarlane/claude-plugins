@@ -16,8 +16,8 @@
    (only where it is one-way or costly; ⚠ on an option flagged one-way) and cost. Each option but (z) shows its
    one-line Pros and Cons under it, as labelled rows, always visible. A decision raised from
    one labelled item of a source shows its title, then the label and its short name, muted. Inside a card the essentials are flat (TLDR, Context, What, Finding, Scope, Likelihood, Impact, options, follow-ups,
-   words); open questions, the assumptions with the basis and evidence, background and dependencies sit in
-   folds. The data is
+   words); open questions, the assumptions with the basis and evidence, background, dependencies and the
+   rejected alternatives (the last fold: each a bold title, its reasons as bullets) sit in folds. The data is
    decision-page/5: each card a decision-card/5 record (options as objects) plus L and dep. A part with a
    more-detail button, above or inside a fold, steps to more detail on a click (terse bullets)
    and again to full detail (headed sections); each level replaces the part's text, and the next
@@ -278,6 +278,12 @@ ul.asm>li{border-left:2px solid var(--line);padding-left:10px;min-width:0;overfl
 ul.asm .rests{font-weight:600}
 ul.asm .tw{color:var(--muted);font-size:.9em}
 ul.asm .tw em{font-family:var(--f-mono);font-style:normal;font-size:.85em;color:var(--warn);margin-right:.3em}
+/* Rejected alternatives (F2): the last bottom fold, closed; each alternative its title on a bold line, then its
+   reasons as bullets under it */
+ul.rej{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:8px}
+ul.rej>li{min-width:0;overflow-wrap:anywhere}
+ul.rej .rt{margin:0;font-weight:600}
+ul.rej ul{margin:2px 0 0;padding-left:1.2em;display:flex;flex-direction:column;gap:3px}
 /* the Impact: one facet a line, at every level */
 .impline{font-size:.92rem;max-width:70ch;border-left:3px solid var(--accent);padding:6px 12px;background:var(--sunk);border-radius:0 6px 6px 0;display:flex;flex-direction:column;gap:2px;min-width:0}
 .impline .lbl{display:block;margin-bottom:1px}
@@ -315,7 +321,7 @@ footer{color:var(--muted);font-size:.85rem;max-width:70ch}
   <header>
     <h1 id="title">Decision answers</h1>
     <p class="lede" id="lede"></p>
-    <p class="lede">For each decision, pick one option or one follow-up (the radio buttons allow only one), and add your words if you like. Each click saves at once; there is no submit button. Tell Claude in chat when you're done. The map under the progress bar lists the groups; each decision is one line in its group, and a click on the line opens its card (<b>Expand all</b> and <b>Collapse all</b> open or close every card). <b>Use recommendation</b> and <b>Later</b> beside a line answer without opening the card. A <span class="slug-t">number · name</span> is a decision: hover over it or focus it to see it, and click it to open its card; on one not on this page, a tap or click pins what it shows, and a second tap, a tap elsewhere or Escape closes it. Each line shows, after an arrow (→) and its letter, what the recommended option changes in the system the work builds (with no recommendation, each option's, in a few words); each card opens on a TLDR, then its Context (the terms it uses), then its What (what is decided; a set lists every item it acts on, and each item's outcome under each option where they differ), then, on a decision raised from a finding, its Finding (where it lives, how it happens, and its code, shown exactly as written), then, where the work states requirements, its Scope (<i>required</i> by a criterion, <i>shapes the work</i>, or <i>outside the criteria</i>), then, on a decision about a failure that may or may not happen, its Likelihood (how often it happens, <i>observed</i> or from the <i>evidence</i> there is) and its <b>Best response?</b> (whether acting here is the response that matters), then its impact, one facet a line, then one line per option, each but (z) with its <b>Pros</b> and <b>Cons</b> under it; the folds under it go from compressed to full detail. A part with a <i>more detail</i> button, above or inside a fold, shows more detail as short bullets when you click it or its text, and full detail in headed sections on a second click; picking an option opens its view (and closes the card's other one), and <b>More</b> beside an option opens or closes its view alone: its plan in brief, its <b>Pros</b> and <b>Cons</b> side by side, then its own effect, reach, undo and cost. A part with nothing to say (none) is left out. An Impact describes the system the work builds, never the review or the process; its <i>later:</i> line says what waiting holds up. <b>Open questions</b>, folded above the Impact, lists what is not known yet; <b>Assumptions</b>, folded under it, gives the basis of the call, its evidence, and each assumption it rests on with its tripwire, the sign that would change it.<span id="doclink"></span></p>
+    <p class="lede">For each decision, pick one option or one follow-up (the radio buttons allow only one), and add your words if you like. Each click saves at once; there is no submit button. Tell Claude in chat when you're done. The map under the progress bar lists the groups; each decision is one line in its group, and a click on the line opens its card (<b>Expand all</b> and <b>Collapse all</b> open or close every card). <b>Use recommendation</b> and <b>Later</b> beside a line answer without opening the card. A <span class="slug-t">number · name</span> is a decision: hover over it or focus it to see it, and click it to open its card; on one not on this page, a tap or click pins what it shows, and a second tap, a tap elsewhere or Escape closes it. Each line shows, after an arrow (→) and its letter, what the recommended option changes in the system the work builds (with no recommendation, each option's, in a few words); each card opens on a TLDR, then its Context (the terms it uses), then its What (what is decided; a set lists every item it acts on, and each item's outcome under each option where they differ), then, on a decision raised from a finding, its Finding (where it lives, how it happens, and its code, shown exactly as written), then, where the work states requirements, its Scope (<i>required</i> by a criterion, <i>shapes the work</i>, or <i>outside the criteria</i>), then, on a decision about a failure that may or may not happen, its Likelihood (how often it happens, <i>observed</i> or from the <i>evidence</i> there is) and its <b>Best response?</b> (whether acting here is the response that matters), then its impact, one facet a line, then one line per option, each but (z) with its <b>Pros</b> and <b>Cons</b> under it; the folds under it go from compressed to full detail. A part with a <i>more detail</i> button, above or inside a fold, shows more detail as short bullets when you click it or its text, and full detail in headed sections on a second click; picking an option opens its view (and closes the card's other one), and <b>More</b> beside an option opens or closes its view alone: its plan in brief, its <b>Pros</b> and <b>Cons</b> side by side, then its own effect, reach, undo and cost. A part with nothing to say (none) is left out. An Impact describes the system the work builds, never the review or the process; its <i>later:</i> line says what waiting holds up. <b>Open questions</b>, folded above the Impact, lists what is not known yet; <b>Assumptions</b>, folded under it, gives the basis of the call, its evidence, and each assumption it rests on with its tripwire, the sign that would change it. <b>Rejected alternatives</b>, the last fold, lists the choices that were weighed and not offered, each with why.<span id="doclink"></span></p>
     <div class="banner" id="nodb" hidden>This view can't save answers. Nothing you pick here is kept; answer in chat instead (<code id="nodbex">N: a</code>).</div>
     <div class="banner" id="viewonly" hidden>You are viewing these answers. Only the page's owner can answer here.</div>
     <div class="banner" id="nodata" hidden>The decisions didn't load. Reload the page; if it keeps failing, ask Claude for them in chat.</div>
@@ -407,6 +413,19 @@ const assumeFold=(c,P)=>{const as=assumeOf(c);
     +secHtml(c,"rec","Basis",P.rec)+secHtml(c,"ev","Evidence",P.ev)
     +(as.length?'<ul class="asm">'+as.map(a=>'<li><p class="rests">'+fmtD(a.rests)+'</p>'+(shown(a.tw)?'<p class="tw"><em>tripwire:</em>'+fmtD(a.tw)+'</p>':'')+'</li>').join("")+'</ul>':'')
     +'</div></details>'};
+/* Rejected alternatives (F2; 286 (b) and the operator's prototype feedback 2, 2026-10-22): the alternatives weighed
+   and not offered, each {t, why}: its title on a bold line, then its reasons as bullets ("a bold line for each item
+   with a bullet list instead of sentences"). The last of the bottom folds, closed; its summary the count and the
+   titles, "2: <title>; <title>", a slug as its bare number, as Background's summary reads one. An alternative whose
+   title is none is not shown, nor a none reason; with none shown there is no fold. The runner reads the same texts */
+const rejectedOf=c=>Array.isArray(c.rejected)?c.rejected.filter(r=>isObj(r)&&isTxt(r.t)&&shown(r.t)):[];
+const rejWhy=r=>Array.isArray(r.why)?r.why.filter(x=>isTxt(x)&&shown(x)):[];
+const rejSum=c=>{const rs=rejectedOf(c);
+  return rs.length?' <span class="fsum">'+rs.length+': '+rs.map(r=>code(esc(r.t.trim().replace(/\[\[([0-9]+)\]\]/g,"$1")))).join("; ")+'</span>':""};
+const rejectedFold=c=>{const rs=rejectedOf(c);if(!rs.length)return "";
+  return '<details class="pane"><summary>Rejected alternatives'+rejSum(c)+'</summary><div><ul class="rej">'
+    +rs.map(r=>{const ws=rejWhy(r);return '<li><p class="rt">'+fmt(r.t)+'</p>'+(ws.length?'<ul>'+ws.map(x=>'<li>'+fmtD(x)+'</li>').join("")+'</ul>':'')+'</li>'}).join("")
+    +'</ul></div></details>'};
 
 /* what it takes to act on option k (the decisions skill's To act on part): its numbered steps, flat
    under the option, never folded; empty when the option asks nothing of the operator */
@@ -609,6 +628,17 @@ function cardProblems(c,w,keys){
   if(c.best!=null){
     if(!(isStr(c.best)&&!LINE_BREAK.test(c.best)))bad.push(w+": best must be one line of text: whether acting here is the most important response to that failure");
     else if(c.likelihood==null)bad.push(w+": best needs likelihood: Best response? is the second line of the Likelihood part")}
+  /* Rejected alternatives (F2): a list of {t, why}, t one line of text, why one or more reasons, each one line of
+     text; an empty list shows no fold */
+  if(c.rejected!=null){const at=w+": rejected";
+    if(!Array.isArray(c.rejected))bad.push(at+" must be a list of {t, why}: each alternative weighed and not offered, its title and its reasons");
+    else c.rejected.forEach((r,i)=>{const x=at+" "+(i+1);
+      if(!isObj(r)||!isTxt(r.t)){bad.push(x+" needs its title t: each rejected alternative is {t, why}");return}
+      if(LINE_BREAK.test(r.t))bad.push(x+" t must be one line of text: its title, shown on a bold line");
+      if(!Array.isArray(r.why)||!r.why.length)bad.push(x+" why must be a list of one or more reasons, each one line of text: why it was not offered");
+      else{const j=r.why.findIndex(p=>!isTxt(p)),k=r.why.findIndex(p=>isStr(p)&&LINE_BREAK.test(p));
+        if(j>=0)bad.push(x+" why reason "+(j+1)+" is not text: each reason is one line of text");
+        else if(k>=0)bad.push(x+" why reason "+(k+1)+" has a line break: each reason is one line of text, one bullet")}})}
   if(c.assume!=null&&!(Array.isArray(c.assume)&&c.assume.every(a=>isObj(a)&&isTxt(a.rests)&&isTxt(a.tw))))bad.push(w+": assume must be a list of {rests, tw}: each assumption the call rests on and its tripwire, both text");
   /* undo and cost are optional; an effect an older writer left is ignored, never shown */
   if(!isObj(c.impact)||!["wait","reach"].every(k=>isTxt(c.impact[k]))||["undo","cost"].some(k=>k in c.impact&&!isStr(c.impact[k])))
@@ -932,6 +962,7 @@ function cardHtml(c){
     +'<div class="panes">'
     +(bg?'<details class="pane"><summary>Background'+bgSum(c)+'</summary><div>'+bg+'</div></details>':'')
     +(P.dep[0]?'<details class="pane"><summary>Dependencies</summary><div>'+secHtml(c,"dep","Depends on",P.dep)+'</div></details>':'')
+    +rejectedFold(c)
     +'</div></div></details>'+quickHtml(c)+'</div>';
 }
 /* a group's heading (rule 263 on the page): a band with the Group label, its title, a count pill and what its

@@ -19,8 +19,8 @@
                      card in IN is left out of OUT, unchecked.
    --records DIR     also writes DIR/<N>.json per card: the card record, without the page-only L and dep.
 
-   All or nothing: any card it cannot fully map (no q, a field it does not know, an unknown scope level, unequal
-   assumption lists, a writer marker, a newer stamp) stops the run: exit 1, every problem listed with its card,
+   All or nothing: any card it cannot fully map (no q, a field it does not know, an unknown scope level, a rejected list not
+   of {bold, bullets}, unequal assumption lists, a writer marker, a newer stamp) stops the run: exit 1, every problem listed with its card,
    nothing written. On success it prints a line per card (rev kept byte for byte, or new) and every
    value it moved with a note, and exits 0. It reads JSON and writes JSON; it never evaluates content.
    Writes: OUT's directory is made, OUT is written first, then each record; every file goes to a temp name in its
@@ -211,7 +211,14 @@ function fromKit(c, bad, note) {
   }
   if (ev.length) out.evidence = ev;
   if (att.length) out.attached = att;
-  if (Array.isArray(c.rejected)) out.rejected = c.rejected.map(r => ({t: r && r.bold, why: r && r.bullets}));
+  /* rejected alternatives (F2): the kit's [{bold, bullets}] is the record's [{t, why}]; any other shape is refused, so
+     nothing reaches the page that its check would refuse */
+  if ("rejected" in c) {
+    const line = v => isStr(v) && !!v.trim() && !/[\r\n\u0085\u2028\u2029\v\f]/.test(v);
+    const ok = r => isObj(r) && line(r.bold) && Array.isArray(r.bullets) && r.bullets.length > 0 && r.bullets.every(line);
+    if (!Array.isArray(c.rejected) || !c.rejected.every(ok)) bad.push("rejected is not a list of {bold, bullets}, each a title and one or more reasons, each one line of text: nothing maps it");
+    else out.rejected = c.rejected.map(r => ({t: r.bold, why: r.bullets}));
+  }
   /* the options: the name trap (the kit's pros/cons are the one-line texts, prosT/consT the table rows) */
   const act = isObj(c.act) ? c.act : {};
   out.options = [];

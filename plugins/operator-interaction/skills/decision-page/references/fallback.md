@@ -52,7 +52,8 @@ first); this file sets only the layout.
   Reach, Undo and Cost; then **Background**, the first fold
   after the options, a bold line with **Why now:** and **Why ask:** (class first) under it (a
   doc cannot fold, so the fold's content sits there, where the page keeps it closed), then
-  Depends on. That is the card-in-all measure of
+  Depends on, then **Rejected alternatives**, last: each alternative's title on a bold line,
+  its reasons as bullets under it. That is the card-in-all measure of
   `references/cards-schema.md` § Size, with Context at its high. A level in sections shows
   each heading as a bold line, its bullets under it.
 - No ids: items, commits and series by their short names or titles, as on the page
