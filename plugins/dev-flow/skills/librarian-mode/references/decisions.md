@@ -428,6 +428,15 @@ how the librarian raises, revises and reads a record, and what it binds in one.
   remote (its last path part, without `.git`), else its main checkout's directory name —
   in any line of this store that names one (a card's `basis:`, a `wake N:` event, a
   `superseded by`). A bare N, or `decision N`, always means this store's counter.
+- **An answer page's writers:** a page over the writer cap is split among writers by the
+  `decision-page` skill's `references/writers.md`, from a skeleton whose card `L` is the key
+  of its stored group (the group id; the title its name) and whose `dep` is its stored
+  depends set as slugs. When a page is built, a decision a card depends on that is not on
+  the page goes in `refs` when it is answered; an open one is added as a card. Each writer
+  returns `decision-card/5` records, checked in record mode; the librarian stores each, a new
+  decision with `$WI raise <id> --record <file>` and a new revision with `$WI raise <id>
+  --revise N --why '<why>' --record <file>`, then builds `cards.json` from the stored records
+  plus `L`, `dep` and `refs`, as that file's merge says. A writer never writes a store line.
 - **Writer runs:** every answer page built through the `decision-page` skill's writer split
   records each writer's run, to tune the split's card cap, a run of one writer included:
   one column-0 line per writer, appended to the body of the open item whose acceptance asks

@@ -70,7 +70,7 @@ summary, `act`, a tooltip or a slug). `page.doc.url` must start `https://`, or i
 
 | Key | Required | Shape and rule |
 |---|---|---|
-| `L` | yes | a `layers` key |
+| `L` | yes | a `layers` key, from the caller's stored group (the key its id, the title its name, never the id); a card in no group goes in the last layer, key `other`, title *Other decisions*; set by the caller, never by a writer of a split page (`references/writers.md`) |
 | `dep` | no | one line, the dependency line's sentence, each decision a slug: `only if [[41]] is (a) or (c), and after [[47]] is answered, whatever its answer`, from the caller's stored dependency; shown after the TLDR, with no levels; leave it out when there is none |
 
 ## A card

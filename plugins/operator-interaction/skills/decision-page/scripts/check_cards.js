@@ -114,8 +114,9 @@ const unlabel = s => DECLARED.reduce((t, r) => t.replace(r, " "), s);
 const strip = s => unlabel(s).replace(/`[^`]*`/g, " ").replace(/https:\/\/\S+/g, " ").replace(/\[\[[0-9]+\]\]/g, "")
   .replace(new RegExp("(?<!\\b" + ID_NOUN + "\\s+)#[0-9a-fA-F]{3,8}\\b", "gi"), "")
   .replace(/\b\d{4}-\d{2}-\d{2}(T[0-9:.]+Z?)?\b/g, "").replace(/\b\d{1,2}:\d{2}\b/g, "").replace(/\bv?\d+(\.\d+)+\b/g, "");
-/* an id or label a cold reader cannot resolve: a source label (OQ3, G5), a ticket key (KAPPA-3570), a hash or item tag (7c41e0d, 2ff6) */
-const ID_TOKEN = /\b[A-Z]{1,3}[0-9]+[a-z]?\b|\b[A-Z][A-Z0-9]*-[0-9]+\b|\b(?=[0-9a-f]*[0-9])(?=[0-9a-f]*[a-f])[0-9a-f]{4,40}\b/g;
+/* an id or label a cold reader cannot resolve: a source label (OQ3, G5), a ticket key (KAPPA-3570), a hash or item tag (7c41e0d, 2ff6),
+   a stored group id (g-1022-a3f: store-internal, a layer's key at most, never shown; 03ab F4) */
+const ID_TOKEN = /\b[A-Z]{1,3}[0-9]+[a-z]?\b|\b[A-Z][A-Z0-9]*-[0-9]+\b|\b(?=[0-9a-f]*[0-9])(?=[0-9a-f]*[a-f])[0-9a-f]{4,40}\b|\bg-[0-9]{4}-[0-9a-f]{3}\b/g;
 /* a work-item id: kebab-case, three or more segments, a four-hex suffix holding a digit */
 const KEBAB_ID = /\b[a-z0-9]+(?:-[a-z0-9]+){2,}-(?=[0-9a-f]{0,3}[0-9])[0-9a-f]{4}\b/g;
 /* an id after a noun: work item 4151, commit 8ea8a3c, item #4151; a year is not one (item 2026) */
