@@ -2,10 +2,12 @@
 
 The frozen reference for every card written before `decision-card/5` (answer 343 (a)): a page
 card in a `cards.json` with no `decision-page/5` stamp, and the older working shape of the
-answer page (the kit). It holds the reader rules, the map from each older shape to the record
-(`card-record.md`), and the dated reader clauses that left the skills when the record came
-in: the page's, and the chat card's (§ Older stored cards, in chat). Writers never write these
-shapes; they read them, and upgrade on a touch.
+answer page (the kit), and a caller's card stored as indented lines under its headline (a
+`decision N:` block with no `card:` line). It holds the reader rules, the map from each older
+shape to the record (`card-record.md`), and the dated reader clauses that left the skills when
+the record came in: the page's, the chat card's (§ Older stored cards, in chat) and a caller's
+store's (§ Stored card lines). Writers never write these shapes; they read them, and upgrade on
+a touch.
 
 *Frozen:* nothing here changes for a new card format. A rule that changes what a current card
 holds goes in `card-record.md`; a ruling stays in `rulings.md`, the record of what was decided.
@@ -158,6 +160,63 @@ rules.
   reason) shows as the card's ▸ Assumptions line (`rendering.md` § Folds): its basis word the
   summary, its reason inside the fold, and no assumption invented; the recommendation is the
   bold option. A card stored with none of its assumptions shows the basis alone.
+
+## Stored card lines
+
+A caller that kept its card as indented lines under the `decision N:` headline (`raised:`,
+`what:`, `why now:`, `why ask:`, `context:`, `impact:`, the option lines, …) stored a legacy
+card: a block with no `card:` line. It is read as written, by the clauses below, and upgraded
+on its next touch into a record, which the caller stores (its store's `raise --revise N
+--record`). The upgrade is format-only and keeps a `rev`: the block's last `revised:` time,
+else its `raised:`, written to the second (`…T14:05Z` → `…T14:05:00Z`). The record's `t` and
+`tldr`, which no stored lines hold, are written from the card's own lines; drawn from nothing
+outside the card, they keep that `rev`. A fact drawn from outside the card (the item, its
+series, its commits) is new information: a new `rev`.
+
+| Stored line | Record |
+|---|---|
+| the headline `decision N: [<label> (<short name>) · ]<question>[ ⚠ one-way] — options: (a) <title> [recommended] …` | `label {id, name}`, `q`, `oneway`, each option's `title`; `rec` the option `[recommended]` closes; a label after the last option (*your preference — no recommendation*) is `norec`, with `rec` null |
+| `raised:` | `raised`, to the second; a date-only `raised:` is left out, the line kept as written |
+| `revised: <time> — <why>` | the last one is the kept `rev` (above) |
+| `what:` | `what` |
+| `why now:` | `why` |
+| `why ask: <reason> — <text>` | `class` the reason, `whyask` the text |
+| `context: <Context> — then: <facts>` | `context` the part before ` — then: `; the facts after it are a block's bullets, `detail.context`'s medium level; `none` is none |
+| `impact: → <effect> · later: <wait> · reach: <reach> [· ⚠ undo: <undo>]` | `impact {wait, reach, undo}`; the effect is dropped (no card-level effect). An option with no effect of its own takes its clause of the old effect (`(b) …`) |
+| `stakes:` | dropped: the Impact's undo and reach carry it |
+| `if left:`, `round costs:` | `ifleft`, `roundcosts` |
+| `(x) <option> — <effect> [— reach: …] [— ⚠ undo: …] [— cost: …]` | `options[x]`: `text` the option as the line words it, `effect`, `reach`, `undo` with `oneway: true`, `cost` |
+| `(z) decide later — <what waiting costs>` | `options[z].effect` |
+| `to act (x): 1. <step> 2. <step>` | `options[x].act`, one step each; a step's ` / ` is a line break in it |
+| `rec: (x) · basis <word> — <reason>` | `rec`, `basis`, `reason` |
+| `basis: <claims>` | `evidence`, one item a claim |
+| `unknown:` | `open: [unknown]`; none when it says `none` |
+| any other indented line but a machine line (`delegation:`, `terms:`, `act:`, `grant:`) | read as written; a field the record lacks is left out, never invented |
+
+The store's older forms, by era. Each reads as written; a revision for any other reason
+writes the card to the current rules, as a record:
+
+- **A headline stored before the label-first rule**, its label at the end of `what:`
+  (*… (was OQ3 of the decision-lifecycle investigation, 5140)*), is read as written; the upgrade
+  moves that label and its short name into `label`.
+- **A card stored before the reach facet** may carry `who:` in place of `reach:`, read as it.
+- **A card stored before the undo marker** (answer 260, 2026-10-20) may carry a plain `undo:` on
+  every option and on its `impact:` line. It renders as stored; an undo there that says the
+  option cannot be undone, or only at real cost, is read as the marker, the read-back
+  included, and upgrades to that option's `undo` with `oneway: true`. The plain undo of an
+  option reversible at little cost is dropped on the upgrade, which then gives a new `rev`.
+- **An `impact:` line stored before Effect covered the options** (2026-10-14) may give the
+  recommended option's effect alone. In no era is a stored effect shown or carried over.
+- **A `stakes:` line**, from before the `impact:` line replaced it, is kept as written and
+  read for the Impact's reach and undo; the record drops it.
+- **A card stored before `why ask:` existed** carries none, or, once backfilled under the
+  older rules, the one fixed form `why ask: unclassed — not recorded (raised before why ask)`:
+  its `class` is `unclassed`, and a `whyask` of *not recorded* is the fact's absence, left out.
+- **A card stored before the cue existed** has no `context:` line; a `context:` line with no
+  ` — then: ` is the card's Context as it stands, and carries no block facts.
+- **Lines backfilled under the older rules** (`revised: <time> — backfilled`, `revised: <time> —
+  backfilled impact`) read as written, and a facet written `not recorded` is left out of the
+  record.
 
 ## A headline with no card
 

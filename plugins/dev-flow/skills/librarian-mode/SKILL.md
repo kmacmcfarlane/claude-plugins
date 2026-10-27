@@ -116,7 +116,8 @@ For every request, in this order (detail: `references/intake.md`):
    AskUserQuestion: a modal prompt blocks the session against background returns and
    peer messages (opt-in excepted, `references/opt-in.md`). With the
    `operator-interaction:decisions` skill loaded, put each one to the operator per that
-   skill (`references/decisions.md`).
+   skill, and store its card as a card record with `$WI raise <id> --record`
+   (`references/decisions.md` § What the store records).
    Never in the same turn as a heavy analysis: end with it, ask next turn.
 
 4. **Refuse what is out of scope.** Anything outside Scope (Exclude included), pushing

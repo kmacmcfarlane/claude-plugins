@@ -314,7 +314,9 @@ line:
 
 ## Raised: `why ask:` and the reason
 
-Every decision the librarian raises carries, in its stored card, directly under `why now:`:
+Every decision the librarian raises carries, in its card record, the reason as its `class`
+and the text as its `whyask` (`decisions.md` § What the store records), shown as the card's
+*why ask* line, directly under *why now*:
 
 ```
   why ask: <reason> — <what would go wrong if the librarian took its recommendation alone>
@@ -326,8 +328,8 @@ impact the options differ on (§ What makes a trade-off real), so the card carri
 § The line's order is the tag, and the others may be named in the text
 (`why ask: one-way — and reach: …`). A `trade-off` names in plain words what its options
 differ on, and its text never opens with a single word and a colon (that shape is retired:
-§ Retired spellings). It is one physical line, indented like every card line (`decisions.md`
-§ What the store records), and split by `^\s+why ask: ([a-z-]+) — (.*)$`. The reason is
+§ Retired spellings). The text is one line; a legacy card stored it as one physical line,
+indented like every card line, split by `^\s+why ask: ([a-z-]+) — (.*)$`. The reason is
 picked at birth, when the decision is raised, never assigned later.
 
 **A relay.** A rule or answer relayed from another session or repo takes the reason that fits
@@ -336,12 +338,9 @@ it, and its text opens with the marker `relayed from <repo>: `
 confirm (`ok N-M`) only when its tag is `precedent` and the card is not ⚠; a relay under any
 other reason is a card like any other. Batching reads the marker and the tag together.
 
-A card stored before `why ask:` existed is backfilled on its next re-show (`decisions.md`
-§ What the store records) in one fixed form, which keeps the grammar:
-
-```
-  why ask: unclassed — not recorded (raised before why ask)
-```
+A legacy card with no *why ask*, or with the backfill form an older rule wrote for one, is
+read and upgraded by the decisions skill's legacy reference (`decisions.md` § What the store
+records, **A legacy card**): its `class` is `unclassed`.
 
 Without the decisions skill, the headline stays as `report.md` § The counter gives it, and the
 `why ask:` line still goes under it.
