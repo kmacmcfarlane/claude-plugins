@@ -52,6 +52,69 @@ outside the store.
   other shape prints a usage line and exits 1, and with no id at all (none passed, the
   variable unset) it exits 1 naming that.
 
+## Spin-off manifests
+
+A spin-off is a new session that starts from a compacted, topic-scoped handoff of this
+one while this session goes on. Its manifest is written by this session, before the new
+one exists, with `python3 "${CLAUDE_PLUGIN_ROOT}/hooks/spin_off.py" --from <draft> --topic
+<topic> [--name <name>] [--launch-dir <dir>] [--librarian <name>] [--prompt-file <file>]
+[--no-session-id]`. It is never a checkpoint of this session: it records no checkpoint,
+leaves this session's own manifest and gate state as they were, and adds one ledger line,
+`P spin-off <name> (<child>) -> <path>`.
+
+- **Address.** The writer generates a fresh UUID v4, the child id, and installs the draft
+  at `${CLAUDE_CONFIG_DIR:-~/.claude}/claude-kit/handoff/<child>/HANDOFF.md`, the store path
+  of a session that does not exist yet. The install is the mark step's (the same refusals:
+  missing, unreadable, over 256 KB, last written over 30 minutes ago; the same `0700`
+  directory, `0600` file, temp file and atomic replace), and an existing `<child>/` in any
+  form, a link included, is refused with nothing written.
+- **Fields.** `session:` the child, `spun_from:` this session's id, `mode: handoff`,
+  `by: spin-off`, and `written`, `head`, `branch` and `top` stamped from the launch
+  directory, the one the launch line `cd`s into (where the new session works), not from this
+  session's working directory. A draft with a `mode_skill:` is refused: a spin-off has no
+  standing mode. The writer adds three short HOLD lines after the holds the draft carries
+  (a lone `None` there goes), so the header tiers' hold limit never crowds out a carried
+  hold: no librarian mode and no bare `<repo>` session name, no merging to `main` or
+  pushing (finished branches go to the librarian), and no writing items another session
+  holds. The stamped frontmatter is read back the way the rehydrate hook reads it, and a
+  manifest whose stamped fields read differently, or that gains a `mode_skill:`, is
+  refused and removed. The topic's task goes in Goal and Doing; Next holds only first actions.
+- **Topic.** Checked on the raw argument, before anything is stripped, against
+  `^[A-Za-z0-9][A-Za-z0-9 ._-]{0,39}$`, since it sits in the session name
+  `<repo> - <topic>`. The name, the librarian's name and the prompt lose control
+  characters, Unicode format characters (bidi controls included) and line breaks before
+  they reach the line; then the name and the librarian's name must match
+  `^[A-Za-z0-9][A-Za-z0-9 ._-]{0,79}$`, the repo name `^[A-Za-z0-9._-]+$`, and the launch
+  directory and repo toplevel may hold no control, format or line-break character, or the
+  run is refused with nothing written.
+- **Ownership by path.** The new session is launched with `--session-id <child>` (a
+  documented flag, https://code.claude.com/docs/en/cli-reference), so the file is its
+  own manifest by path, and every rule above for an owned manifest applies unchanged.
+  Whether claude-sandbox passes the flag through and the new session then starts under
+  that id has not been checked live yet; until it is, `--no-session-id` leaves the flag out
+  of the line.
+- **The adoption fallback.** The line's opening prompt tells the new session to Read the
+  file in full first. When it starts under another id, that whole-file Read adopts the
+  manifest (it is `mode: handoff` with `session:` set), and its holds arrive with that Read
+  instead of at startup. One file serves both paths.
+- **Only the spin-off reads it.** A whole-file Read by any other session, the `spun_from`
+  session included, adopts it as that session's memory, and it would be re-injected there
+  after a compaction when that session has no manifest of its own. Look with `cat` if you
+  must.
+- **The record.** `${CLAUDE_CONFIG_DIR:-~/.claude}/claude-kit/spin-off/<child>.json`
+  (`0700` directory, `0600` file, temp file and atomic replace) holds `v`, `session_id`,
+  `name`, `topic`, `spun_from`, `parent_name`, `librarian`, `top`, `repo`, `created` and
+  `manifest`. `parent_name` is this session's name from its own registry entry (keys
+  observed in the session registry, Claude Code 2.1.292; not documented), read only when
+  that entry's `sessionId` is this session's, else `null`. The record is what other
+  sessions read to know a session is a spin-off; the manifest is not, since the spin-off's
+  own first checkpoint rewrites it. Each write prunes records over 14 days old: regular `*.json`
+  files only, never through a link.
+- **The launch line,** printed last and alone on its line, every value single-quoted:
+  `cd '<launch dir>' && claude-sandbox --new -- --session-id '<child>' --name '<name>'
+  '<opener>'` when `CLAUDE_SANDBOX_PROJECT_DIR` is set, else `cd '<launch dir>' && claude
+  --session-id '<child>' --name '<name>' '<opener>'`. It never carries `--dangerous`.
+
 ## Format
 
 ```markdown

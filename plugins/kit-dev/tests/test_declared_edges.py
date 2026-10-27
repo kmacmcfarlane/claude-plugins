@@ -48,7 +48,8 @@ CLIS = {"work-items": ["wi"]}
 OWNED_PATHS = {
     "statusline-hub": ["statusline-hub/hooks.d", "statusline-hub/segments", "statusline/sensor"],
     "statusline": ["statusline/sensor"],
-    "context-guard": ["claude-kit/context-gate", "claude-kit/ledger", "claude-kit/handoff"],
+    "context-guard": ["claude-kit/context-gate", "claude-kit/ledger", "claude-kit/handoff",
+                      "claude-kit/spin-off"],
     "dev-flow": ["claude-kit/librarian"],
 }
 

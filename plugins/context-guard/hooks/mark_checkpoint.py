@@ -99,7 +99,8 @@ import lib_context as L
 STAMP_WINDOW_S = 30 * 60
 WRITE_BUDGET = 6000
 STAMP_KEYS = ("written", "head", "branch", "top", "session")
-_KEY_LINE = re.compile(rb"(written|head|branch|top|session)[ \t]*:")
+# Any top-level frontmatter key; restamp rewrites only the keys it is given.
+_KEY_LINE = re.compile(rb"([A-Za-z_][A-Za-z0-9_]*)[ \t]*:")
 
 
 def this_session(sid, environ=None):
@@ -135,7 +136,9 @@ def restamp(raw, fields):
     """`raw` (bytes) with each frontmatter line `key: ...` for a key in
     `fields` replaced by `key: value`, and any key not present added before
     the closing `---`; every other byte unchanged (line endings kept). None
-    when there is no frontmatter (same delimiters as rehydrate.front_matter)."""
+    when there is no frontmatter (same delimiters as rehydrate.front_matter).
+    Added keys go in STAMP_KEYS order, then any other key in `fields` order
+    (the spin-off writer's `spun_from`, `mode` and `by`, spin_off.py)."""
     lines = raw.splitlines(keepends=True)
     if not lines or lines[0].strip() != b"---":
         return None
@@ -154,8 +157,10 @@ def restamp(raw, fields):
             seen.add(key)
         else:
             out.append(ln)
+    order = [k for k in STAMP_KEYS if k in fields] + \
+        [k for k in fields if k not in STAMP_KEYS]
     out += [f"{k}: {fields[k]}".encode() + first_eol
-            for k in STAMP_KEYS if k in fields and k not in seen]
+            for k in order if k not in seen]
     return b"".join(out + lines[close:])
 
 
@@ -226,7 +231,7 @@ class InstallRefused(Exception):
     """A draft that was not installed; the message says why."""
 
 
-def install_draft(draft, sid, environ=None, now=None):
+def install_draft(draft, sid, environ=None, now=None, fresh=False):
     """Copy the manifest drafted at `draft` to this session's own store path,
     L.manifest_path(this_session(sid, environ)), and return that path. Raises
     InstallRefused, having written nothing to the store, when the draft is
@@ -239,7 +244,13 @@ def install_draft(draft, sid, environ=None, now=None):
     planted there resolves out of place and is refused, never written
     through. The store directories are created 0700; the file is written to a
     temp file in its own directory and os.replace'd in, 0600. The draft is
-    only read."""
+    only read.
+
+    With fresh=True (the spin-off writer, spin_off.py, installing for a
+    session that does not exist yet) the <sid>/ directory must not exist in
+    any form - a directory, a file or a link, dangling or not - and is made
+    here with one exclusive mkdir, so nothing already in the store is ever
+    written through or into."""
     want = this_session(sid, environ)
     if not L._SAFE_SID.fullmatch(want or ""):
         raise InstallRefused("the session id is not a plain id")
@@ -265,8 +276,16 @@ def install_draft(draft, sid, environ=None, now=None):
     home = os.path.join(root, L.safe_sid(want))
     try:
         os.makedirs(root, mode=0o700, exist_ok=True)
-        if not os.path.lexists(os.path.dirname(target)):
+        if fresh:
+            try:
+                os.mkdir(os.path.dirname(target), 0o700)
+            except FileExistsError:
+                raise InstallRefused(f"{os.path.dirname(target)} already "
+                                     f"exists; nothing written")
+        elif not os.path.lexists(os.path.dirname(target)):
             os.mkdir(os.path.dirname(target), 0o700)
+    except InstallRefused:
+        raise
     except OSError as e:
         raise InstallRefused(f"the store directory for {target} could not be "
                              f"created ({type(e).__name__})")
