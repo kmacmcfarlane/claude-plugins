@@ -251,6 +251,14 @@ how the librarian raises, revises and reads a record, and what it binds in one.
     `depends N:` line; the card is never rewritten for a line.
   - **The id is never shown to the operator**, in chat or on a page: the group goes by its
     plain name. Store lines and briefs carry it.
+  - **Shown from the JSON view.** When a decision is shown, its group and its dependency come
+    from `$WI needs-input --json`: its `group` key orders the chat block and is the page's
+    layer, by `name`, `shares` and `context`, never `id`; its `depends` targets
+    (`{n, repo, letter}`) are the chat card's and block's dependency line and a page card's
+    `dep`, written in the `decisions` skill's form (`references/rendering.md` § Card, its
+    dependency line) and, on a page, with each decision a slug (the `decision-page` skill's
+    `references/cards-schema.md` § A page card). A target that resolves through a
+    `closed N: superseded by M` line is shown as M, and an open target is shown in the same set.
   - **Back-fill is lazy.** When this session next shows an open decision that has no member
     line (at card, block or page level, when it writes `shown N:`), revises one, or raises a
     new decision in its item, it writes in the same store commit: member lines for **every**

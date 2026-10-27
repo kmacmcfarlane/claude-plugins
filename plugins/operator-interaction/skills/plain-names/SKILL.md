@@ -41,6 +41,8 @@ name**: what it is, in about 3–6 words, the way the operator would say it. The
   - prefer the operator's own words for the thing;
   - put no id or tag inside it;
   - coin no new code word (no "W4", no "F2c") unless the operator already uses it.
+- **A group of decisions has no tag.** Its id (`g-1022-a3f`) is store-internal and never shown
+  to the operator: the group goes by its plain name alone.
 - **Mentioning a thing never writes its name into the tracker.** A stored name is set by
   whoever files the thing, or later by its owner.
 - **Keep one name per thing** for as long as the operator sees it: a session, or a run of

@@ -71,7 +71,7 @@ summary, `act`, a tooltip or a slug). `page.doc.url` must start `https://`, or i
 | Key | Required | Shape and rule |
 |---|---|---|
 | `L` | yes | a `layers` key |
-| `dep` | no | usually slugs with the answer that matters (`[[41]] (b)`); leave it out when there is none |
+| `dep` | no | one line, the dependency line's sentence, each decision a slug: `only if [[41]] is (a) or (c), and after [[47]] is answered, whatever its answer`, from the caller's stored dependency; shown after the TLDR, with no levels; leave it out when there is none |
 
 ## A card
 
@@ -208,7 +208,7 @@ material.
 ## Levels and their shapes
 
 `detail` holds `[medium, high]` per part: `context`, `impact`, `tldr`, `rec`, `why`,
-`whyask`, `dep`, `evidence`; an option's levels are its own `detail`. A bullet is `"text"` or
+`whyask`, `evidence`; an option's levels are its own `detail`. A bullet is `"text"` or
 `{"t": "text", "sub": ["text"]}`; a section is `{"h": "heading", "b": [bullets]}`. `impact`
 levels are facet objects, `{wait, reach, undo, cost}`: `{"wait": bullet, …}` at medium,
 `{"wait": [bullets], …}` at high.

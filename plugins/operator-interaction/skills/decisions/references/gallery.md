@@ -343,8 +343,33 @@ line (no effect), options, their impacts, the label, and no recommendation.
 ▸ Background — why now: the listing page loads in about 2 seconds, and the performance review is next week.
 ▸ Rejected alternatives — 1: Move the listing to a faster database
 
-*Not this: numbering it 79b, which reads as option (b) of 79. A new decision takes the next
-plain number; a follow-up that hangs on 81 says so in words ("only if 81 is (a)").*
+*A follow-up that hangs on 81 takes the next plain number, 82, and says so on its dependency
+line, second, after its TLDR, read from the stored `depends 82: 81 (a)`; 81 is shown in the
+same set, before it:*
+
+**82 — Index the listing's sort column too?**
+- whether the column the listing sorts by gets its own index
+- sorted listings stay slow without one
+
+*depends: only if 81 (cache or fix the query) is (a)*
+**Context:** the sort column is the field the listing page orders products by; an index on it lets the database read them already in order. You left it at whether to fix the slow query first (81) · you decide whether that fix covers sorting too.
+**What:** add a second index, on the column the product listing sorts by, as part of fixing the query.
+▸ Assumptions — basis: **partial** · 1 assumption with its tripwire
+**Impact:** later: sorted listings stay slow · reach: the listing page and its readers
+- **(a) Add it**
+  *→ the database reads the listed products in sort order from the index, with no sort step · cost: about an hour*
+  *pros: sorted listings load as fast as unsorted ones*
+  *cons: each product write updates one more index*
+- (b) Leave it
+  *→ the database sorts the listed products on every read*
+  *pros: no extra index to keep up to date*
+  *cons: sorted listings stay slower than the rest*
+- (z) Decide later — *it waits; sorted listings stay slow*
+
+▸ Background — why now: fixing the query is the moment to add it, if 81 goes that way.
+
+*Not this: numbering it 81b, which reads as option (b) of 81, or putting the condition on the
+title line: a new decision takes the next plain number, and its dependency is its own line.*
 
 ---
 

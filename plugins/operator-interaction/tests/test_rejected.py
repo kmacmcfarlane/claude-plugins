@@ -94,10 +94,10 @@ class RejectedPage(unittest.TestCase):
                     out.append("%d: above the answer" % n)
             return out
         self.assertEqual(problems(), [])
-        # card 42 has Dependencies too: Background, Dependencies, then Rejected alternatives
+        # card 42 depends on 41, which is its line after the TLDR, never a fold: Background, then Rejected alternatives
         d = example()
         card(d, 42)["rejected"] = [{"t": "Keep both addresses", "why": ["two copies of every page to keep"]}]
-        self.assertEqual(panes(one(d)["cards"]["42"]["card"]), ["Background", "Dependencies", "Rejected alternatives"])
+        self.assertEqual(panes(one(d)["cards"]["42"]["card"]), ["Background", "Rejected alternatives"])
         # mutants: before Background; open
         moved = mutant_page("    +rejectedFold(c)\n", "").replace(
             "+'<div class=\"panes\">'", "+'<div class=\"panes\">'+rejectedFold(c)", 1)

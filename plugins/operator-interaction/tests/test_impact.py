@@ -425,6 +425,8 @@ class GalleryShowsImpact(unittest.TestCase):
                         in_context = had_context = True
                     elif not had_context and x.startswith("- "):
                         pass  # the TLDR, one or two bullets under the title
+                    elif not had_context and x.startswith("*depends: "):
+                        pass  # the dependency line, after the TLDR (03ab F3)
                     elif x.startswith(("▸ ", "▾ ")):
                         in_context = True  # a fold above the Impact, and an open fold's bullets
                     elif in_context and x.startswith(("- ", "  - ")):

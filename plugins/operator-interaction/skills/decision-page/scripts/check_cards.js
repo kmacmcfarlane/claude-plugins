@@ -248,9 +248,10 @@ const TERSE = 14, SUB_CAP = 2, MEDIUM_CAP = 6;
    lint and the closed fold measure the same text */
 const BGSUM_CAP = 25;
 const LEVEL = ["summary", "medium", "high"], DETAIL_NAME = ["more detail", "full detail"];
-/* the parts a card shows, by their detail key; the first four are always visible */
+/* the parts a card shows, by their detail key; the first four are always visible. The dependency line (dep) is
+   static, with no levels (03ab F3), so it is no part here: an older card's detail.dep lints key */
 const PART = {context: "Context", impact: "the Impact line", tldr: "the TLDR", rec: "the basis line",
-  why: "Why now", whyask: "Why ask", dep: "Depends on", evidence: "the Evidence"};
+  why: "Why now", whyask: "Why ask", evidence: "the Evidence"};
 const levelsOf = (c, k) => c.detail && typeof c.detail === "object" && Array.isArray(c.detail[k]) ? c.detail[k] : [];
 const optLevels = o => Array.isArray(o.detail) ? o.detail : [];
 /* an option's prose, the summary its levels step from: its plan in brief (F5), or, on an older option with none,
@@ -275,7 +276,7 @@ function shapes(c, say) {
   /* a fold part's summary, where the part carries levels (a part with none is a small call's whole text) */
   const fold = (name, key, sum, ls) => { if (ls.length && sum != null && sentences(textsOf(sum).join(" ")) > 2)
     sh("sum " + key, name + "'s summary is " + sentences(textsOf(sum).join(" ")) + " sentences: keep it to one or two; its levels carry the rest"); };
-  for (const k of ["why", "whyask", "dep", "evidence"]) fold(PART[k], k, c[k], levelsOf(c, k));
+  for (const k of ["why", "whyask", "evidence"]) fold(PART[k], k, c[k], levelsOf(c, k));
   /* an older option's text; a plan in brief is 2-4 sentences by design, and the plan lint sizes it */
   for (const o of opts(c)) if (!page.planOf(o)) fold("(" + o.k + ")'s text", "o" + o.k, o.text, optLevels(o));
   /* medium, terse bullets with a sub-bullet or two; high, headed sections */
@@ -289,7 +290,7 @@ function shapes(c, say) {
       sub.forEach((x, j) => terse(name + " more detail bullet " + (i + 1) + "." + (j + 1), x)); });
   };
   const high = (name, h) => { if (!isSecs(h)) sh(name + " h", name + " full detail is not in sections: give full detail as headed sections with bullets"); };
-  for (const k of ["context", "tldr", "rec", "why", "whyask", "dep", "evidence"]) {
+  for (const k of ["context", "tldr", "rec", "why", "whyask", "evidence"]) {
     const ls = levelsOf(c, k);
     if (ls[0] != null) medium(PART[k], ls[0]);
     if (ls[1] != null) high(PART[k], ls[1]);
@@ -419,7 +420,7 @@ const topOf = (sum, ls) => ls.length ? ls[ls.length - 1] : sum;
 function depth(c, say) {
   const imp = c.impact;
   const summary = {context: c.context, impact: IMP.map(k => imp[k]), tldr: c.tldr,
-    rec: [c.reason], why: c.why, whyask: c.whyask, dep: c.dep, evidence: c.evidence};
+    rec: [c.reason], why: c.why, whyask: c.whyask, evidence: c.evidence};
   /* a level replaces the one below it, so it says more */
   const grow = (name, key, sum, ls) => { const ws = [words(sum), ...ls.map(words)];
     for (let i = 1; i < ws.length; i++) if (ws[i] <= ws[i - 1])

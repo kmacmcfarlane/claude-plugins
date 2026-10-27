@@ -522,3 +522,24 @@ alternative not taken, in case practice argues for it.
   older stored card (no `format`) with no TLDR shows none, and gains one when next revised;
   the record's `tldr` is the writer's to fill (designs made in build). Not taken: (b) chat
   opening on its title alone; (c) a TLDR on a block only.
+- **Groups and dependencies, stored; writers by group** (2026-10-21, the operator's request,
+  as the librarian recorded it on item 03ab: card writers get whole groups, and dependent
+  decisions go with what they depend on, read from the stored decision data; the line's place
+  set by the v4 layout, signed off with answer 313, and after the TLDR by answer 336 (a)) —
+  chat and the answer page read the group and the dependency the caller stores (a librarian's
+  group lines and `depends N:` lines) instead of working them out each time. A stored group
+  orders the chat block and is the page's layer, by its plain name; its id is store-internal
+  and never shown on either surface. A dependent decision's dependency is its own line, second
+  on the card, after the TLDR, on the chat card, the block and the page card: *depends: only if
+  41 (name) is (a) or (c), and after 47 (name) is answered, whatever its answer*; the title line
+  stays bare. On the page a decision the line names that is on the page is a link that opens
+  its card, with its tooltip, and the Dependencies fold is gone; the card's row never showed the
+  dependency (page parity). Designs made in planning and build, not the operator's: the page's
+  `dep` written at page time from the stored lines in the line's sentence form, with slugs,
+  never in the card record; an on-page target drawn *N (name)*, the line's one exception to
+  *N · short name*, and a decision in `refs` keeping its slug and tooltip; a target in another
+  repo named with its repo, in words; no line for a none `dep`; a `dep` that is not one line of
+  text refused, and an older `detail.dep` ignored and linted `key`. The writers' split by group
+  and the order inside a group are this request's page and order halves, planned beside it.
+  Not taken: groups worked out at render time from the item and dependencies in prose only; the
+  condition on the title line, which the template openers could not take; the Dependencies fold.

@@ -52,8 +52,9 @@ out → read it cold (`references/worksheet.md` § The cold read) before it goes
 - **Keep the caller's numbering** when it has a counter; otherwise number from 1 in this
   session. Never reuse a number. Every decision, sub-decisions and follow-up decisions included,
   takes its own plain integer: never `8b` or `8.1`, since `8b` reads as option (b) of 8, as in
-  `72: a`; option letters stay the only lettered thing, and a dependent follow-up says so in
-  words (*only if 9 is (a)*).
+  `72: a`; option letters stay the only lettered thing, and a dependent follow-up says so on its
+  dependency line, second on its card, read from the caller's stored dependency where it
+  keeps one (*depends: only if 9 (name) is (a)*).
 - **Scale the card to the decision.** A small call gets a short card; stakes buy detail.
 
 ## The floor
@@ -187,8 +188,10 @@ Smallest to largest, each showing more of the impact in facet order (templates i
   any deadline; a round ask, its justification; a line-only decision, its
   why ask.
 - **Card** — in the answer page's order (the v5 order): the title; then the TLDR, one or two
-  terse bullets saying what is decided and what rides on it, never the recommendation; then
-  the dependency line's slot (no card draws it yet); then **Context:**, then **What:** (what
+  terse bullets saying what is decided and what rides on it, never the recommendation; then,
+  on a decision that waits on another's answer, its dependency line, `*depends: only if 41
+  (name) is (a) or (c), and after 47 (name) is answered, whatever its answer*`, read from the
+  caller's stored dependency where it keeps one; then **Context:**, then **What:** (what
   is decided, and a set's items one bullet each), then, on a decision raised from a finding,
   **Finding:** (its label and short name, its title, where it lives, how it happens, and its
   excerpt in a fenced block), then, where the work states requirements, **Scope:** (*required*
@@ -200,8 +203,8 @@ Smallest to largest, each showing more of the impact in facet order (templates i
   an italic line under it and its `*pros: …*` and `*cons: …*` lines under that, and decide
   later; then any **To act on (x):** part, a round ask's justification and any **If
   unanswered:** line (the page puts these round lines above its options, and each To act
-  on under its own option; chat puts both after the options; the page also keeps a
-  Dependencies fold until stored dependencies land); then the ▸ Background fold line (why now and
+  on under its own option; chat puts both after the options; on the page a decision the
+  dependency line names that is on the page opens its card on a click); then the ▸ Background fold line (why now and
   why ask), then, on a card whose decision rests on material it can only name, the
   ▸ Attached fold line (their count and titles), and last, on a card that weighed
   alternatives it does not offer, the ▸ Rejected alternatives fold line (their count and
@@ -211,8 +214,8 @@ Smallest to largest, each showing more of the impact in facet order (templates i
   you left it · what you decide now). It is written for every decision when it is raised,
   stored with the card where the caller keeps one, and shown every time the card is shown,
   warm reader or cold (`references/rendering.md` § Context).
-- **Block** — the card with every fold open (▾), in the card's order: the title, the TLDR,
-  then **Context:** at the page's medium size, a bullet list that adds the context the reader
+- **Block** — the card with every fold open (▾), in the card's order: the title, the TLDR, the
+  dependency line when there is one, then **Context:** at the page's medium size, a bullet list that adds the context the reader
   may have lost; What, Finding, Scope and Likelihood as on a card; the Open questions fold
   open, then the Assumptions fold open with its basis drill-down and evidence links; the
   Impact line, followed by a table (a row per option, its effect, reach, undo and cost, plus
@@ -247,7 +250,9 @@ option with no undo shown is reversible at little cost.
 ## Order
 
 Related decisions (same repo, same topic) form a **group**, kept together to spare the
-operator context switches; a lone decision is a group of one. A **bundle** whose items need
+operator context switches; a lone decision is a group of one. A group the caller stores is the
+group, and related decisions are the rule only where it stores none; a stored group goes by
+its plain name, its id never shown (`references/rendering.md` § A bundle as a group). A **bundle** whose items need
 different answers is a group of whole item cards (`references/rendering.md` § A bundle as a
 group); when one answer fits every item, it stays one card. Groups go in this order, each
 placed by its most pressing member, and the same precedence holds inside a group:

@@ -3,7 +3,7 @@
 Five parts:
 
 - the decision page (`decision-page` skill, under node): `attachedFold` renders the record's
-  `attached` as the second of the bottom folds, after Background and before Dependencies and
+  `attached` as the second of the bottom folds, after Background and before
   Rejected alternatives, closed, its summary the count and the titles; each attachment its own
   entry, closed, its title, a kind pill and its source line, its body in its kind's shape (a code
   block through `codeBlock`, prose, a link, a table, a numbered list, a status list, a tree),
@@ -152,7 +152,7 @@ class AttachPage(unittest.TestCase):
             for n in (41, 42):
                 h = one(d if n == 42 else example(), script)["cards"][str(n)]["card"]
                 ps = panes(h)
-                want = ["Background", "Attached"] + (["Dependencies"] if n == 42 else []) + (["Rejected alternatives"] if n == 41 else [])
+                want = ["Background", "Attached"] + (["Rejected alternatives"] if n == 41 else [])
                 if ps != want:
                     out.append("%d: %s" % (n, ps))
                 if '<details class="pane" open><summary>Attached' in h or '<details class="att" open' in h:

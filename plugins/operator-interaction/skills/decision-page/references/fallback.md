@@ -21,7 +21,9 @@ first); this file sets only the layout.
   Theme colour · D3 (site colour off the logo) → … (rev …)`. Every heading ends with its
   card's revision in plain text, `(rev <rev>)`, the card's `rev` exactly as the page would
   carry it.
-- In each section, the card's essentials as text: the TLDR bullets first, then **Context:**
+- In each section, the card's essentials as text: the TLDR bullets first, then, on a card with a
+  `dep`, its dependency line (*depends: only if 41 (Docs build home) is (b)*, as the chat card
+  draws it), then **Context:**
   (the terms the card uses, then where the operator left it), then **What:** (`what`, and for a
   set a bullet per item: its name, where it lives, what it is, and its outcome under each
   option where they differ, `(a) …; (b) …`), then, on a card raised from a finding,
@@ -55,7 +57,7 @@ first); this file sets only the layout.
   **Attached**: each attachment's title on a bold line with its kind and source line, then its
   body as the chat card shows it (the `decisions` skill's `references/rendering.md` § Folds: an
   excerpt as a code block, a table as a table, steps numbered, checks one line each led by
-  the status); then Depends on, then **Rejected alternatives**, last: each alternative's title on a bold line,
+  the status); then **Rejected alternatives**, last: each alternative's title on a bold line,
   its reasons as bullets under it. That is the card-in-all measure of
   `references/cards-schema.md` § Size, with Context at its high. A level in sections shows
   each heading as a bold line, its bullets under it.
