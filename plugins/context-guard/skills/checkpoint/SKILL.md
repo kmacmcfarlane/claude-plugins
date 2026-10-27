@@ -338,9 +338,9 @@ Exit 0: go on. Exit 2: this `wi` predates `note`. Write no item file, carry the 
 `Aware of` as `<TAG> <item id>: <line>`, as the unattended path does, and name in `Next`
 updating `work-items`, then writing them. Any other exit (127, say): `wi` did not run; route
 the lines the same way, with `Next` naming how it failed to run instead. Then one call per
-item, its texts in order (a `decision N:` line takes its own `--raw` call, routed the same
-way). `$WI` is the command § Reaching `wi` printed, written out with its absolute path or
-re-bound in the same call:
+item, its texts in order (a new `decision N:` line takes its own `$WI raise` call below,
+routed the same way). `$WI` is the command § Reaching `wi` printed, written out with its
+absolute path or re-bound in the same call:
 
 ```bash
 $WI note <id> -- '<text>' ['<text>' …]
@@ -360,11 +360,15 @@ A question already put to the operator that has no `decision N:` line gets one n
 `wi raise <id> -- '<question>'`, which gives out N from the store's counter, writes the line
 undated and unbulleted so it starts `decision N:`, and prints N. An older `wi` has no
 `raise` (exit 2, `invalid choice: 'raise'`): N is then one more than the last decision
-number the grep below prints, written with `wi note <id> --raw -- 'decision N: …'`.
+number the grep below prints, written with `wi note <id> --raw -- 'decision N: …'`. A
+raise refused with exit 1 and stderr starting `wi: question:` (a shape `wi lint` flags, or
+a line break) is reworded once and re-run, as a refused text is above; a second refusal is
+routed as a refused text is.
 
 ```bash
 $WI raise <id> -- '<question>'
 # an older wi (exit 2, invalid choice: 'raise'): N is one more than this, written with $WI note <id> --raw
+# only when the raise above exited 2
 grep -rhoE '^decision [0-9]+' <store> | sort -k2 -n | tail -1
 ```
 

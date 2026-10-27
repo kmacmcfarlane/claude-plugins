@@ -6,7 +6,8 @@ the store's `store.yaml`, given out by `$WI raise` under the store's lock and re
 (`^decision [0-9]`) switches to the counter: Rehydrate's Step 3 reads `$WI counter`,
 `report.md` § The counter raises with `$WI raise`, `decisions.md` names the counter in its
 numbering row and where it says what reads the headline, and SKILL.md § Intake step 3 raises
-with `$WI raise <id>`.
+with `$WI raise <id>`. The foundation skill's work item raises each gate approval and hold
+with `$WI raise` too (its `references/state.md`), rather than numbering it itself.
 
 Plugins update separately (03ab `10` § H1), so an older installed `wi` with no `raise` or
 `counter` (argparse's `invalid choice: 'raise'`, exit 2) keeps the old way: the grep plus one,
@@ -28,6 +29,7 @@ REHYDRATE = LIB / "references" / "rehydrate.md"
 REPORT = LIB / "references" / "report.md"
 DECISIONS = LIB / "references" / "decisions.md"
 SKILL = LIB / "SKILL.md"
+STATE = PLUGIN / "skills" / "foundation" / "references" / "state.md"
 
 GREP = "grep -rh '^decision [0-9]'"
 REHYDRATE_LINE = "$WI counter || " + GREP
@@ -114,6 +116,21 @@ def skill_problems(text):
     return out
 
 
+def state_problems(text):
+    body = flat(text)
+    out = []
+    if "each gate approval the operator owes, and each hold, is a decision raised with " \
+            "`$WI raise <id> -- '<question>'`, which gives out N and prints it" not in body:
+        out.append("gate decisions without `$WI raise`")
+    if "An older `wi` (`invalid choice: 'raise'`, exit 2): N is one more than the last " \
+            "decision number in the store, written with `$WI note <id> --raw`" not in body:
+        out.append("no older-wi fallback")
+    if "N is the next number on the channel's counter" in body \
+            or '`$WI note <id> --raw -- "decision N: …"`' in body:
+        out.append("the agent numbers the decision itself")
+    return out
+
+
 class CounterText(unittest.TestCase):
 
     def test_rehydrate(self):
@@ -170,6 +187,18 @@ class CounterText(unittest.TestCase):
         self.assertIn("the counter grep as the reader", decisions_problems(label))
         self.assertIn("no older-wi fallback", decisions_problems(
             mutate(text, f"with no `raise` at all, {FALLBACK}", "with no `raise` at all")))
+
+    def test_foundation_state(self):
+        text = STATE.read_text(encoding="utf-8")
+        self.assertEqual(state_problems(text), [])
+        # mutants: the old hand-numbered line restored; the fallback deleted
+        old = mutate(text, "is a decision raised with `$WI raise <id> -- '<question>'`, which "
+                           "gives out N and prints it,",
+                     'is a `decision N:` line (`$WI note <id> --raw -- "decision N: …"`),')
+        self.assertIn("gate decisions without `$WI raise`", state_problems(old))
+        self.assertIn("the agent numbers the decision itself", state_problems(old))
+        self.assertIn("no older-wi fallback", state_problems(
+            mutate(text, "An older `wi` (`invalid choice: 'raise'`, exit 2):", "Else:")))
 
     def test_skill(self):
         text = SKILL.read_text(encoding="utf-8")

@@ -139,9 +139,10 @@ When the repo has a work-item store (the `work-items` skill), one item carries t
 - **Claim** it at Frame when standalone; an orchestrator claims it under its own rules.
 - **Handoff** after every gate: `$WI handoff <id>` naming the series, the gate passed and
   the next phase (`--next "phase 2: architecture"`). The item stays open until gate G3.
-- **Decisions**: each gate approval the operator owes, and each hold, is a `decision N:`
-  line (`$WI note <id> --raw -- "decision N: …"`), answered by an `answer N:` line. N is the
-  next number on the channel's counter (a librarian's counter under `librarian-mode`).
+- **Decisions**: each gate approval the operator owes, and each hold, is a decision raised
+  with `$WI raise <id> -- '<question>'`, which gives out N and prints it, answered by an
+  `answer N:` line. An older `wi` (`invalid choice: 'raise'`, exit 2): N is one more than
+  the last decision number in the store, written with `$WI note <id> --raw`.
 - **After gate G3 is approved** — this list is the one home for that filing, which a
   standalone run does at its Step 4 and `dev-cycle` does at its foundation bullet:
   1. Add the `G3 passed` line (ending ` after <reopen serial>` when a reopen re-ran G3) to
