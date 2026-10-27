@@ -964,8 +964,9 @@ being `[<name>] <title>` or the title alone (§ Short display name and tag).
 cell><TAB>text`: the title cell is fourth, so the free text stays last;
 `--json` one record per item with `title`, `short_display_name`,
 `grooming` and `decisions`, each decision a record of `n`, `text`,
-`raised` and the four shown-and-seen fields (§ Shown and seen), `null`
-where the item has no such line. It exits 2 when nothing awaits the
+`raised`, the four shown-and-seen fields (§ Shown and seen), and
+`group` and `depends` (§ Groups and dependencies), `null` where the item
+has no such line. It exits 2 when nothing awaits the
 operator.
 
 **Card lines.** A card stored before v5 (no `card:` line) is read by the
@@ -1400,11 +1401,64 @@ The entity pattern's name stops before ` · shares:`, so a reader trims the trai
 off the name it captures.
 
 None of these lines is `decision N:` or `answer N:`, so they open no question and answer
-none: `needs-input`, the decision counter and the estate sweep pass them by. `wi` does not
-parse them yet. They are written once `wi raise` has printed N, with `wi note --raw`, never
+none: `needs-input`, the decision counter and the estate sweep pass them by as questions.
+They are written once `wi raise` has printed N, with `wi note --raw`, never
 through `raise --lines`, which takes only indented machine card lines. Who writes them, and
 when, is the caller's rules (the librarian-mode convention): one session, the store's
 writer, never a dispatched agent.
+
+**What `wi` reads.** `wi` parses these lines with the patterns above, read-only and into the
+JSON views only (`needs-input --json`, `estate --json`); text and `--plain` output are
+unchanged. Each decision record carries two keys, from the lines in the item that holds
+`decision N:`, the last line per N:
+
+- `group`: `{"id", "name", "shares", "context"}`, the id from the member line and the rest
+  from its entity line, looked up store-wide (`items/`, then `archive/*/`; for a duplicate
+  id, the first archived copy, the one lint keeps, else the first item holding it; within
+  it, the last entity line). `needs-input` reads `archive/` only when a listed decision's id
+  has no entity line in `items/`, so there a duplicate shows its `items/` copy unless that
+  read happens. `name`, `shares` and `context` are `null` for an id with no entity line,
+  and `shares` and `context` for a group that is not a bundle. The whole key is `null` with
+  no member line, and for an item file reached through a link, whose lines are not read:
+  `wi` applies no item default.
+- `depends`: the last line's targets, each `{"n", "repo", "letter"}` (`repo` and `letter`
+  `null` when not written), `[]` after `none`, `null` with no line or a linked file. The
+  why is not carried, and `wi` resolves no superseded target: it reports what is written, and the caller
+  applies the reading rules above.
+
+`wi lint` checks them across the store, each finding naming the file and line:
+
+- **malformed**: an unfenced column-0 line starting `group <digits>:`, `group g-<…>:` or
+  `depends <digits>:` that matches none of the patterns above (a name on a member line,
+  `(z)`, a blank name or why); it is not read. Any other line, one starting `groups` say,
+  is no candidate;
+- **orphan**: a member or `depends N:` line in an item with no `decision N:` line;
+- **unknown id**: a decision's last member line naming an id with no entity line in
+  `items/` or `archive/`;
+- **no members**: an entity id that no member line has ever named, anywhere in the store (a
+  group whose members were all regrouped later is not flagged);
+- **duplicate id**: entity lines for one id in two different items, with the fix above;
+- **dangling**: a target M with no repo, or with this repo's own name, that has no
+  `decision M:` line in `items/` or `archive/`;
+- **self**: a decision whose target is itself, written `N` or `<this repo>#N`;
+- **cycle**: a cycle among the last `depends` sets, `<this repo>#M` read as M, one finding
+  per set of decisions that depend on each other round, at its lowest N's line (`depends
+  cycle among 3, 4, 5 (3 decisions)`, ten listed at most, then `… and K more`). `wi` does
+  not parse `closed N:`: a superseded decision's own leftover `depends N:` line still
+  counts, and appending `depends N: none` to it clears the finding.
+
+Unknown id, dangling, self and cycle read only the last member and depends line per N, so an
+appended line clears them. Targets on one M are alternatives, so dangling and self are
+reported once per M, and a cycle counts one edge per M. A `<repo>#M` target naming another repo is checked for its syntax
+only, never looked up. This repo's own name is found as § Another repo's decision says,
+from the repo around the store: its `origin` remote's last path part without `.git`, else
+its main checkout's directory name; outside git, the store's parent directory's name. When
+git does not answer, no `<repo>#M` is read as this repo's. The store-wide reads take only
+regular files reached through real directories: an item file that is a symbolic link, or
+under one, is never read for these lines, so no read follows a link into or out of the
+store. Lint names such a file under `items/`, unread; one under `archive/` it skips. A
+**duplicate id** with one copy in `archive/` is flagged at the copy in `items/`, the live
+writer's line.
 
 ## Shown and seen: `shown N:` / `seen N:`
 
@@ -1518,9 +1572,9 @@ kind's rules; this table is where a reader finds them all.
 | seen | `seen N: <UTC> <turn \| page \| doc>` | 0 | the session that displayed it | `SEEN_RE` | landed (held: § Shown and seen) |
 | decided | `decided: <UTC> <class> — … · authority: … · reopen: …` | 0 | the caller | no (§ Decided alone gives a reader's split) | landed |
 | open question | `open question: <text>`, closed by `open question: <text> → decision N` or `open question dropped: <text> — <why>` | 0 | the caller (the librarian-mode convention) | no | landed |
-| group | `group g-<MMDD>-<hhh>: <plain name>[ · shares: <what its members share> · context: <shared context>]` | 0, in the item where the group was created | the session that writes the decisions, never a dispatched agent | no (§ Groups and dependencies gives a reader's patterns) | landed; last line per id wins |
-| group member | `group N: g-<MMDD>-<hhh>` | 0 | the session that writes the decisions, never a dispatched agent | no (§ Groups and dependencies gives a reader's pattern) | landed; last line per N wins |
-| depends | `depends N: <M[ (x)] \| <repo>#M[ (x)]>[, …][ — <why>]` or `depends N: none[ — <why>]` | 0 | the session that writes the decisions, never a dispatched agent | no (§ Groups and dependencies gives a reader's patterns) | landed; last line per N is the whole set |
+| group | `group g-<MMDD>-<hhh>: <plain name>[ · shares: <what its members share> · context: <shared context>]` | 0, in the item where the group was created | the session that writes the decisions, never a dispatched agent | `GROUP_ENTITY_RE` (§ Groups and dependencies) | landed; last line per id wins |
+| group member | `group N: g-<MMDD>-<hhh>` | 0 | the session that writes the decisions, never a dispatched agent | `GROUP_MEMBER_RE` (§ Groups and dependencies) | landed; last line per N wins |
+| depends | `depends N: <M[ (x)] \| <repo>#M[ (x)]>[, …][ — <why>]` or `depends N: none[ — <why>]` | 0 | the session that writes the decisions, never a dispatched agent | `DEPENDS_RE` (§ Groups and dependencies) | landed; last line per N is the whole set |
 | writer run | `writer-run: <UTC> <page short name> w<k>/<K> — cards <n> · tokens <input>/<output> · lints <n> [<keys>]` | 0 | the librarian, one line per answer-page writer (the librarian-mode convention gives its place and sources) | no | landed |
 | delegation | `delegation dl-…: …`, its revoke and `revoke-ack` lines | 0 | the session that grants it | the answer-changes plan's patterns | planned (the answer-changes plan) |
 

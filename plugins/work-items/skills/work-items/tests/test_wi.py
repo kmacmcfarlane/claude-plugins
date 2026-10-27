@@ -3114,7 +3114,7 @@ class TestGrooming(WiTestCase):
         self.assertEqual(data[1]["decisions"], [{
             "n": 4, "text": "keep the alias?", "raised": None,
             "first_shown": None, "last_shown": None, "last_seen": None,
-            "unseen": None}])
+            "unseen": None, "group": None, "depends": None}])
         self.assertEqual(data[0]["grooming"], "which store?")
         self.wi_ok(["lint"])
 
@@ -6203,7 +6203,8 @@ class TestB020Lows(WiTestCase):
             "decision 4: revised wording\n"))
         data = json.loads(self.wi_ok(["needs-input", "--json"]))
         none = {"raised": None, "first_shown": None, "last_shown": None,
-                "last_seen": None, "unseen": None}
+                "last_seen": None, "unseen": None, "group": None,
+                "depends": None}
         self.assertEqual(data[0]["decisions"],
                          [dict({"n": 4, "text": "revised wording"}, **none),
                           dict({"n": 5, "text": "other"}, **none)])
@@ -6669,7 +6670,8 @@ class TestShownAndSeen(WiTestCase):
             "raised": "2026-10-01T09:00Z",
             "first_shown": "2026-10-01T09:00:05Z",
             "last_shown": "2026-10-02T08:00:00Z",
-            "last_seen": "2026-10-02T08:30:00Z", "unseen": False})
+            "last_seen": "2026-10-02T08:30:00Z", "unseen": False,
+            "group": None, "depends": None})
         self.assertEqual((d[2]["last_seen"], d[2]["unseen"]),
                          ("2026-10-01T09:10:00Z", True))
         self.assertEqual(

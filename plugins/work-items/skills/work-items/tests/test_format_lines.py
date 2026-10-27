@@ -43,6 +43,7 @@ KINDS = [
 FILL = {
     "N": "7", "UTC": "2026-10-23T10:00:00Z", "rev": "2026-10-23T10:00:00Z",
     "id": "an-item-1234", "file": "2026-10-23T10-00-00Z.card5.json", "k": "5",
+    "MMDD": "1022", "hhh": "a3f", "M": "41",
 }
 
 
@@ -73,7 +74,7 @@ def fill(form, column):
     alternative taken, each placeholder its FILL value (else `x`), an indented kind indented."""
     code = re.search(r"`([^`]+)`", form).group(1)
     code = re.sub(r"\[[^\[\]]*\]", "", code)
-    code = re.sub(r"<([^<>|]+?) \|[^<>]*>", r"<\1>", code)
+    code = re.sub(r"<([^<>|]+?) \|(?:[^<>]|<[^<>]*>)*>", r"<\1>", code)
     code = re.sub(r"<([^<>]+)>", lambda m: FILL.get(m.group(1), "x"), code)
     code = re.sub(r"(?<=: )N\b|\bN(?=[:/ ])", FILL["N"], code)
     code = code.replace("…", "x")
@@ -111,7 +112,7 @@ class DecisionLineKinds(unittest.TestCase):
         for row in self.rows:
             if not row["state"].startswith("landed"):
                 continue
-            for name in re.findall(r"\b[A-Z]+_RE\b", row["parses"]):
+            for name in re.findall(r"\b[A-Z][A-Z_]*_RE\b", row["parses"]):
                 pattern = getattr(wi, name, None)
                 self.assertIsInstance(pattern, re.Pattern, f"{name} is not in wi.py")
                 sample = fill(row["form"], row["column"])
@@ -119,7 +120,8 @@ class DecisionLineKinds(unittest.TestCase):
                 self.assertIsNotNone(match(sample), f"{name} does not read {sample!r}")
                 checked.add(name)
         self.assertTrue({"DECISION_RE", "ANSWER_RE", "RAISED_RE", "CARD_RE", "SHOWN_RE",
-                         "SEEN_RE"} <= checked, checked)
+                         "SEEN_RE", "GROUP_ENTITY_RE", "GROUP_MEMBER_RE", "DEPENDS_RE"}
+                        <= checked, checked)
 
     def test_the_notes_under_the_table(self):
         sec = flat(self.sec)
@@ -312,7 +314,8 @@ def rules_problems(text):
         "so `(z)` is not written",
         "The last line per N is the whole set, and `none` empties it",
         "resolves to M, following the chain; the resolved edge keeps no letter",
-        "`wi` does not parse them yet",
+        "`wi` parses these lines with the patterns above, read-only and into the JSON views "
+        "only",
         "never through `raise --lines`",
         "never a dispatched agent",
         "never inserted between a `decision N:` headline and its card",
