@@ -1437,18 +1437,24 @@ unchanged. Each decision record carries two keys, from the lines in the item tha
 - **dangling**: a target M with no repo, or with this repo's own name, that has no
   `decision M:` line in `items/` or `archive/`;
 - **self**: a decision whose target is itself, written `N` or `<this repo>#N`;
-- **cycle**: a cycle among the last `depends` sets, `<this repo>#M` read as M. `wi` does not
-  parse `closed N:`, so a cycle that runs only through a superseded decision is not seen.
+- **cycle**: a cycle among the last `depends` sets, `<this repo>#M` read as M, one finding
+  per set of decisions that depend on each other round, at its lowest N's line (`depends
+  cycle among 3, 4, 5 (3 decisions)`, ten listed at most, then `… and K more`). `wi` does
+  not parse `closed N:`: a superseded decision's own leftover `depends N:` line still
+  counts, and appending `depends N: none` to it clears the finding.
 
 Unknown id, dangling, self and cycle read only the last member and depends line per N, so an
-appended line clears them. A `<repo>#M` target naming another repo is checked for its syntax
+appended line clears them. Targets on one M are alternatives, so dangling and self are
+reported once per M, and a cycle counts one edge per M. A `<repo>#M` target naming another repo is checked for its syntax
 only, never looked up. This repo's own name is found as § Another repo's decision says,
 from the repo around the store: its `origin` remote's last path part without `.git`, else
 its main checkout's directory name; outside git, the store's parent directory's name. When
 git does not answer, no `<repo>#M` is read as this repo's. The store-wide reads take only
 regular files reached through real directories: an item file that is a symbolic link, or
-under one, is never read for these lines (lint names it), so no read follows a link into or
-out of the store.
+under one, is never read for these lines, so no read follows a link into or out of the
+store. Lint names such a file under `items/`, unread; one under `archive/` it skips. A
+**duplicate id** with one copy in `archive/` is flagged at the copy in `items/`, the live
+writer's line.
 
 ## Shown and seen: `shown N:` / `seen N:`
 

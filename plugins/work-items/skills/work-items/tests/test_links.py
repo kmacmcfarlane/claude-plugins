@@ -24,6 +24,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import time
 import unittest
 from pathlib import Path
 
@@ -278,6 +279,15 @@ class TestJson(LinkCase):
                          wi.DEPENDS_RE.pattern)
         self.assertEqual(pats["each target"], wi.TARGET_RE.pattern)
 
+    def test_format_says_a_superseded_line_counts_and_how_to_clear_it(self):
+        """L1: `closed N:` stays unparsed, and the cycle bullet says what
+        that means. Mutant: either sentence deleted from format.md."""
+        flat = " ".join(FORMAT.read_text().split())
+        self.assertIn("a superseded decision's own leftover `depends N:` line "
+                      "still counts", flat)
+        self.assertIn("appending `depends N: none` to it clears the finding",
+                      flat)
+
 
 # ── lint ────────────────────────────────────────────────────────────────────
 
@@ -363,6 +373,19 @@ class TestLint(LinkCase):
         self.assertIn("deletes it and re-creates its group under a new id",
                       got[0])
 
+    def test_duplicate_with_an_archived_copy_flags_the_live_one(self):
+        """L4: the archived copy is kept, the items/ line flagged. Mutant:
+        the first copy in lookup order (items/) kept."""
+        old = self.item("old-item-3333", f"group {GID}: old",
+                        where="archive/2026", status="done")
+        p = self.item("a-item-1111", "decision 4: open?", f"group {GID}: x",
+                      f"group 4: {GID}")
+        got = self.lint()
+        self.assertEqual(len(got), 1, got)
+        self.assertTrue(got[0].startswith(
+            f"{self.where(p, f'group {GID}: x')}: duplicate group id {GID}: "
+            f"its entity line is also in {old}"), got)
+
     def test_duplicate_fixed_is_clean(self):
         """After the later line is deleted and its group re-created under
         a new id with new member lines, the store is clean."""
@@ -401,18 +424,79 @@ class TestLint(LinkCase):
 
     def test_cycles(self):
         """A 2-cycle and a 3-cycle fire, each once; a chain does not, nor
-        a chain into a cycle, which is named from its lowest N. Mutants:
-        the cycle walk removed; the cycle named from where the walk
-        entered it."""
-        p = self.item("a-item-1111", *[f"decision {n}: x?" for n in range(1, 13)],
+        the chain into a cycle, which is named from its lowest N; two
+        cycles sharing nodes are one finding. Mutants: the cycle walk
+        removed; a component's members not sorted (named from where the
+        walk entered it); every component reported, singletons included."""
+        p = self.item("a-item-1111", *[f"decision {n}: x?" for n in range(1, 17)],
                       "depends 1: 2", "depends 2: 1",
                       "depends 3: 4", "depends 4: 5", "depends 5: 3",
                       "depends 6: 7", "depends 7: 8",
-                      "depends 10: 12", "depends 12: 11", "depends 11: 12")
+                      "depends 10: 12", "depends 12: 11", "depends 11: 12",
+                      "depends 13: 14, 15", "depends 14: 13", "depends 15: 13")
         self.assertEqual(self.lint(), [
-            f"{self.where(p, 'depends 1: 2')}: depends cycle: 1 -> 2 -> 1",
-            f"{self.where(p, 'depends 3: 4')}: depends cycle: 3 -> 4 -> 5 -> 3",
-            f"{self.where(p, 'depends 11: 12')}: depends cycle: 11 -> 12 -> 11"])
+            f"{self.where(p, 'depends 1: 2')}: depends cycle among 1, 2 "
+            "(2 decisions)",
+            f"{self.where(p, 'depends 3: 4')}: depends cycle among 3, 4, 5 "
+            "(3 decisions)",
+            f"{self.where(p, 'depends 11: 12')}: depends cycle among 11, 12 "
+            "(2 decisions)",
+            f"{self.where(p, 'depends 13: 14, 15')}: depends cycle among 13, "
+            "14, 15 (3 decisions)"])
+
+    def test_dense_graph_is_one_bounded_line(self):
+        """300 decisions each depending on all the others: one line, ten
+        members listed, quickly. Mutant: the member list not capped."""
+        ns = range(1, 301)
+        lines = [f"decision {n}: x?" for n in ns] + [
+            f"depends {n}: " + ", ".join(str(m) for m in ns if m != n)
+            for n in ns]
+        p = self.item("a-item-1111", *lines)
+        t0 = time.monotonic()
+        got = self.lint()
+        self.assertLess(time.monotonic() - t0, 10)
+        first = "depends 1: " + ", ".join(str(m) for m in range(2, 301))
+        self.assertEqual(got, [
+            f"{self.where(p, first)}: depends cycle among 1, 2, 3, 4, 5, 6, "
+            "7, 8, 9, 10 … and 290 more (300 decisions)"])
+
+    def test_dense_graph_fast_in_process(self):
+        """The component walk alone on the 300-node complete graph, and a
+        10,000-long ring (no recursion limit)."""
+        t0 = time.monotonic()
+        comps = wi._components({n: [m for m in range(300) if m != n]
+                                for n in range(300)})
+        ring = wi._components({n: [(n + 1) % 10000] for n in range(10000)})
+        self.assertLess(time.monotonic() - t0, 3)
+        self.assertEqual([len(c) for c in comps], [300])
+        self.assertEqual([len(c) for c in ring], [10000])
+
+    def test_same_m_alternatives_count_once(self):
+        """Dangling and self once per M; a 2-cycle whose back edge names
+        two letters of one M is one finding. Mutant: the per-line seen_m
+        set removed."""
+        p = self.item("a-item-1111", "decision 7: x?", "decision 8: x?",
+                      "decision 1: x?", "decision 2: x?",
+                      "depends 7: 9 (a), 9 (b)", "depends 8: 8 (a), 8 (b)",
+                      "depends 1: 2", "depends 2: 1 (a), 1 (b)")
+        self.assertEqual(self.lint(), [
+            f"{self.where(p, 'depends 7: 9 (a), 9 (b)')}: decision 7: "
+            "dangling target 9, with no `decision 9:` line in items/ or "
+            "archive/",
+            f"{self.where(p, 'depends 8: 8 (a), 8 (b)')}: decision 8 depends "
+            "on itself (8)",
+            f"{self.where(p, 'depends 1: 2')}: depends cycle among 1, 2 "
+            "(2 decisions)"])
+
+    def test_a_linked_archive_item_is_skipped_silently(self):
+        """L3: a linked file under archive/ is neither read nor reported.
+        Mutant: the items/-only condition dropped."""
+        outside = self.tmp / "outside.md"
+        outside.write_text(ITEM.format(iid="b-item-2222", status="done",
+                                       notes="depends 9: 4"))
+        (self.root / "archive" / "2026").mkdir(parents=True)
+        (self.root / "archive" / "2026" / "b-item-2222.md").symlink_to(outside)
+        self.assertEqual(self.lint(), [])
 
     def test_a_linked_item_is_reported_and_not_read(self):
         """Mutant: _no_link always True (the link read, its orphan line
@@ -445,6 +529,32 @@ class TestLint(LinkCase):
             f"{line}: decision 4 depends on itself (myrepo#4)",
             f"{line}: decision 4: dangling target myrepo#97, with no "
             "`decision 97:` line in items/ or archive/"])
+
+    @unittest.skipUnless(GIT, "git not on PATH")
+    def test_this_repo_from_a_linked_worktree_is_the_main_checkout(self):
+        """L2: a store in a linked worktree with no origin names the main
+        checkout: `base#4` is self, `wtree#4` another repo's. Mutant: the
+        --git-common-dir call dropped (the worktree's own name used)."""
+        g = ["git", "-c", "user.name=t", "-c", "user.email=t@t"]
+        subprocess.run(g + ["init", "-q", str(self.base)], env=self.env,
+                       check=True)
+        (self.base / "f").write_text("x\n")
+        subprocess.run(g + ["-C", str(self.base), "add", "f"], env=self.env,
+                       check=True)
+        subprocess.run(g + ["-C", str(self.base), "commit", "-qm", "c"],
+                       env=self.env, check=True)
+        wt = self.tmp / "wtree"
+        subprocess.run(g + ["-C", str(self.base), "worktree", "add", "-q",
+                            str(wt)], env=self.env, check=True,
+                       capture_output=True)
+        self.root = wt / ".work-items"
+        (self.root / "items").mkdir(parents=True)
+        (self.root / "store.yaml").write_text("tracking: ignored\n")
+        p = self.item("a-item-1111", "decision 4: open?",
+                      "depends 4: base#4, wtree#4")
+        self.assertEqual(self.lint(), [
+            f"{self.where(p, 'depends 4: base#4, wtree#4')}: decision 4 "
+            "depends on itself (base#4)"])
 
     @unittest.skipUnless(GIT, "git not on PATH")
     def test_this_repo_without_origin_is_its_checkout_dir(self):

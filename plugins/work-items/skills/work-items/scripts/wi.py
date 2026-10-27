@@ -7393,7 +7393,8 @@ _LINK_REF = "(the work-items format reference, § Groups and dependencies)"
 
 def _lint_links(root, items, texts, repo_name=this_repo_name):
     """03ab F2: the group and depends lines, store-wide over items/ and
-    archive/ (an item reached through a link reported, never read):
+    archive/ (an item file reached through a link never read; one under
+    items/ reported, one under archive/ skipped):
     malformed, orphan, unknown id, no members, duplicate id, dangling,
     self and cycle. Each finding names the path and line. Only the last
     member line and the last depends line per N are held to the store
@@ -7404,7 +7405,10 @@ def _lint_links(root, items, texts, repo_name=this_repo_name):
     for it in items:
         if _no_link(root, it.path):
             usable.append(it)
-        else:
+        elif _store_part(root, it.path) == "items":
+            # reported without reading it: a read would follow the link. A
+            # linked archive/ file is skipped silently (the archive is
+            # written by `wi archive`, never by hand, and holds no live line)
             out.append(f"{it.path}: reached through a symbolic link; its "
                        "group and depends lines are not read, and it counts "
                        "for none of them store-wide")
@@ -7453,9 +7457,15 @@ def _lint_links(root, items, texts, repo_name=this_repo_name):
             out.append(f"{seen[0][1]}: group {gid} has no members: no member "
                        f"line (`group N: {gid}`) names it anywhere in the "
                        "store")
-        for path, where in seen[1:]:
+        # the copy kept is an archived one when there is one: the live
+        # writer's line, in items/, is the one flagged
+        keep = next((e for e in seen
+                     if _store_part(root, e[0]) == "archive"), seen[0])
+        for path, where in seen:
+            if (path, where) == keep:
+                continue
             out.append(f"{where}: duplicate group id {gid}: its entity line "
-                       f"is also in {seen[0][0]} (a hash collision); the "
+                       f"is also in {keep[0]} (a hash collision); the "
                        "session that wrote this line deletes it and "
                        "re-creates its group under a new id, with new member "
                        f"lines for its members {_LINK_REF}")
@@ -7466,6 +7476,7 @@ def _lint_links(root, items, texts, repo_name=this_repo_name):
     own = None   # this repo's name, asked of git only when a target needs it
     edges = {}
     for n, (where, targets) in sorted(last_depends.items()):
+        seen_m = set()   # same-M targets are alternatives: one edge per M
         for t in targets:
             m = t["n"]
             if t["repo"] is not None:
@@ -7473,6 +7484,9 @@ def _lint_links(root, items, texts, repo_name=this_repo_name):
                     own = [repo_name(root)]
                 if t["repo"] != own[0]:
                     continue     # another repo's decision: syntax only
+            if m in seen_m:
+                continue
+            seen_m.add(m)
             label = f"{t['repo']}#{m}" if t["repo"] else str(m)
             if m == n:
                 out.append(f"{where}: decision {n} depends on itself "
@@ -7484,31 +7498,70 @@ def _lint_links(root, items, texts, repo_name=this_repo_name):
                            "archive/")
             edges.setdefault(n, []).append(m)
     # cycles among the last depends sets (closed lines are not parsed, so
-    # a cycle that runs only through a superseded decision is not seen);
-    # each back edge of the walk is one cycle, reported once, from its
-    # lowest N, at that N's depends line
-    # (an explicit stack, so a long chain never meets the recursion limit)
-    state = {}
-    for start in sorted(edges):
-        if state.get(start):
-            continue
-        state[start], path, todo = 1, [start], [iter(edges[start])]
-        while todo:
-            m = next(todo[-1], None)
-            if m is None:
-                state[path.pop()] = 2
-                todo.pop()
-            elif state.get(m) == 1:
-                cyc = path[path.index(m):]
-                k = cyc.index(min(cyc))
-                cyc = cyc[k:] + cyc[:k]
-                out.append(f"{last_depends[cyc[0]][0]}: depends cycle: "
-                           + " -> ".join(str(x) for x in cyc + [cyc[0]]))
-            elif not state.get(m):
-                state[m] = 1
-                path.append(m)
-                todo.append(iter(edges.get(m, [])))
+    # a superseded decision's own last depends line still counts): one
+    # line per strongly connected component of more than one decision,
+    # at its lowest N's depends line, so a dense graph stays one line
+    for comp in _components(edges):
+        low = sorted(comp)
+        shown = ", ".join(str(x) for x in low[:10])
+        more = f" … and {len(low) - 10} more" if len(low) > 10 else ""
+        out.append(f"{last_depends[low[0]][0]}: depends cycle among {shown}"
+                   f"{more} ({len(low)} decisions)")
     return out
+
+
+def _store_part(root, path):
+    """The store's top-level directory a path lies under (`items`,
+    `archive`), else None."""
+    try:
+        return Path(path).relative_to(root).parts[0]
+    except (ValueError, IndexError):
+        return None
+
+
+def _components(edges):
+    """The strongly connected components of more than one node of the
+    graph `edges` ({n: [m]}), each a set, ordered by their lowest node.
+    Tarjan's walk with an explicit stack: no recursion, linear in the
+    edges, so a long chain or a dense graph costs no more than its size."""
+    index, low, on, stack, out = {}, {}, set(), [], []
+    counter = 0
+    for start in sorted(edges):
+        if start in index:
+            continue
+        index[start] = low[start] = counter
+        counter += 1
+        stack.append(start)
+        on.add(start)
+        work = [(start, iter(edges.get(start, ())))]
+        while work:
+            v, it = work[-1]
+            w = next(it, None)
+            if w is not None:
+                if w not in index:
+                    index[w] = low[w] = counter
+                    counter += 1
+                    stack.append(w)
+                    on.add(w)
+                    work.append((w, iter(edges.get(w, ()))))
+                elif w in on:
+                    low[v] = min(low[v], index[w])
+                continue
+            work.pop()
+            if work:
+                u = work[-1][0]
+                low[u] = min(low[u], low[v])
+            if low[v] == index[v]:
+                comp = set()
+                while True:
+                    w = stack.pop()
+                    on.discard(w)
+                    comp.add(w)
+                    if w == v:
+                        break
+                if len(comp) > 1:
+                    out.append(comp)
+    return sorted(out, key=min)
 
 
 def card_problems(root, items, texts):
