@@ -72,15 +72,21 @@ leaves this session's own manifest and gate state as they were, and adds one led
   `by: spin-off`, and `written`, `head`, `branch` and `top` stamped from the launch
   directory, the one the launch line `cd`s into (where the new session works), not from this
   session's working directory. A draft with a `mode_skill:` is refused: a spin-off has no
-  standing mode. The writer adds three HOLD lines first under Holds (a lone `None` there
-  goes): no librarian mode and no bare `<repo>` session name, no merging to `main` or
+  standing mode. The writer adds three short HOLD lines after the holds the draft carries
+  (a lone `None` there goes), so the header tiers' hold limit never crowds out a carried
+  hold: no librarian mode and no bare `<repo>` session name, no merging to `main` or
   pushing (finished branches go to the librarian), and no writing items another session
-  holds. The topic's task goes in Goal and Doing; Next holds only first actions.
+  holds. The stamped frontmatter is read back the way the rehydrate hook reads it, and a
+  manifest whose stamped fields read differently, or that gains a `mode_skill:`, is
+  refused and removed. The topic's task goes in Goal and Doing; Next holds only first actions.
 - **Topic.** Checked on the raw argument, before anything is stripped, against
   `^[A-Za-z0-9][A-Za-z0-9 ._-]{0,39}$`, since it sits in the session name
   `<repo> - <topic>`. The name, the librarian's name and the prompt lose control
   characters, Unicode format characters (bidi controls included) and line breaks before
-  they reach the line.
+  they reach the line; then the name and the librarian's name must match
+  `^[A-Za-z0-9][A-Za-z0-9 ._-]{0,79}$`, the repo name `^[A-Za-z0-9._-]+$`, and the launch
+  directory and repo toplevel may hold no control, format or line-break character, or the
+  run is refused with nothing written.
 - **Ownership by path.** The new session is launched with `--session-id <child>` (a
   documented flag, https://code.claude.com/docs/en/cli-reference), so the file is its
   own manifest by path, and every rule above for an owned manifest applies unchanged.
@@ -98,7 +104,8 @@ leaves this session's own manifest and gate state as they were, and adds one led
 - **The record.** `${CLAUDE_CONFIG_DIR:-~/.claude}/claude-kit/spin-off/<child>.json`
   (`0700` directory, `0600` file, temp file and atomic replace) holds `v`, `session_id`,
   `name`, `topic`, `spun_from`, `parent_name` (this session's name from its own registry
-  entry, read only when that entry's `sessionId` is this session's, else `null`),
+  entry, read only when that entry's `sessionId` is this session's, else `null`; fields
+  observed on this session's own entry file, Claude Code 2.1.292; not documented),
   `librarian`, `top`, `repo`, `created` and `manifest`. It is what other sessions read to
   know a session is a spin-off; the manifest is not, since the spin-off's own first
   checkpoint rewrites it. Each write prunes records over 14 days old: regular `*.json`

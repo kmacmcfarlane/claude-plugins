@@ -390,9 +390,8 @@ class TestSpinOff(Base):
             text = fh.read()
         holds = R.hold_lines(text)
         self.assertEqual(len(holds), 3, holds)
-        self.assertIn("bare session name proj — proj is this repo's single writer",
-                      holds[0])
-        self.assertIn("hand finished branches to the librarian proj", holds[1])
+        self.assertIn("the bare name proj — proj is the single writer", holds[0])
+        self.assertIn("hand branches to proj", holds[1])
         self.assertIn("writing items another session holds", holds[2])
         sec = text.split("## Holds\n", 1)[1].split("## In flight", 1)[0]
         self.assertNotIn("None", sec)
@@ -405,7 +404,7 @@ class TestSpinOff(Base):
         holds = R.hold_lines(text)
         self.assertEqual(len(holds), 3, holds)
         self.assertIn("none live: the operator decides", holds[0])
-        self.assertIn("none live: tell the operator the branch is ready", holds[1])
+        self.assertIn("none live: tell the operator", holds[1])
         self.assertLess(text.index("## Holds"), text.index("## In flight"))
 
     def test_18_refusals_before_install(self):
@@ -461,6 +460,61 @@ class TestSpinOff(Base):
                            env=dict(os.environ, **self.env))
         self.assertEqual(p.returncode, 2)
         self.assert_nothing_written()
+
+    def test_22_names_inside_the_opener_refused(self):
+        # Kills: a dropped NAME_RE check (or clean() alone on --name and
+        # --librarian), and a repo name with a quote let through.
+        for extra in (("--name", "x'; touch p; '"),
+                      ("--librarian", "a" + self.SUBST.replace("touch x", "id"))):
+            rc, out, err = self.spin(*extra)
+            self.assertEqual((rc, out), (2, []), extra)
+            self.assert_nothing_written()
+        quoted = self.make_repo("it's", "main")
+        # A conforming --name, so only the repo name (in the opener and the
+        # holds) is left to refuse.
+        rc, out, err = self.spin("--launch-dir", quoted, "--name", "ok name")
+        self.assertEqual((rc, out), (2, []))
+        self.assert_nothing_written()
+
+    CARRIED = ("HOLD dispatching any build on the statusline topic at effort xhigh "
+               "or above, because the quota window is nearly spent and the operator "
+               "asked to keep the reserve for reviews — until 2026-11-03T07:00Z",
+               "HOLD pushing the statusline-hub branch or tagging a release of it, "
+               "because the operator wants to read the review findings on the "
+               "renderer change first — until decision 61 is answered")
+
+    def test_23_carried_holds_survive_the_startup_header(self):
+        # Kills: the role holds put before the carried ones.
+        self.write_draft(DRAFT.replace("## Holds\nNone\n", "## Holds\n" + "".join(
+            f"- {h}\n" for h in self.CARRIED)))
+        self.assertEqual(self.spin("--librarian", "proj")[0], 0)
+        with open(self.child_path()) as fh:
+            text = fh.read()
+        block = R.holds_block(text)
+        for h in self.CARRIED:
+            self.assertIn(h[:60], block)
+        self.assertEqual(len(R.hold_lines(text)), 5)
+
+    def test_24_frontmatter_must_read_back_as_stamped(self):
+        # Kills: no read-back check after the stamp (a vertical tab splits a
+        # line for the reader that the stamp's parser keeps whole).
+        self.write_draft(DRAFT.replace(
+            "session: <stamped>\n",
+            "session: x\nnote: a\x0bmode: continue\x0bsession: EVIL\n"))
+        rc, out, err = self.spin()
+        self.assertEqual((rc, out), (2, []), err)
+        self.assertIn("read back", err)
+        self.assert_nothing_written()
+
+    def test_25_launch_dir_with_control_or_bidi_refused(self):
+        # Kills: no character check on the launch directory.
+        for bad in ("a\nb", "a\u202eb"):
+            d = os.path.join(self.root, bad, "proj")
+            os.makedirs(d)
+            rc, out, err = self.spin("--launch-dir", d)
+            self.assertEqual((rc, out), (2, []), repr(bad))
+            self.assertIn("launch directory", err)
+            self.assert_nothing_written()
 
 
 if __name__ == "__main__":

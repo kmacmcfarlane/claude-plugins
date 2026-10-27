@@ -23,7 +23,7 @@ What it does, in order; any refusal exits 2 with nothing written:
     unreadable, over 256 KB, last written over 30 minutes ago), the link
     checks and the atomic 0700/0600 install are that function's, and an
     existing <child>/ in any form is refused;
-  - adds the three role HOLD lines to its Holds section and stamps the
+  - adds the three role HOLD lines after the holds it carries and stamps the
     frontmatter with mark_checkpoint.restamp: `session:` the child,
     `spun_from:` the parent, `mode: handoff`, `by: spin-off`, and `written`,
     `head`, `branch`, `top` from the LAUNCH directory (the one the line cds
@@ -64,7 +64,10 @@ this session must never Read the file itself: it would adopt it.
 
 The name, the librarian, the parent's name and the prompt lose control
 characters, Unicode format characters (bidi controls included) and line
-breaks before they reach the opener or the line.
+breaks before they reach the opener or the line; the name and the librarian
+must then match NAME_RE and the repo name REPO_RE, since they sit inside the
+opener, itself one quoted shell word. The stamped frontmatter is read back
+as the rehydrate hook reads it and refused unless it reads as stamped.
 """
 import argparse, json, os, re, stat, sys, tempfile, time, unicodedata, uuid
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -76,6 +79,11 @@ import mark_checkpoint as M
 PRINT_SESSION_ID = True
 
 TOPIC_RE = re.compile(r"[A-Za-z0-9][A-Za-z0-9 ._-]{0,39}")
+# A session name (the spin-off's, the librarian's), after clean(): it is set
+# inside the opener, which is itself one quoted shell word, so no quote, `$`,
+# backtick or other shell character may reach it.
+NAME_RE = re.compile(r"[A-Za-z0-9][A-Za-z0-9 ._-]{0,79}")
+REPO_RE = re.compile(r"[A-Za-z0-9._-]+")
 PROMPT_MAX = 16 * 1024
 RECORD_DIR = ("claude-kit", "spin-off")
 RECORD_TTL_S = 14 * 24 * 3600
@@ -85,7 +93,7 @@ OPENER = ("You are a spin-off of {parent} in {repo}, on: {topic}. "
           "Read (the Read tool) {manifest} in full first. "
           "You are not this repo's librarian: do not run librarian-mode and keep "
           "your session name. "
-          "Use wi for your own items (claim with --as '{name}'); never merge to "
+          "Use wi for your own items (claim with --as {name_q}); never merge to "
           "main or push: {hand_in} "
           "Then: {prompt}")
 HAND_IN = ("hand finished branches to the librarian {librarian} with "
@@ -94,14 +102,15 @@ HAND_IN = ("hand finished branches to the librarian {librarian} with "
 NO_LIBRARIAN = "no librarian is live: when a branch is ready, tell the operator."
 NO_PROMPT = "continue with the manifest's Goal."
 
+# Short, and after the carried holds: the startup header carries at most
+# rehydrate.HOLDS_MAX lines in rehydrate.HOLDS_BUDGET characters, and the
+# holds this session hands over must not be the ones crowded out.
 ROLE_HOLDS = (
-    "HOLD librarian mode and the bare session name {repo} — {writer} — until "
-    "the operator says otherwise",
-    "HOLD merging to main and pushing — main is single-writer; {hand} — until "
-    "the operator says otherwise",
-    "HOLD writing items another session holds (status doing under another "
-    "owner, or in the librarian's in-flight list) — until that session "
-    "releases them",
+    "HOLD librarian mode and the bare name {repo} — {writer} — until the "
+    "operator says otherwise",
+    "HOLD merging to main and pushing — {hand} — until the operator says "
+    "otherwise",
+    "HOLD writing items another session holds — until it releases them",
 )
 
 
@@ -175,13 +184,11 @@ def stamp_fields(top_dir, child, parent, now):
 
 def role_holds(repo, librarian):
     if librarian:
-        writer = f"{librarian} is this repo's single writer"
-        hand = f"hand finished branches to the librarian {librarian}"
+        writer = f"{librarian} is the single writer"
+        hand = f"hand branches to {librarian}"
     else:
-        writer = ("this repo's librarian is its single writer (none live: the "
-                  "operator decides)")
-        hand = ("hand finished branches to the librarian (none live: tell the "
-                "operator the branch is ready)")
+        writer = "the librarian is the single writer (none live: the operator decides)"
+        hand = "hand branches to the librarian (none live: tell the operator)"
     return [h.format(repo=repo, writer=writer, hand=hand) for h in ROLE_HOLDS]
 
 
@@ -194,8 +201,8 @@ def _heading(line):
 
 
 def with_role_holds(text, holds):
-    """`text` with `holds` as the first lines of its `## Holds` section, right
-    under the heading (a lone `None` there is replaced); a Holds section is added before
+    """`text` with `holds` as the last lines of its `## Holds` section, after
+    the holds it carries (a lone `None` there is replaced); a Holds section is added before
     `## In flight`, else at the end, when there is none. Frontmatter
     untouched."""
     lines = text.splitlines(keepends=True)
@@ -221,15 +228,17 @@ def with_role_holds(text, holds):
     content = [ln for ln in body if ln.strip()]
     if len(content) == 1 and \
             content[0].strip().lstrip("-* ").rstrip(".").lower() == "none":
-        body = [eol]                          # the lone `None` goes
-    return "".join(lines[:at + 1] + new + body + lines[end:])
+        body = []                             # the lone `None` goes
+    last = max((i for i, ln in enumerate(body) if ln.strip()), default=-1)
+    body = body[:last + 1] + new + (body[last + 1:] or [eol])
+    return "".join(lines[:at + 1] + body + lines[end:])
 
 
 def opener(parent, repo, topic, manifest, name, librarian, prompt):
     hand_in = HAND_IN.format(librarian=librarian, name=name) if librarian \
         else NO_LIBRARIAN
     return OPENER.format(parent=parent, repo=repo, topic=topic,
-                         manifest=manifest, name=name, hand_in=hand_in,
+                         manifest=manifest, name_q=sq(name), hand_in=hand_in,
                          prompt=prompt or NO_PROMPT)
 
 
@@ -245,7 +254,10 @@ def launch_line(where, child, name, open_text, sandbox, session_id):
 def parent_name(parent, environ):
     """This session's own name from its registry entry,
     <config dir>/sessions/<CLAUDE_PID>.json, read only when its `sessionId`
-    is this session's; else None. No other entry is ever opened."""
+    is this session's; else None. No other entry is ever opened. The entry's
+    `sessionId` and `name` fields are not documented (fields observed on this
+    session's own entry file, Claude Code 2.1.292; not documented), so a
+    missing or changed field reads as no name."""
     pid = environ.get("CLAUDE_PID") or ""
     if not pid.isdigit():
         return None
@@ -353,12 +365,25 @@ def run(args, environ, cwd, now, child=None):
                       f"digit, then letters, digits, space . _ -, at most 40)")
     where = launch_dir(args.launch_dir, environ, cwd)
     import rehydrate as R
-    repo = os.path.basename(R.git(where, "rev-parse", "--show-toplevel") or where)
+    top = R.git(where, "rev-parse", "--show-toplevel") or where
+    repo = os.path.basename(top)
+    for what, v in (("launch directory", where), ("repo toplevel", top),
+                    ("repo name", repo)):
+        if any(unicodedata.category(ch)[0] == "C"
+               or unicodedata.category(ch) in ("Zl", "Zp") for ch in v):
+            raise Refused(f"the {what} holds a control, format or line-break "
+                          f"character")
+    if not REPO_RE.fullmatch(repo):
+        raise Refused("the repo name may hold only letters, digits, . _ -")
     name = clean(args.name) if args.name is not None else f"{repo} - {args.topic}"
-    if not name or name == repo:
-        raise Refused(f"the name must not be empty or the bare {repo!r}, which "
-                      f"marks this repo's librarian")
     librarian = clean(args.librarian) if args.librarian is not None else ""
+    if not NAME_RE.fullmatch(name) or \
+            (args.librarian is not None and not NAME_RE.fullmatch(librarian)):
+        raise Refused(f"a session name must match ^{NAME_RE.pattern}$ (a letter "
+                      f"or digit, then letters, digits, space . _ -, at most 80)")
+    if name == repo:
+        raise Refused(f"the name must not be the bare {repo!r}, which marks "
+                      f"this repo's librarian")
     prompt = ""
     if args.prompt_file is not None:
         try:
@@ -390,9 +415,20 @@ def run(args, environ, cwd, now, child=None):
             raise Refused("the draft sets mode_skill:, and a spin-off has no "
                           "standing mode; remove it")
         body = with_role_holds(text, role_holds(repo, librarian))
-        new = M.restamp(body.encode("utf-8"),
-                        stamp_fields(where, child, parent, now))
-        if new is None or not M._write_atomic(target, raw, new, 0o600):
+        stamps = stamp_fields(where, child, parent, now)
+        new = M.restamp(body.encode("utf-8"), stamps)
+        if new is None:
+            raise Refused("the installed manifest could not be stamped")
+        # Read the stamped file back the way the rehydrate hook will: a line
+        # restamp's parser and the reader's split differently (a vertical tab
+        # inside a value) must not leave the reader a different `session:`,
+        # `mode:` or standing mode than the one stamped.
+        fm2 = R.front_matter(new.decode("utf-8"))
+        if any(fm2.get(k) != str(v) for k, v in stamps.items()) \
+                or "mode_skill" in fm2:
+            raise Refused("the stamped frontmatter does not read back as "
+                          "stamped (a line the reader splits differently)")
+        if not M._write_atomic(target, raw, new, 0o600):
             raise Refused("the installed manifest could not be stamped")
     except Refused:
         _remove_install(target)
