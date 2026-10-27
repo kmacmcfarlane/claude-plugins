@@ -390,7 +390,7 @@ const $=(s,r=document)=>r.querySelector(s);
 if(typeof ResizeObserver==="function"){const barEl=$(".bar");
   if(barEl)new ResizeObserver(()=>document.documentElement.style.scrollPaddingTop=(barEl.offsetHeight+12)+"px").observe(barEl)}
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]));
-const nameOf=k=>{const c=byN.get(k);if(c)return c.t;const r=REFS[k];return r?r.short:""};
+const nameOf=k=>{const c=byN.get(k);if(c)return c.t.replace(ATT_LINK,"$2");const r=REFS[k];return r?r.short:""};
 /* a decision reference, N · short name (answer 335's feedback): a card on the page is a link that opens its card
    (data-goto); a decision in refs shows its tooltip only, a tap or click pinning it (so a touch screen shows it
    too). Hovering or focusing either shows its tooltip (tipHtml); aria-describedby is set only while it shows.
@@ -529,7 +529,8 @@ function attBody(a){const b=a.body;
   return "";
 }
 /* its source line: where it came from; an example is always invented to illustrate */
-const attSrc=a=>{const s=isTxt(a.src)&&shown(a.src)?fmtPlain(a.src):"";return a.kind==="example"?"invented to illustrate"+(s?" · "+s:""):s};
+/* src, else an excerpt-shaped body's own src */
+const attSrc=a=>{const v=isTxt(a.src)&&shown(a.src)?a.src:xcOk(a.body)&&isTxt(a.body.src)&&shown(a.body.src)?a.body.src:"",s=v?fmtPlain(v):"";return a.kind==="example"?"invented to illustrate"+(s?" · "+s:""):s};
 const attEntry=(c,a)=>{const id=typeof a.id==="string"&&ATT_ID.test(a.id)?a.id:"",s=attSrc(a);
   return '<details class="att"'+(id?' id="att-'+esc(c.n)+'-'+id+'"':'')+'><summary><span class="at">'+fmtPlain(a.title)+'</span>'
     +'<span class="pill akind">'+esc(ATT_KINDS[a.kind])+'</span>'+(s?'<span class="asrc">'+s+'</span>':'')+'</summary><div class="abody">'+attBody(a)+'</div></details>'};
@@ -1192,7 +1193,7 @@ function tipHtml(k){
     return '<p class="tip-h"><span class="n">'+esc(k)+'</span><span>'+titleHtml(c)+'</span></p>'
       +'<p><span class="lbl">Context</span>'+fmtPlain(c.context)+'</p>'
       +'<ol class="tip-o">'+optsOf(c).map(o=>{const rec=!!c.rec&&o.k===c.rec,one=shown(o.line)?o.line:o.effect;
-        return '<li'+(rec?' class="isrec"':'')+'><span class="ol">('+esc(o.k)+')</span> '+esc(o.title)
+        return '<li'+(rec?' class="isrec"':'')+'><span class="ol">('+esc(o.k)+')</span> '+esc(o.title.replace(ATT_LINK,"$2"))
           +(shown(one)?'<span class="tip-l"> — '+fmtPlain(one)+'</span>':'')+(rec?'<span class="pill rec">recommended</span>':'')+'</li>'}).join("")+'</ol>'
       +'<p class="tip-a">your answer: '+(at?esc(at):'none yet')+(a&&a.words?' — “'+esc(a.words)+'”':'')+'</p>'}
   if(r)return '<p class="tip-h"><span class="n">'+esc(k)+'</span><span>'+esc(r.short)+'</span></p>'

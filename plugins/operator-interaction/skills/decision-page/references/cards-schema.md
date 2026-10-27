@@ -433,7 +433,7 @@ personal data from any source (logs, fixtures, configs, test output), never mate
 third party's private source, never Claude Code's source, prompts or internal names. The
 pre-publish runner refuses a line in an attachment, or in the Finding's excerpt, that looks
 like a secret, naming where it is and its key, never the value; without node, SKILL.md step 2's
-grep step runs the same patterns over `cards.json`.
+grep step runs the same patterns over `cards.json`. The patterns are a net, not a proof: a value holding a backslash, quote or space in its first 16 characters, a key running more than 80 characters past its keyword, or more than 80 spaces around its `=` or `:` passes both; the cold read's item 6 is the check for those.
 
 ## The answers collection
 

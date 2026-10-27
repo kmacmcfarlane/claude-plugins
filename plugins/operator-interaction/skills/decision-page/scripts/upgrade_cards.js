@@ -20,8 +20,8 @@
    --records DIR     also writes DIR/<N>.json per card: the card record, without the page-only L and dep.
 
    All or nothing: any card it cannot fully map (no q, a field it does not know, an unknown scope level, a rejected list not
-   of {bold, bullets}, an attached that is not a list, an attachment of a kind the record has not, an example's mode it
-   cannot read as a form, unequal assumption lists, a writer marker, a newer stamp) stops the run: exit 1, every problem listed with its card,
+   of {bold, bullets}, an attached that is not a list, an attachment of a kind the record has not, a depmap node's n that
+   is not a number, unequal assumption lists, a writer marker, a newer stamp) stops the run: exit 1, every problem listed with its card,
    nothing written. On success it prints a line per card (rev kept byte for byte, or new) and every
    value it moved with a note, and exits 0. It reads JSON and writes JSON; it never evaluates content.
    Writes: OUT's directory is made, OUT is written first, then each record; every file goes to a temp name in its
@@ -212,7 +212,7 @@ function fromKit(c, bad, note) {
       bad.push("an attachment's kind " + JSON.stringify(x.kind) + " is not one the record has (" + ATT_KINDS.join(", ") + "): nothing maps it");
     } else {
       /* an own-key copy onto a null-prototype object: a "__proto__" key stays a plain key, never a prototype. The
-         attachment's fields are the record's as they stand: only an example's mode moves */
+         attachment's fields are the record's as they stand: only an example's mode and a depmap node's n move */
       const y = Object.create(null);
       for (const k of Object.keys(x)) y[k] = x[k];
       /* an example's form follows its body, as the page draws it: an excerpt is a mock, anything else narrative (the kit

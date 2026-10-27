@@ -289,7 +289,7 @@ The rules below are what the digest condenses:
   `token`, `secret` or API key assignment with a long value). It prints line numbers only, so no
   value reaches the screen: open each line it names; one in an attachment or an excerpt is a
   secret until shown otherwise, and is replaced by where it is kept and under which key, never
-  its value. Report a hit by its card and key only, never by the line itself.
+  its value. Report a hit by its card and key only, never by the line itself. The patterns are a net, not a proof: a value holding a backslash, quote or space in its first 16 characters, a key running more than 80 characters past its keyword, or more than 80 spaces around its `=` or `:` passes both; the cold read's item 6 is the check for those.
 
   ```bash
   grep -nEi -e '-----BEGIN[ A-Z]*PRIVATE KEY-----' \
@@ -300,7 +300,7 @@ The rules below are what the digest condenses:
     -e '(^|[^A-Za-z0-9]|\\[nrtbf]|\\u[0-9A-Fa-f]{4})AKIA[0-9A-Z]{16}' \
     -e 'AIza[0-9A-Za-z_-]{35}' \
     -e '(^|[^A-Za-z0-9]|\\[nrtbf]|\\u[0-9A-Fa-f]{4})sk-[A-Za-z0-9_-]{20,}' \
-    -e '[A-Za-z0-9_-]{0,40}(password|passwd|secret|token|api[_-]?key|access[_-]?key)[A-Za-z0-9_-]{0,40}.?.? {0,40}[:=] {0,40}.?.?[A-Za-z0-9_./+=-]{16,}' \
+    -e '[A-Za-z0-9_-]{0,40}(password|passwd|secret|token|api[_-]?key|access[_-]?key)[A-Za-z0-9_-]{0,80}.?.? {0,80}[:=] {0,80}.?.?[A-Za-z0-9_./+=-]{16,}' \
     cards.json | cut -d: -f1
   ```
 

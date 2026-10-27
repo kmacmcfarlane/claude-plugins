@@ -264,11 +264,46 @@ class AttachPage(unittest.TestCase):
         self.assertIn("1: Office machine (the log)", h)
         self.assertIn("why now: Two broken publishes (the log) this month.", h)
         for old, new in (('esc(c.t.replace(ATT_LINK,"$2"))', "esc(c.t)"),
-                         ('esc(o.title.replace(ATT_LINK,"$2"))', "esc(o.title)"),
+                         ('esc(o.title.replace(ATT_LINK,"$2"))+(isRec', "esc(o.title)+(isRec"),
                          ('r.t.trim().replace(ATT_LINK,"$2")', "r.t.trim()"),
                          ('c.why.trim().replace(ATT_LINK,"$2")', "c.why.trim()")):
             with self.subTest(old):
                 self.assertIn("[[att:", one(d, mutant_page(old, new))["cards"]["41"]["card"])
+
+    def test_a_slug_and_a_tooltip_never_show_link_markup(self):
+        harness = r"""
+const d=JSON.parse(require("fs").readFileSync(0,"utf8"));
+CARDS=d.cards;REFS=d.refs||{};FOLLOW=d.follow;byN=new Map(CARDS.map(c=>[String(c.n),c]));FOLLOW_KEYS=new Set(FOLLOW.map(f=>f[0]));answers={};
+process.stdout.write(JSON.stringify({slug:slug("41"),tip:tipHtml("41")}));
+"""
+        d = example()
+        card(d, 41)["t"] = "Docs build ([[att:log|the log]])"
+        card(d, 41)["options"][0]["title"] = "Keep [[att:log|the log]]"
+
+        def run(script):
+            out = subprocess.run([shutil.which("node"), "-e", script + harness], input=json.dumps(d),
+                                 capture_output=True, text=True, timeout=60)
+            self.assertEqual(out.returncode, 0, out.stderr[:300])
+            return json.loads(out.stdout)
+        r = run(page_free_script())
+        self.assertIn("41 · Docs build (the log)", r["slug"])
+        self.assertIn("Keep the log", r["tip"])
+        self.assertNotIn("[[att:", r["slug"] + r["tip"])
+        # mutants: nameOf and the tooltip's option title raw again
+        self.assertIn("[[att:", run(mutant_page('if(c)return c.t.replace(ATT_LINK,"$2");', "if(c)return c.t;"))["slug"])
+        self.assertIn("[[att:", run(mutant_page(""")</span> '+esc(o.title.replace(ATT_LINK,"$2"))""", """)</span> '+esc(o.title)"""))["tip"])
+
+    def test_a_source_line_falls_back_to_the_excerpts_own(self):
+        a = {k: v for k, v in SAMPLES["excerpt"].items() if k != "src"}
+        a["body"] = dict(a["body"], src="upload/handler.go:40-45 at 3f2a9c1")
+        h = fold(one(with_att(a))["cards"]["41"]["card"])
+        self.assertIn('<span class="asrc">upload/handler.go:40-45 at 3f2a9c1</span>', h)
+        self.assertNotIn("has no source line", runner(with_att(a))[1])
+        # mutants: the page's fallback and the runner's each gone
+        h = fold(one(with_att(a), mutant_page(':xcOk(a.body)&&isTxt(a.body.src)&&shown(a.body.src)?a.body.src:""', ':""'))["cards"]["41"]["card"])
+        self.assertNotIn('class="asrc"', h)
+        js = mutant_runner(" && !(isExcerptObj(b) && shownSrc(b.src))", "")
+        self.assertIn("has no source line", runner(with_att(a), script=js)[1])
 
     def test_a_dependency_map_is_at_most_eight_deep(self):
         def deep(n):
@@ -553,7 +588,7 @@ class AttachRunner(unittest.TestCase):
         card(d, 41)["attached"][0]["body"]["text"] = "Zx9Qw8Er7Ty6Ui5Op4Lk-secret: whatever-goes-here-long"
         code, out = runner(d)[:2]
         self.assertEqual(code, 1, out)
-        self.assertIn("(an assignment of a secret, key secret)", out)
+        self.assertIn("(an assignment of a secret, its key holds secret)", out)
         for part in ("Zx9Q", "Op4Lk", "whatever"):
             self.assertNotIn(part, out)
         # a plain key still prints
@@ -561,8 +596,45 @@ class AttachRunner(unittest.TestCase):
         self.assertIn("key db_password)", runner(d)[1])
         # mutant: every key echoed
         card(d, 41)["attached"][0]["body"]["text"] = "Zx9Qw8Er7Ty6Ui5Op4Lk-secret: whatever-goes-here-long"
-        js = mutant_runner("&& !/[A-Za-z0-9]{8,}/.test(k.replace(m[1], \"-\")) ? k : m[1];", "? k : m[1];")
+        js = mutant_runner("&& !/[A-Za-z0-9]{8,}/.test(k.replace(m[1], \"-\")) ? k : null;", "? k : null;")
         self.assertIn("Zx9Qw8Er7Ty6Ui5Op4Lk", runner(d, script=js)[1])
+
+    def test_a_fallen_back_key_names_its_keyword_and_leaves_the_name_to_fill(self):
+        d = example()
+        card(d, 41)["attached"][0]["body"]["text"] = "DATABASE_PASSWORD = " + "x7" * 10
+        code, out = runner(d)[:2]
+        self.assertEqual(code, 1, out)
+        self.assertIn("(an assignment of a secret, its key holds PASSWORD)", out)
+        self.assertIn("[redacted: key <name> in <where it is kept>]", out)
+        self.assertNotIn("DATABASE", out)
+        # mutant: the fallback names nothing
+        js = mutant_runner('asg ? ", its key holds " + m[1] : ""', '""')
+        self.assertNotIn("its key holds", runner(d, script=js)[1])
+
+    def test_a_long_key_or_wide_spacing_still_hits_on_both_sides(self):
+        grep = shutil.which("grep")
+        args = grep_args(PAGE_SKILL.read_text())
+        for text in ("password_for_the_service_running_in_production_east = Zx9Qw8Er7Ty6Ui5Op4Lk",
+                     "password" + " " * 50 + "= Zx9Qw8Er7Ty6Ui5Op4Lk"):
+            with self.subTest(text[:30]):
+                d = example()
+                card(d, 41)["attached"][0]["body"]["text"] = text
+                self.assertEqual(runner(d)[0], 1)
+                if grep:
+                    with tempfile.TemporaryDirectory() as tmp:
+                        f = pathlib.Path(tmp) / "cards.json"
+                        f.write_text(json.dumps(d, indent=1))
+                        self.assertEqual(subprocess.run([grep, *args, str(f)], capture_output=True, text=True).returncode, 0)
+        # mutant: the suffix back at 40, in the runner: the long key passes
+        d = example()
+        card(d, 41)["attached"][0]["body"]["text"] = "password_for_the_service_running_in_production_east = Zx9Qw8Er7Ty6Ui5Op4Lk"
+        js = mutant_runner("access[_-]?key)[A-Za-z0-9_-]{0,80}", "access[_-]?key)[A-Za-z0-9_-]{0,40}")
+        self.assertNotEqual(runner(d, script=js)[0], 1)
+        # the documented misses, in all three places
+        net = "The patterns are a net, not a proof"
+        self.assertIn(net, " ".join(PAGE_SKILL.read_text().split()))
+        self.assertIn(net, " ".join(SCHEMA.read_text().split()))
+        self.assertIn(net, " ".join(RUNNER_JS.read_text().split()))
 
     def test_a_long_line_does_not_make_the_assignment_backtrack(self):
         import time
@@ -617,7 +689,7 @@ class AttachRunner(unittest.TestCase):
         self.assertIn("lint: card 41: depth: attachment 1 (Homes) has no source line", out)
         self.assertNotIn("attachment 2 (A restore) has no source line", out)
         self.assertNotIn("has no source line", runner(example())[1])
-        js = mutant_runner('if (a.kind !== "example" && !(typeof a.src', 'if (false && !(typeof a.src')
+        js = mutant_runner('if (a.kind !== "example" && !shownSrc(a.src)', 'if (false && !shownSrc(a.src)')
         self.assertNotIn("has no source line", runner(d, script=js)[1])
 
     def test_a_page_with_excerpts_names_its_repos(self):
