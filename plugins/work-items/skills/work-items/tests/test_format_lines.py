@@ -11,8 +11,12 @@ Standard library only. Run from plugins/work-items/skills/work-items:
 
     python3 -m unittest discover -s tests -q
 """
+import hashlib
 import importlib.util
 import re
+import shlex
+import subprocess
+import tempfile
 import unittest
 from pathlib import Path
 
@@ -200,6 +204,285 @@ class ShownNamesItsRev(unittest.TestCase):
     def test_the_table_row(self):
         row = {r["kind"]: r for r in rows(section(self.text))}["shown"]
         self.assertIn("[rev <rev>]", row["form"])
+
+
+# ── 03ab F1: the group and depends lines ──────────────────────────────────────────────────
+
+GROUPS = "## Groups and dependencies: `group` / `depends`"
+
+
+def groups_section(text):
+    """The § Groups and dependencies body, or '' when the heading is gone."""
+    if GROUPS not in text:
+        return ""
+    start = text.index(GROUPS)
+    return text[start:text.index("\n## ", start + len(GROUPS))]
+
+
+def patterns(sec):
+    """{name: compiled} from the section's own `- <name>: `<regex>`` bullets, `T` expanded."""
+    t = re.search(r"`T` standing for one\s+target, `([^`]+)`", sec)
+    out = {}
+    for name, rx in re.findall(r"^- (group entity|group member|depends|each target): `([^`]+)`$",
+                               sec, re.M):
+        if name == "depends" and t:
+            rx = rx.replace("T", "(?:" + t.group(1) + ")")
+        out[name] = re.compile(rx)
+    return out
+
+
+ACCEPT = {
+    "group member": ["group 290: g-1022-a3f"],
+    "group entity": [
+        "group g-1022-a3f: decision cards",
+        "group g-1022-a3f: upload review findings · shares: all from today's review · "
+        "context: the review read the upload path",
+    ],
+    "depends": [
+        "depends 42: 41 (b)", "depends 42: 41 (a), 41 (c), 47", "depends 42: none",
+        "depends 42: none — the reframe settled it", "depends 42: 41 (b), agents#12 — both",
+    ],
+}
+REJECT = {
+    "group member": ["group 290: GRP12", "group 290: decision cards", "group 290: g-1022-A3F"],
+    "group entity": [
+        "group g-22-a3f: x", "group g-1022-A3F: x", "group g-1022-a3f0: x",
+        "group g-1022-a3f:  x", "group g-1022-a3f: x · shares: y", "group GRP12: x",
+        "  group g-1022-a3f: x",
+    ],
+    "depends": [
+        "depends 42: 41 (z)", "depends 42: 41b", "depends 42: 41 —  ", "  depends 42: 41",
+        "depends 42:",
+    ],
+}
+
+
+def grammar_problems(text):
+    sec = groups_section(text)
+    pats = patterns(sec)
+    out = []
+    for name in ("group entity", "group member", "depends", "each target"):
+        if name not in pats:
+            out.append(f"no {name} pattern")
+    for name, lines in ACCEPT.items():
+        for line in lines:
+            if name in pats and not pats[name].match(line):
+                out.append(f"{name} rejects {line!r}")
+    for name, lines in REJECT.items():
+        for line in lines:
+            if name in pats and pats[name].match(line):
+                out.append(f"{name} accepts {line!r}")
+    if "group entity" in pats:
+        m = pats["group entity"].match(ACCEPT["group entity"][1])
+        if m and m.groups()[1:] != ("upload review findings", "all from today's review",
+                                    "the review read the upload path"):
+            out.append(f"the bundle form splits as {m.groups()!r}")
+    if "group member" in pats and "group entity" in pats:
+        if pats["group member"].match(ACCEPT["group entity"][0]) \
+                or pats["group entity"].match(ACCEPT["group member"][0]):
+            out.append("an entity line and a member line read as each other")
+    if "each target" in pats:
+        got = pats["each target"].findall("41 (a), 41 (c), agents#47")
+        if got != [("", "41", "a"), ("", "41", "c"), ("agents", "47", "")]:
+            out.append(f"the targets split as {got!r}")
+    return out
+
+
+def rules_problems(text):
+    sec = flat(groups_section(text))
+    want = [
+        "The last entity line per id wins, so a rename is one appended entity line",
+        "the last member line per N wins, so a regroup is one appended member line",
+        "A reader looks an id up across the whole store, `items/` and then `archive/*/`",
+        "A member line holding a name instead of an id is malformed",
+        "reads its item's default group: the item's `short_display_name`, else its title",
+        "Group ids are not numbers and take nothing from the decision counter",
+        "there is no group counter and no lock",
+        "Before writing it, check that it is not taken",
+        "The session that finds one deletes the entity line it wrote, the one deletion these "
+        "lines allow",
+        "re-creates its group under a new id, with new member lines",
+        "Repeats of one id within one item are revisions (a rename, or its shares and context "
+        "changed), last wins, never a duplicate",
+        "a `'` in the name written `'\\''`",
+        "a reader trims the trailing spaces off the name it captures",
+        "it is never shown to the operator, on any surface",
+        "Targets on the same M are alternatives (any listed letter); targets on different Ms "
+        "all apply",
+        "so `(z)` is not written",
+        "The last line per N is the whole set, and `none` empties it",
+        "resolves to M, following the chain; the resolved edge keeps no letter",
+        "`wi` does not parse them yet",
+        "never through `raise --lines`",
+        "never a dispatched agent",
+        "never inserted between a `decision N:` headline and its card",
+    ]
+    return [w for w in want if w not in sec]
+
+
+def fenced_after(sec, opener):
+    """The first ```bash block whose first line starts with `opener`."""
+    for block in re.findall(r"```bash\n(.*?)```", sec, re.S):
+        if block.startswith(opener):
+            return block
+    return None
+
+
+def make_id(text, t="2026-10-22T09:15:02Z", item="decisions-structured-depends-and-group-l-03ab",
+            name="decision cards"):
+    """Run the section's id line with a fixed time and inputs; its stdout, or None."""
+    block = fenced_after(groups_section(text), "t=$(date")
+    if block is None:
+        return None
+    block = block.replace("t=$(date -u +%Y-%m-%dT%H:%M:%SZ)", "t=" + t, 1)
+    block = block.replace("<item id>", item.replace("'", "'\\''"))
+    block = block.replace("<plain name>", name.replace("'", "'\\''"))
+    run = subprocess.run(["bash", "-c", block], capture_output=True, text=True, timeout=30)
+    return run.stdout.strip()
+
+
+def run_taken(text, store, gid):
+    """Run the section's not-taken check against `store` for `gid`: (taken?, stderr)."""
+    block = fenced_after(groups_section(text), "grep -rqE")
+    if block is None:
+        return None, ""
+    block = block.replace("<root>", shlex.quote(str(store))).replace("<id>", gid)
+    run = subprocess.run(["bash", "-c", "unset -f grep find; " + block], capture_output=True,
+                         text=True, timeout=30)
+    return run.stdout.strip() == "taken", run.stderr
+
+
+def taken(text, store, gid):
+    return run_taken(text, store, gid)[0]
+
+
+ROWS = {
+    "group": "`group g-<MMDD>-<hhh>: <plain name>[ · shares: <what its members share> · "
+             "context: <shared context>]`",
+    "group member": "`group N: g-<MMDD>-<hhh>`",
+    "depends": "`depends N: <M[ (x)] | <repo>#M[ (x)]>[, …][ — <why>]` or "
+               "`depends N: none[ — <why>]`",
+    "writer run": "`writer-run: <UTC> <page short name> w<k>/<K> — cards <n> · tokens "
+                  "<input>/<output> · lints <n> [<keys>]`",
+}
+
+
+def table_problems(text):
+    table = {r["kind"]: r for r in rows(section(text))}
+    out = []
+    for kind, form in ROWS.items():
+        row = table.get(kind)
+        if row is None:
+            out.append(f"no {kind} row")
+            continue
+        if row["form"] != form:
+            out.append(f"{kind} form {row['form']!r}")
+        if not row["state"].startswith("landed"):
+            out.append(f"{kind} is {row['state']!r}")
+        if row["column"].split(",")[0] != "0":
+            out.append(f"{kind} column {row['column']!r}")
+    for kind in ("group", "group member", "depends"):
+        if kind in table and "never a dispatched agent" not in table[kind]["writer"]:
+            out.append(f"{kind} names no writer rule")
+    return out
+
+
+class GroupsAndDependencies(unittest.TestCase):
+    """03ab F1: § Groups and dependencies gives the group entity and member lines, the
+    `g-<MMDD>-<hhh>` id (made from a short time plus a hash, checked not taken, no counter),
+    and `depends N:`; § Decision line kinds lists each kind as landed. Each check runs on the
+    real format and on a mutant copy, which it must catch."""
+
+    def setUp(self):
+        self.text = FORMAT.read_text()
+
+    def test_the_grammar(self):
+        self.assertEqual(grammar_problems(self.text), [])
+
+    def test_the_grammar_mutants(self):
+        sec = groups_section(self.text)
+        for old, new in [("[0-9a-f]{3})$", "[0-9a-zA-Z]{3})$"),  # member hex widened
+                         (r"\([a-y]\))?`", r"\([a-z]\))?`"),     # (z) let through
+                         ("[^·\\s][^·]*?)(?: · shares", ".+?)(?: · shares"),  # name takes ·
+                         ("- depends: `", "- depend: `")]:       # the pattern lost
+            self.assertIn(old, sec)
+            cut = self.text.replace(sec, sec.replace(old, new))
+            self.assertNotEqual(grammar_problems(cut), [], old)
+
+    def test_the_rules(self):
+        self.assertEqual(rules_problems(self.text), [])
+
+    def test_the_rules_mutants(self):
+        sec = groups_section(self.text)
+        for phrase in ["Group ids are not numbers", "the one deletion these lines allow",
+                       "Targets on the same M are alternatives", "`archive/*/`",
+                       "never through `raise --lines`", "a reader trims the trailing spaces",
+                       "its shares and context changed"]:
+            self.assertIn(phrase, flat(sec))
+            cut = self.text.replace(sec, flat(sec).replace(phrase, "gone"))
+            self.assertNotEqual(rules_problems(cut), [], phrase)
+
+    def test_the_id_line(self):
+        self.assertEqual(make_id(self.text), "g-1022-d6f")
+        self.assertRegex(make_id(self.text, t="2026-01-05T23:59:59Z", item="x", name="y"),
+                         r"^g-0105-[0-9a-f]{3}$")
+
+    def test_the_id_line_takes_any_name_literally(self):
+        # L4: the placeholders are single-quoted, a `'` written `'\''`, so a name holding a
+        # quote, `$` or a backtick hashes as written
+        name = "it's $HOME `id`"
+        want = hashlib.sha256(("2026-10-22T09:15:02Z x " + name).encode()).hexdigest()[:3]
+        self.assertEqual(make_id(self.text, item="x", name=name), "g-1022-" + want)
+        # mutant: the placeholders double-quoted again, so the shell expands the name
+        cut = self.text.replace("'<item id>' '<plain name>'", '"<item id>" "<plain name>"')
+        self.assertNotEqual(cut, self.text)
+        self.assertNotEqual(make_id(cut, item="x", name=name), "g-1022-" + want)
+
+    def test_the_id_line_mutant(self):
+        cut = self.text.replace("| cut -c1-3)", "| cut -c1-4)")
+        self.assertNotEqual(cut, self.text)
+        self.assertNotRegex(make_id(cut), r"^g-\d{4}-[0-9a-f]{3}$")
+
+    def test_the_not_taken_check(self):
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            (root / "items").mkdir()
+            (root / "archive" / "2026").mkdir(parents=True)
+            (root / "items" / "a.md").write_text("group g-1022-b00: one\n")
+            (root / "archive" / "2026" / "b.md").write_text("group g-1022-a3f: two\n")
+            self.assertTrue(taken(self.text, root, "g-1022-a3f"))
+            self.assertTrue(taken(self.text, root, "g-1022-b00"))
+            self.assertFalse(taken(self.text, root, "g-1022-c11"))
+            # mutant: the archive left out of the check
+            cut = self.text.replace("<root>/items <root>/archive", "<root>/items")
+            self.assertNotEqual(cut, self.text)
+            self.assertFalse(taken(cut, root, "g-1022-a3f"))
+
+    def test_the_not_taken_check_is_quiet_with_no_archive(self):
+        # L5: a store with no archive/ yet answers without an error on stderr
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            (root / "items").mkdir()
+            (root / "items" / "a.md").write_text("group g-1022-b00: one\n")
+            self.assertEqual(run_taken(self.text, root, "g-1022-b00"), (True, ""))
+            self.assertEqual(run_taken(self.text, root, "g-1022-c11"), (False, ""))
+            # mutant: the redirect dropped, so grep complains about the missing archive
+            cut = self.text.replace("<root>/archive 2>/dev/null &&", "<root>/archive &&")
+            self.assertNotEqual(cut, self.text)
+            self.assertNotEqual(run_taken(cut, root, "g-1022-c11")[1], "")
+
+    def test_the_table_rows(self):
+        self.assertEqual(table_problems(self.text), [])
+
+    def test_the_table_rows_mutants(self):
+        sec = section(self.text)
+        for old, new in [("| landed; last line per N is the whole set |",
+                          "| planned (the depends-and-groups plan) |"),
+                         ("| group member |", "| member |"),
+                         ("w<k>/<K> — cards", "w<k> — cards")]:
+            self.assertIn(old, sec)
+            cut = self.text.replace(sec, sec.replace(old, new))
+            self.assertNotEqual(table_problems(cut), [], old)
 
 
 if __name__ == "__main__":
