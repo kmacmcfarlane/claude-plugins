@@ -103,12 +103,12 @@ leaves this session's own manifest and gate state as they were, and adds one led
   must.
 - **The record.** `${CLAUDE_CONFIG_DIR:-~/.claude}/claude-kit/spin-off/<child>.json`
   (`0700` directory, `0600` file, temp file and atomic replace) holds `v`, `session_id`,
-  `name`, `topic`, `spun_from`, `parent_name` (this session's name from its own registry
-  entry, read only when that entry's `sessionId` is this session's, else `null`; fields
-  observed on this session's own entry file, Claude Code 2.1.292; not documented),
-  `librarian`, `top`, `repo`, `created` and `manifest`. It is what other sessions read to
-  know a session is a spin-off; the manifest is not, since the spin-off's own first
-  checkpoint rewrites it. Each write prunes records over 14 days old: regular `*.json`
+  `name`, `topic`, `spun_from`, `parent_name`, `librarian`, `top`, `repo`, `created` and
+  `manifest`. `parent_name` is this session's name from its own registry entry (keys
+  observed in the session registry, Claude Code 2.1.292; not documented), read only when
+  that entry's `sessionId` is this session's, else `null`. The record is what other
+  sessions read to know a session is a spin-off; the manifest is not, since the spin-off's
+  own first checkpoint rewrites it. Each write prunes records over 14 days old: regular `*.json`
   files only, never through a link.
 - **The launch line,** printed last and alone on its line, every value single-quoted:
   `cd '<launch dir>' && claude-sandbox --new -- --session-id '<child>' --name '<name>'

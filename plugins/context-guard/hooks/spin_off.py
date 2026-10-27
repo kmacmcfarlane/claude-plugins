@@ -255,9 +255,9 @@ def parent_name(parent, environ):
     """This session's own name from its registry entry,
     <config dir>/sessions/<CLAUDE_PID>.json, read only when its `sessionId`
     is this session's; else None. No other entry is ever opened. The entry's
-    `sessionId` and `name` fields are not documented (fields observed on this
-    session's own entry file, Claude Code 2.1.292; not documented), so a
-    missing or changed field reads as no name."""
+    `sessionId` and `name` fields (keys observed in the session registry,
+    Claude Code 2.1.292; not documented) may change, so a missing or changed
+    field reads as no name."""
     pid = environ.get("CLAUDE_PID") or ""
     if not pid.isdigit():
         return None
