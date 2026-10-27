@@ -892,7 +892,9 @@ marker — and a line inside a fenced code block is text, not a marker. N is
 never reused across the store; a revised question keeps its number:
 `$WI raise <id> --revise N`, which appends the restated headline under a
 `revised:` line (§ Card records) — when N repeats, `needs-input` shows the
-last line's text. `answer 40:` answers decision 40
+last line's text, or, when N has a `card:` line, the text of the headline whose
+block holds its last `card:` line (a later backfill headline does not replace
+it). `answer 40:` answers decision 40
 only, never decision 4. `<reply>` is the operator's reply verbatim, on one
 physical line (an exact `N: letter` reply is stored as its letter; the
 caller's rules give the rest); a caller's form that opens with its own

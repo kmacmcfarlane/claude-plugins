@@ -152,24 +152,37 @@ ANSWER_RE = re.compile(r"^answer (\d+):")
 def unanswered_decisions(item):
     """[(N, text)] for each `decision N:` body line with no `answer N:` line
     anywhere in the same body, in order of each N's first line, one per N.
-    A repeated N is a revised question: its text is the last line's. Lines
+    A repeated N is a revised question: its text is the last line's, or, when
+    the N has `card:` lines, that of the block holding the last one. Lines
     inside a fenced code block are text, not markers."""
     lines = item.body.replace("\r\n", "\n").split("\n")
     fenced = set()
     for i, j in _fence_spans(lines):
         fenced.update(range(i, j + 1))
     asked, answered = {}, set()
+    carded, block = {}, None   # N: text of the block holding its last card:
     for i, line in enumerate(lines):
         if i in fenced:
+            block = None
             continue
         m = DECISION_RE.match(line)
         if m:
             asked[int(m.group(1))] = m.group(2).strip()
+            block = (int(m.group(1)), m.group(2).strip())
             continue
+        if block is not None:
+            if not line[:1].isspace():
+                block = None
+            elif CARD_RE.fullmatch(line):
+                carded[block[0]] = block[1]
+                continue
         m = ANSWER_RE.match(line)
         if m:
             answered.add(int(m.group(1)))
-    return [(n, text) for n, text in asked.items() if n not in answered]
+    # a decision with a card: line shows the headline of the block holding
+    # its last card: line, not a later backfill headline (2fd5)
+    return [(n, carded.get(n, text)) for n, text in asked.items()
+            if n not in answered]
 
 
 # A stored decision card (librarian-mode's references/decisions.md) indents

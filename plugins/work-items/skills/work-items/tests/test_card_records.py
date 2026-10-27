@@ -409,6 +409,63 @@ class TestRaiseRecord(CardCase):
         self.assertEqual(sorted(est2), sorted(est))
 
 
+class TestCardedHeadline(CardCase):
+    """2fd5: a decision with card: lines shows the headline of the block
+    holding its last card: line, not a later backfill headline."""
+
+    CARD = (f"  card: cards/{IID}/4/2026-10-23T10-00-00Z.card5.json rev "
+            f"{REV} \u00b7 decision-card/5")
+
+    def shown(self):
+        plain = self.ok("needs-input", "--plain").stdout
+        js = json.loads(self.ok("needs-input", "--json").stdout)
+        est = json.loads(self.ok("estate", "--dir", str(self.tmp),
+                                 "--json").stdout)
+        texts = [ln.split("\t")[-1] for ln in plain.splitlines()]
+        jtexts = [d["text"] for d in js[0]["decisions"]]
+        etexts = [d["text"] for r in est["repos"]
+                  for d in r["decisions"]]
+        return texts, jtexts, etexts
+
+    def test_backfill_headline_after_card_does_not_win(self):
+        self.item(IID, notes=("decision 4: A question?\n  raised: " + REV +
+                              "\n" + self.CARD +
+                              "\ndecision 4: B backfill?\n  raised: " + REV))
+        texts, jtexts, etexts = self.shown()
+        self.assertEqual(texts, ["A question?"])
+        self.assertEqual(jtexts, ["A question?"])
+        self.assertEqual(etexts, ["A question?"])
+
+    def test_no_card_line_shows_last_headline(self):
+        self.item(IID, notes=("decision 4: A question?\n  raised: " + REV +
+                              "\ndecision 4: B revised?\n  raised: " + REV))
+        texts, jtexts, etexts = self.shown()
+        self.assertEqual(texts, ["B revised?"])
+        self.assertEqual(jtexts, ["B revised?"])
+        self.assertEqual(etexts, ["B revised?"])
+
+    def test_card_line_cut_off_by_blank_line_is_not_in_the_block(self):
+        self.item(IID, notes="decision 4: A?\n\n" + self.CARD +
+                  "\ndecision 4: B?")
+        self.assertEqual(self.shown()[0], ["B?"])
+
+    def test_fenced_card_line_is_text(self):
+        self.item(IID, notes="decision 4: A?\n```\n" + self.CARD +
+                  "\n```\ndecision 4: B?")
+        self.assertEqual(self.shown()[0], ["B?"])
+
+    def test_card_line_after_a_fence_is_not_in_the_block(self):
+        self.item(IID, notes="decision 4: A?\n```\ncode\n```\n" +
+                  self.CARD + "\ndecision 4: B?")
+        self.assertEqual(self.shown()[0], ["B?"])
+
+    def test_last_card_block_wins_over_earlier_card(self):
+        self.item(IID, notes=("decision 4: A?\n" + self.CARD +
+                              "\ndecision 4: C?\n" + self.CARD +
+                              "\ndecision 4: D backfill?"))
+        self.assertEqual(self.shown()[0], ["C?"])
+
+
 class TestStrict(CardCase):
 
     def raw(self, text, why):
