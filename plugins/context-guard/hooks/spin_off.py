@@ -423,11 +423,8 @@ def run(args, environ, cwd, now, child=None):
         # restamp's parser and the reader's split differently (a vertical tab
         # inside a value) must not leave the reader a different `session:`,
         # `mode:` or standing mode than the one stamped.
-        fm2 = R.front_matter(new.decode("utf-8"))
-        if any(fm2.get(k) != str(v) for k, v in stamps.items()) \
-                or "mode_skill" in fm2:
-            raise Refused("the stamped frontmatter does not read back as "
-                          "stamped (a line the reader splits differently)")
+        if not M.reads_back(new, stamps, forbid=("mode_skill",)):
+            raise Refused(M.READ_BACK_REFUSAL)
         if not M._write_atomic(target, raw, new, 0o600):
             raise Refused("the installed manifest could not be stamped")
     except Refused:

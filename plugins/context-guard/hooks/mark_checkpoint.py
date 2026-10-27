@@ -71,6 +71,12 @@ head, branch, top and session, and an mtime within rehydrate.STAMP_TOUCH_S of it
 `written:`) is left as it is, so repeated marks do not re-date it.
 Stamping never fails the checkpoint: every problem is a warning, and the gate
 record (L.mark_checkpoint) is exactly what it would be without a manifest.
+That includes a stamp that would not read back as stamped (reads_back,
+3d13: the rehydrate reader splits a line, say at a vertical tab, that
+restamp keeps whole, so it would see another `session:`, or its frontmatter
+would end before the stamp): nothing is stamped, and a draft installed by
+`--from` this run is undone - the store file it replaced is put back byte
+for byte, or, when there was none, the installed copy is removed.
 
 One transitional warning rides on the store path (legacy_copy_warning,
 8cc2-F3b-3): when this session's store manifest was copied from its own
@@ -162,6 +168,24 @@ def restamp(raw, fields):
     out += [f"{k}: {fields[k]}".encode() + first_eol
             for k in order if k not in seen]
     return b"".join(out + lines[close:])
+
+
+READ_BACK_REFUSAL = ("the stamped frontmatter does not read back as stamped "
+                     "(a line the reader splits differently)")
+
+
+def reads_back(new, fields, forbid=()):
+    """Whether `new` (restamp's bytes) reads back, the way the rehydrate hook
+    reads a manifest (rehydrate.front_matter over rehydrate.decode_text),
+    with every key in `fields` equal to the value stamped and no key in
+    `forbid`. restamp splits lines on bytes and the reader on str, so a line
+    break only the reader sees (a vertical tab inside a value) could hand the
+    reader a different `session:`, or end its frontmatter before the stamp.
+    The one check behind both writers: this mark path and spin_off.py."""
+    import rehydrate as R
+    fm = R.front_matter(R.decode_text(new))
+    return all(fm.get(k) == str(v) for k, v in fields.items()) and \
+        not any(k in fm for k in forbid)
 
 
 def _claimable(owner, sha, want, st):
@@ -411,6 +435,15 @@ def legacy_copy_warning(want, store):
 
 def stamp_manifest(sid, cwd=None, environ=None, now=None):
     """(stdout lines, warning lines). Never raises."""
+    return _stamp(sid, cwd, environ, now)[:2]
+
+
+def _stamp(sid, cwd=None, environ=None, now=None):
+    """stamp_manifest's work: (stdout lines, warning lines, read_back), where
+    read_back is True only when the stamp was refused because it would not
+    read back as stamped (reads_back) - the one case in which main undoes
+    the install it made this run.
+    Never raises."""
     out, warn = [], []
     try:
         import rehydrate as R
@@ -425,7 +458,7 @@ def stamp_manifest(sid, cwd=None, environ=None, now=None):
                             f"scratchpad, where the rehydration hook never looks; "
                             f"install it with `mark_checkpoint.py --from {p} "
                             f"<session_id>` (Step 4b).")
-            return out, warn
+            return out, warn, False
         if is_store:
             # Before every other check, so it prints beside whichever of them
             # refuses; it never refuses itself.
@@ -440,7 +473,7 @@ def stamp_manifest(sid, cwd=None, environ=None, now=None):
         if not L._SAFE_SID.fullmatch(want or ""):
             warn.append("mark_checkpoint.py: not stamped: the session id is not "
                         "a plain id.")
-            return out, warn
+            return out, warn, False
         real = os.path.realpath(path)
         with open(real, "rb") as fh:
             raw = fh.read()
@@ -451,7 +484,7 @@ def stamp_manifest(sid, cwd=None, environ=None, now=None):
             warn.append(f"mark_checkpoint.py: not stamped: {path} was last written "
                         f"{int(age // 60)} min ago, so this checkpoint did not write "
                         f"it; rewrite it (Step 4b), then run this again.")
-            return out, warn
+            return out, warn, False
         fm = R.front_matter(text)
         v = R.manifest_version(text, fm)
         # The store file is ours by path - no other session can be named by
@@ -461,7 +494,7 @@ def stamp_manifest(sid, cwd=None, environ=None, now=None):
             warn.append(f"mark_checkpoint.py: not stamped: {path} names another "
                         f"session in `session:` and was not rewritten by this one "
                         f"(see below).")
-            return out, warn
+            return out, warn, False
         head = R.git(top, "rev-parse", "--short", "HEAD")
         fields = {"written": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(now)),
                   "top": top, "session": want}
@@ -473,16 +506,21 @@ def stamp_manifest(sid, cwd=None, environ=None, now=None):
         if _own_stamp(fm, fields, fst.st_mtime):
             out.append(f"{path} already stamped (written {fm.get('written')}); "
                        f"not rewritten since, so left as it is")
-            return out, warn
+            return out, warn, False
         new = restamp(raw, fields)
         if new is None:
             warn.append(f"mark_checkpoint.py: not stamped: {path} has no "
                         f"frontmatter (see references/handoff-format.md).")
-            return out, warn
+            return out, warn, False
+        if not reads_back(new, fields):
+            warn.append(f"mark_checkpoint.py: not stamped: {path}: "
+                        f"{READ_BACK_REFUSAL}; nothing written. Fix the "
+                        f"frontmatter, then run this again.")
+            return out, warn, True
         if new != raw and not _write_atomic(real, raw, new, fst.st_mode & 0o7777):
             warn.append(f"mark_checkpoint.py: not stamped: {path} changed while "
                         f"being stamped; run this again.")
-            return out, warn
+            return out, warn, False
         out.append(f"stamped {path} (written {fields['written']}, head "
                    f"{fields.get('head', '?')}, branch {fields.get('branch', '?')}, "
                    f"top {top}, session {want})")
@@ -493,7 +531,7 @@ def stamp_manifest(sid, cwd=None, environ=None, now=None):
                     f"in its place. Fix the file, then run this again.")
     except Exception as e:
         warn.append(f"mark_checkpoint.py: not stamped: {type(e).__name__}.")
-    return out, warn
+    return out, warn, False
 
 
 def session_warnings(sid, cwd=None, environ=None):
@@ -550,19 +588,12 @@ def main(argv):
                  f"check the session id — nothing recorded.")
     # Stamp first, in its own guard: it must precede anything that pins a
     # version, and nothing it does may keep the gate from standing down.
-    installed, refused = [], []
+    installed, refused, target, prev = [], [], None, None
     if draft is not None:
+        prev = _store_snapshot(sid)
         try:
             target = install_draft(draft, sid)
             installed.append(f"installed {draft} as {target}")
-            try:
-                # The ledger's pointer to the manifest: the Write that used to
-                # record it (ledger_pointer.py) now writes only the draft.
-                import ledger
-                ledger.append(this_session(sid), "P", "installed HANDOFF.md",
-                              ref=target)
-            except Exception:
-                pass
         except InstallRefused as e:
             refused.append(f"mark_checkpoint.py: not installed, so not stamped: "
                            f"{e}. Fix it and run this again.")
@@ -572,9 +603,32 @@ def main(argv):
     try:
         # A draft that did not install stamps nothing: whatever store file is
         # there is an older one, not what this checkpoint wrote.
-        stamped, warns = stamp_manifest(sid) if not refused else ([], refused)
+        stamped, warns, read_back = _stamp(sid) if not refused \
+            else ([], refused, False)
     except Exception:
-        stamped, warns = [], []
+        stamped, warns, read_back = [], [], False
+    if read_back and installed:
+        # The stamp would not read back as stamped: undo the install, so the
+        # store holds what it held before this run - the earlier manifest
+        # put back as it was, or no file when there was none.
+        if prev is not None:
+            _restore(target, prev)
+        else:
+            _remove_install(target)
+        installed = []
+        warns = [w for w in warns if READ_BACK_REFUSAL not in w] + [
+            f"mark_checkpoint.py: not installed, so not stamped: "
+            f"{READ_BACK_REFUSAL}; the store holds what it held before. Fix "
+            f"the draft's frontmatter and run this again."]
+    elif installed:
+        try:
+            # The ledger's pointer to the manifest: the Write that used to
+            # record it (ledger_pointer.py) now writes only the draft.
+            import ledger
+            ledger.append(this_session(sid), "P", "installed HANDOFF.md",
+                          ref=target)
+        except Exception:
+            pass
     stamped = installed + stamped
     st = L.mark_checkpoint(sid)
     print(f"checkpoint recorded for epoch {L.epoch(st)}")
@@ -582,6 +636,61 @@ def main(argv):
         print(s)
     for w in warns + session_warnings(sid):
         print(w, file=sys.stderr)
+
+
+def _store_snapshot(sid):
+    """(bytes, os.stat) of this session's own store manifest before an
+    install, or None when there is none that is really ours
+    (own_store_manifest)."""
+    want = this_session(sid)
+    if not L._SAFE_SID.fullmatch(want or ""):
+        return None
+    p = store_manifest_path(want)
+    try:
+        if os.path.lexists(p) and own_store_manifest(p, want):
+            with open(p, "rb") as fh:
+                return fh.read(), os.fstat(fh.fileno())
+    except OSError:
+        pass
+    return None
+
+
+def _restore(target, prev):
+    """Put a _store_snapshot back at `target` atomically: a temp file in its
+    own directory, 0600, its times set back to the snapshot's (so the stamp
+    window still sees how old it is, as copy_legacy keeps its source's),
+    os.replace'd in."""
+    data, st = prev
+    fd, tmp = tempfile.mkstemp(dir=os.path.dirname(target), prefix=".HANDOFF.",
+                               suffix=".tmp")
+    try:
+        with os.fdopen(fd, "wb") as fh:
+            fh.write(data)
+            fh.flush()
+            os.fsync(fh.fileno())
+        os.chmod(tmp, 0o600)
+        os.utime(tmp, ns=(st.st_atime_ns, st.st_mtime_ns))
+        os.replace(tmp, target)
+        tmp = None
+    finally:
+        if tmp:
+            try:
+                os.unlink(tmp)
+            except OSError:
+                pass
+
+
+def _remove_install(target):
+    """Remove an installed store file, and its <sid>/ directory when that is
+    left empty."""
+    try:
+        os.unlink(target)
+    except OSError:
+        pass
+    try:
+        os.rmdir(os.path.dirname(target))
+    except OSError:
+        pass
 
 
 if __name__ == "__main__":

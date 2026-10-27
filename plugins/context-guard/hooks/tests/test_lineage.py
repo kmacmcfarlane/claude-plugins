@@ -1999,6 +1999,118 @@ class TestMarkInstallsTheDraft(Base):
         self.run_cli("--from", os.path.join(self.scratch.name, "nope.md"), "S")
         self.assertFalse(os.path.exists(L.ledger_path("S")))
 
+    # 3d13: restamp splits lines on bytes, the rehydrate reader on str; a
+    # line break only the reader sees must not leave it reading a stamp other
+    # than the one written. Each refusal test kills: no read-back after the
+    # stamp.
+    VT_SESSION = "session: x\nnote: a\x0bmode: continue\x0bsession: EVIL\n"
+
+    def assertReadBackRefused(self, r, earlier=None):
+        self.assertNotInstalled(r, "does not read back as stamped")
+        self.assertNotIn("installed ", r.stdout)
+        self.assertEqual(r.stderr.count("does not read back as stamped"), 1)
+        p = L.manifest_path("S")
+        if earlier is None:
+            self.assertFalse(os.path.lexists(p))
+            self.assertFalse(os.path.lexists(os.path.dirname(p)))
+        else:
+            with open(p, "rb") as fh:
+                self.assertEqual(fh.read(), earlier)
+            self.assertEqual(os.stat(p).st_mode & 0o777, 0o600)
+            self.assertEqual(os.listdir(os.path.dirname(p)), ["HANDOFF.md"])
+        self.assertFalse(os.path.exists(L.ledger_path("S")))
+
+    def test_a_vertical_tab_session_draft_is_refused_and_removed(self):
+        writef(self.draft, self.text.replace("session: <stamped>\n",
+                                             self.VT_SESSION))
+        draft_before = self.snap(self.draft)
+        self.assertReadBackRefused(self.run_cli("--from", self.draft, "S"))
+        self.assertEqual(self.snap(self.draft), draft_before)
+
+    def test_a_vertical_tab_delimiter_draft_is_refused_and_removed(self):
+        # A vertical tab then `---` closes the reader's frontmatter before
+        # the stamped keys.
+        writef(self.draft, self.text.replace("repo: demo\n", "repo: demo\x0b---\n"))
+        self.assertReadBackRefused(self.run_cli("--from", self.draft, "S"))
+
+    def test_a_refused_read_back_keeps_the_earlier_manifest(self):
+        # Kills: the install not undone (the earlier manifest put back) on a
+        # refused read-back.
+        self.run_cli("--from", self.draft, "S")
+        os.remove(L.ledger_path("S"))
+        with open(L.manifest_path("S"), "rb") as fh:
+            earlier = fh.read()
+        mtime = os.stat(L.manifest_path("S")).st_mtime_ns
+        time.sleep(0.01)
+        writef(self.draft, self.text.replace("session: <stamped>\n",
+                                             self.VT_SESSION))
+        self.assertReadBackRefused(self.run_cli("--from", self.draft, "S"),
+                                   earlier=earlier)
+        self.assertEqual(os.stat(L.manifest_path("S")).st_mtime_ns, mtime)
+
+    def test_a_restored_old_manifest_is_not_re_dated_by_a_later_mark(self):
+        # Kills: the restore not keeping the earlier file's mtime, so a plain
+        # mark after a refused re-install would seal a 2-hour-old manifest
+        # as this checkpoint's.
+        p = L.manifest_path("S")
+        self.run_cli("--from", self.draft, "S")
+        old = time.time() - 2 * 3600
+        os.utime(p, (old, old))
+        before = self.snap(p)
+        writef(self.draft, self.text.replace("session: <stamped>\n",
+                                             self.VT_SESSION))
+        r = self.run_cli("--from", self.draft, "S")
+        self.assertIn("does not read back as stamped", r.stderr)
+        self.assertEqual(self.snap(p), before)
+        # About 120 min; the exact minute is bounded by the run (run_timed).
+        r = run_timed(self, p, lambda: self.run_cli("S"))
+        self.assertIn(f"not stamped: {p} was last written ", r.stderr)
+        self.assertNotIn("stamped /", r.stdout)
+        self.assertEqual(self.snap(p), before)
+
+    def test_stamp_only_on_a_vertical_tab_file_writes_nothing(self):
+        p = L.manifest_path("S")
+        os.makedirs(os.path.dirname(p))
+        writef(p, self.text.replace("session: <stamped>\n", self.VT_SESSION))
+        before = self.snap(p)
+        r = self.run_cli("S")
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertIn(f"not stamped: {p}: the stamped frontmatter does not "
+                      f"read back as stamped", r.stderr)
+        self.assertEqual(self.snap(p), before)
+        self.assertEqual(L.load_state("S")["checkpoint_epoch"], 1)
+
+    def test_a_normal_draft_stamps_byte_for_byte_as_restamp_does(self):
+        import mark_checkpoint as M
+        for name, text in (("LF", self.text),
+                           ("CRLF", self.text.replace("\n", "\r\n"))):
+            with open(self.draft, "wb") as fh:
+                fh.write(text.encode())
+            r = self.run_cli("--from", self.draft, "S")
+            self.assertEqual((r.returncode, r.stderr), (0, ""), name)
+            with open(L.manifest_path("S"), "rb") as fh:
+                got = fh.read()
+            fm = R.front_matter(R.decode_text(got))
+            fields = {k: fm[k]
+                      for k in ("written", "top", "session", "head", "branch")}
+            with open(self.draft, "rb") as fh:
+                self.assertEqual(M.restamp(fh.read(), fields), got, name)
+            self.assertTrue(M.reads_back(got, fields), name)
+            self.assertEqual(got.count(b"\r\n") > 0, name == "CRLF")
+
+    def test_read_back_decodes_as_the_reader_does(self):
+        # Kills: reads_back decoding on its own rather than through the
+        # reader's decode_text, which read_text (the session-start read)
+        # also uses.
+        import mark_checkpoint as M
+        raw = b"---\nsession: S\n---\n"
+        with open(self.draft, "rb") as fh:
+            self.assertEqual(R.read_text(self.draft), R.decode_text(fh.read()))
+        with mock.patch.object(R, "decode_text",
+                               return_value="---\nsession: OTHER\n---\n"):
+            self.assertFalse(M.reads_back(raw, {"session": "S"}))
+        self.assertTrue(M.reads_back(raw, {"session": "S"}))
+
     def test_usage(self):
         for args in (("--from", self.draft), ("--from",), ("--from", self.draft, "-S"),
                      ("S", "--from", self.draft), ("-S",), ("--from", self.draft, "S", "x")):

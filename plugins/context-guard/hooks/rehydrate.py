@@ -886,12 +886,20 @@ def is_ours(st, sid, v):
     return not v["owner"] or L.owned_version(st, sid, v)
 
 
+def decode_text(data):
+    """A manifest's bytes as this hook reads them: text mode's decode (the
+    locale encoding, errors="replace", universal newlines). The one decode
+    behind read_text, copy_legacy's hash and mark_checkpoint.reads_back, so
+    a stamp is read back exactly as the session-start read will see it."""
+    return io.TextIOWrapper(io.BytesIO(data), errors="replace").read()
+
+
 def read_text(path):
     """A file's raw text, read with errors="replace" - what manifest_sha
     hashes - or None when it cannot be read."""
     try:
-        with open(path, errors="replace") as fh:
-            return fh.read()
+        with open(path, "rb") as fh:
+            return decode_text(fh.read())
     except Exception:
         return None
 
@@ -1069,7 +1077,7 @@ def copy_legacy(sid, path, sha):
         # Hashed as read_text reads it (text mode: the locale encoding with
         # errors="replace", universal newlines), so a CRLF manifest's sha is
         # the one the resolve computed; the bytes themselves are copied.
-        text = io.TextIOWrapper(io.BytesIO(data), errors="replace").read()
+        text = decode_text(data)
         if len(data) > LEGACY_COPY_MAX or L.manifest_sha(text) != sha:
             return None
         # `session:` alone is repo text any session can leave in place: a peer
