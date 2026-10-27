@@ -42,6 +42,7 @@ def setUpModule():
 
 
 # the parts of an open card in the v5 order, each with the marker that opens it in cardHtml's body
+# 03ab F3: drop Dependencies here and invert the allowance test
 ORDER = [
     ("TLDR", '<span class="lbl">TLDR</span>'),
     ("Context", '<div class="ctx">'),
@@ -74,6 +75,46 @@ def body(html):
     return html[html.index('<div class="body">'):]
 
 
+def balanced_div(s, i):
+    """The end of the <div ...> that opens at i, past its matching </div>."""
+    depth, j = 0, i
+    while True:
+        a, b = s.find("<div", j), s.find("</div>", j)
+        if a != -1 and a < b:
+            depth, j = depth + 1, a + 4
+        else:
+            depth, j = depth - 1, b + 6
+            if depth == 0:
+                return j
+
+
+def shown(html):
+    """The body as first drawn: each part's hidden detail levels taken out, so a part's marker counts once."""
+    b, tag = body(html), '<div class="lv" hidden>'
+    while tag in b:
+        i = b.index(tag)
+        b = b[:i] + b[balanced_div(b, i):]
+    return b
+
+
+# the Impact marker repeats once per line, so it is not counted
+REPEATS = {"Impact"}
+
+
+def counts(html):
+    """Each part's marker, counted in the body as first drawn."""
+    b = shown(html)
+    return {name: b.count(marker) for name, marker in ORDER if marker is not None}
+
+
+def options(html):
+    """Each option's <div class="opt...">...</div> span in the body."""
+    b, out = body(html), []
+    for m in re.finditer(r'<div class="opt[ "]', b):
+        out.append(b[m.start():balanced_div(b, m.start())])
+    return out
+
+
 def layout(html):
     """The parts a card shows, as (name, position) in document order."""
     b = body(html)
@@ -97,6 +138,9 @@ def problems(html):
     for n in set(names):
         if names.count(n) > 1:
             out.append("more than one " + n)
+    for n, k in counts(html).items():
+        if k > 1 and n not in REPEATS:
+            out.append("more than one " + n)
     known = [n for n in names if n in NAMES]
     if known != sorted(known, key=NAMES.index):
         out.append("out of order: " + " < ".join(known))
@@ -116,6 +160,30 @@ def problems(html):
         for m in re.finditer(re.escape(marker), b):
             if not start < m.start() < follow:
                 out.append(marker + " outside the options")
+    return out
+
+
+def has_rows(o):
+    """An option the page draws Pros and Cons rows for: one but (z) with its one-line pro or con."""
+    return o["k"] != "z" and any(isinstance(o.get(f), str) and o[f].strip() for f in ("pro", "con"))
+
+
+def option_problems(html, card):
+    """Each option with pros or cons (its pro or con line, never (z)): exactly one Pros and Cons row block and one More, More first."""
+    out = []
+    spans = options(html)
+    for o, span in zip(card["options"], spans):
+        if not has_rows(o):
+            continue
+        rows, more = span.count('<div class="otr">'), span.count('class="btn omore')
+        if rows != 1:
+            out.append("(%s): %d Pros and Cons rows" % (o["k"], rows))
+        if more != 1:
+            out.append("(%s): %d More buttons" % (o["k"], more))
+        if rows == 1 and more == 1 and span.index('class="btn omore') > span.index('<div class="otr">'):
+            out.append("(%s): More after the rows" % o["k"])
+    if len(spans) != len(card["options"]):
+        out.append("%d option spans for %d options" % (len(spans), len(card["options"])))
     return out
 
 
@@ -149,6 +217,7 @@ def full():
     return d
 
 
+MORE_ROWS = ("+(det?'<button type=\"button\" class=\"btn omore'", "+proConRows(o)+actList(c,k)")
 CTX_WHAT = 'secHtml(c,"ctx","Context",P.ctx)+whatPart(c)'
 ASSUME_IMP = 'assumeFold(c,P)+secHtml(c,"imp","Impact",P.imp)'
 BG_ATT = ("    +(bg?'<details class=\"pane\"><summary>Background'+bgSum(c)+'</summary><div>'+bg+'</div></details>':'')\n"
@@ -206,6 +275,40 @@ class CardLayout(unittest.TestCase):
         self.assertLess(end, pos["Clear answer"])
         for n in BOTTOM + ["Dependencies"]:
             self.assertGreater(pos[n], pos["Clear answer"], n)
+
+    def test_each_option_with_pros_or_cons_has_one_rows_block_and_one_more_before_it(self):
+        for d in (full(), example()):
+            hs = render(d)
+            for c in d["cards"]:
+                self.assertEqual(option_problems(hs[c["n"]], c), [], c["n"])
+        self.assertTrue(any(has_rows(o) for o in full()["cards"][0]["options"]))
+
+    def test_mutant_pro_con_rows_dropped_is_caught(self):
+        d = full()
+        h = render(d, mutant("+proConRows(o)+actList(c,k)", "+actList(c,k)"))[41]
+        c = next(x for x in d["cards"] if x["n"] == 41)
+        self.assertTrue(any("0 Pros and Cons rows" in p for p in option_problems(h, c)), option_problems(h, c))
+
+    def test_mutant_more_and_the_rows_swapped_is_caught(self):
+        script = page_free_script()
+        i = script.index(MORE_ROWS[0])
+        j = script.index(MORE_ROWS[1], i)
+        more = script[i:j].rstrip()
+        swapped = script[:i] + "+proConRows(o)\n      " + more + "+actList(c,k)" + script[j + len(MORE_ROWS[1]):]
+        d = full()
+        h = render(d, swapped)[41]
+        c = next(x for x in d["cards"] if x["n"] == 41)
+        self.assertIn("(a): More after the rows", option_problems(h, c))
+
+    def test_each_part_marker_counts_once_but_the_impact(self):
+        for d in (full(), example()):
+            for n, h in render(d).items():
+                k = counts(h)
+                self.assertTrue(all(v <= 1 for p, v in k.items() if p not in REPEATS), (n, k))
+
+    def test_mutant_a_second_context_after_what_is_caught(self):
+        h = render(full(), mutant(CTX_WHAT, CTX_WHAT + '+secHtml(c,"ctx","Context",P.ctx)'))[41]
+        self.assertIn("more than one Context", problems(h))
 
     def test_mutant_context_after_what_is_caught(self):
         h = render(full(), mutant(CTX_WHAT, 'whatPart(c)+secHtml(c,"ctx","Context",P.ctx)'))[41]
