@@ -1413,13 +1413,17 @@ unchanged. Each decision record carries two keys, from the lines in the item tha
 `decision N:`, the last line per N:
 
 - `group`: `{"id", "name", "shares", "context"}`, the id from the member line and the rest
-  from its entity line, looked up store-wide (`items/`, then `archive/*/`; the first item
-  holding the id wins, and its last entity line); `name`, `shares` and `context` are `null`
-  for an id with no entity line, and `shares` and `context` for a group that is not a
-  bundle. The whole key is `null` with no member line: `wi` applies no item default.
+  from its entity line, looked up store-wide (`items/`, then `archive/*/`; for a duplicate
+  id, the first archived copy, the one lint keeps, else the first item holding it; within
+  it, the last entity line). `needs-input` reads `archive/` only when a listed decision's id
+  has no entity line in `items/`, so there a duplicate shows its `items/` copy unless that
+  read happens. `name`, `shares` and `context` are `null` for an id with no entity line,
+  and `shares` and `context` for a group that is not a bundle. The whole key is `null` with
+  no member line, and for an item file reached through a link, whose lines are not read:
+  `wi` applies no item default.
 - `depends`: the last line's targets, each `{"n", "repo", "letter"}` (`repo` and `letter`
-  `null` when not written), `[]` after `none`, `null` with no line. The why is not carried,
-  and `wi` resolves no superseded target: it reports what is written, and the caller
+  `null` when not written), `[]` after `none`, `null` with no line or a linked file. The
+  why is not carried, and `wi` resolves no superseded target: it reports what is written, and the caller
   applies the reading rules above.
 
 `wi lint` checks them across the store, each finding naming the file and line:

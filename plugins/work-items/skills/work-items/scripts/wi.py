@@ -400,9 +400,10 @@ def _no_link(root, path):
 def group_entities(root, items):
     """{id: {"name", "shares", "context", "path", "line"}}, the store-wide
     group lookup over `items` in lookup order (items/, then archive/*/):
-    the first item holding an id wins, and within it the last entity line.
-    An item reached through a link is not read."""
-    out, owner = {}, {}
+    an id held in two items (a duplicate) reads the first archived one,
+    the copy lint keeps, else the first one; within it the last entity
+    line. An item reached through a link is not read."""
+    found = {}   # id -> {path: entity}, paths in lookup order
     for it in items:
         if not _no_link(root, it.path):
             continue
@@ -410,10 +411,14 @@ def group_entities(root, items):
             if kind != "entity":
                 continue
             gid, name, shares, context = data
-            if owner.setdefault(gid, it.path) != it.path:
-                continue
-            out[gid] = {"name": name, "shares": shares, "context": context,
-                        "path": it.path, "line": i}
+            found.setdefault(gid, {})[it.path] = {
+                "name": name, "shares": shares, "context": context,
+                "path": it.path, "line": i}
+    out = {}
+    for gid, copies in found.items():
+        keep = next((q for q in copies
+                     if _store_part(root, q) == "archive"), next(iter(copies)))
+        out[gid] = copies[keep]
     return out
 
 
@@ -5489,11 +5494,12 @@ def needs_input(items):
     return out
 
 
-def _json_decisions(it, asks, entities):
+def _json_decisions(root, it, asks, entities):
     """needs-input --json's decision records: text, raised, showings, and
-    group and depends (03ab F2)."""
+    group and depends (03ab F2; an item file reached through a link gives
+    none)."""
     raised, shown = decision_raised(it), decision_showings(it)
-    links = decision_links(it)
+    links = decision_links(it) if _no_link(root, it.path) else {}
     return [dict({"n": n, "text": text, "raised": raised.get(n)},
                  **shown.get(n, _no_showing()),
                  **link_fields(links, n, entities))
@@ -5505,20 +5511,31 @@ def cmd_needs_input(args):
     items = load_all(root)
     rows = needs_input(rank_ready(items))
     if args.json:
-        # the group lookup is store-wide, archive/ included, read leniently
-        # (DepIndex's archive read), and only when a decision is listed; an
+        # the group lookup is store-wide: items/ first, and archive/ only
+        # when a listed decision's member id has no entity line in items/;
+        # archive/ is read leniently (DepIndex's archive read), and an
         # archived file reached through a link is never opened
-        archive = root / "archive"
-        entities = group_entities(root, items + load_paths(
-            [p for p in (sorted(archive.glob("*/*.md")) if archive.is_dir()
-                         else []) if _no_link(root, p)],
-            lenient=True)) if rows else {}
+        entities = group_entities(root, items)
+        wanted = set()
+        for it, asks in rows:
+            if not _no_link(root, it.path):
+                continue
+            links = decision_links(it)
+            wanted |= {links[n]["group"] for kind, n, _ in asks
+                       if kind == "decision" and "group" in links.get(n, {})}
+        if wanted - set(entities):
+            archive = root / "archive"
+            entities = group_entities(root, items + load_paths(
+                [p for p in (sorted(archive.glob("*/*.md"))
+                             if archive.is_dir() else [])
+                 if _no_link(root, p)], lenient=True))
         print(json.dumps([{"id": it.id, "title": it.get("title"),
                            "short_display_name":
                                it.meta.get("short_display_name"),
                            "status": it.get("status"),
                            "grooming": it.get("grooming"),
-                           "decisions": _json_decisions(it, asks, entities)}
+                           "decisions": _json_decisions(root, it, asks,
+                                                        entities)}
                           for it, asks in rows], indent=1))
         return 0 if rows else 2
     for it, asks in rows:
@@ -5681,7 +5698,7 @@ def estate_store(store, base, top, stale_after, now, cap=ESTATE_CAP):
         entities = group_entities(store, items + archived)
         for it in rank_ready(open_items):
             raised, shown = decision_raised(it), decision_showings(it)
-            links = decision_links(it)
+            links = decision_links(it) if _no_link(store, it.path) else {}
             for n, text in unanswered_decisions(it):
                 when = raised.get(n)
                 dt = _parse_when(when) if when else None

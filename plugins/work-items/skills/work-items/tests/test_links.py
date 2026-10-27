@@ -245,6 +245,68 @@ class TestJson(LinkCase):
         self.item("a-item-1111", "decision 4: open?", f"group 4: {GID}")
         self.assertIsNone(self.needs()[("a-item-1111", 4)]["group"]["name"])
 
+    def test_duplicate_reads_the_archived_copy_lint_keeps(self):
+        """Finish 1: JSON and lint agree on a duplicate. needs-input reads
+        archive/ here (decision 5's id is only there), and estate always
+        does; both show the archived copy, and lint flags the items/ line.
+        Mutant: group_entities keeping the first copy in lookup order."""
+        self.item("c-item-3333", f"group {GID}: archived copy",
+                  f"group {GID2}: only archived", where="archive/2026",
+                  status="done")
+        b = self.item("b-item-2222", "decision 4: open?",
+                      "decision 5: open?", f"group {GID}: live copy",
+                      f"group 4: {GID}", f"group 5: {GID2}")
+        self.assertEqual(self.needs()[("b-item-2222", 4)]["group"]["name"],
+                         "archived copy")
+        r = self.wi("estate", "--dir", str(self.tmp), "--json")
+        repo = [x for x in json.loads(r.stdout)["repos"]
+                if x["repo"] == "base"][0]
+        self.assertEqual({d["n"]: d["group"]["name"]
+                          for d in repo["decisions"]},
+                         {4: "archived copy", 5: "only archived"})
+        got = [ln for ln in self.wi("lint").stdout.splitlines()
+               if "duplicate group id" in ln]
+        self.assertEqual(len(got), 1, got)
+        self.assertTrue(got[0].startswith(
+            self.where(b, f"group {GID}: live copy") + ": "), got)
+
+    def test_a_linked_items_file_gives_no_links_in_json(self):
+        """Finish 2: a symlinked items/ file's group and depends lines
+        appear in neither JSON view. Mutants: the link check dropped in
+        _json_decisions; dropped in estate_store."""
+        outside = self.tmp / "outside.md"
+        outside.write_text(ITEM.format(
+            iid="b-item-2222", status="todo",
+            notes="\n".join(["decision 4: open?", f"group {GID}: x",
+                             f"group 4: {GID}", "depends 4: 3"])))
+        (self.root / "items" / "b-item-2222.md").symlink_to(outside)
+        d = self.needs()[("b-item-2222", 4)]
+        self.assertEqual((d["group"], d["depends"]), (None, None))
+        r = self.wi("estate", "--dir", str(self.tmp), "--json")
+        repo = [x for x in json.loads(r.stdout)["repos"]
+                if x["repo"] == "base"][0]
+        d = repo["decisions"][0]
+        self.assertEqual((d["n"], d["group"], d["depends"]), (4, None, None))
+
+    def test_archive_read_only_when_an_id_needs_it(self):
+        """Finish 3: ids that all resolve in items/ leave archive/ unread,
+        so a broken archived file prints no `wi: skipping` warning; an id
+        found only in archive/ reads it (and warns about the broken file).
+        Mutant: archive/ always read."""
+        bad = self.root / "archive" / "2026" / "broken-item-9999.md"
+        bad.parent.mkdir(parents=True)
+        bad.write_bytes(b"---\nid: [\xff\n---\n")
+        self.item("a-item-1111", "decision 4: open?", f"group {GID}: here",
+                  f"group 4: {GID}")
+        r = self.wi("needs-input", "--json")
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertNotIn("wi: skipping", r.stderr)
+        self.assertEqual(json.loads(r.stdout)[0]["decisions"][0]["group"]
+                         ["name"], "here")
+        self.item("a-item-1111", "decision 4: open?", f"group 4: {GID2}")
+        r = self.wi("needs-input", "--json")
+        self.assertIn("wi: skipping", r.stderr)
+
     def test_estate_carries_the_same_fields(self):
         """Mutant: estate's decision records without link_fields."""
         scan = self.tmp
