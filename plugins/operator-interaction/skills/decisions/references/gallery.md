@@ -224,7 +224,7 @@ costs change every time. The first time in a session, a card:*
 
 **48 — Raise the retry-policy change's budget for another round?** · *template: budget cap*
 - whether the retry-policy change gets more budget for another review round
-- one finding is open: after a restart, a job that fails on every run is retried forever
+- one finding open: after a restart, an always-failing job retries forever
 
 **Context:** the retry-policy change sets how often a failed job is tried again; its budget is the spend its build may use before rounds stop and come back to you. You left it when you asked for the change · you decide whether it gets more.
 **What:** the change has spent $21 of its $20 budget over four reviews; the last review left one finding open, so it cannot land as it is.
@@ -441,7 +441,6 @@ into: it is echoed, with no read-back, because it acts on nothing.*
 
 **46 — back, as you asked ("after the standup"):** retry the failed preview deploy?
 *While it waited (1 h): the registry is healthy again, and the design review moved to 14:00. Options and recommendation unchanged; impact changed: waiting now costs the 14:00 review its preview.*
-*While it waited (1 h): the registry is healthy again, and the design review moved to 14:00. Options and recommendation unchanged; impact changed: waiting now costs the 14:00 review its preview.*
 *…followed by the card.*
 
 *Situation: on decision 41 (the storage lease lapsing at ~17:45), the operator replies "later". No time given; the agent is partway through a migration it expects to finish in about two hours.*
@@ -505,8 +504,8 @@ status page (a preference). The operator replies "ok 51-55".*
 ## 19. A status-quo default
 
 **56 — Open the pull request now, or wait for the benchmark run?**
-- whether the retry-policy change goes to review now or once its benchmark run is in
-- the benchmark finishes in about 25 minutes, and would show a slowdown in retrying jobs
+- whether the retry-policy change goes to review now or after its benchmark
+- the benchmark, about 25 minutes off, times the change against the current code
 
 **Context:** the retry-policy change sets how often a failed job is tried again; the benchmark run times it against the current code. You asked for it today and have not seen it since · you decide whether the reviewers start now or after the benchmark.
 **What:** the retry-policy change is ready; its benchmark run finishes in about 25 minutes.
@@ -548,7 +547,7 @@ waited* says whether the impact changed.*
 
 **62 — back, as you asked ("until the load test finishes"):** move the job queue to the new message broker?
 *While it waited (1 day): the load test finished — the new broker held three times peak load with no lost messages. Options and recommendation unchanged; impact unchanged.*
-- whether every worker service moves to the new message broker now, or one goes first
+- whether every worker moves to the new message broker now, or one first
 - the worker rollout waits on it
 
 **Context:**
@@ -605,7 +604,7 @@ waited* says whether the impact changed.*
 
 **63 — Vendor the web font or fetch it from the CDN?**
 *While it waited (1 day): the CDN outage that prompted vendoring ended, and the provider published its fix. Recommendation changed from (a) vendor to (b) fetch, because the outage is over; impact unchanged: each option does what it did.*
-- whether the docs site's web font ships in the repo or loads from the font CDN
+- whether the docs site's font ships in the repo or loads from the CDN
 - the docs site build is on hold until it is settled
 
 **Context:** the font CDN is the font provider's download service, which each page fetches from; vendoring keeps a 400 KB copy of the font in the repo instead. You left it when the CDN outage blanked the docs site's font · you decide where the font comes from in future.
@@ -834,7 +833,7 @@ operator's own browser — something only they can do. Whatever (a) asks of them
 card, in its **To act on (a):** part.*
 
 **86 — Run the staging sign-in check from your own browser?**
-- whether you check the sign-in fix on staging from your own browser before it ships
+- whether you check the staging sign-in fix from your own browser first
 - a wrong fix would stop real users signing in
 
 **Context:** the staging site is the test copy of the live site; the sign-in check is a script that reuses your browser's signed-in session and opens three pages behind sign-in. It came from the merged sign-in fix, which waits on it · you decide whether to run it or release on the automated tests.
@@ -1083,7 +1082,7 @@ differently; the two fixes are filed under either real option, so they carry non
 
 **96 — File the four proposed docs work items?**
 - which of the proposed docs work items go in the docs queue
-- the search and link fixes wait until something is filed
+- the search and link fixes wait until they are filed
 
 **Context:** the research pass on the docs site you asked for proposed four work items; filing one adds it to the docs queue the team works through in order. You have not seen the list · you decide which of the four go in the queue.
 **What:** which of the four proposed work items are filed in the docs queue.
@@ -1119,7 +1118,7 @@ happens, then its code — and before the folds and the Impact (answer 337 (a)).
 
 **97 — F3 (unescaped display name) · Escape the display name in the welcome email?**
 - whether the welcome email escapes the display name a user types at signup
-- a name typed as a link becomes a live link in an email from us
+- a name typed as a link becomes live in an email from us
 
 **Context:** the parcel tracker sends a welcome email built from an HTML template, and the display name is what a user types at signup. Today's code review of the signup change numbered its findings, and F3 (unescaped display name) is the one left for you · you decide how the template shows the name.
 **What:** whether the welcome email's template escapes the display name, so any tags in it show as plain text, and whether names already stored are cleaned too.

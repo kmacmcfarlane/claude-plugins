@@ -4,8 +4,9 @@ The chat card runs in the v5 order (d84f F10, item 9168), as the page card does 
 `test_layout.py`): the title; the TLDR, one or two bullets (answer 336 (a)); the dependency
 line's slot (03ab F3's, drawn by no card yet); Context, What, Finding, Scope, Likelihood; the
 upper folds, ▸ Open questions then ▸ Assumptions; the Impact; the options; To act on and the
-round lines (after the options in chat, the one stated difference from the page); the bottom
-folds, ▸ Background, ▸ Attached, ▸ Rejected alternatives. A block is the card with every fold
+round lines (after the options in chat; the page puts its round lines above its options and
+each To act on under its own option); the bottom folds, ▸ Background, ▸ Attached, ▸ Rejected
+alternatives (the page also keeps a Dependencies fold until stored dependencies land). A block is the card with every fold
 open (▾), its Impact table under the Impact line, each option's view under that, and a ⚠
 block's read-back line last. The order check reads only the parts a view holds (d84f `08`
 § M1), so a part left out is never misplaced; a bullet is never followed at once by a bold
@@ -64,8 +65,8 @@ FOLD = re.compile(r"^([▸▾]) ([A-Z][^—]+) — (.+)$")
 OPEN_SUMMARY = re.compile(r"^(\d+) open: \S")
 # a fold line's form (F10): its mark, a capitalised name, a dash and a summary
 FOLD_FORM = re.compile(r"^[▸▾] [A-Z][^—]+ — .+$")
-FOLD_NAMES = ("Open questions", "Assumptions", "Background", "Attached", "Rejected alternatives",
-              "Shared context")
+# (a group's Shared context is a bold line under its heading, not a fold, so it is not named here)
+FOLD_NAMES = ("Open questions", "Assumptions", "Background", "Attached", "Rejected alternatives")
 UPPER_FOLDS = ("Open questions", "Assumptions")
 BOTTOM_FOLDS = ("Background", "Attached", "Rejected alternatives")
 
@@ -209,15 +210,38 @@ def tldr_problems(where, body):
     """A view's TLDR: one or two bullets right under its title (answer 336 (a)). A bullet moved
     below Context reads as Context's own, so the view then has no TLDR. Returns the problems."""
     n = parts(body).count("TLDR")
-    return [] if n in (1, 2) else [f"{where}: {n} TLDR bullets under the title, not one or two"]
+    out = [] if n in (1, 2) else [f"{where}: {n} TLDR bullets under the title, not one or two"]
+    for b in tldr_bullets(body):
+        if re.match(r"(?i)^(rec|recommend|suggest)", b):
+            out.append(f"{where}: a TLDR bullet carries the recommendation: {b[:40]!r}")
+        if len(b.split()) > TLDR_WORDS:
+            out.append(f"{where}: a TLDR bullet runs {len(b.split())} words, over {TLDR_WORDS}")
+    return out
+
+
+TLDR_WORDS = 14  # a TLDR bullet is terse: 14 words at most
+
+
+def tldr_bullets(body):
+    """The text of a view's TLDR bullets, the bullets right under its title (and any while it
+    waited line)."""
+    out = []
+    for line in body[1:]:
+        if line.startswith("*While it waited"):
+            continue
+        if not line.startswith("- "):
+            break
+        out.append(line[2:])
+    return out
 
 
 def lazy_problems(where, body):
-    """A bullet followed at once by a bold head or a fold line, with no blank line between: in
-    CommonMark the line is read into the bullet (a lazy continuation). Returns the problems."""
+    """A bullet, or a line indented under one (its continuation), followed at once by a bold
+    head or a fold line, with no blank line between: in CommonMark the line is read into the
+    bullet (a lazy continuation). Returns the problems."""
     out = []
     for a, b in zip(body, body[1:]):
-        if re.match(r"^ *- ", a) and b.startswith(("**", "▸ ", "▾ ")):
+        if re.match(r"^ *- |^ +\S", a) and b.startswith(("**", "▸ ", "▾ ")):
             out.append(f"{where}: {b[:30]!r} runs into the bullet above it")
     return out
 
@@ -237,7 +261,9 @@ class Templates(unittest.TestCase):
         self.assertNotIn("depends", parts(card))
         flat = " ".join(RENDERING.read_text().split())
         self.assertIn("the dependency line's slot, after the TLDR", flat)
-        self.assertIn("chat puts them after the options", flat)
+        self.assertIn("chat puts both after the options", flat)
+        self.assertIn("the page also keeps a Dependencies fold", flat)
+        self.assertNotIn("The one difference from the answer page", flat)
         self.assertIn("**TLDR:** under the title, one or two terse bullets", flat)
         self.assertEqual(heads(card)[:6], ["Context", "What", "Finding", "Scope", "Likelihood", "Impact"])
         self.assertNotIn("Why now", heads(card))
@@ -564,10 +590,6 @@ class GalleryContexts(unittest.TestCase):
         for where, x in lines:
             self.assertRegex(x, FOLD_FORM, where)
             self.assertIn(FOLD.match(x).group(2), FOLD_NAMES, where)
-        # the chat card's (▸, closed) form exactly as the plan writes it
-        for where, x in lines:
-            if x.startswith("▸"):
-                self.assertRegex(x, r"^▸ [A-Z][^—]+ — .+$", where)
 
     def test_every_card_and_block_runs_context_what_impact(self):
         # Context above What (the v4 layout, answer 290 (a), F6)
@@ -780,6 +802,20 @@ class Checks(unittest.TestCase):
         self.assertEqual(lazy_problems("good", v), [])
         self.assertTrue(lazy_problems("mutant", v[:2] + v[3:]))  # no blank line after the TLDR
         self.assertTrue(lazy_problems("mutant", v[:5] + ["- an item", "▸ Assumptions — basis: **strong**"]))
+        # an option's indented cons line, then a bold head at once
+        self.assertTrue(lazy_problems("mutant", ["- **(a) Resume**", "  *cons: it waits*", "**If left:** x"]))
+        self.assertEqual(lazy_problems("good", ["- **(a) Resume**", "  *cons: it waits*", "", "**If left:** x"]), [])
+
+    def test_a_tldr_bullet_is_terse_and_carries_no_recommendation(self):
+        v = list(self.V5)
+        self.assertEqual(tldr_problems("good", v), [])
+        self.assertEqual(tldr_bullets(v), ["whether the paused backup finishes tonight"])
+        for name, b in {"rec": "- rec (a): resume it now",
+                        "recommend": "- Recommended: resume it now",
+                        "suggest": "- suggest resuming now, before the lease lapses",
+                        "15 words": "- " + " ".join(["word"] * 15)}.items():
+            self.assertTrue(tldr_problems("mutant", [v[0], b] + v[2:]), name)
+        self.assertEqual(tldr_problems("good", [v[0], "- " + " ".join(["word"] * 14)] + v[2:]), [])
 
     CARD = ["**41 — Resume the backup?**", "**Context:** y · z", "**What:** x",
             "▸ Assumptions — basis: **strong** · 1 assumption with its tripwire", "**Impact:** → a",

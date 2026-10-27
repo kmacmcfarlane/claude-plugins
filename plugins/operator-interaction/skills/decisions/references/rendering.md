@@ -417,19 +417,21 @@ how it happens, who meets it and when, the before and after, in one to three sen
   9. the ▸ Background line (§ Context, § Folds), then any ▸ Attached line, and last any
      ▸ Rejected alternatives line (§ Folds).
 
-  A part with nothing to say is left out, and what is shown keeps this order. The one
-  difference from the answer page is stated: the page puts the round lines (**If left:**,
-  **A round costs:**, **If unanswered:**) after the Impact, above its options, and chat puts
-  them after the options, where they are read with the choice. There is no Rec line.
+  A part with nothing to say is left out, and what is shown keeps this order. The
+  differences from the answer page are stated: the page puts the round lines (**If left:**,
+  **A round costs:**, **If unanswered:**) after the Impact, above its options, and each
+  **To act on (x):** under its own option; chat puts both after the options, where they are
+  read with the choice; the page also keeps a Dependencies fold, between Attached and
+  Rejected alternatives, until stored dependencies land. There is no Rec line.
 - **CommonMark.** A blank line goes between a bullet and a bold head or fold line that
   follows it (the TLDR's last bullet and **Context:**, a set's last item and the next part),
   so the line is never read into the bullet above it.
 - **TLDR:** under the title, one or two terse bullets: what is decided, and what rides on it
   (the card record's `tldr`; answer 336 (a), the same TLDR as the answer page on every chat
   card). It never carries the recommendation, which the options mark, and it is not the
-  Context: the terms and the resume cue stay on the **Context:** line under it. A card read
-  from a store with no TLDR shows none (nothing is invented) and gains one when it is next
-  revised.
+  Context: the terms and the resume cue stay on the **Context:** line under it. An older
+  stored card (no `format`) with no TLDR shows none (nothing is invented), and gains one
+  when next revised; the record's `tldr` is the writer's to fill.
 - **Title:** the question. A decision raised from one labelled item of a source opens its
   title on the label and its short name: **41 — F7 (oversize upload) · Cap the upload
   size?** (§ Source labels).
@@ -882,7 +884,7 @@ Impact line (and a block's table), right after the *while it waited* line:
 message broker?
 *While it waited (1 day): the load test finished with no lost messages; nothing else changed.
 Options and recommendation unchanged; impact unchanged.*
-- every worker service moves from the old job queue to the new message broker, all at once or one first
+- every worker moves from the old job queue to the new message broker
 - the worker rollout waits on it
 
 **Context:** the new broker has carried the email worker alone for two weeks as a trial, and the load test was the last check before the rest move. You left it at that trial · you decide whether every worker moves now or one goes first.

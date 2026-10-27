@@ -508,8 +508,9 @@ alternative not taken, in case practice argues for it.
   nothing to say is left out, and what is shown keeps this order; a block is the card with every
   fold open. It amends the v4 layout's order (the folds' order, the view's order). Designs made
   in planning and build, not the operator's: chat's To act on and round lines (If left, A round
-  costs, If unanswered) after the options, where the page has its round lines after the Impact,
-  the one stated difference; the dependency line's slot kept after the TLDR, drawn by no card
+  costs, If unanswered) after the options, where the page has its round lines after the Impact
+  and each To act on under its own option, and the page's Dependencies fold, kept until stored
+  dependencies land, the stated differences; the dependency line's slot kept after the TLDR, drawn by no card
   until the dependency line lands; a blank line in chat between a bullet and the bold head or
   fold line under it, so CommonMark never reads one into the other; the order checks reading
   only the parts a card holds. Not taken: the v4 order, with the Assumptions fold first among
@@ -517,7 +518,7 @@ alternative not taken, in case practice argues for it.
 - **A TLDR on the chat card** (2026-10-22, answer 336 (a), "On every card, stored as `tldr:`")
   — every chat card and block opens, under its title, on the same one or two TLDR bullets as
   the answer page: what is decided and what rides on it, never the recommendation. The title no
-  longer does the TLDR's work in chat (*A Context section on chat cards and blocks*, above). A
-  card read from a store with no TLDR shows none and gains one when it is next revised (a
-  design made in build); the store's `tldr:` line is the caller's to write. Not taken: (b) chat
+  longer does the TLDR's work in chat (*A Context section on chat cards and blocks*, above). An
+  older stored card (no `format`) with no TLDR shows none, and gains one when next revised;
+  the record's `tldr` is the writer's to fill (designs made in build). Not taken: (b) chat
   opening on its title alone; (c) a TLDR on a block only.

@@ -199,8 +199,9 @@ Smallest to largest, each showing more of the impact in facet order (templates i
   each with its own impact (effect, reach, a one-way or costly option's `⚠ undo:`, cost) on
   an italic line under it and its `*pros: …*` and `*cons: …*` lines under that, and decide
   later; then any **To act on (x):** part, a round ask's justification and any **If
-  unanswered:** line (the page puts these round lines above its options; chat keeps them
-  under the options, the one stated difference); then the ▸ Background fold line (why now and
+  unanswered:** line (the page puts these round lines above its options, and each To act
+  on under its own option; chat puts both after the options; the page also keeps a
+  Dependencies fold until stored dependencies land); then the ▸ Background fold line (why now and
   why ask), then, on a card whose decision rests on material it can only name, the
   ▸ Attached fold line (their count and titles), and last, on a card that weighed
   alternatives it does not offer, the ▸ Rejected alternatives fold line (their count and
