@@ -98,9 +98,12 @@ has recorded.
 
 Two caveats. Without any status-line reading for the session, the depth is inferred from
 the transcript, and the window is guessed at 200K until the session passes ~190K. On a 1M
-model DUE and HARD are then measured against 200K: an idle attempt at ~130K–160K is held
-until a checkpoint and let through after one, and one at ~160K–190K is let through with or
-without one. A stale reading still sets the real window. With the `statusline-hub` plugin
+model DUE and HARD are then measured against 200K: an automatic attempt at ~130K–160K is
+held until a checkpoint and let through after one, and one at ~160K–190K is let through with
+or without one. None of these is an idle attempt by default: with the documented default
+idle-compaction threshold of 200,000 tokens, idle compaction does not run at that size
+unless the threshold is lowered
+(https://code.claude.com/docs/en/settings-reference#idlecompaction). A stale reading still sets the real window. With the `statusline-hub` plugin
 recording the status line, the gate measures against the real window. And when the
 auto-compact window is lowered (`/autocompact 900k`), Claude Code's own attempt at that
 window is measured against the model window like any other: at 900K of 1M, 100K remains,
