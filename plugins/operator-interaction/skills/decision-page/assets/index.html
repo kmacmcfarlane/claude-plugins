@@ -4,8 +4,9 @@
 /* decision-page template (operator-interaction). One reading column: a map of the groups under
    the progress bar, with Expand all and Collapse all, then each group's cards, each closed to a
    one-line row (number, title, ⚠, the rec pill and the recommended option's effect with its letter, the
-   answer) with Use recommendation and Later beside it. An open card opens on its TLDR, then its Context
-   (the terms it uses), then its What (what is decided; for a set, every item listed, never folded), then, on a card
+   answer) with Use recommendation and Later beside it. An open card opens on its TLDR, then, on a decision
+   that waits on another, its dependency line (depends: only if 41 (name) is (a); an on-page target a link that
+   opens its card, 03ab F3), then its Context (the terms it uses), then its What (what is decided; for a set, every item listed, never folded), then, on a card
    raised from a finding, its Finding (its label, where it lives, how it happens, its excerpt as a code block), then,
    where the work states requirements, its Scope (a boxed level word, then the criterion or what it shapes), then, on
    a risk decision, its Likelihood (a boxed kind, observed or evidence, then the fact, naming the event it counts) and
@@ -13,15 +14,15 @@
    its reason, the evidence, each assumption with its tripwire), then its Impact, one facet a line (wait,
    reach, undo, cost: there is no card-level effect), then the round lines (if left, a round costs, if
    unanswered), then the answer (each option with its line, its Pros and Cons rows and More; the follow-ups;
-   the words), then Clear answer, then the bottom folds: Background, Attached, Dependencies (until the
-   dependency line lands) and Rejected alternatives (cardHtml, the v5 order: F11). Every view shows impact: a card's row the recommended
+   the words), then Clear answer, then the bottom folds: Background, Attached and Rejected alternatives
+   (cardHtml, the v5 order: F11). Every view shows impact: a card's row the recommended
    option's effect, an open card its Impact lines, each option's view its own effect, reach, undo
    (only where it is one-way or costly; ⚠ on an option flagged one-way) and cost. Each option but (z) shows its
    one-line Pros and Cons under it, as labelled rows, always visible. A decision raised from
-   one labelled item of a source shows its title, then the label and its short name, muted. Inside a card the essentials are flat (TLDR, Context, What, Finding, Scope, Likelihood, Impact, options, follow-ups,
+   one labelled item of a source shows its title, then the label and its short name, muted. Inside a card the essentials are flat (TLDR, the dependency line, Context, What, Finding, Scope, Likelihood, Impact, options, follow-ups,
    words); open questions, the assumptions with the basis and evidence, background, the attachments (F3: each
-   entry closed, its title, a kind pill and its source; a dotted [[att:id|label]] link in any text opens it),
-   dependencies and the rejected alternatives (the last fold: each a bold title, its reasons as bullets) sit in
+   entry closed, its title, a kind pill and its source; a dotted [[att:id|label]] link in any text opens it)
+   and the rejected alternatives (the last fold: each a bold title, its reasons as bullets) sit in
    folds. The data is
    decision-page/5: each card a decision-card/5 record (options as objects) plus L and dep. A part with a
    more-detail button, above or inside a fold, steps to more detail on a click (terse bullets)
@@ -325,6 +326,11 @@ details.att .asrc{flex-basis:100%;padding-left:1.6em;font-family:var(--f-mono);f
 .drel{font-family:var(--f-mono);font-size:.74rem;color:var(--muted)}
 .dnote{color:var(--muted);font-size:.9em}
 .slug-t.self,.slug.self{color:var(--accent)}
+/* the dependency line under the TLDR: muted, its label in the accent; a decision on the page it names is a link
+   (a solid underline, where an attachment's is dotted) that opens its card */
+.depl{margin:0;font-size:.9rem;color:var(--muted);max-width:70ch}
+.depl .lbl{color:var(--accent)}
+button.declink{cursor:pointer;border:0;background:none;padding:0;font:inherit;color:var(--accent);text-decoration:underline;text-underline-offset:3px}
 /* a link to an attachment: a dotted underline in the accent, a button so no link nests in it */
 button.attref{cursor:pointer;border:0;background:none;padding:0;font:inherit;color:var(--accent);text-decoration:underline dotted;text-underline-offset:3px}
 /* the Impact: one facet a line, at every level */
@@ -364,7 +370,7 @@ footer{color:var(--muted);font-size:.85rem;max-width:70ch}
   <header>
     <h1 id="title">Decision answers</h1>
     <p class="lede" id="lede"></p>
-    <p class="lede">For each decision, pick one option or one follow-up (the radio buttons allow only one), and add your words if you like. Each click saves at once; there is no submit button. Tell Claude in chat when you're done. The map under the progress bar lists the groups; each decision is one line in its group, and a click on the line opens its card (<b>Expand all</b> and <b>Collapse all</b> open or close every card). <b>Use recommendation</b> and <b>Later</b> beside a line answer without opening the card. A <span class="slug-t">number · name</span> is a decision: hover over it or focus it to see it, and click it to open its card; on one not on this page, a tap or click pins what it shows, and a second tap, a tap elsewhere or Escape closes it. Each line shows, after an arrow (→) and its letter, what the recommended option changes in the system the work builds (with no recommendation, each option's, in a few words); each card opens on a TLDR, then its Context (the terms it uses), then its What (what is decided; a set lists every item it acts on, and each item's outcome under each option where they differ), then, on a decision raised from a finding, its Finding (where it lives, how it happens, and its code, shown exactly as written), then, where the work states requirements, its Scope (<i>required</i> by a criterion, <i>shapes the work</i>, or <i>outside the criteria</i>), then, on a decision about a failure that may or may not happen, its Likelihood (how often it happens, <i>observed</i> or from the <i>evidence</i> there is) and its <b>Best response?</b> (whether acting here is the response that matters), then its <b>Open questions</b> and its <b>Assumptions</b>, both folded, then its impact, one facet a line, then what a round of waiting costs, then one line per option, each but (z) with its <b>Pros</b> and <b>Cons</b> under it and <b>More</b> beside it, then the follow-ups and your words, then <b>Clear answer</b>, then its folds, from compressed to full detail: Background, Attached, Dependencies where there are any (for now), Rejected alternatives. A part with a <i>more detail</i> button, above or inside a fold, shows more detail as short bullets when you click it or its text, and full detail in headed sections on a second click; picking an option opens its view (and closes the card's other one), and <b>More</b> beside an option opens or closes its view alone: its plan in brief, its <b>Pros</b> and <b>Cons</b> side by side, then its own effect, reach, undo and cost. A part with nothing to say (none) is left out. An Impact describes the system the work builds, never the review or the process; its <i>later:</i> line says what waiting holds up. <b>Open questions</b>, folded above the Impact, lists what is not known yet; <b>Assumptions</b>, folded under it, gives the basis of the call, its evidence, and each assumption it rests on with its tripwire, the sign that would change it. <b>Attached</b>, the fold after Background, holds the material a decision rests on (an excerpt, a table, check results and the like), each entry closed until you open it; a dotted link opens the attachment it names. <b>Rejected alternatives</b>, the last fold, lists the choices that were weighed and not offered, each with why.<span id="doclink"></span></p>
+    <p class="lede">For each decision, pick one option or one follow-up (the radio buttons allow only one), and add your words if you like. Each click saves at once; there is no submit button. Tell Claude in chat when you're done. The map under the progress bar lists the groups; each decision is one line in its group, and a click on the line opens its card (<b>Expand all</b> and <b>Collapse all</b> open or close every card). <b>Use recommendation</b> and <b>Later</b> beside a line answer without opening the card. A <span class="slug-t">number · name</span> is a decision: hover over it or focus it to see it, and click it to open its card; on one not on this page, a tap or click pins what it shows, and a second tap, a tap elsewhere or Escape closes it. Each line shows, after an arrow (→) and its letter, what the recommended option changes in the system the work builds (with no recommendation, each option's, in a few words); each card opens on a TLDR, then, on a decision that depends on another, a <i>depends:</i> line saying on which answer (a click on the decision it names opens its card), then its Context (the terms it uses), then its What (what is decided; a set lists every item it acts on, and each item's outcome under each option where they differ), then, on a decision raised from a finding, its Finding (where it lives, how it happens, and its code, shown exactly as written), then, where the work states requirements, its Scope (<i>required</i> by a criterion, <i>shapes the work</i>, or <i>outside the criteria</i>), then, on a decision about a failure that may or may not happen, its Likelihood (how often it happens, <i>observed</i> or from the <i>evidence</i> there is) and its <b>Best response?</b> (whether acting here is the response that matters), then its <b>Open questions</b> and its <b>Assumptions</b>, both folded, then its impact, one facet a line, then what a round of waiting costs, then one line per option, each but (z) with its <b>Pros</b> and <b>Cons</b> under it and <b>More</b> beside it, then the follow-ups and your words, then <b>Clear answer</b>, then its folds, from compressed to full detail: Background, Attached, Rejected alternatives. A part with a <i>more detail</i> button, above or inside a fold, shows more detail as short bullets when you click it or its text, and full detail in headed sections on a second click; picking an option opens its view (and closes the card's other one), and <b>More</b> beside an option opens or closes its view alone: its plan in brief, its <b>Pros</b> and <b>Cons</b> side by side, then its own effect, reach, undo and cost. A part with nothing to say (none) is left out. An Impact describes the system the work builds, never the review or the process; its <i>later:</i> line says what waiting holds up. <b>Open questions</b>, folded above the Impact, lists what is not known yet; <b>Assumptions</b>, folded under it, gives the basis of the call, its evidence, and each assumption it rests on with its tripwire, the sign that would change it. <b>Attached</b>, the fold after Background, holds the material a decision rests on (an excerpt, a table, check results and the like), each entry closed until you open it; a dotted link opens the attachment it names. <b>Rejected alternatives</b>, the last fold, lists the choices that were weighed and not offered, each with why.<span id="doclink"></span></p>
     <div class="banner" id="nodb" hidden>This view can't save answers. Nothing you pick here is kept; answer in chat instead (<code id="nodbex">N: a</code>).</div>
     <div class="banner" id="viewonly" hidden>You are viewing these answers. Only the page's owner can answer here.</div>
     <div class="banner" id="nodata" hidden>The decisions didn't load. Reload the page; if it keeps failing, ask Claude for them in chat.</div>
@@ -721,8 +727,9 @@ const textsOf=x=>typeof x==="string"?[x]:Array.isArray(x)?x.reduce((a,y)=>a.conc
 const isFacet=v=>isItem(v)||isList(v);
 /* a source label: {id, name}, the label one word on one line, its short name one line of plain words */
 const isLabel=v=>isObj(v)&&isTxt(v.id)&&!/\s/.test(v.id)&&isTxt(v.name)&&!/[\r\n]/.test(v.name);
-/* the detail keys whose renditions are text or a list (impact and tldr have their own shapes; dep is page-only) */
-const DETAIL_TEXT=["context","rec","why","whyask","dep","evidence"];
+/* the detail keys whose renditions are text or a list (impact and tldr have their own shapes). dep has no levels:
+   the dependency line is static, and an older detail.dep is not shown (the runner lints it key) */
+const DETAIL_TEXT=["context","rec","why","whyask","evidence"];
 
 /* the data is checked before anything renders: a card that fails is a refused file, not a half page */
 const FOLLOW_FIXED=["later","tell me","expand","dig into","you decide","drop"];
@@ -761,6 +768,8 @@ function cardProblems(c,w,keys){
   if(c.raised!=null&&!(isStr(c.raised)&&UTC_RE.test(c.raised)))bad.push(w+": raised must be a UTC time, YYYY-MM-DDTHH:MM:SSZ");
   for(const k of ["reason","why","whyask","class","ifleft","roundcosts","ifunanswered","norec"])if(c[k]!=null&&!isStr(c[k]))bad.push(w+": "+k+" must be text");
   if(c.oneway!=null&&typeof c.oneway!=="boolean")bad.push(w+": oneway must be true or false");
+  /* the dependency line (03ab F3): one line of text, in its sentence form with slugs */
+  if(c.dep!=null&&!(isStr(c.dep)&&!LINE_BREAK.test(c.dep)))bad.push(w+": dep must be one line of text: the dependency line, as only if [[41]] is (b), or after [[47]] is answered, whatever its answer");
   if(!isTxt(c.context))bad.push(w+": context missing: give the card a Context that introduces the terms, items and concepts the rest of it uses");
   if(isStr(c.basis)&&!["strong","partial","thin","none"].includes(c.basis))bad.push(w+": basis must be strong, partial, thin or none");
   if(!Array.isArray(c.tldr)||!c.tldr.every(isStr))bad.push(w+": tldr must be a list of text");
@@ -1007,7 +1016,7 @@ const listHtml=(xs,f,cls)=>'<ul class="'+(cls||"lvl")+'">'+xs.map(b=>itemHtml(b,
 const isSecRow=x=>isObj(x)&&"h" in x;
 const secsHtml=(xs,f)=>xs.map(x=>'<div class="lvs"><h4 class="lvh">'+fmt(x.h)+'</h4>'+listHtml(x.b,f)+'</div>').join("");
 const rend=(x,f)=>Array.isArray(x)?(x.length&&isSecRow(x[0])?secsHtml(x,f):listHtml(x,f)):'<p>'+f(x)+'</p>';
-/* a labelled fold part (Why now, Why ask, Depends on); pre opens it at every level (Why ask's class) */
+/* a labelled fold part (Why now, Why ask); pre opens it at every level (Why ask's class) */
 const labelled=(lbl,x,pre)=>Array.isArray(x)
   ?'<div><span class="lbl">'+esc(lbl)+'</span>'+(pre?'<p>'+pre+'</p>':'')+rend(x,fmtD)+'</div>'
   :'<p><span class="lbl">'+esc(lbl)+'</span>'+(pre?pre+' — ':'')+fmtD(x)+'</p>';
@@ -1039,7 +1048,7 @@ function parts(c){
   /* a [[att:id|label]] link in a part resolves against this card's attachments, whoever asks for the parts */
   const prev=CUR;CUR=c;
   const cls=c.class?'<em>'+esc(c.class)+'</em>':'';
-  const ev=detOf(c,"evidence"),dl=detOf(c,"dep");
+  const ev=detOf(c,"evidence");
   /* a fold part that may be none: its summary and levels; with levels but no summary, a placeholder holds
      its place; with neither, no part ([""]) */
   const opt=(sum,lv,ph,f)=>shown(sum)?[f(sum)].concat(lv.map(f)):(lv.length?['<p class="evph">'+ph+'</p>'].concat(lv.map(f)):[""]);
@@ -1050,7 +1059,6 @@ function parts(c){
     rec:[basisLine(c,null)].concat(detOf(c,"rec").map(x=>basisLine(c,x))),
     why:opt(c.why,detOf(c,"why"),"Not summarised: more detail shows why now.",x=>labelled("Why now",x)),
     whyask:opt(c.whyask,detOf(c,"whyask"),"Not summarised: more detail shows why it is asked.",x=>labelled("Why ask",x,cls)),
-    dep:opt(c.dep,dl,"Not summarised: more detail shows what it depends on.",x=>labelled("Depends on",x)),
     ev:opt(c.evidence,ev,"Not summarised: more detail shows the evidence.",x=>rend(x,fmtD))
   };
   /* an option's prose: its plan in brief, its levels stepping from it; an older option with no plan, its text and
@@ -1121,12 +1129,21 @@ const rowHtml=c=>{const n=esc(c.n);
 const quickHtml=c=>{const n=esc(c.n);
   return '<span class="quick">'+(c.rec?'<button class="btn" type="button" data-quick="rec" data-n="'+n+'" aria-pressed="false" title="Answer ('+esc(c.rec)+'), the recommendation">Use recommendation</button>':'')
     +'<button class="btn" type="button" data-quick="later" data-n="'+n+'" aria-pressed="false" title="Answer later">Later</button></span>'};
+/* the dependency line (03ab F3; the v4 layout, answer 313): second on the card, after the TLDR, labelled depends:,
+   static, with no levels. Its text is the writer's sentence (only if [[41]] is (b), and after [[47]] is answered,
+   whatever its answer), escaped; a slug naming a card on the page reads N (name), the line's own wording, as a link
+   that opens that card, with the card's tooltip; a decision in refs keeps its slug, N · name, and its tooltip.
+   None, missing or blank: no line */
+const depRef=k=>{const nm=nameOf(k);
+  return byN.has(k)?'<button type="button" class="declink" data-ref="'+esc(k)+'" data-goto="'+esc(k)+'">'+esc(k)+(nm?' ('+esc(nm)+')':'')+'</button>':slug(k)};
+const depLine=c=>isTxt(c.dep)&&shown(c.dep)
+  ?'<p class="depl"><span class="lbl inl">depends:</span> '+code(esc(c.dep)).replace(ATT_LINK,"$2").replace(/\[\[([0-9]+)\]\]/g,(m,k)=>depRef(k))+'</p>':'';
 /* one card, as renderCards places it in its group: closed to its row, its quick answers beside it */
 function cardHtml(c){
   CUR=c;
   const n=esc(c.n),g="d"+n,P=parts(c);
   let h='<div class="cardw '+(c.rec?'q2':'q1')+'"><details class="card" id="card-'+n+'"><summary>'+rowHtml(c)+'</summary>'
-    +'<div class="body">'+secHtml(c,"tldr","TLDR",P.tldr)+secHtml(c,"ctx","Context",P.ctx)+whatPart(c)+findingPart(c)+scopePart(c)+likelihoodPart(c)+openFold(c)+assumeFold(c,P)+secHtml(c,"imp","Impact",P.imp)
+    +'<div class="body">'+secHtml(c,"tldr","TLDR",P.tldr)+depLine(c)+secHtml(c,"ctx","Context",P.ctx)+whatPart(c)+findingPart(c)+scopePart(c)+likelihoodPart(c)+openFold(c)+assumeFold(c,P)+secHtml(c,"imp","Impact",P.imp)
     +line("If left:",c.ifleft)+line("A round costs:",c.roundcosts)+line("If unanswered:",c.ifunanswered)
     +'<fieldset><legend>Your answer: one option or one follow-up</legend><div class="opts">';
   for(const o of optsOf(c)){const k=o.k;
@@ -1153,7 +1170,6 @@ function cardHtml(c){
     +'<div class="panes">'
     +(bg?'<details class="pane"><summary>Background'+bgSum(c)+'</summary><div>'+bg+'</div></details>':'')
     +attachedFold(c)
-    +(P.dep[0]?'<details class="pane"><summary>Dependencies</summary><div>'+secHtml(c,"dep","Depends on",P.dep)+'</div></details>':'')
     +rejectedFold(c)
     +'</div></div></details>'+quickHtml(c)+'</div>';
   CUR=null;
@@ -1336,7 +1352,7 @@ document.addEventListener("click",e=>{
   /* a tap on a shown tooltip, pinned or not, closes it and stops there: nothing under it (an option, a
      follow-up, a quick answer) runs */
   if(e.target.closest("#tip")){e.preventDefault();e.stopPropagation();hideTip();tipClosedAt=e.timeStamp;return}
-  const s=e.target.closest(".slug");
+  const s=e.target.closest(".slug")||e.target.closest(".declink");
   /* a reference not on the page has no card to open: a tap or click pins its tooltip, a second one closes it */
   if(s){e.preventDefault();e.stopPropagation();if(s.dataset.goto){hideTip();goCard(s.dataset.goto)}
     else if(tipFor===s&&tipPinned)hideTip();else{showTip(s);pinTip()}return}

@@ -317,6 +317,23 @@ class Upgrade(unittest.TestCase):
             self.assertNotIn("effect", x["impact"])
             self.assertNotIn("background", x)
 
+    def test_three_letters_take_the_serial_comma(self):
+        # letters on one target are alternatives: (a) or (b); (a), (b), or (c), as the chat line reads
+        src = load(KIT)
+        src["cards"][1]["dep"] = {"n": 51, "letters": ["a", "b", "c"]}
+        self.assertEqual(by_n(upgrade(src)[2])[52]["dep"], "only if [[51]] is (a), (b), or (c)")
+        src["cards"][1]["dep"] = {"n": 51, "letters": ["b"]}
+        self.assertEqual(by_n(upgrade(src)[2])[52]["dep"], "only if [[51]] is (b)")
+        # mutant: no serial comma, (a), (b) or (c)
+        js = UPGRADER.read_text()
+        old = 'xs.slice(0, -1).join(", ") + ", or " + xs[xs.length - 1]'
+        self.assertEqual(js.count(old), 1)
+        src["cards"][1]["dep"] = {"n": 51, "letters": ["a", "b", "c"]}
+        with tempfile.TemporaryDirectory() as tmp:
+            m = pathlib.Path(tmp) / "upgrade_cards.js"
+            m.write_text(js.replace(old, 'xs.slice(0, -1).join(", ") + " or " + xs[xs.length - 1]'))
+            self.assertEqual(by_n(upgrade(src, script=m)[2])[52]["dep"], "only if [[51]] is (a), (b) or (c)")
+
     def test_the_name_trap_mutant(self):
         # mapped straight across, the one-line texts land where the table's rows belong
         js = UPGRADER.read_text()

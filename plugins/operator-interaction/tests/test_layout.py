@@ -3,7 +3,7 @@
 The decision page (`decision-page` skill) renders each card with `cardHtml`, loaded from
 `assets/index.html` and run under node. Its body runs:
 
-1. the TLDR (03ab's dependency line will follow it, once 03ab F3 lands);
+1. the TLDR, then, on a card that depends on another, its dependency line (03ab F3);
 2. Context, What, Finding, Scope, Likelihood;
 3. the upper folds: Open questions, then Assumptions;
 4. the Impact;
@@ -11,15 +11,16 @@ The decision page (`decision-page` skill) renders each card with `cardHtml`, loa
 6. the fieldset: each option with its line, its Pros and Cons rows and **More**; then the
    follow-ups; then the words box;
 7. *Clear answer*;
-8. the bottom folds: Background, Attached, Dependencies (until 03ab F3 removes it), Rejected
-   alternatives.
+8. the bottom folds: Background, Attached, Rejected alternatives.
 
-A part with nothing to say is left out; whatever is shown keeps this order. One Dependencies fold
-is allowed, between Attached and Rejected alternatives, until 03ab F3 lands. A ⚠ one-way card
-keeps the same order.
+A part with nothing to say is left out; whatever is shown keeps this order. There is no
+Dependencies fold: 03ab F3 removed it, and the dependency line after the TLDR replaces it
+(`DependencyLine` below: its place, its link to an on-page card, its ref slug, its escaping, and
+the runner's key lint on an older `detail.dep`). A ⚠ one-way card keeps the same order.
 
 Each check is proved by a mutation of the template: Context after What, Assumptions after the
-Impact, Background after Attached.
+Impact, Background after Attached, the Dependencies fold restored, the dependency line after
+Context, the line drawn on a none `dep`, an on-page target drawn as a slug, the line unescaped.
 
 Run from the plugin dir: python3 -m unittest discover -s tests -q
 """
@@ -31,7 +32,7 @@ import subprocess
 import sys
 import unittest
 
-from test_impact import NODE, example, page_free_script
+from test_impact import NODE, PAGE, example, page_free_script
 from test_depth import HARNESS
 
 
@@ -42,9 +43,11 @@ def setUpModule():
 
 
 # the parts of an open card in the v5 order, each with the marker that opens it in cardHtml's body
-# 03ab F3: drop Dependencies here and invert the allowance test
+# 03ab F3 dropped the Dependencies fold: the dependency line follows the TLDR, and a fold of that name
+# is an unknown fold
 ORDER = [
     ("TLDR", '<span class="lbl">TLDR</span>'),
+    ("Depends", '<p class="depl">'),
     ("Context", '<div class="ctx">'),
     ("What", '<div class="what">'),
     ("Finding", '<div class="fnd">'),
@@ -62,7 +65,6 @@ ORDER = [
     ("Clear answer", 'data-clear='),
     ("Background", None),
     ("Attached", None),
-    ("Dependencies", None),
     ("Rejected alternatives", None),
 ]
 NAMES = [n for n, _ in ORDER]
@@ -151,7 +153,7 @@ def problems(html):
             if n in pos and pos[n] > pos["Impact"]:
                 out.append(n + " after the Impact")
     end = b.index("</fieldset>") if "</fieldset>" in b else -1
-    for n in BOTTOM + ["Dependencies"]:
+    for n in BOTTOM:
         if n in pos and pos[n] < end:
             out.append(n + " inside or before the fieldset")
     # each option's line, its Pros and Cons rows and More sit in the fieldset, before the follow-ups
@@ -244,7 +246,7 @@ class CardLayout(unittest.TestCase):
             self.assertEqual(upper, [n for n in UPPER if n in upper], c["n"])
             self.assertEqual(bottom, [n for n in BOTTOM if n in bottom], c["n"])
             self.assertEqual(upper, (["Open questions"] if c.get("open") else []) + ["Assumptions"], c["n"])
-            self.assertEqual(names[:2], ["TLDR", "Context"], c["n"])
+            self.assertEqual(names[:2], ["TLDR", "Depends" if c.get("dep") else "Context"], c["n"])
 
     def test_a_one_way_card_keeps_the_same_order(self):
         d = full()
@@ -254,17 +256,22 @@ class CardLayout(unittest.TestCase):
         self.assertEqual(problems(h), [])
         self.assertEqual([n for n, _ in layout(h)], NAMES)
 
-    def test_one_dependencies_fold_is_allowed_between_attached_and_rejected_until_03ab_f3(self):
+    def test_no_dependencies_fold_is_allowed(self):
+        # 03ab F3: the Dependencies fold is gone; one in a card is an unknown fold
+        for d in (full(), example()):
+            for n, h in render(d).items():
+                self.assertNotIn("<summary>Dependencies", h, n)
+                self.assertEqual(problems(h), [], n)
         h = render(full())[41]
         names = [n for n, _ in layout(h)]
-        self.assertEqual(names[-3:], ["Attached", "Dependencies", "Rejected alternatives"])
-        # mutants: the fold after Rejected alternatives; a second one
-        dep = re.search(r'<details class="pane"><summary>Dependencies</summary>.*?</details>', h).group(0)
-        rej = re.search(r'<details class="pane"><summary>Rejected alternatives.*?</ul></div></details>', h).group(0)
-        moved = h.replace(dep, "").replace(rej, rej + dep)
-        self.assertTrue(any("out of order" in p for p in problems(moved)), problems(moved))
-        twice = h.replace(dep, dep + dep)
-        self.assertIn("more than one Dependencies", problems(twice))
+        self.assertEqual(names[-3:], ["Background", "Attached", "Rejected alternatives"])
+        self.assertEqual(names[:3], ["TLDR", "Depends", "Context"])
+        # mutant: the fold restored in the template, between Attached and Rejected alternatives
+        fold = ("    +attachedFold(c)\n",
+                "    +attachedFold(c)+(shown(c.dep)?'<details class=\"pane\"><summary>Dependencies</summary><div>'"
+                "+fmt(c.dep)+'</div></details>':'')\n")
+        h = render(full(), mutant(*fold))[41]
+        self.assertIn("unknown fold: Dependencies", problems(h))
 
     def test_the_upper_folds_come_before_the_impact_and_the_bottom_folds_after_the_fieldset(self):
         h = render(full())[41]
@@ -273,7 +280,7 @@ class CardLayout(unittest.TestCase):
         self.assertLess(pos["Assumptions"], pos["Impact"])
         end = body(h).index("</fieldset>")
         self.assertLess(end, pos["Clear answer"])
-        for n in BOTTOM + ["Dependencies"]:
+        for n in BOTTOM:
             self.assertGreater(pos[n], pos["Clear answer"], n)
 
     def test_each_option_with_pros_or_cons_has_one_rows_block_and_one_more_before_it(self):
@@ -326,6 +333,163 @@ class CardLayout(unittest.TestCase):
     def test_mutant_a_bottom_fold_inside_the_fieldset_is_caught(self):
         h = render(full(), mutant("+'<fieldset><legend>", "+rejectedFold(c)+'<fieldset><legend>"))[41]
         self.assertTrue(problems(h), h)
+
+
+TIP_HARNESS = r"""
+const d = JSON.parse(require("fs").readFileSync(0, "utf8"));
+CARDS = d.cards; REFS = d.refs || {}; FOLLOW = d.follow;
+byN = new Map(CARDS.map(c => [String(c.n), c])); FOLLOW_KEYS = new Set(FOLLOW.map(f => f[0]));
+const c = byN.get("42");
+process.stdout.write(JSON.stringify({line: depLine(c), tip38: tipHtml("38"), tip41: tipHtml("41")}));
+"""
+DEP_TLDR = 'secHtml(c,"tldr","TLDR",P.tldr)+depLine(c)+secHtml(c,"ctx","Context",P.ctx)'
+
+
+def dep_line(html):
+    """The card's dependency line, its markup, or None."""
+    m = re.search(r'<p class="depl">.*?</p>', body(html))
+    return m.group(0) if m else None
+
+
+def text_of(markup):
+    return re.sub(r"<[^>]+>", "", markup).replace("&amp;", "&").replace("&lt;", "<").replace("&gt;", ">")
+
+
+@unittest.skipUnless(NODE, "node is not installed")
+class DependencyLine(unittest.TestCase):
+    """The dependency line (03ab F3): second on the card, after the TLDR, before Context; static;
+    an on-page target a link that opens its card, with its tooltip; a ref keeps its slug."""
+
+    def test_the_example_card_42_reads_its_line_after_the_tldr(self):
+        h = render(example())[42]
+        line = dep_line(h)
+        self.assertEqual(text_of(line), "depends: only if 41 (Docs build home) is (b)")
+        self.assertIn('<button type="button" class="declink" data-ref="41" data-goto="41">41 (Docs build home)</button>', line)
+        b = body(h)
+        self.assertLess(b.index('<span class="lbl">TLDR</span>'), b.index('<p class="depl">'))
+        self.assertLess(b.index('<p class="depl">'), b.index('<div class="ctx">'))
+        # static: no level button for it, and no part of its own in parts()
+        self.assertNotIn('data-sec="dep"', h)
+        # mutant: the older [[41]] (b) form renders as written, so the sentence is the writer's
+        d = example()
+        d["cards"][1]["dep"] = "[[41]] (b)"
+        self.assertEqual(text_of(dep_line(render(d)[42])), "depends: 41 (Docs build home) (b)")
+
+    def test_mutant_the_line_after_context_is_caught(self):
+        h = render(example(), mutant(DEP_TLDR, 'secHtml(c,"tldr","TLDR",P.tldr)+secHtml(c,"ctx","Context",P.ctx)+depLine(c)'))[42]
+        self.assertTrue(any("out of order" in p for p in problems(h)), problems(h))
+
+    def test_no_dep_or_a_none_dep_draws_no_line(self):
+        for dep in (None, "", "none", "None.", " "):
+            d = example()
+            c = d["cards"][1]
+            if dep is None:
+                c.pop("dep")
+            else:
+                c["dep"] = dep
+            h = render(d)[42]
+            self.assertIsNone(dep_line(h), dep)
+            self.assertNotIn("depends:", h, dep)
+        # mutant: the line drawn whatever dep says
+        d = example()
+        d["cards"][1]["dep"] = "none"
+        h = render(d, mutant("const depLine=c=>isTxt(c.dep)&&shown(c.dep)", "const depLine=c=>isTxt(c.dep)"))[42]
+        self.assertIsNotNone(dep_line(h))
+
+    def test_an_on_page_target_is_a_link_and_a_ref_keeps_its_slug(self):
+        d = example()
+        d["cards"][1]["dep"] = "only if [[41]] is (a) or (c), and after [[38]] is answered, whatever its answer"
+        line = dep_line(render(d)[42])
+        self.assertEqual(text_of(line), "depends: only if 41 (Docs build home) is (a) or (c), and after "
+                                         "38 · build cache reset is answered, whatever its answer")
+        # the on-page target: the line's own N (name) form, a link that opens its card, its tooltip trigger
+        self.assertIn('class="declink" data-ref="41" data-goto="41">41 (Docs build home)</button>', line)
+        # the ref: its slug, with the ref tooltip and no card to open
+        self.assertIn('<button type="button" class="slug" data-ref="38">38 · build cache reset</button>', line)
+        self.assertNotIn('data-goto="38"', line)
+        # the click handler opens a declink's card as it does an on-page slug's
+        self.assertIn('const s=e.target.closest(".slug")||e.target.closest(".declink");', PAGE.read_text())
+        # mutant: the on-page target drawn as a slug
+        h = render(d, mutant("return byN.has(k)?", "return false?"))[42]
+        self.assertNotIn('class="declink"', dep_line(h))
+
+    def test_the_line_is_escaped(self):
+        d = example()
+        d["cards"][1]["dep"] = 'only if [[41]] is (b) <script>alert(1)</script> & "x"'
+        d["cards"][0]["t"] = "Docs <b>build</b> home"
+        line = dep_line(render(d)[42])
+        self.assertNotIn("<script>", line)
+        self.assertNotIn("<b>", line)
+        self.assertIn("&lt;script&gt;alert(1)&lt;/script&gt; &amp; &quot;x&quot;", line)
+        self.assertIn("41 (Docs &lt;b&gt;build&lt;/b&gt; home)", line)
+        # mutants: the text unescaped; the name unescaped
+        h = render(d, mutant("+code(esc(c.dep))", "+code(c.dep)"))[42]
+        self.assertIn("<script>", dep_line(h) or h)
+        h = render(d, mutant("' ('+esc(nm)+')'", "' ('+nm+')'"))[42]
+        self.assertIn("<b>build</b>", dep_line(h))
+
+    def test_dep_must_be_one_line_of_text(self):
+        for bad in (["[[41]] (b)"], {"n": 41, "letters": ["b"]}, "only if [[41]]\nis (b)"):
+            d = example()
+            d["cards"][1]["dep"] = bad
+            out = subprocess.run([NODE, "-e", page_free_script() + HARNESS], input=json.dumps([d]),
+                                 capture_output=True, text=True, timeout=60)
+            res = json.loads(out.stdout)["out"][0]
+            self.assertTrue(any("card 42: dep must be one line of text" in b for b in res["bad"]), (bad, res["bad"]))
+        # mutant: the refusal dropped
+        script = mutant("if(c.dep!=null&&!(isStr(c.dep)&&!LINE_BREAK.test(c.dep)))", "if(false)")
+        d = example()
+        d["cards"][1]["dep"] = ["[[41]] (b)"]
+        out = subprocess.run([NODE, "-e", script + HARNESS], input=json.dumps([d]), capture_output=True, text=True, timeout=60)
+        self.assertFalse(any("dep must be" in b for b in json.loads(out.stdout)["out"][0]["bad"]))
+
+    def test_each_target_carries_its_tooltip(self):
+        d = example()
+        d["cards"][1]["dep"] = "only if [[41]] is (b), and after [[38]] is answered, whatever its answer"
+
+        def run(script=None):
+            out = subprocess.run([NODE, "-e", (script or page_free_script()) + TIP_HARNESS], input=json.dumps(d),
+                                 capture_output=True, text=True, timeout=60)
+            if out.returncode != 0:
+                raise AssertionError("node failed: " + out.stderr)
+            return json.loads(out.stdout)
+
+        def problems(r):
+            out = []
+            refs = re.findall(r'data-ref="(\d+)"', r["line"])
+            if refs != ["41", "38"]:
+                out.append("the targets' tooltip triggers: %s" % refs)
+            if 'class="declink"' not in r["line"]:
+                out.append("the on-page target is no link")
+            tip = r["tip38"]
+            if '<span class="lbl">Asked</span>Clear the docs build cache?' not in tip or '<span class="lbl">Answer</span>a — clear it' not in tip:
+                out.append("the off-page target's tooltip lacks Asked and Answer")
+            if '<span class="lbl">Context</span>' not in r["tip41"]:
+                out.append("the on-page target's tooltip lacks its card's Context")
+            return out
+
+        self.assertEqual(problems(run()), [])
+        # mutant: data-ref stripped from depRef, so the on-page target shows no tooltip
+        script = mutant('''class="declink" data-ref="'+esc(k)+'" data-goto=''', '''class="declink" data-goto=''')
+        self.assertIn("the targets' tooltip triggers: ['38']", problems(run(script)))
+
+    def test_an_older_detail_dep_lints_key_once_and_nothing_else(self):
+        from test_context import RUNNER, runner
+        from test_pros_cons import runner_with
+        d = example()
+        d["cards"][1]["detail"]["dep"] = ["Waits on the CI publish decision.",
+                                          [{"h": "Waits on", "b": ["The CI publish decision."]}]]
+        code, out, _ = runner(d)
+        self.assertEqual(code, 2, out)
+        lines = [x for x in out.splitlines() if "dep" in x]
+        self.assertEqual(len(lines), 1, out)
+        self.assertTrue(lines[0].startswith("lint: card 42: depth: detail.dep is not a part the page shows"), lines)
+        self.assertNotIn("Depends on", out)
+        # mutant: dep left in the runner's parts, which prints no key line and lints its levels instead
+        js = RUNNER.read_text().replace('why: "Why now", whyask: "Why ask", evidence: "the Evidence"};',
+                                        'why: "Why now", whyask: "Why ask", dep: "Depends on", evidence: "the Evidence"};')
+        code, out, _ = runner_with(js, d)
+        self.assertFalse(any("detail.dep is not a part" in x for x in out.splitlines()), out)
 
 
 if __name__ == "__main__":

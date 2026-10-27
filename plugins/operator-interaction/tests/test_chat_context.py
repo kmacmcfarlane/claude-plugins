@@ -2,11 +2,11 @@
 
 The chat card runs in the v5 order (d84f F10, item 9168), as the page card does (F11,
 `test_layout.py`): the title; the TLDR, one or two bullets (answer 336 (a)); the dependency
-line's slot (03ab F3's, drawn by no card yet); Context, What, Finding, Scope, Likelihood; the
+line on a decision that waits on another (03ab F3); Context, What, Finding, Scope, Likelihood; the
 upper folds, ▸ Open questions then ▸ Assumptions; the Impact; the options; To act on and the
 round lines (after the options in chat; the page puts its round lines above its options and
 each To act on under its own option); the bottom folds, ▸ Background, ▸ Attached, ▸ Rejected
-alternatives (the page also keeps a Dependencies fold until stored dependencies land). A block is the card with every fold
+alternatives (the page has no Dependencies fold: its dependency line follows the TLDR too). A block is the card with every fold
 open (▾), its Impact table under the Impact line, each option's view under that, and a ⚠
 block's read-back line last. The order check reads only the parts a view holds (d84f `08`
 § M1), so a part left out is never misplaced; a bullet is never followed at once by a bold
@@ -241,7 +241,7 @@ def lazy_problems(where, body):
     bullet (a lazy continuation). Returns the problems."""
     out = []
     for a, b in zip(body, body[1:]):
-        if re.match(r"^ *- |^ +\S", a) and b.startswith(("**", "▸ ", "▾ ")):
+        if re.match(r"^ *- |^ +\S", a) and b.startswith(("**", "▸ ", "▾ ", "*depends: ")):
             out.append(f"{where}: {b[:30]!r} runs into the bullet above it")
     return out
 
@@ -252,17 +252,17 @@ class Templates(unittest.TestCase):
     def test_the_card_template_runs_in_the_v5_order(self):
         card = fenced(RENDERING.read_text(), TLDR_OPENER)
         self.assertEqual(parts(card),
-                         ["title", "TLDR", "TLDR", "Context", "What", "Finding", "Scope", "Likelihood",
+                         ["title", "TLDR", "TLDR", "depends", "Context", "What", "Finding", "Scope", "Likelihood",
                           "Likelihood", "Open questions", "Assumptions", "Impact", "options", "options",
                           "options", "To act on", "Background", "Attached", "Rejected alternatives"])
         self.assertEqual(order_problems("rendering.md card", card), [])
         self.assertEqual(lazy_problems("rendering.md card", card), [])
-        # the dependency line's slot is kept and drawn by no card yet (03ab F3 has not landed)
-        self.assertNotIn("depends", parts(card))
+        # the dependency line, after the TLDR and its blank line, before Context (03ab F3)
+        self.assertEqual(card[card.index(next(x for x in card if x.startswith("*depends: "))) - 1], "")
         flat = " ".join(RENDERING.read_text().split())
-        self.assertIn("the dependency line's slot, after the TLDR", flat)
+        self.assertIn("the dependency line, after the TLDR", flat)
         self.assertIn("chat puts both after the options", flat)
-        self.assertIn("the page also keeps a Dependencies fold", flat)
+        self.assertNotIn("Dependencies fold", flat)
         self.assertNotIn("The one difference from the answer page", flat)
         self.assertIn("**TLDR:** under the title, one or two terse bullets", flat)
         self.assertEqual(heads(card)[:6], ["Context", "What", "Finding", "Scope", "Likelihood", "Impact"])
@@ -280,7 +280,7 @@ class Templates(unittest.TestCase):
                          ["Context", "What", "Finding", "Scope", "Likelihood", "Basis", "Impact", "table"])
         # F10: the card with every fold open, its table and its options' views, the read-back last
         self.assertEqual(parts(block),
-                         ["title", "TLDR", "TLDR", "Context", "What", "Finding", "Scope", "Likelihood",
+                         ["title", "TLDR", "TLDR", "depends", "Context", "What", "Finding", "Scope", "Likelihood",
                           "Open questions", "Assumptions", "Impact", "table", "options", "options",
                           "To act on", "If left", "A round costs", "If unanswered",
                           "Background", "Attached", "Rejected alternatives", "read-back"])

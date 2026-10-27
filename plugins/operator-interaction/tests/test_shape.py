@@ -53,7 +53,8 @@ class DecisionPageShapes(unittest.TestCase):
                   ["a", {"t": "b", "sub": ["c", "d"]}, {"t": "e"}],
                   [{"h": "H", "b": ["a", {"t": "b", "sub": ["c"]}]}]]
         datasets = []
-        for k in ("context", "rec", "why", "whyask", "dep", "evidence"):
+        # dep has no levels (03ab F3): an older detail.dep is ignored, and the runner lints it key
+        for k in ("context", "rec", "why", "whyask", "evidence"):
             for sh in shapes:
                 d = example()
                 c41(d)["detail"][k] = [sh]

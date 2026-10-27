@@ -107,13 +107,14 @@ fields only a page has, never written into a record:
 | Key | Type | Required | What |
 |---|---|---|---|
 | `L` | string | yes | its group: a `layers` key |
-| `dep` | string | no | what it depends on, usually slugs with the answer that matters (`[[41]] (b)`), from the caller's `depends N:` lines; shown in the Dependencies fold, with its medium and high in `detail.dep`. Leave it out when the card depends on nothing: a card with no `dep`, or a none one, has no fold |
+| `dep` | string | no | what it depends on, one line in the dependency line's sentence form, each decision a slug: `only if [[41]] is (a) or (c), and after [[47]] is answered, whatever its answer` (*The dependency line*, below). Shown as the dependency line, after the TLDR; it has no levels, and an older `detail.dep` is not shown. Leave it out when the card depends on nothing: a card with no `dep`, or a none one, has no line |
 
 Each record field maps to a part of the `decisions` skill's card (its `references/rendering.md`
 § Card); the floor is met by the card. Where a page shows each:
 
 - `t`, then `label` after it, muted, in every view: `t` · **F7** (oversize upload); a slug shows `t` alone;
-- `tldr` first on the open card; then `context`; then the **What** part, never folded: `what`,
+- `tldr` first on the open card; then, on a card with a `dep`, the dependency line (*The
+  dependency line*, below); then `context`; then the **What** part, never folded: `what`,
   what is decided in plain words, and for a set its `items`, every one listed, each its `name`, its
   `where` (muted), its `about`, and its `per` (its outcome under each option, in letter order, on a
   muted line under it; none when it fares the same under every option), the part labelled
@@ -157,11 +158,32 @@ Each record field maps to a part of the `decisions` skill's card (its `reference
   (`attached`; F3, answers 264 (a), 291 (a) and 286 (b)): closed, its summary the count and the
   titles, *2: title · title*; open, each attachment its own entry, closed, showing its title, a
   kind pill and its source line, and opening on a click to its body in its kind's shape
-  (§ An attachment), then **Dependencies**
-  (`dep`), then **Rejected alternatives** (`rejected`; F2, answer 286 (b)), the last: closed,
+  (§ An attachment), then **Rejected alternatives** (`rejected`; F2, answer 286 (b)), the last: closed,
   its summary the count and the titles, *2: title · title*, a slug as its number; open, each
   alternative's `t` on a bold line with its `why` reasons as bullets under it. The evidence is
   in the Assumptions fold, above.
+
+**The dependency line.** A card that waits on another decision's answer says so on one line,
+second on the card, after the TLDR and before Context, labelled *depends:* (03ab F3; the v4 layout, answer 313; the chat
+card's line is the `decisions` skill's `references/rendering.md` § Card). `dep` is written at
+page time from the caller's stored dependency (a librarian's `depends N:` lines, read as each
+decision's `depends` targets `{n, repo, letter}`), never from the card record, which holds no
+`dep`:
+
+- a target with a letter: `only if [[M]] is (x)`; letters on the same M are alternatives, `is
+  (a) or (c)`, three or more `is (a), (b), or (c)`;
+- a target with no letter: `after [[M]] is answered, whatever its answer`;
+- different Ms all apply, joined by `, and `;
+- a target in another repo (`<repo>#M`) has no slug: it is named in words, `<repo>'s M (name)`
+  where the caller knows its name, else `<repo>'s decision M`, as the chat card names it;
+- a target that is open goes on the page as a card; an answered one not on the page gets a
+  `refs` entry (§ Top level), as every slug does.
+
+The page escapes the line and draws each slug in it by the reference rule: a decision on the
+page reads `M (name)`, the line's own wording and its one exception to *N · short name*, as a
+link that opens that card, with the card's tooltip; a decision in `refs` keeps its slug,
+*N · short name*, and its tooltip. An older `dep` (`[[41]] (b)`) renders as written after
+*depends:*. A `dep` that is not one line of text is refused.
 
 **The closed row's effect** (answer 340 (a)): the recommended option's own `effect`, its letter
 first, `→ (b) …`; with no recommendation, each option's in a few words, `(a) …; (b) …`.
@@ -284,14 +306,14 @@ its title, a count of its decisions and *What they share:* its note; a bundle ad
 **Shared context** fold whose summary is the context's first sentence. An Impact describes the system the work builds, never the review or the process, which
 is its Wait: the lede says so, and the runner's `process` lint catches a process phrase in an
 option's effect or reach, or the Impact's reach. A card with a `label` shows it after its title,
-muted, with its short name, in every view. It opens every card on its TLDR, then its Context,
+muted, with its short name, in every view. It opens every card on its TLDR, then its dependency line when it waits on another decision, then its Context,
 then its What, then its Finding when it has one, then its Scope and its Likelihood when it has them, then its Open questions, then its Assumptions, then its Impact: a page is read away from the conversation, so its
 reader is treated as cold. After the Impact come the round lines (*If left:*, *A round costs:*, *If unanswered:*), then
 the answer (each option with its line, its **Pros** and **Cons** rows and **More**; the follow-ups; the words), then
 *Clear answer*, then the bottom folds (the v5 order, F11; `tests/test_layout.py` pins it). Any part with `detail` toggles its level on a click, on its button
 or on its text (never on a link or a control, nor while text is selected, so it can be
-copied); the folds (Open questions and Assumptions above the Impact, Background, Attached,
-Dependencies and Rejected alternatives after the answer) keep their order and stay closed; each option has a **More** button at its right, outside its label, which opens or closes the
+copied); the folds (Open questions and Assumptions above the Impact, Background, Attached
+and Rejected alternatives after the answer) keep their order and stay closed; each option has a **More** button at its right, outside its label, which opens or closes the
 option's view alone. **Picking an option** (its radio) opens its view and closes the card's other
 open one, as **More** would (the operator: "Selecting an option opens it as if More is pressed");
 a follow-up leaves the views as they are. A click on an option already picked opens its view too
@@ -307,7 +329,7 @@ answers are read back.
 **None is not shown** (the operator, 2026-10-14: *if any sub-section is empty or none, just
 don't display it*). A part, facet or field that is missing, blank, or says only `none`,
 `none.`, `n/a`, `n/a.` or a lone dash (trimmed, any case) is left off
-the page, by one test in the template: a `dep` (no Dependencies fold), an `open` list (no Open
+the page, by one test in the template: a `dep` (no dependency line), an `open` list (no Open
 questions fold), a `what` and `items` (no What part), a `finding`'s `mechanism` (no Finding part)
 and its `title` or `where`, a `scope`'s `says` (its level word alone), a `likelihood`'s `seen` (no
 Likelihood part, and no Best response? with it), a `best` (no Best response? line), an `attached` list (no Attached fold) or an attachment's `title` (that attachment left out), a `rejected` list (no Rejected alternatives fold), an

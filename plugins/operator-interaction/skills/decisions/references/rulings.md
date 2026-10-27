@@ -502,7 +502,7 @@ alternative not taken, in case practice argues for it.
 - **The v5 order, both surfaces** (2026-10-22, the operator's v5 ordering, item 9168: Finding,
   then Open questions, then Assumptions with tripwires, then the Impact; an option's view Plan
   in brief, the Pros | Cons table, then the facets; unknowns become Open questions) — a card
-  runs: the title; the TLDR; the dependency line's slot; Context, What, Finding, Scope,
+  runs: the title; the TLDR; the dependency line's slot (since 2026-10-27, *Groups and dependencies, stored; writers by group*, below); Context, What, Finding, Scope,
   Likelihood; the folds above the Impact, ▸ Open questions then ▸ Assumptions; the Impact; the
   options; the bottom folds, ▸ Background, ▸ Attached, ▸ Rejected alternatives. A part with
   nothing to say is left out, and what is shown keeps this order; a block is the card with every
@@ -510,8 +510,8 @@ alternative not taken, in case practice argues for it.
   in planning and build, not the operator's: chat's To act on and round lines (If left, A round
   costs, If unanswered) after the options, where the page has its round lines after the Impact
   and each To act on under its own option, and the page's Dependencies fold, kept until stored
-  dependencies land, the stated differences; the dependency line's slot kept after the TLDR, drawn by no card
-  until the dependency line lands; a blank line in chat between a bullet and the bold head or
+  dependencies land (since 2026-10-27, *Groups and dependencies, stored; writers by group*, below), the stated differences; the dependency line's slot kept after the TLDR, drawn by no card
+  until the dependency line lands (since 2026-10-27, *Groups and dependencies, stored; writers by group*, below); a blank line in chat between a bullet and the bold head or
   fold line under it, so CommonMark never reads one into the other; the order checks reading
   only the parts a card holds. Not taken: the v4 order, with the Assumptions fold first among
   the bottom folds and an option's facets before its table.
@@ -522,3 +522,24 @@ alternative not taken, in case practice argues for it.
   older stored card (no `format`) with no TLDR shows none, and gains one when next revised;
   the record's `tldr` is the writer's to fill (designs made in build). Not taken: (b) chat
   opening on its title alone; (c) a TLDR on a block only.
+- **Groups and dependencies, stored; writers by group** (2026-10-21, the operator's request,
+  as the librarian recorded it on item 03ab: card writers get whole groups, and dependent
+  decisions go with what they depend on, read from the stored decision data; the line's place
+  set by the v4 layout, signed off with answer 313, and after the TLDR by answer 336 (a)) —
+  chat and the answer page read the group and the dependency the caller stores (a librarian's
+  group lines and `depends N:` lines) instead of working them out each time. A stored group
+  orders the chat block and is the page's layer, by its plain name; its id is store-internal
+  and never shown on either surface. A dependent decision's dependency is its own line, second
+  on the card, after the TLDR, on the chat card, the block and the page card: *depends: only if
+  41 (name) is (a) or (c), and after 47 (name) is answered, whatever its answer*; the title line
+  stays bare. On the page a decision the line names that is on the page is a link that opens
+  its card, with its tooltip, and the Dependencies fold is gone; the card's row never showed the
+  dependency (page parity). Designs made in planning and build, not the operator's: the page's
+  `dep` written at page time from the stored lines in the line's sentence form, with slugs,
+  never in the card record; an on-page target drawn *N (name)*, the line's one exception to
+  *N · short name*, and a decision in `refs` keeping its slug and tooltip; a target in another
+  repo named with its repo, in words; no line for a none `dep`; a `dep` that is not one line of
+  text refused, and an older `detail.dep` ignored and linted `key`. The writers' split by group
+  and the order inside a group are this request's page and order halves, planned beside it.
+  Not taken: groups worked out at render time from the item and dependencies in prose only; the
+  condition on the title line, which the template openers could not take; the Dependencies fold.

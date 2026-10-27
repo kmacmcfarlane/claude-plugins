@@ -6,7 +6,7 @@ description: "Put a set of decisions to the operator as an answer page: a publis
 # Decision page
 
 A set of decisions on one page the operator works through at their own pace: a map of its
-groups, each card a one-line row that opens flat on its essentials (its TLDR, then its Context, then its What, then its Finding when it is raised from one, then its Scope where the work states requirements, then its Likelihood on a risk decision, then its Open questions and its Assumptions, folded, then its Impact, then its round lines and its options) with folds after the answer for the rest: its Background, its Attached material, its Dependencies and, last, its Rejected alternatives; a
+groups, each card a one-line row that opens flat on its essentials (its TLDR, then, on a decision that waits on another, its dependency line, whose on-page target opens that card, then its Context, then its What, then its Finding when it is raised from one, then its Scope where the work states requirements, then its Likelihood on a risk decision, then its Open questions and its Assumptions, folded, then its Impact, then its round lines and its options) with folds after the answer for the rest: its Background, its Attached material and, last, its Rejected alternatives; a
 click on a part with a more-detail button shows it as terse bullets, then in headed sections,
 each option but (z) shows its **Pros** and **Cons** rows under it, and picking an option, or **More** beside it, opens its view (its Plan in brief, its Pros | Cons table, then its effect, reach, undo and cost); one choice per card enforced by the
 radio buttons, answers saved as they click. You publish it, they answer, you read the answers
@@ -166,6 +166,11 @@ The rules below are what the digest condenses:
   beside it (the `decisions` skill's `references/rendering.md` § Source labels).
 - The TLDR comes first on the card: one or two terse fragment bullets. It names no
   recommendation: the options mark it. Say what is decided, and what rides on it.
+- A card that waits on another decision's answer carries `dep`, its dependency line, shown
+  after the TLDR: written from the caller's stored dependency in its sentence form, each
+  decision a slug, `only if [[41]] is (a) or (c), and after [[47]] is answered, whatever its
+  answer` (`references/cards-schema.md` § A page card, *The dependency line*). A decision it
+  names that is open goes on the page as a card; on the page, a click on it opens its card.
 - Every card carries `impact`, the decision's Impact across all its options (wait, reach, cost
   where it has one, and undo only where an option is one-way or costly; the `decisions`
   skill's `references/rendering.md` § Impact), shown on the open card one facet a line. There

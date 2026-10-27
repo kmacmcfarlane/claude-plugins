@@ -369,6 +369,7 @@ Example:
 - the TLDR: what is decided, in a terse bullet
 - what rides on it *(a second bullet at most; never the recommendation)*
 
+*depends: only if 41 (vendor the font) is (a) or (c), and after 47 (the font licence) is answered, whatever its answer*
 **Context:** the terms, items and counts the card uses, each in plain words; then where you left it · what you decide now.
 **What:** what is decided, in plain words; items by plain name, the id as a trailing tag; other ids glossed.
 - an item's plain name, where it lives — what it is, in a few words · *(a) its outcome; (b) its outcome*
@@ -404,8 +405,8 @@ how it happens, who meets it and when, the before and after, in one to three sen
 - **The order is the page's** (the v5 order, item 9168), part by part:
   1. the title;
   2. the TLDR, one or two bullets;
-  3. the dependency line's slot, after the TLDR, kept for a line naming the decisions this
-     one waits on: no card draws it yet;
+  3. the dependency line, after the TLDR, on a decision that waits on another's answer
+     (**Dependency line**, below);
   4. **Context:**, then **What:** with a set's item bullets, then **Finding:** on a card
      raised from a finding, then **Scope:** where the work states requirements, then
      **Likelihood:** and **Best response?:** on a risk decision;
@@ -421,10 +422,30 @@ how it happens, who meets it and when, the before and after, in one to three sen
   differences from the answer page are stated: the page puts the round lines (**If left:**,
   **A round costs:**, **If unanswered:**) after the Impact, above its options, and each
   **To act on (x):** under its own option; chat puts both after the options, where they are
-  read with the choice; the page also keeps a Dependencies fold, between Attached and
-  Rejected alternatives, until stored dependencies land. There is no Rec line.
-- **CommonMark.** A blank line goes between a bullet and a bold head or fold line that
-  follows it (the TLDR's last bullet and **Context:**, a set's last item and the next part),
+  read with the choice; and on the page a decision the dependency line names that is on the
+  page is a link that opens its card, where chat names it in words. There is no Rec line.
+- **Dependency line:** a decision that waits on another's answer says so on its own line,
+  second, after the TLDR (and its blank line) and before **Context:**, on a card and a block
+  alike; the title line stays bare (03ab F3; the v4 layout, answer 313; answer 336 (a)):
+  `*depends: only if 41 (vendor the font) is (a) or (c), and after 47 (the font licence) is answered, whatever its answer*`.
+  It is read from the caller's stored dependency where it keeps one (a librarian's
+  `depends N:` line, which its store's JSON view carries as each decision's `depends`, a list
+  of targets `{n, repo, letter}`), else from the caller's own record of it, and written as one
+  sentence:
+  - a target with a letter reads *only if M (name) is (x)*; letters on the same decision are
+    alternatives, *is (a) or (c)*, three or more *is (a), (b), or (c)*;
+  - a target with no letter reads *after M (name) is answered, whatever its answer*;
+  - different decisions all apply, joined by *, and*;
+  - each decision is its number and its plain short name in brackets; a target in another
+    repo is `<repo>'s M (name)` where the caller knows its name, else `<repo>'s decision M`, as
+    on the page.
+
+  A decision it names that is still open is shown in the same set. With no
+  dependency there is no line, never *depends: none*. The answer page draws the same line
+  from its card's `dep` (the `decision-page` skill's `references/cards-schema.md` § A page
+  card).
+- **CommonMark.** A blank line goes between a bullet and a bold head, a fold line or the
+  dependency line that follows it (the TLDR's last bullet and **Context:**, a set's last item and the next part),
   so the line is never read into the bullet above it.
 - **TLDR:** under the title, one or two terse bullets: what is decided, and what rides on it
   (the card record's `tldr`; answer 336 (a), the same TLDR as the answer page on every chat
@@ -597,6 +618,7 @@ how it happens, who meets it and when, the before and after, in one to three sen
 - the TLDR, as on a card
 - what rides on it
 
+*depends: …* *(as on a card, on a decision that waits on another)*
 **Context:**
 - the card's Context: the terms the block uses, then where you left it · what you decide now
 - a fact the reader may have lost: what was tried, what was answered before
@@ -793,7 +815,14 @@ does not say what is decided (SKILL.md § The floor, item 1).
   ```
 
   The heading adds the shared context and replaces nothing on the cards. On an answer page a
-  group is a layer carrying its shared context (the `decision-page` skill). The group keeps
+  group is a layer carrying its shared context (the `decision-page` skill). **A group the
+  caller stores is the group** (a librarian's group entity and member lines, which its store's
+  JSON view carries as each decision's `group`, `{id, name, shares, context}`): its members
+  are the cards under the heading, `name` is the plain name, `shares` what they share and
+  `context` the shared context. A stored group with `shares` and `context` is a bundle and
+  takes the heading; one without them is kept together under no heading. The group's id is
+  store-internal and never shown, on the heading or anywhere else; the group goes by its plain
+  name. The group keeps
   the order's rules (SKILL.md § Order): placed by its most pressing member, kept together.
   Each card has its own list line, and `ok 51-53` takes every recommendation in it, ⚠ cards
   skipped as in any batch.
@@ -807,7 +836,9 @@ folded into one card.
 
 ## Order
 
-The precedence is SKILL.md § Order. Two notes on applying it: a group is placed by its most
+The precedence is SKILL.md § Order. Three notes on applying it: the groups are the ones the
+caller stores where it stores them (its `group` per decision, the id never shown), and
+related decisions otherwise; a group is placed by its most
 pressing member and kept together, the same precedence holding inside it; and a deadline
 decision placed first "because the return is unknown" costs nothing if the operator is back
 sooner — both get answered — while one placed low can lose the lease.

@@ -78,7 +78,9 @@ class DecisionPageNone(unittest.TestCase):
         # mutant: an impactTable reintroduced draws a <table> outside the attachment renderer
         self.assertTrue(table_problems(html.replace("/* its source line:", "const impactTable=c=>'<table></table>';\n/* its source line:", 1)))
 
-    def test_no_dep_no_dependencies_fold(self):
+    def test_no_dep_no_dependency_line(self):
+        # 03ab F3: a none dep shows no dependency line, no Dependencies pane and no placeholder; an older
+        # detail.dep is not shown (the page has no levels for the line), whatever dep says
         for dep in (None, "", "none", "None."):
             d = example()
             c = d["cards"][1]
@@ -86,19 +88,37 @@ class DecisionPageNone(unittest.TestCase):
                 c.pop("dep")
             else:
                 c["dep"] = dep
+            c["detail"]["dep"] = ["Waits on the CI publish decision.",
+                                  [{"h": "Waits on", "b": ["The CI publish decision."]}]]
             h = card(run_page(d), 42)["html"]
             self.assertEqual(panes(h), ["Background"], dep)
-            self.assertNotIn("depends on:", h, dep)
+            self.assertNotIn('class="depl"', h, dep)
+            self.assertNotIn("depends:", h, dep)
             self.assertNotIn("Depends on", h, dep)
-            self.assertNotIn("nothing on this page", h, dep)
-        # with levels but no summary, a placeholder holds its place, as the evidence's does
+            self.assertNotIn("Waits on the CI publish decision", h, dep)
+            self.assertNotIn("Not summarised: more detail shows what it depends on.", h, dep)
+        # mutant: the line rendered for a none dep
         d = example()
         d["cards"][1]["dep"] = "none"
-        d["cards"][1]["detail"]["dep"] = ["Waits on the CI publish decision.",
-                                          [{"h": "Waits on", "b": ["The CI publish decision."]}]]
-        h = card(run_page(d), 42)["html"]
-        self.assertIn("Dependencies", panes(h))
-        self.assertIn("Not summarised: more detail shows what it depends on.", h)
+        script = page_free_script().replace("const depLine=c=>isTxt(c.dep)&&shown(c.dep)", "const depLine=c=>isTxt(c.dep)")
+        self.assertIn('class="depl"', page_with(script, d)["cards"][1]["html"])
+
+    def test_the_labelled_helper_stays_for_background(self):
+        # 03ab F3 removed only its dep caller: Why now and Why ask still call it
+        html = PAGE.read_text()
+        self.assertIn("const labelled=", html)
+        self.assertIn('labelled("Why now"', html)
+        self.assertIn('labelled("Why ask"', html)
+        self.assertNotIn('labelled("Depends on"', html)
+        self.assertNotIn("Depends on", html)
+        free = html[html.index("<script>"):html.index("/* ---- end of the page-free part")]
+        self.assertIn('const DETAIL_TEXT=["context","rec","why","whyask","evidence"];', free)
+        # mutant: the helper deleted breaks the Background fold (node fails on the missing helper)
+        start = free.index("const labelled=")
+        end = free.index("/* the Impact at more detail")
+        script = page_free_script().replace(free[start:end], "")
+        with self.assertRaises(AssertionError):
+            page_with(script, example())
 
     def test_a_none_cost_is_not_shown_but_a_required_facet_is(self):
         for cost in ("none", "None.", "n/a", " "):
