@@ -1347,18 +1347,18 @@ id. A member line naming an id with no entity line in the store has no group.
 then the first three hex characters of the SHA-256 of `<UTC time to the second> <item id>
 <plain name>`. Group ids are not numbers and take nothing from the decision counter
 (§ Allocating a decision number): there is no group counter and no lock. Make one with this
-line (GNU and BSD tools alike):
+line (GNU and BSD tools alike), a `'` in the name written `'\''`:
 
 ```bash
 t=$(date -u +%Y-%m-%dT%H:%M:%SZ); md=$(printf %s "$t" | cut -c6-7,9-10)
-printf 'g-%s-%s\n' "$md" "$(printf '%s %s %s' "$t" "<item id>" "<plain name>" | { sha256sum 2>/dev/null || shasum -a 256; } | cut -c1-3)"
+printf 'g-%s-%s\n' "$md" "$(printf '%s %s %s' "$t" '<item id>' '<plain name>' | { sha256sum 2>/dev/null || shasum -a 256; } | cut -c1-3)"
 ```
 
 Before writing it, check that it is not taken; a hit means drawing again a second later
 (run `unset -f grep find` first in a shell where those are functions):
 
 ```bash
-grep -rqE '^group <id>:' <root>/items <root>/archive && echo taken
+grep -rqE '^group <id>:' <root>/items <root>/archive 2>/dev/null && echo taken
 ```
 
 A store makes a few groups a day, so 4,096 hashes a day keep a same-day collision rare; the
@@ -1366,10 +1366,10 @@ date only spreads the ids out. A **duplicate** is entity lines for one id in two
 items, which only a collision the check missed leaves (two sessions in the same second).
 The session that finds one deletes the entity line it wrote, the one deletion these lines
 allow, since the id was never valid there, and re-creates its group under a new id, with
-new member lines for its members. Repeats of one id within one item are renames (last
-wins), never a duplicate. A group id is store-internal: it is never shown to the operator,
-on any surface, where the group goes by its plain name; only store lines and agent briefs
-carry it.
+new member lines for its members. Repeats of one id within one item are revisions (a
+rename, or its shares and context changed), last wins, never a duplicate. A group id is
+store-internal: it is never shown to the operator, on any surface, where the group goes by
+its plain name; only store lines and agent briefs carry it.
 
 **A dependency** says decision N presupposes another's answer:
 
@@ -1395,6 +1395,9 @@ target, `(?:[A-Za-z0-9._-]+#)?\d+(?: \([a-y]\))?`:
 - group member: `^group (\d+): (g-\d{4}-[0-9a-f]{3})$`
 - depends: `^depends (\d+): (none|T(?:, T)*)(?: — (\S.*))?$`
 - each target: `(?:([A-Za-z0-9._-]+)#)?(\d+)(?: \(([a-y])\))?`
+
+The entity pattern's name stops before ` · shares:`, so a reader trims the trailing spaces
+off the name it captures.
 
 None of these lines is `decision N:` or `answer N:`, so they open no question and answer
 none: `needs-input`, the decision counter and the estate sweep pass them by. `wi` does not
@@ -1517,7 +1520,7 @@ kind's rules; this table is where a reader finds them all.
 | open question | `open question: <text>`, closed by `open question: <text> → decision N` or `open question dropped: <text> — <why>` | 0 | the caller (the librarian-mode convention) | no | landed |
 | group | `group g-<MMDD>-<hhh>: <plain name>[ · shares: <what its members share> · context: <shared context>]` | 0, in the item where the group was created | the session that writes the decisions, never a dispatched agent | no (§ Groups and dependencies gives a reader's patterns) | landed; last line per id wins |
 | group member | `group N: g-<MMDD>-<hhh>` | 0 | the session that writes the decisions, never a dispatched agent | no (§ Groups and dependencies gives a reader's pattern) | landed; last line per N wins |
-| depends | `depends N: <M[ (x)] \| <repo>#M[ (x)] \| none>[, …][ — <why>]` | 0 | the session that writes the decisions, never a dispatched agent | no (§ Groups and dependencies gives a reader's patterns) | landed; last line per N is the whole set |
+| depends | `depends N: <M[ (x)] \| <repo>#M[ (x)]>[, …][ — <why>]` or `depends N: none[ — <why>]` | 0 | the session that writes the decisions, never a dispatched agent | no (§ Groups and dependencies gives a reader's patterns) | landed; last line per N is the whole set |
 | writer run | `writer-run: <UTC> <page short name> w<k>/<K> — cards <n> · tokens <input>/<output> · lints <n> [<keys>]` | 0 | the librarian, one line per answer-page writer (the librarian-mode convention gives its place and sources) | no | landed |
 | delegation | `delegation dl-…: …`, its revoke and `revoke-ack` lines | 0 | the session that grants it | the answer-changes plan's patterns | planned (the answer-changes plan) |
 

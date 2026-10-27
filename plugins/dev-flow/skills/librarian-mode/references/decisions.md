@@ -38,7 +38,8 @@ the verbatim rule on every answer line (§ What the store records, **Answered**)
 | the default wake ("the next time I finish a piece of work and report") | **the next Report**; a `later` with no time or event wakes there |
 | the operator's expected return | what the operator said ("back tomorrow morning"), in the item or the transcript; when they said nothing, the return is unknown and every stated deadline goes first |
 | who is reading, and how warm | after Rehydrate the operator is **cold** on every decision raised before the reset; the first Report after it re-shows them per the skill, with what changed since each was raised. Between resets: a decision shown in a Report written after the operator's last turn has **not been seen** — background returns can write several Reports while the operator is away — so the next Report shows it at its level again, not *(shown before)*. Your own transcript tells you: has the operator taken a turn since that Report? The store records the same thing (§ What the store records, **Shown** and **Seen**): a reader without the transcript — after a reset, or another session — reads the last showing as unseen when no `seen N:` line follows the last `shown N:` line, and as not recorded (cold) when there is no `shown N:` line |
-| related decisions (groups) | the stored group: the decision's last `group N:` member line, read through its group's entity line (§ What the store records, **Grouped and depends**); with none, the item's short name. The stored group's name is chosen at raise: decisions on one item, or on sibling items (one parent) about the same plugin, share one; a decision with no item groups by plugin or files. Never transitive: two groups that share a file stay two groups || named templates | none: the librarian names no template, so every decision carries the floor on its own card |
+| related decisions (groups) | the stored group: the decision's last `group N:` member line, read through its group's entity line (§ What the store records, **Grouped and depends**); with none, the item's short name. The stored group's name is chosen at raise: decisions on one item, or on sibling items (one parent) about the same plugin, share one; a decision with no item groups by plugin or files. Never transitive: two groups that share a file stay two groups |
+| named templates | none: the librarian names no template, so every decision carries the floor on its own card |
 | classes of decision (the class in *why ask* and on the list line) | the reasons in `decide-alone.md` § Class names, the first that applies in § The line's order, picked when the decision is raised; `unclassed` when in doubt whether one applies, which raises |
 | a decide-alone class the caller's rules define (the FYI rule's authority) | the kinds `decide-alone.md` § The line lets be decided alone once no reason applies, cited as `class <kind>` on the `decided:` line; beside them, the FYI authority is an answered decision or the task the item carries |
 | the record of what was decided alone | the `decided:` line and the Report's **Done alone** group (`decide-alone.md`) |
@@ -195,9 +196,10 @@ renders what the operator read instead of composing it again.
   and how a duplicate id is fixed are the `work-items` skill's format reference, § Groups and
   dependencies. Group ids are not numbers and take nothing from the counter. Only this
   session, the store's writer, writes them; a dispatched agent (planner, reviewer) never
-  does, and returns a link in words for the librarian to write. Each is appended with `$WI
-  note <id> --raw -- '<line>'` and rides the next store commit; never through `raise
-  --lines`.
+  does, and returns a link in words for the librarian to write. They are appended with one
+  `$WI note <id> --raw -- '<line>' ['<line>' …]` per item (one lock, so one commit in a
+  store that commits its own changes), and ride the next store commit otherwise; never
+  through `raise --lines`.
   - **At raise:** right after `$WI raise` prints N, in the same turn, the new decision joins
     a group, `group N: <id>`, or a new group is made: draw an id, check it is not taken,
     then write the entity line, then the member line. The name is the item's short name, or
@@ -209,7 +211,8 @@ renders what the operator read instead of composing it again.
     caught by the back-fill below.
   - **At a reframe** (N reframed as M): `group M: <N's id>`; `depends M:` copies N's set,
     rechecked against M's options; each open K whose set names N gets a new `depends K:`
-    naming M, the letter kept only when an option of M carries the same meaning, else no
+    line, its whole set again with N replaced by M (the last line is the whole set), the
+    letter kept only when an option of M carries the same meaning, else no
     letter, and K is re-shown, since its premise changed.
   - **A rename** is one new entity line, the members unchanged. **A regroup** is one new
     member line. **A revision** that changes what a decision presupposes appends a new
@@ -385,21 +388,18 @@ renders what the operator read instead of composing it again.
   remote (its last path part, without `.git`), else its main checkout's directory name —
   in any line of this store that names one (a card's `basis:`, a `wake N:` event, a
   `superseded by`). A bare N, or `decision N`, always means this store's counter.
-- **Writer runs:** an answer page built by more than one card writer (the `decision-page`
-  skill's writer split) records each writer's run, to tune the split's card cap: one
-  column-0 line per writer, single-writer runs included, appended to the body of the work
-  item that added the writer split, from the first page written after the split lands and
-  while that item stays open on its acceptance (one recorded run of two or more writers);
-  a store with no such item records none:
+- **Writer runs:** every answer page built through the `decision-page` skill's writer split
+  records each writer's run, to tune the split's card cap, a run of one writer included:
+  one column-0 line per writer, appended to the body of the open item whose acceptance asks
+  for `writer-run:` lines, from the first page written after the split lands and while that
+  item stays open; a store with no such item records none:
 
   ```
   writer-run: <UTC time> <page short name> w<k>/<K> — cards <n> · tokens <input>/<output> · lints <n> [<keys>]
   ```
 
   `w<k>/<K>` is writer k of K. **Tokens** are that writer's input and output, from the
-  `usage-report` skill's `scripts/item_spend.py` by the writer's agent id; without that
-  skill, from the dispatch result's usage; with neither, the line says `tokens not
-  recorded` in their place. **Lints** count the `lint:` lines `check_cards.js` prints for
+  dispatch result's usage; without it, the line says `tokens not recorded` in their place. **Lints** count the `lint:` lines `check_cards.js` prints for
   that writer's cards on the first merged check, before any fix, with their keys. The
   line is neither `decision N:` nor `answer N:`, and `wi` does not read it.
 

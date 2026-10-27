@@ -57,7 +57,10 @@ GROUPED = [
     "**At raise:** right after `$WI raise` prints N, in the same turn",
     "draw an id, check it is not taken, then write the entity line, then the member line",
     "**At a reframe** (N reframed as M): `group M: <N's id>`",
-    "each open K whose set names N gets a new `depends K:` naming M",
+    "each open K whose set names N gets a new `depends K:` line, its whole set again with N "
+    "replaced by M (the last line is the whole set)",
+    "one `$WI note <id> --raw -- '<line>' ['<line>' …]` per item (one lock, so one commit in a "
+    "store that commits its own changes)",
     "and K is re-shown, since its premise changed",
     "**A rename** is one new entity line, the members unchanged",
     "**A regroup** is one new member line",
@@ -78,10 +81,12 @@ BACKFILL = [
 WRITER_RUN = [
     "writer-run: <UTC time> <page short name> w<k>/<K> — cards <n> · tokens <input>/<output> "
     "· lints <n> [<keys>]",
-    "appended to the body of the work item that added the writer split",
-    "from the `usage-report` skill's `scripts/item_spend.py` by the writer's agent id",
-    "without that skill, from the dispatch result's usage",
-    "`tokens not recorded`",
+    "every answer page built through the `decision-page` skill's writer split records each "
+    "writer's run",
+    "a run of one writer included",
+    "appended to the body of the open item whose acceptance asks for `writer-run:` lines",
+    "**Tokens** are that writer's input and output, from the dispatch result's usage; without "
+    "it, the line says `tokens not recorded`",
     "the `lint:` lines `check_cards.js` prints for that writer's cards on the first merged "
     "check, before any fix",
     "`wi` does not read it",
@@ -100,6 +105,8 @@ def decisions_problems(text):
     for phrase in WRITER_RUN:
         if phrase not in runs:
             out.append(f"Writer runs lacks {phrase!r}")
+    if "item_spend" in runs:
+        out.append("Writer runs takes tokens from item_spend.py, which cannot split them")
     groups = row(text, "related decisions (groups)")
     for phrase in ["the stored group: the decision's last `group N:` member line",
                    "with none, the item's short name", "The stored group's name is chosen at "
@@ -113,6 +120,22 @@ def decisions_problems(text):
     if "M copies N's group and its `depends` set, and every open decision that depends on N " \
        "is repointed to M" not in reframe:
         out.append("the reframe bullet copies and repoints nothing")
+    return out
+
+
+def table_problems(text):
+    """Every row of § What the librarian supplies to the skill has exactly 3 `|` delimiters,
+    so 2 cells, as its header has: a row run into the next has more."""
+    start = text.find("## What the librarian supplies to the skill")
+    if start < 0:
+        return ["no § What the librarian supplies to the skill"]
+    body = text[start:text.index("\n## ", start + 1)]
+    out = []
+    for line in body.splitlines():
+        if line.startswith("|"):
+            cells = line.strip().strip("|").split("|")
+            if len(cells) != 2:
+                out.append(f"{len(cells)} cells: {line[:60]!r}")
     return out
 
 
@@ -144,6 +167,8 @@ class GroupedAndDepends(unittest.TestCase):
             self.assertNotEqual(decisions_problems(cut), [], phrase)
         for old in ["Only in this session's own store", "**every** open decision",
                     "`tokens not recorded`", "check it is not taken",
+                    "its whole set again with N replaced by M", "one lock, so one commit",
+                    "a run of one writer included", "whose acceptance asks for `writer-run:`",
                     "the answers to the decisions its `depends N:` set names",
                     "is repointed to M", "with none, the item's short name"]:
             # the phrase may wrap, so it is cut wherever its words are split by whitespace
@@ -151,6 +176,22 @@ class GroupedAndDepends(unittest.TestCase):
             cut, n = re.subn(pattern, "gone", self.text)
             self.assertGreater(n, 0, old)
             self.assertNotEqual(decisions_problems(cut), [], old)
+
+    def test_no_item_spend_mutant(self):
+        cut = self.text.replace("from the\n  dispatch result's usage",
+                                "from the\n  `usage-report` skill's `scripts/item_spend.py`, else the "
+                                "dispatch result's usage")
+        self.assertNotEqual(cut, self.text)
+        self.assertNotEqual(decisions_problems(cut), [])
+
+    def test_every_binding_row_has_two_cells(self):
+        self.assertEqual(table_problems(self.text), [])
+
+    def test_binding_rows_mutant(self):
+        # the groups row and the named-templates row run together on one line
+        cut = self.text.replace("two groups |\n| named templates |", "two groups || named templates |")
+        self.assertNotEqual(cut, self.text)
+        self.assertNotEqual(table_problems(cut), [])
 
     def test_no_back_fill_pass_mutant(self):
         cut = self.text.replace("there is no back-fill pass.",

@@ -11,6 +11,7 @@ Standard library only. Run from plugins/work-items/skills/work-items:
 
     python3 -m unittest discover -s tests -q
 """
+import hashlib
 import importlib.util
 import re
 import shlex
@@ -301,7 +302,10 @@ def rules_problems(text):
         "The session that finds one deletes the entity line it wrote, the one deletion these "
         "lines allow",
         "re-creates its group under a new id, with new member lines",
-        "Repeats of one id within one item are renames (last wins), never a duplicate",
+        "Repeats of one id within one item are revisions (a rename, or its shares and context "
+        "changed), last wins, never a duplicate",
+        "a `'` in the name written `'\\''`",
+        "a reader trims the trailing spaces off the name it captures",
         "it is never shown to the operator, on any surface",
         "Targets on the same M are alternatives (any listed letter); targets on different Ms "
         "all apply",
@@ -331,27 +335,33 @@ def make_id(text, t="2026-10-22T09:15:02Z", item="decisions-structured-depends-a
     if block is None:
         return None
     block = block.replace("t=$(date -u +%Y-%m-%dT%H:%M:%SZ)", "t=" + t, 1)
-    block = block.replace("<item id>", item).replace("<plain name>", name)
+    block = block.replace("<item id>", item.replace("'", "'\\''"))
+    block = block.replace("<plain name>", name.replace("'", "'\\''"))
     run = subprocess.run(["bash", "-c", block], capture_output=True, text=True, timeout=30)
     return run.stdout.strip()
 
 
-def taken(text, store, gid):
-    """Run the section's not-taken check against `store` for `gid`: True when it says taken."""
+def run_taken(text, store, gid):
+    """Run the section's not-taken check against `store` for `gid`: (taken?, stderr)."""
     block = fenced_after(groups_section(text), "grep -rqE")
     if block is None:
-        return None
+        return None, ""
     block = block.replace("<root>", shlex.quote(str(store))).replace("<id>", gid)
     run = subprocess.run(["bash", "-c", "unset -f grep find; " + block], capture_output=True,
                          text=True, timeout=30)
-    return run.stdout.strip() == "taken"
+    return run.stdout.strip() == "taken", run.stderr
+
+
+def taken(text, store, gid):
+    return run_taken(text, store, gid)[0]
 
 
 ROWS = {
     "group": "`group g-<MMDD>-<hhh>: <plain name>[ · shares: <what its members share> · "
              "context: <shared context>]`",
     "group member": "`group N: g-<MMDD>-<hhh>`",
-    "depends": "`depends N: <M[ (x)] | <repo>#M[ (x)] | none>[, …][ — <why>]`",
+    "depends": "`depends N: <M[ (x)] | <repo>#M[ (x)]>[, …][ — <why>]` or "
+               "`depends N: none[ — <why>]`",
     "writer run": "`writer-run: <UTC> <page short name> w<k>/<K> — cards <n> · tokens "
                   "<input>/<output> · lints <n> [<keys>]`",
 }
@@ -406,7 +416,8 @@ class GroupsAndDependencies(unittest.TestCase):
         sec = groups_section(self.text)
         for phrase in ["Group ids are not numbers", "the one deletion these lines allow",
                        "Targets on the same M are alternatives", "`archive/*/`",
-                       "never through `raise --lines`"]:
+                       "never through `raise --lines`", "a reader trims the trailing spaces",
+                       "its shares and context changed"]:
             self.assertIn(phrase, flat(sec))
             cut = self.text.replace(sec, flat(sec).replace(phrase, "gone"))
             self.assertNotEqual(rules_problems(cut), [], phrase)
@@ -415,6 +426,17 @@ class GroupsAndDependencies(unittest.TestCase):
         self.assertEqual(make_id(self.text), "g-1022-d6f")
         self.assertRegex(make_id(self.text, t="2026-01-05T23:59:59Z", item="x", name="y"),
                          r"^g-0105-[0-9a-f]{3}$")
+
+    def test_the_id_line_takes_any_name_literally(self):
+        # L4: the placeholders are single-quoted, a `'` written `'\''`, so a name holding a
+        # quote, `$` or a backtick hashes as written
+        name = "it's $HOME `id`"
+        want = hashlib.sha256(("2026-10-22T09:15:02Z x " + name).encode()).hexdigest()[:3]
+        self.assertEqual(make_id(self.text, item="x", name=name), "g-1022-" + want)
+        # mutant: the placeholders double-quoted again, so the shell expands the name
+        cut = self.text.replace("'<item id>' '<plain name>'", '"<item id>" "<plain name>"')
+        self.assertNotEqual(cut, self.text)
+        self.assertNotEqual(make_id(cut, item="x", name=name), "g-1022-" + want)
 
     def test_the_id_line_mutant(self):
         cut = self.text.replace("| cut -c1-3)", "| cut -c1-4)")
@@ -435,6 +457,19 @@ class GroupsAndDependencies(unittest.TestCase):
             cut = self.text.replace("<root>/items <root>/archive", "<root>/items")
             self.assertNotEqual(cut, self.text)
             self.assertFalse(taken(cut, root, "g-1022-a3f"))
+
+    def test_the_not_taken_check_is_quiet_with_no_archive(self):
+        # L5: a store with no archive/ yet answers without an error on stderr
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            (root / "items").mkdir()
+            (root / "items" / "a.md").write_text("group g-1022-b00: one\n")
+            self.assertEqual(run_taken(self.text, root, "g-1022-b00"), (True, ""))
+            self.assertEqual(run_taken(self.text, root, "g-1022-c11"), (False, ""))
+            # mutant: the redirect dropped, so grep complains about the missing archive
+            cut = self.text.replace("<root>/archive 2>/dev/null &&", "<root>/archive &&")
+            self.assertNotEqual(cut, self.text)
+            self.assertNotEqual(run_taken(cut, root, "g-1022-c11")[1], "")
 
     def test_the_table_rows(self):
         self.assertEqual(table_problems(self.text), [])
