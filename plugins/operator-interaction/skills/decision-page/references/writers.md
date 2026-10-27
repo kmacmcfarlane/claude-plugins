@@ -36,7 +36,7 @@ node scripts/split_writers.js [--cap N] skeleton.json
 run from this skill's base directory. It prints `{"cap", "writers": [{"cards": [n…],
 "layers": [key…], "over_cap": bool}], "notes": […]}`, each writer's cards in page order, and
 exits 1 on a skeleton it cannot read (a card with no `n` or `L`, an `L` not in `layers`, a
-repeated `n`, the `other` layer not last). The rule it applies, short enough to apply by hand
+repeated `n`, a repeated layer key, the `other` layer not last). The rule it applies, short enough to apply by hand
 where there is no node:
 
 1. Cards that share a layer are linked. A card is linked to each `[[M]]` in its `dep` that is
@@ -50,7 +50,8 @@ where there is no node:
    marked over cap. A depends chain is never cut; only same-layer links are.
 4. Units, and the pieces of split units, are packed in page order. Each writer takes the next
    whole one while the total stays at or under the cap, so several small groups share a
-   writer, and a group is never split across writers except over the cap.
+   writer, and a group is never split across writers unless its unit (the group with what it
+   depends on, or what depends on it) is over the cap.
 
 **The cap.** `WRITER_CAP = 15` cards per writer, at or under. It is an estimate from one
 observation, not a measurement: 22 cards came to about 27k tokens of card text, and fifteen
@@ -90,8 +91,8 @@ With one writer there is no example stage, and the brief is the digest alone.
   never writes `L`, `dep` or `refs`: they are the caller's, from the skeleton.
 - **The caller stores them**, each with its store's write path (a new decision raised, a
   revision as a new revision); a caller with no store keeps the checked files.
-- **The caller builds `cards.json` from the records it has stored**, not from the writers'
-  files: the envelope (`format`, `page`, `layers`, `follow`), then each card in page order, its
+- **The caller builds `cards.json` from the records it has stored** (for a caller with no
+  store, the checked files it kept), not from the writers' files: the envelope (`format`, `page`, `layers`, `follow`), then each card in page order, its
   stored record plus its `L` and `dep`, then the page's `refs`. So the page shows exactly what
   the store holds, and a record the store refused never reaches it.
 - **One check over the whole file**: `node scripts/check_cards.js cards.json`, once. Each line

@@ -20,7 +20,7 @@
 
    Prints {"cap", "writers": [{"cards": [n…], "layers": [key…], "over_cap": bool}], "notes": […]},
    each writer's cards in page order. Exit 0; 1 on a skeleton it cannot read (a card with no n
-   or L, an L not in layers, a repeated n, the other layer not last) or a bad --cap. Reads one
+   or L, an L not in layers, a repeated n, a repeated layer key, the other layer not last) or a bad --cap. Reads one
    local file, writes nothing else. Node built-ins only. */
 "use strict";
 const fs = require("fs");
@@ -45,6 +45,7 @@ function readSkeleton(d) {
   const keys = [];
   d.layers.forEach((l, i) => {
     if (!Array.isArray(l) || typeof l[0] !== "string" || !l[0]) fail("layer " + i + ": needs [key, title, …]");
+    if (keys.includes(l[0])) fail("layer " + l[0] + ": key repeated");
     keys.push(l[0]);
   });
   const at = keys.indexOf(OTHER);
@@ -93,7 +94,7 @@ function split(d, cap) {
   const notes = [];
   /* the dep links between cards on the page */
   const links = [];
-  for (const c of cards) for (const m of depsOf(c)) {
+  for (const c of cards) for (const m of new Set(depsOf(c))) {
     if (m === c.n) continue;
     if (pos.has(m)) links.push([c.n, m]);
     else if (!refs.has(String(m)))

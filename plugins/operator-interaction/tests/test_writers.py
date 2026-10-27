@@ -184,15 +184,28 @@ class Split(unittest.TestCase):
         out = self.run_ok(d)
         self.assertEqual(out["notes"], [])
         self.assertEqual(writers_of(out), [[1, 2, 3]])
+        # over the cap, the unit is still layer a alone: the ref joins nothing
+        out = self.run_ok(d, cap=2)
+        self.assertEqual(out["notes"], [])
+        self.assertEqual(writers_of(out), [[1, 2], [3]])
         # mutant: refs dropped from the skeleton, which reports the dependency
         del d["refs"]
         self.assertEqual(len(self.run_ok(d)["notes"]), 1)
+
+    def test_a_repeated_absent_target_gives_one_note(self):
+        d = skeleton([("a", [1, 2])], {2: "only if [[99]] is (a), and after [[99]] is answered, whatever its answer"})
+        self.assertEqual(self.run_ok(d)["notes"], ["card 2 depends on [[99]], which is neither a card on this page "
+                                                   "nor a ref: add it as a card"])
+        # mutant: the Set removed, which notes it twice
+        out = self.run_ok(d, script=mutant("for (const m of new Set(depsOf(c))) {", "for (const m of depsOf(c)) {"))
+        self.assertEqual(len(out["notes"]), 2)
 
     def test_a_malformed_skeleton_exits_1(self):
         for put, needle in ((lambda d: d["cards"][0].pop("n"), "needs n"),
                             (lambda d: d["cards"][0].pop("L"), "needs L"),
                             (lambda d: d["cards"][0].__setitem__("L", "nowhere"), "is not a layers key"),
-                            (lambda d: d["cards"][1].__setitem__("n", 1), "n repeated")):
+                            (lambda d: d["cards"][1].__setitem__("n", 1), "n repeated"),
+                            (lambda d: d["layers"].append(["a", "Again"]), "layer a: key repeated")):
             with self.subTest(needle=needle):
                 d = skeleton([("a", [1, 2])])
                 put(d)
@@ -209,6 +222,11 @@ class Split(unittest.TestCase):
         d["cards"][0]["L"] = "nowhere"
         js = mutant('if (!keys.includes(c.L)) fail(', 'if (false) fail(')
         self.assertNotEqual(split(d, script=js)[0], 1)
+        # mutant: the repeated-key check removed, which reads a repeated layer key
+        d = skeleton([("a", [1, 2])])
+        d["layers"].append(["a", "Again"])
+        js = mutant('if (keys.includes(l[0])) fail(', 'if (false) fail(')
+        self.assertEqual(split(d, script=js)[0], 0)
 
     def test_other_decisions_is_the_last_layer(self):
         d = skeleton([("g-1022-a3f", [1, 2]), ("other", [3])])
@@ -259,6 +277,8 @@ SPLIT_PHRASES = (
     "node scripts/split_writers.js [--cap N] skeleton.json",
     "A depends chain is never cut; only same-layer links are.",
     "Each writer takes the next whole one while the total stays at or under the cap",
+    "a group is never split across writers unless its unit (the group with what it depends on, or "
+    "what depends on it) is over the cap",
     "It is an estimate from one observation, not a measurement: 22 cards came to about 27k "
     "tokens of card text",
     "the caller records each writer's cards, tokens and first-check lints",
@@ -279,7 +299,8 @@ MERGE_PHRASES = (
     "**A writer returns records**",
     "checked with `node scripts/check_cards.js --record <file>` before it is handed back",
     "A writer never writes `L`, `dep` or `refs`",
-    "**The caller builds `cards.json` from the records it has stored**, not from the writers' files",
+    "**The caller builds `cards.json` from the records it has stored** (for a caller with no store, "
+    "the checked files it kept), not from the writers' files",
     "its stored record plus its `L` and `dep`, then the page's `refs`",
     "**One check over the whole file**",
 )
