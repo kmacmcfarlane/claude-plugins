@@ -554,6 +554,16 @@ class TestInitKeepsTheBlock(CounterCase):
         self.assertIsNone(wi.seed_counter(self.root))
         self.assertNotIn("counters", self.yaml_text())
 
+    def test_no_flag_init_without_store_yaml_takes_no_lock(self):
+        """A no-flag init on a store with items and no store.yaml writes no
+        store.yaml, so it seeds nothing and leaves no .lock. Mutant: the
+        guard on store.yaml's presence before the seed's Lock removed."""
+        self.adopt()
+        r = self.wi("init", stdin=subprocess.DEVNULL)
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+        self.assertFalse((self.root / "store.yaml").exists())
+        self.assertFalse((self.root / ".lock").exists())
+
     def test_seed_refuses_conflict_markers(self):
         """A store.yaml holding conflict markers is never seeded over.
         Mutant: seed_counter's counter_problem check removed."""

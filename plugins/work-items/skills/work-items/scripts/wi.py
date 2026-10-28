@@ -3679,7 +3679,10 @@ def _init(args):
         warning = custody_warning(root)
         if warning:
             print(warning, file=sys.stderr)
-    if (rc == 0 and "decision" not in _store_counters(root)[1]
+    text, values = _store_counters(root)
+    # no store.yaml (a no-flag init on a store with no recorded choice):
+    # seed_counter could write nothing, so no lock and no .lock file
+    if (rc == 0 and text is not None and "decision" not in values
             and items_decision_max(root)):
         # b564: a store adopted with items gets a counter at their highest
         # N, so the next lint has nothing to reseed

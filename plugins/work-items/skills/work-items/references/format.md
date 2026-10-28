@@ -1055,7 +1055,8 @@ then it behaves as the old grep did, except fenced lines.
 highest N, read as the reseed reads it (column-0 `decision N:` lines outside fences, in
 `items/` and `archive/*/`; a date or a number in prose never counts), under the store's
 lock, and prints one line, `counter: decision seeded at <N> …`. In a store that is its own
-repo the counter goes into init's own commit. It never writes over a counter already there
+repo the counter goes into init's own commit (`--no-track`), or a commit of its own on a
+re-init without a flag. It never writes over a counter already there
 (lint reseeds one that is behind), over conflict markers or a value that is not a whole
 number, and writes no block when the items hold no `decision N:` line. The next `lint` then
 has nothing to reseed.
