@@ -3,7 +3,8 @@ out N under the store's lock and writes the headline and its `raised:` line;
 `wi counter` prints the last N, read-only; every read takes the larger of
 the counter and the items' highest N (archive included, fenced lines not);
 `wi lint` reseeds a counter behind the items, inside the lock, and never
-lowers one ahead; `wi init` keeps the block; conflict markers and a value
+lowers one ahead, a `wi: note:` and never a problem; `wi init` keeps the
+block, and seeds one from the items when there is none (b564); conflict markers and a value
 that is not a whole number are refused.
 
 Each check here was proved against a mutant of wi.py (the mutant named in
@@ -392,9 +393,24 @@ class TestLint(CounterCase):
         r = self.ok("lint")
         self.assertIn("lint clean", r.stdout)
         self.assertIn("counter: decision reseeded 2 \u2192 7", r.stderr)
+        self.assertNotIn("counter", r.stdout)
         self.assertEqual(self.counter_value(), "7")
         r = self.ok("lint")
         self.assertNotIn("counter:", r.stderr)
+
+    def test_reseed_is_a_note(self):
+        """b564: the reseed line is one of lint's notes, `wi: note:` on
+        stderr, never a problem line on stdout, the exit 0. Mutant: the
+        reseed's line without its `wi: note: ` prefix."""
+        self.yaml("tracking: tracked\ncounters:\n  decision: 2\n")
+        self.item("other-item-2222", notes="decision 7: by hand")
+        r = self.ok("lint")
+        self.assertEqual(r.stdout, "lint clean: 2 items\n")
+        self.assertIn("wi: note: counter: decision reseeded 2 \u2192 7\n",
+                      r.stderr)
+        lines = [ln for ln in r.stderr.splitlines() if "counter" in ln]
+        self.assertEqual(len(lines), 1, r.stderr)
+        self.assertTrue(lines[0].startswith("wi: note: "), lines)
 
     def test_seeds_a_store_without_a_block(self):
         self.item("other-item-2222", notes="decision 309: by hand")
@@ -483,6 +499,103 @@ class TestInitKeepsTheBlock(CounterCase):
         self.assertEqual(self.counter_value(), "12")
         self.assertEqual(wi.read_tracking(self.root), "tracked")
 
+    def adopt(self):
+        """The store as moved: items, no store.yaml."""
+        (self.root / "store.yaml").unlink()
+        self.item("other-item-2222",
+                  notes="- 2026-09-08 Operator decision 2026-09-08 taken\n"
+                        "decision 5: which way?")
+
+    def test_init_seeds_an_adopted_store(self):
+        """b564: init on a store with items and no store.yaml seeds the
+        counter at the items' highest column-0 `decision N:` (5), never a
+        date in prose (2026), prints one line, and the next lint has
+        nothing to reseed. Mutants: init's seed call removed; the seed
+        reading any `decision <digits>` in the text."""
+        self.adopt()
+        r = self.ok("init", "--track")
+        self.assertEqual(self.counter_value(), "5")
+        self.assertEqual(
+            len([ln for ln in r.stdout.splitlines()
+                 if ln.startswith("counter: decision seeded at 5 ")]), 1,
+            r.stdout)
+        before = self.snapshot()
+        r = self.ok("lint")
+        self.assertNotIn("counter", r.stderr)
+        self.assertEqual(self.snapshot(), before)
+
+    def test_init_seed_skips_a_fenced_line(self):
+        """A `decision N:` inside a fence is not counted. Mutant: the
+        fence rule dropped from items_decision_max."""
+        self.adopt()
+        self.item("third-item-3333",
+                  notes="```\ndecision 40: an example\n```")
+        self.ok("init", "--track")
+        self.assertEqual(self.counter_value(), "5")
+
+    def test_init_never_moves_a_counter_there(self):
+        """A counter ahead of the items stays as it is. Mutant: the seed
+        writing over a counter already there (12 → 5)."""
+        self.yaml("tracking: tracked\ncounters:\n  decision: 12\n")
+        self.item("other-item-2222", notes="decision 5: q?")
+        r = self.ok("init", "--track")
+        self.assertEqual(self.counter_value(), "12")
+        self.assertNotIn("seeded", r.stdout + r.stderr)
+        # the own-repo path calls the seed with no check of its own first
+        self.assertIsNone(wi.seed_counter(self.root))
+        self.assertEqual(self.counter_value(), "12")
+
+    def test_init_without_decisions_adds_no_block(self):
+        """Items with no `decision N:` line: no counters block. Mutant: the
+        seed writing when the items' highest N is 0."""
+        (self.root / "store.yaml").unlink()
+        self.ok("init", "--track")
+        self.assertNotIn("counters", self.yaml_text())
+        self.assertIsNone(wi.seed_counter(self.root))
+        self.assertNotIn("counters", self.yaml_text())
+
+    def test_no_flag_init_without_store_yaml_takes_no_lock(self):
+        """A no-flag init on a store with items and no store.yaml writes no
+        store.yaml, so it seeds nothing and leaves no .lock. Mutant: the
+        guard on store.yaml's presence before the seed's Lock removed."""
+        self.adopt()
+        r = self.wi("init", stdin=subprocess.DEVNULL)
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+        self.assertFalse((self.root / "store.yaml").exists())
+        self.assertFalse((self.root / ".lock").exists())
+
+    def test_seed_refuses_conflict_markers(self):
+        """A store.yaml holding conflict markers is never seeded over.
+        Mutant: seed_counter's counter_problem check removed."""
+        self.yaml("tracking: tracked\n<<<<<<< HEAD\nrepo: own\n=======\n"
+                  ">>>>>>> other\n")
+        self.item("other-item-2222", notes="decision 5: q?")
+        before = self.snapshot()
+        self.assertIsNone(wi.seed_counter(self.root))
+        self.assertEqual(self.snapshot(), before)
+
+    def test_init_seed_takes_the_lock(self):
+        """The seed runs under the store's lock. Mutant: init seeding
+        without Lock (the patched Lock is never entered)."""
+        self.adopt()
+        entered = []
+        real_lock = wi.Lock
+
+        class Spy(real_lock):
+            def __enter__(inner):
+                entered.append(1)
+                return super().__enter__()
+
+        args = wi.build_parser().parse_args(
+            ["--root", str(self.root), "init", "--track"])
+        with mock.patch.object(wi, "Lock", Spy), \
+                contextlib.redirect_stdout(io.StringIO()), \
+                contextlib.redirect_stderr(io.StringIO()), \
+                mock.patch.dict(os.environ, self.env):
+            self.assertEqual(wi.cmd_init(args), 0)
+        self.assertTrue(entered)
+        self.assertEqual(self.counter_value(), "5")
+
     def test_write_tracking_keeps_the_block(self):
         self.yaml("tracking: ignored\ncounters:\n  decision: 12\n"
                   "  other-thing: 3\n")
@@ -528,6 +641,25 @@ class TestOwnRepo(CounterCase):
         self.assertEqual(sorted(self.head_files()),
                          sorted([f"items/{IID}.md", "store.yaml"]))
         self.assertEqual(self.git("status", "--porcelain").stdout, "")
+
+    def test_init_adopting_commits_the_seeded_counter(self):
+        """b564: `init --no-track` adopting a moved store (items, no
+        store.yaml) commits store.yaml with the seeded counter in its
+        first commit: the tree is clean and lint has nothing to reseed.
+        Mutant: the seed after the init commit (store.yaml left dirty)."""
+        root = self.tmp / "moved" / ".work-items"
+        (root / "items").mkdir(parents=True)
+        (root / "items" / "other-item-2222.md").write_text(ITEM.format(
+            iid="other-item-2222", notes="decision 5: which way?"))
+        r = self.wi("init", "--no-track", root=root)
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+        self.root = root
+        self.assertEqual(self.counter_value(), "5")
+        self.assertEqual(self.git("status", "--porcelain").stdout, "")
+        self.assertIn("store.yaml", self.git(
+            "show", "--name-only", "--format=", "HEAD").stdout.split())
+        r = self.ok("lint", root=root)
+        self.assertNotIn("counter", r.stderr)
 
     def test_lint_reseed_commits_the_counter(self):
         self.item("other-item-2222", notes="decision 7: by hand")

@@ -1587,6 +1587,25 @@ def items_decision_max(root):
     return best
 
 
+def seed_counter(root):
+    """b564: give a store.yaml with no decision counter one, at the items'
+    highest N, when the items hold a `decision N:` line, and return the
+    line `init` prints, or None. The caller holds the store's lock. Writes
+    nothing over conflict markers or a value that is not a whole number,
+    over a counter already there (lint's reseed raises one that is behind),
+    or into a store with no store.yaml (write_counter makes none)."""
+    if counter_problem(root):
+        return None
+    text, values = _store_counters(root)
+    if text is None or "decision" in values:
+        return None
+    n = items_decision_max(root)
+    if n <= 0 or not write_counter(root, n):
+        return None
+    return (f"counter: decision seeded at {n} from the items' highest "
+            f"`decision N:` (recorded in {root / STORE_FILE})")
+
+
 def last_decision(root):
     """The last decision number given out: the larger of the counter and
     the items' highest N, so a counter behind the items (a hand-written
@@ -3478,6 +3497,11 @@ def _init_own(root, host, defaulted):
                   "ignores it, and it keeps its own local history")
         print(f"tracking: tracked, repo: {REPO_OWN} (recorded in "
               f"{root / STORE_FILE}): {around}")
+        # b564: an adopted store's counter starts at its items, before the
+        # commit below, which takes store.yaml with it
+        seeded = seed_counter(root)
+        if seeded:
+            print(seeded)
         n = len(item_paths(root, archived=True))
         message = (f"wi init: adopted {n} item{'' if n == 1 else 's'}"
                    if n or adopt else "wi init: store created")
@@ -3655,6 +3679,22 @@ def _init(args):
         warning = custody_warning(root)
         if warning:
             print(warning, file=sys.stderr)
+    text, values = _store_counters(root)
+    # no store.yaml (a no-flag init on a store with no recorded choice):
+    # seed_counter could write nothing, so no lock and no .lock file
+    if (rc == 0 and text is not None and "decision" not in values
+            and items_decision_max(root)):
+        # b564: a store adopted with items gets a counter at their highest
+        # N, so the next lint has nothing to reseed
+        try:
+            with Lock(root):
+                seeded = seed_counter(root)
+        except (WiError, OSError) as e:
+            seeded = None
+            print(f"wi: note: counter: decision not seeded ({e}); the next "
+                  "`wi lint` seeds it", file=sys.stderr)
+        if seeded:
+            print(seeded)
     if defaulted and rc == 0:
         print(f"wi: WARNING no terminal and no --track/--no-track: created "
               f"{root} as a git-ignored store. To track it instead, run "
@@ -7707,7 +7747,8 @@ def cmd_lint(args):
                         "`wi init --track` or `wi init --no-track`")
     # 03ab F8: the decision counter. A problem (conflict markers, a value
     # that is not a whole number) is never reseeded over; a counter behind
-    # the items is reseeded, a notice on stderr, the exit unchanged
+    # the items is reseeded, a `wi: note:` on stderr like lint's other
+    # notices, never a problem line, the exit unchanged (b564)
     problems.extend(counter_duplicates(root))
     problem = counter_problem(root)
     if problem:
@@ -7760,8 +7801,8 @@ def reseed_counter(root):
             if new <= old or not write_counter(root, new):
                 return None
     except (WiError, OSError) as e:
-        return f"counter: decision not reseeded ({e})"
-    return f"counter: decision reseeded {old} \u2192 {new}"
+        return f"wi: note: counter: decision not reseeded ({e})"
+    return f"wi: note: counter: decision reseeded {old} \u2192 {new}"
 
 
 def cmd_archive(args):

@@ -135,7 +135,9 @@ included, up to the first line that is neither indented nor blank, are `<key>: <
 number>` (digits 0-9). Only `decision` is defined; a key written twice is a `wi lint` problem
 (the first line counts, and the next write keeps one). A missing
 file, block or key reads as 0. `wi raise` and `wi lint` write it, keeping every other line
-of the file; `wi init` carries the block over unchanged when it rewrites the file. A store
+of the file; `wi init` carries the block over unchanged when it rewrites the file, and
+gives a file with no `decision:` counter one at the items' highest N when the items hold a
+`decision N:` line (§ Allocating a decision number, the seed). A store
 with no `store.yaml` gets none from a raise (a file without `tracking:` would be a lint
 problem); its numbers come from the items alone. A `decision:` value that is not a whole
 number, or a `store.yaml` holding merge conflict markers, is a `wi lint` problem (exit 3);
@@ -1042,10 +1044,22 @@ included. A counter behind the items (a `decision N:` line written by hand, by a
 `wi`, or by a session that did not run `raise`) is reseeded inside the store's lock, which
 commits it in a store that is its own repo: `lint` re-reads the counter and rescans the
 items under the lock, and writes only when the larger of the two is above the counter it
-re-read. It prints `counter: decision reseeded <old> → <new>` on stderr, a notice, and the
-exit code is unchanged. A counter ahead of the items is a gap: numbers are never reused, so
-a gap is valid, never lowered, and `lint` says nothing. An existing store seeds itself at
-its first `raise` or `lint`; until then it behaves as the old grep did, except fenced lines.
+re-read. It prints `wi: note: counter: decision reseeded <old> → <new>` on stderr, one of
+lint's notes, never a problem: it is not on stdout and the exit code is unchanged. A counter
+ahead of the items is a gap: numbers are never reused, so a gap is valid, never lowered, and
+`lint` says nothing. An existing store seeds itself at its first `raise` or `lint`; until
+then it behaves as the old grep did, except fenced lines.
+
+**The seed at init.** `wi init` on a store whose `store.yaml` has no `decision:` counter
+(a store adopted after a move, or one made before the counter) writes one at the items'
+highest N, read as the reseed reads it (column-0 `decision N:` lines outside fences, in
+`items/` and `archive/*/`; a date or a number in prose never counts), under the store's
+lock, and prints one line, `counter: decision seeded at <N> …`. In a store that is its own
+repo the counter goes into init's own commit (`--no-track`), or a commit of its own on a
+re-init without a flag. It never writes over a counter already there
+(lint reseeds one that is behind), over conflict markers or a value that is not a whole
+number, and writes no block when the items hold no `decision N:` line. The next `lint` then
+has nothing to reseed.
 
 **Accepted limits.** Two branches of a host-tracked store can each give out the same N, as
 they could before the counter; the merge shows it as a `store.yaml` conflict, refused until
