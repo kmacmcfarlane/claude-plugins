@@ -1889,6 +1889,9 @@ class TestNote(WiTestCase):
 
     def test_raw_writes_verbatim_and_needs_input_reads_it(self):
         path = self.item()
+        # 9fb8: --raw copies a decision the store already holds
+        self.write_item("src-2222", sections=(
+            "## Notes\ndecision 7: which store?\nanswer 7: a\n"))
         self.wi_ok(["note", self.IID, "--raw", "--", "decision 7: which store?"])
         self.assertIn("- 2026-08-01 first\ndecision 7: which store?\n\n## Later",
                       path.read_text())

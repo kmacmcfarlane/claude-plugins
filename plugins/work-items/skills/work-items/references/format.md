@@ -1035,6 +1035,33 @@ A headline with only its `raised:` line is a headline-only decision: no card is 
 card-record forms of `raise` (a stored card as its record, a revision of an open decision,
 machine lines under a card) extend this step, under the same lock (§ Card records).
 
+**Only `wi raise` writes a new decision.** A `decision N:` headline written any other way
+has no `raised:` line and no number given out under the lock, and one written bulleted or
+indented is read by nothing: the counter, `needs-input` and `lint` never see it. So:
+
+- plain `wi note` refuses (exit 1, nothing written) a text that starts `decision N:` after
+  any whitespace, naming the fix: `$WI raise <id> -- '<question>'` for a new decision, or
+  `--raw` to copy an existing one. `decision` later in the text, or not followed by digits
+  and a colon (`decision 2026-09-08`), is prose and passes;
+- `wi note --raw` writes a column-0 `decision N:` only when N is already a headline
+  somewhere in the store (`items/` and `archive/*/`, fenced lines not counted), read under
+  the lock the write takes: a copy of an existing decision onto another item it covers
+  (a caller's one question settling several items, each record holding its own copy). A
+  new N, a gap below the last N included, is refused and points to `$WI raise`, and so is
+  a raw text that starts `decision N:` after whitespace (indented, it reads as nothing).
+  A copy onto an item that already holds N is refused too, pointing to
+  `$WI raise <id> --revise N --why '<why>' -- '<question>'` for a restated question;
+- `wi lint` prints a `wi: note: <file>:<line>: …` line on stderr, saying the line is not a
+  column-0 headline and naming the fix, for a line whose `decision N:` opens it after
+  whitespace, a bullet, or a date (`- 2026-10-26 decision 210: …`, an indented line). It
+  is one of lint's notes like the reseed's, never a problem: the exit code is unchanged.
+  Prose that names a decision mid-line (`- reviewer on decision 65: …`, `answer 3: as
+  decision 3: said`) is not one, nor is a line in front matter or a fenced block, a
+  headline, or a mention without the digits-and-colon shape (`decision 2026-09-08`).
+
+An older `wi` without these refusals writes what it is given; a caller's older-`wi`
+fallback (no `raise`) still writes its headline with `wi note --raw`.
+
 **`wi counter`** prints the last N given out, the larger of the counter and the items'
 highest N (0 for an empty store), and exits 0. It is read-only and takes no lock. It refuses
 a `store.yaml` it cannot read the counter from, as `raise` does (exit 1).
@@ -1623,8 +1650,10 @@ kind's rules; this table is where a reader finds them all.
   dated line (`- <today> <text>`), or with `--raw` the line as written, all
   in one write under the lock. It refuses (exit 1, nothing written) a line
   break, an empty text, under `--raw` a line starting `## ` or opening a
-  fence, any line the secret rule below flags, and a text that is exactly
-  `--` after the separator `--` (argparse would drop it); each refusal reads
+  fence, any line the secret rule below flags, a text that is exactly
+  `--` after the separator `--` (argparse would drop it), and a new
+  `decision N:` headline (§ Allocating a decision number, **Only `wi raise`
+  writes a new decision**); each refusal reads
   `wi: text <n>: …; nothing written` and never quotes the text.
 - any other `## …` section round-trips untouched.
 
