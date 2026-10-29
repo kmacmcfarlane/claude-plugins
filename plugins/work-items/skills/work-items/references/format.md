@@ -1048,14 +1048,16 @@ indented is read by nothing: the counter, `needs-input` and `lint` never see it.
   the lock the write takes: a copy of an existing decision onto another item it covers
   (a caller's one question settling several items, each record holding its own copy). A
   new N, a gap below the last N included, is refused and points to `$WI raise`, and so is
-  a raw text that starts `decision N:` after whitespace (indented, it reads as nothing);
+  a raw text that starts `decision N:` after whitespace (indented, it reads as nothing).
+  A copy onto an item that already holds N is refused too, pointing to
+  `$WI raise <id> --revise N` for a restated question;
 - `wi lint` prints a `wi: note: <file>:<line>: …` line on stderr, saying the line is not a
-  column-0 headline and naming the fix, for a line holding `decision N:` that does not start
-  it (`- 2026-10-26 decision 210: …`, an indented line), one of lint's notes like the
-  reseed's, never a problem: the exit code is unchanged. It skips front matter, fenced
-  lines, headlines, and the other column-0 decision lines (`answer N:`, `shown N:`,
-  `seen N:`, `closed N:`, `group N:`, `depends N:`), and never fires on prose without the
-  digits-and-colon shape.
+  column-0 headline and naming the fix, for a line whose `decision N:` opens it after
+  whitespace, a bullet, or a date (`- 2026-10-26 decision 210: …`, an indented line). It
+  is one of lint's notes like the reseed's, never a problem: the exit code is unchanged.
+  Prose that names a decision mid-line (`- reviewer on decision 65: …`, `answer 3: as
+  decision 3: said`) is not one, nor is a line in front matter or a fenced block, a
+  headline, or a mention without the digits-and-colon shape (`decision 2026-09-08`).
 
 An older `wi` without these refusals writes what it is given; a caller's older-`wi`
 fallback (no `raise`) still writes its headline with `wi note --raw`.

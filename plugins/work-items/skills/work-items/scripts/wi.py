@@ -4006,7 +4006,7 @@ def cmd_note(args):
                          "cannot carry as a text; nothing written")
     lines = [_note_line(n, t, args.raw) for n, t in enumerate(args.lines, 1)]
     for n, t in enumerate(args.lines, 1):
-        why = _note_decision_refusal(t, args.raw)
+        why = _note_decision_refusal(t, args.raw, args.id)
         if why:
             raise WiError(1, f"text {n}: {why}; nothing written")
     root = resolve_root(args.root)
@@ -4015,8 +4015,10 @@ def cmd_note(args):
         # store already holds; read under the lock the write takes
         copies = [(n, int(m.group(1))) for n, t in enumerate(args.lines, 1)
                   if args.raw and (m := DECISION_RE.match(t))]
+        item = load_item_anywhere(root, args.id)
         if copies:
             known = items_decision_numbers(root)
+            held = _item_decision_numbers(item)
             for n, d in copies:
                 if d not in known:
                     raise WiError(1, f"text {n}: decision {d} is not in the "
@@ -4025,7 +4027,11 @@ def cmd_note(args):
                                      "which gives out its number; --raw "
                                      "only copies an existing decision's "
                                      "headline; nothing written")
-        item = load_item_anywhere(root, args.id)
+                if d in held:
+                    raise WiError(1, f"text {n}: {args.id} already holds "
+                                     f"decision {d}; a restated question is "
+                                     f"`wi raise {args.id} --revise {d}`; "
+                                     "nothing written")
         for line in lines:
             item.append_note(line)
         item.touch()
@@ -4039,7 +4045,18 @@ def cmd_note(args):
 _NOTE_DECISION_RE = re.compile(r"\s*decision \d+:")
 
 
-def _note_decision_refusal(text, raw):
+def _item_decision_numbers(item):
+    """The set of N on the item's own column-0 `decision N:` lines outside
+    a fenced code block (unanswered_decisions' rule)."""
+    lines = item.body.replace("\r\n", "\n").split("\n")
+    fenced = set()
+    for i, j in _fence_spans(lines):
+        fenced.update(range(i, j + 1))
+    return {int(m.group(1)) for i, line in enumerate(lines)
+            if i not in fenced and (m := DECISION_RE.match(line))}
+
+
+def _note_decision_refusal(text, raw, iid="<id>"):
     """Why a note text that would carry a `decision N:` headline is refused
     before the lock, or None. Plain: any text opening `decision N:` (it
     would be written bulleted, where no reader counts it). Raw: one opening
@@ -4050,9 +4067,9 @@ def _note_decision_refusal(text, raw):
         return None
     if raw and DECISION_RE.match(text):
         return None
-    fix = ("a new decision is raised with `wi raise <id> -- '<question>'`; "
+    fix = (f"a new decision is raised with `wi raise {iid} -- '<question>'`; "
            "an existing one is copied as a column-0 line with "
-           "`wi note <id> --raw -- 'decision N: …'`")
+           f"`wi note {iid} --raw -- 'decision N: …'`")
     if raw:
         return f"an indented `decision N:` line, which no reader counts; {fix}"
     return f"starts `decision N:`, which a plain note would bullet; {fix}"
@@ -7833,19 +7850,20 @@ def cmd_lint(args):
     return 0
 
 
-# 9fb8: `decision N:` inside a line, where it is not a column-0 headline
-_STRAY_DECISION_RE = re.compile(r"(?<![A-Za-z0-9_])decision \d+:")
-# the other column-0 decision lines, whose text may quote a decision
-_DECISION_LINE_RE = re.compile(
-    r"^(?:answer|shown|seen|closed|group|depends) \d+:")
+# 9fb8: a `decision N:` line that is not a column-0 headline,
+# opening it after whitespace, a bullet or a date (prose that names
+# a decision mid-line, "on decision 65:", is not one)
+_STRAY_DECISION_RE = re.compile(
+    r"^\s*(?:[-*+]\s+)?(?:\d{4}-\d{2}-\d{2}\S*\s+)?decision \d+:")
 
 
 def stray_decision_notes(path, text):
-    """The `wi: note:` lines for each line of an item file that holds
+    """The `wi: note:` lines for each line of an item file that opens with
     `decision N:` but is not a column-0 headline (a bulleted note line,
     an indented one): no reader counts it, so the counter, needs-input and
-    lint never see that decision. Front matter, fenced lines and the other
-    decision lines (answer N:, shown N:, ...) are skipped."""
+    lint never see that decision: `decision N:` opening the line after
+    whitespace, a bullet or a date. Front matter and fenced lines are
+    skipped; prose naming a decision mid-line is not one."""
     lines = text.replace("\r\n", "\n").split("\n")
     start = 0
     if lines and lines[0] == "---":
@@ -7858,8 +7876,7 @@ def stray_decision_notes(path, text):
     for i in range(start, len(lines)):
         line = lines[i]
         if (i in fenced or DECISION_RE.match(line)
-                or _DECISION_LINE_RE.match(line)
-                or not _STRAY_DECISION_RE.search(line)):
+                or not _STRAY_DECISION_RE.match(line)):
             continue
         out.append(f"wi: note: {path}:{i + 1}: a `decision N:` that is not "
                    "a column-0 headline, which no reader counts; fix: raise "

@@ -32,8 +32,8 @@ class TestPlainNote(CounterCase):
         r = self.wi("note", IID, "--", "decision 210: which way?")
         self.assertEqual(r.returncode, 1, r.stdout + r.stderr)
         self.assertIn("text 1:", r.stderr)
-        self.assertIn("wi raise", r.stderr)
-        self.assertIn("--raw", r.stderr)
+        self.assertIn(f"wi raise {IID} -- ", r.stderr)
+        self.assertIn(f"wi note {IID} --raw", r.stderr)
         self.assertNotIn("which way", r.stderr)
         self.assertEqual(self.snapshot(), before)
 
@@ -97,6 +97,16 @@ class TestRawNote(CounterCase):
         self.assertIn("indented", r.stderr)
         self.assertEqual(self.snapshot(), before)
 
+    def test_raw_copy_onto_an_item_holding_n_refused(self):
+        """The target already holds N: refused, pointing to --revise.
+        Mutant: the held-N check removed from cmd_note."""
+        self.item(IID, notes="decision 5: five?")
+        before = self.snapshot()
+        r = self.wi("note", IID, "--raw", "--", "decision 5: five again?")
+        self.assertEqual(r.returncode, 1, r.stdout + r.stderr)
+        self.assertIn(f"wi raise {IID} --revise 5", r.stderr)
+        self.assertEqual(self.snapshot(), before)
+
     def test_raw_other_decision_lines_pass(self):
         """answer, group and indented card lines are not headlines."""
         self.item("other-item-2222", notes="decision 5: five?")
@@ -158,7 +168,7 @@ class TestLintNote(CounterCase):
     def test_quiet_on_headlines_prose_fences_and_other_lines(self):
         """No note for a headline, dated prose, a fenced line, answer and
         shown lines, or front matter. Mutants: the fence skip removed; the
-        _DECISION_LINE_RE skip removed; the front-matter skip removed."""
+        front-matter skip removed."""
         self.item(IID, notes=(
             "decision 3: q?\n"
             "answer 3: decision 3: was (a)\n"
@@ -167,10 +177,25 @@ class TestLintNote(CounterCase):
             "```\n- decision 4: example\n```"))
         path = self.root / "items" / f"{IID}.md"
         path.write_text(path.read_text().replace(
-            f"title: {IID}", "title: decision 9: in a title"))
+            f"title: {IID}", f"title: {IID}\ntags:\n  - decision 9: a tag"))
         r = self.lint()
         self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
         self.assertNotIn(STRAY, r.stderr)
+
+    def test_prose_naming_a_decision_mid_line_is_quiet(self):
+        """A bullet whose `decision N:` is mid-line is prose; a dated
+        bullet and an indented line opening it still note. Mutant: the
+        old unanchored pattern, searched anywhere in the line."""
+        self.item(IID, notes=("decision 2: q?\n"
+                              "- reviewer on decision 65: x\n"
+                              "- 2026-10-26 decision 210: which?\n"
+                              "  decision 2: again"))
+        r = self.lint()
+        self.assertEqual(r.stderr.count(STRAY), 2, r.stderr)
+        path = self.root / "items" / f"{IID}.md"
+        lines = path.read_text().split("\n")
+        n = lines.index("- reviewer on decision 65: x") + 1
+        self.assertNotIn(f"{path}:{n}:", r.stderr)
 
     def test_note_does_not_change_the_exit(self):
         """A store with a real problem still exits 3; the note stays on
