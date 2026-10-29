@@ -23,6 +23,7 @@ import subprocess
 
 from test_impact import NODE, PAGE, example, page_free_script
 from test_context import runner
+from test_items import mutant_runner
 
 PLUGIN = Path(__file__).resolve().parent.parent
 PAGE_SKILL = PLUGIN / "skills" / "decision-page"
@@ -776,10 +777,26 @@ class GroupNumbersPage(unittest.TestCase):
         # mutant reading: the heading's numbers checked against the wrong group's
         self.assertTrue(heading_numbers_problems(res["layers"][0], "Direction", "41–43"))
 
-    def test_worked_out_never_stored(self):
-        # the layers carry key, title and note; no number is written into the data's titles
-        for l in example()["layers"]:
-            self.assertNotRegex(" ".join(l[:2]), r"\d")
+    def test_a_layer_title_ending_in_numbers_is_linted(self):
+        # the numbers are worked out from the cards; one written into a layer title would show twice
+        self.assertEqual(runner(example())[:2], (0, ""))
+        for title in ("Details · 42–43", "Details · 42, 43", "Details ·43"):
+            d = example()
+            d["layers"][1][1] = title
+            code, out, _ = runner(d)
+            self.assertEqual(code, 2, out)
+            self.assertIn("lint: page: group details title ends in numbers", out)
+        # a number inside a title is not the group's numbers
+        d = example()
+        d["layers"][1][1] = "Details of the 2026 move"
+        self.assertEqual(runner(d)[:2], (0, ""))
+
+    def test_mutant_title_lint_off(self):
+        d = example()
+        d["layers"][1][1] = "Details · 42–43"
+        js = mutant_runner("if (typeof l[1] === \"string\" && GROUP_NUMS_END.test(l[1]))", "if (false)")
+        code, out, _ = runner(d, script=js)
+        self.assertNotIn("title ends in numbers", out)
 
     def test_the_title_is_escaped_beside_the_numbers(self):
         d = example()
@@ -832,8 +849,14 @@ SKILL_TEXT = "A group's heading shows its decisions' numbers after its name"
 SCHEMA_TEXT = "worked out from `cards`, never written here; the *Other decisions* layer too"
 
 
-def group_numbers_text_problems(rendering, skill, schema, rulings):
+FALLBACK_TEXT = ("Every group heading carries its cards' numbers by the rule in the `decisions` skill's "
+                 "`references/rendering.md` § A bundle as a group")
+
+
+def group_numbers_text_problems(rendering, skill, schema, rulings, fallback):
     out = []
+    if FALLBACK_TEXT not in flat(fallback) or "`<title> · <numbers> — N decisions, <note>`" not in flat(fallback):
+        out.append("the doc fallback does not say it")
     if TEMPLATE not in rendering or RULE_TEXT not in flat(rendering):
         out.append("rendering.md lacks the heading form or the rule")
     if SKILL_TEXT not in flat(skill):
@@ -842,6 +865,7 @@ def group_numbers_text_problems(rendering, skill, schema, rulings):
         out.append("the schema does not say it")
     b = bullet(rulings, "A group's numbers on its heading, both surfaces")
     if ("(2026-10-29, answer 365 (a)" not in b
+            or "item 33ae" not in b or "work item 33ae" in b
             or "Not taken: oldest-first groups (b); strict number order (c)." not in b):
         out.append("no ruling for 365 (a), dated, with its Not taken")
     return out
@@ -851,7 +875,7 @@ class GroupNumbersText(unittest.TestCase):
     def setUp(self):
         d = PLUGIN / "skills" / "decisions"
         self.args = [(d / "references" / "rendering.md").read_text(), (d / "SKILL.md").read_text(),
-                     SCHEMA.read_text(), RULINGS.read_text()]
+                     SCHEMA.read_text(), RULINGS.read_text(), FALLBACK.read_text()]
         self.gallery = (d / "references" / "gallery.md").read_text()
 
     def test_the_skills_say_it(self):
@@ -863,7 +887,7 @@ class GroupNumbersText(unittest.TestCase):
         self.assertEqual(chat_heading_problems(self.args[0]), [])
 
     def test_mutations(self):
-        r, sk, sc, ru = self.args
+        r, sk, sc, ru, fb = self.args
         g = self.gallery
         line = g[:g.index(" · 51–53**")].count("\n") + 1
         self.assertEqual(chat_heading_problems(g.replace(" · 51–53**", "**")),
@@ -871,15 +895,21 @@ class GroupNumbersText(unittest.TestCase):
         self.assertTrue(chat_heading_problems(g.replace(" · 51–53**", " · 51, 52, 53**")))
         self.assertTrue(chat_heading_problems(g.replace(" · 51–53**", " · 51–52**")))
         self.assertIn("rendering.md lacks the heading form or the rule",
-                      group_numbers_text_problems(r.replace(" · <numbers>**", "**"), sk, sc, ru))
+                      group_numbers_text_problems(r.replace(" · <numbers>**", "**"), sk, sc, ru, fb))
         self.assertIn("rendering.md lacks the heading form or the rule",
-                      group_numbers_text_problems(r.replace("sorted ascending, a run", "a run"), sk, sc, ru))
+                      group_numbers_text_problems(r.replace("sorted ascending, a run", "a run"), sk, sc, ru, fb))
         self.assertIn("SKILL.md § Order does not say it",
-                      group_numbers_text_problems(r, sk.replace("shows its decisions' numbers", "shows"), sc, ru))
+                      group_numbers_text_problems(r, sk.replace("shows its decisions' numbers", "shows"), sc, ru, fb))
         self.assertIn("the schema does not say it",
-                      group_numbers_text_problems(r, sk, sc.replace("never written here", "stored here"), ru))
+                      group_numbers_text_problems(r, sk, sc.replace("never written here", "stored here"), ru, fb))
         self.assertIn("no ruling for 365 (a), dated, with its Not taken",
-                      group_numbers_text_problems(r, sk, sc, ru.replace("strict number order (c).", "none.")))
+                      group_numbers_text_problems(r, sk, sc, ru.replace("strict number order (c).", "none."), fb))
+        self.assertIn("no ruling for 365 (a), dated, with its Not taken",
+                      group_numbers_text_problems(r, sk, sc, ru.replace("item\n  33ae", "work item\n  33ae"), fb))
+        self.assertEqual(group_numbers_text_problems(r, sk, sc, ru, fb.replace("Every group heading carries", "A heading has")),
+                         ["the doc fallback does not say it"])
+        self.assertEqual(group_numbers_text_problems(r, sk, sc, ru, fb.replace("`<title> · <numbers> —", "`<title> —")),
+                         ["the doc fallback does not say it"])
 
 
 if __name__ == "__main__":

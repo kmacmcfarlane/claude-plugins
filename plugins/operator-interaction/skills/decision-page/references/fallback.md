@@ -12,8 +12,10 @@ Follow that tool's own instructions for creating and filling it (load its skill 
 first); this file sets only the layout.
 
 - One heading per group, in list order, with a short table of contents, as the page's map
-  gives one: its decisions by number and short name; a bundle's (a layer with `shared`) reads
-  `<title> — N decisions, <note>`, then a **Shared context:** line with its shared context; under it, one section per decision, headed with its
+  gives one: its decisions by number and short name. Every group heading carries its cards'
+  numbers by the rule in the `decisions` skill's `references/rendering.md` § A bundle as a
+  group (*· 233–239, 242–250*); a bundle's (a layer with `shared`) reads
+  `<title> · <numbers> — N decisions, <note>`, then a **Shared context:** line with its shared context; under it, one section per decision, headed with its
   number, short name and the recommended option's effect, its letter first, as the page's row
   shows it: `41 · Docs build home → (b) every merge to main builds and publishes the site from
   CI (rev 2026-10-23T10:00:00Z)`; with no recommendation, each option's in a few words, `→ (a)

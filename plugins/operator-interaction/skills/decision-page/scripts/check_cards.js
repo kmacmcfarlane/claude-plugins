@@ -35,7 +35,8 @@
         title (F3), which the Attached fold's summary shows;
       - attachments (F3): more than ATT_CAP on a card, or an excerpt-shaped body past XC_LINES lines or XC_BYTES
         bytes;
-      - groups: a bundle (a layer with shared context) holding fewer than two cards;
+      - groups: a bundle (a layer with shared context) holding fewer than two cards; a layer title ending in
+        · and numbers, which the page draws after the title itself (answer 365 (a));
       - the dependency order (03ab F7): a card placed before a card in its own layer that its dep names (deporder,
         no line start); a pair in a dep cycle is skipped, and a target on another layer or in refs is never read;
       - the TLDR: a bullet that may carry the recommendation, at every level, headings, bullets
@@ -581,6 +582,7 @@ function cardTexts(c) {
   return out;
 }
 const LEDE_REPO = /\brepo(s|sitory|sitories)?\b/i;
+const GROUP_NUMS_END = /\s·\s*\d[\d\s,–-]*$/;
 function pageIds(d, out) {
   const say = line => out.push("lint: page: " + line), seen = new Set();
   const look = (at, s) => { if (typeof s === "string") for (const x of ids(s)) if (!seen.has(at + x[0])) { seen.add(at + x[0]); say(idLine(x, at)); } };
@@ -598,7 +600,10 @@ function pageIds(d, out) {
     /* a bundle groups two or more item cards (rule 263) */
     const n = d.cards.filter(c => c.L === l[0]).length;
     if (typeof l[3] === "string" && l[3].trim() && n < 2)
-      say("group " + l[0] + " holds " + n + " card" + (n === 1 ? "" : "s") + ": a bundle (a layer with shared context) groups two or more item cards; give a lone item its own Context and a plain layer, or leave it knowingly"); }
+      say("group " + l[0] + " holds " + n + " card" + (n === 1 ? "" : "s") + ": a bundle (a layer with shared context) groups two or more item cards; give a lone item its own Context and a plain layer, or leave it knowingly");
+    /* the page draws a group's numbers after its title (answer 365 (a)); a title that ends on numbers shows them twice */
+    if (typeof l[1] === "string" && GROUP_NUMS_END.test(l[1]))
+      say("group " + l[0] + " title ends in numbers (" + l[1].match(GROUP_NUMS_END)[0].trim() + "): the page shows a group's numbers after its title, worked out from its cards, so they would show twice; drop them from the title, or leave it knowingly"); }
   for (const k in (d.refs || {})) { const r = d.refs[k] || {};
     look("refs " + k + " short", r.short); look("refs " + k + " q", r.q);
     if (typeof r.a === "string") for (const x of ids(r.a))
