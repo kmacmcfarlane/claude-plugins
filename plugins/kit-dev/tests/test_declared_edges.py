@@ -4,7 +4,7 @@ A plugin's files reference another plugin when they name one of its skills, its 
 data path it owns. Each such reference must be declared in two places: the source plugin's
 plugin.json description names the target plugin at the head of an entry in its dependency
 clause (the clause opens at the first parenthesis starting "soft", "requires", "external",
-"optional" or "hard"; an entry head follows a ':', ';' or '(', or "requires" or "works
+"optional" or "hard"; an entry head follows a ':' or ';', or "requires" or "works
 with"), and the source's README catalog "Depends on" cell lists it as a top-level entry (a
 backticked name outside any parenthesis). A name met only in prose, in the aim text or
 mid-entry, declares nothing. A reference with neither, or with only one, fails here,
@@ -272,11 +272,11 @@ def dependency_clause(desc):
 
 
 def heads_entry_re(name):
-    """A name heading an entry of the dependency clause: right after a ':', ';' or '(', or
-    after "requires" or "works with". A name met only in an entry's prose ("the research
+    """A name heading an entry of the dependency clause: right after a ':' or ';', or after
+    "requires" or "works with". A name met only in an entry's prose ("the research
     skills record ...", "installing beta brings it") is not a declaration, so a plugin named
     for a common word is not declared by every description that uses the word."""
-    return re.compile(r"(?:[:;(]|requires|works with)\s*" + re.escape(name) + r"(?![\w-])",
+    return re.compile(r"(?:[:;]|requires|works with)\s*" + re.escape(name) + r"(?![\w-])",
                       re.I)
 
 
@@ -453,6 +453,14 @@ class Parsing(unittest.TestCase):
         desc = ("Context tools (soft dependency: dev-flow, whose dev-cycle and the research "
                 "skills record on a work item the agent ids).")
         self.assertEqual(is_declared("research", desc, cell)[0], False)
+        # A name opening a nested parenthesis in the clause heads no entry.
+        self.assertEqual(
+            is_declared("beta", "Tools (soft dependency: alpha (beta brings it)).", cell)[0],
+            False)
+        # Only a parenthesis starting with a clause word opens the clause.
+        desc = "Tools (aim: alpha) (soft dependency: beta)."
+        self.assertEqual(is_declared("alpha", desc, cell)[0], False)
+        self.assertEqual(is_declared("beta", desc, cell)[0], True)
         # The clause may open with any of its words, in any case.
         for word in ("Soft dependencies", "external, soft", "hard dependency"):
             desc = f"Tools ({word}: alpha)."

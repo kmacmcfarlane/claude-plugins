@@ -202,8 +202,9 @@ optional `references/`, `scripts/`, `assets/`.
   eleven; a short read-only evidence contract on `scout`; and the research trio's full contract
   (file shape, evidence and security rules), in the body so every lane loads it by
   construction. `plugins/dev-flow/tests/test_agents.py` keeps every role file's model and
-  effort pin in step with its table, and `tests/test_research_agents.py` the research trio's. (The three agents that served the deprecated plan-execution
-  skill were retired at Phase 3.)
+  effort pin in step with its table, and `tests/test_research_agents.py` the research
+  trio's. (The three agents that served the deprecated plan-execution skill were retired at
+  Phase 3.)
 - **Hook location**: `plugins/<plugin>/hooks/<name>.py` — registered in that plugin's
   `plugins/<plugin>/hooks/hooks.json`, which lists each hook under its event (`PreToolUse`,
   `UserPromptSubmit`, `SessionStart`, `Stop`, …) with a `matcher` and a `command` that names

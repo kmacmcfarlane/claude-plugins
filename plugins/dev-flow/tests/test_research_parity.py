@@ -192,6 +192,12 @@ class TestResolver(unittest.TestCase):
         self.assertEqual(reason, NO_HOME)
         self.assertIn("standalone copy of dev-flow", reason)
 
+    def test_a_present_family_is_found(self):
+        # A family placed anywhere the resolver does not look must fail here, not make
+        # every check below skip silently.
+        if any(PLUGIN.parent.glob("*/skills/research/SKILL.md")):
+            self.assertIsNotNone(RESEARCH_SKILLS, SKIP)
+
     def test_anchor_reader(self):
         body = flat("the `research` skill's `references/run-record.md` sections named here "
                     "(§ The scan floor, § The sheet check); and the `research` skill's "
