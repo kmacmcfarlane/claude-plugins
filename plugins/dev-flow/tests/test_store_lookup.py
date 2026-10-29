@@ -1,12 +1,13 @@
 """dev-flow's copies of the work-item store lookup (item 5f46, F3).
 
 wi finds its store at `.work-items/`, then at the old `.claude-sandbox/work/`, then at the
-old `.work/`, and reads `WORK_ITEMS_ROOT` before the deprecated `WI_ROOT`. dev-flow keeps two
-copies of that lookup: the `dev-cycle` skill's `references/bindings.md` § Store (the
-canonical one every other dev-flow skill names) and the research family's own,
+old `.work/`, and reads `WORK_ITEMS_ROOT` before the deprecated `WI_ROOT`. Two copies of
+that lookup exist: the `dev-cycle` skill's `references/bindings.md` § Store (the canonical
+one every other dev-flow skill names), held here, and the research family's own,
 `research/references/intensity-and-routing.md` § Resolving the store (kept separate by the
-operator's 2026-10-02 ruling, so the two are not required to match byte for byte). The
-skills are prose, so the rules are held by what their files say:
+operator's 2026-10-02 ruling, so the two are not required to match byte for byte), held by
+tests/test_research_parity.py wherever the family sits. The skills are prose, so the rules
+are held by what their files say:
 
 - each copy names the three locations in that order, in its prose and in its loop;
 - each copy's loop exports both names;
@@ -18,8 +19,8 @@ skills are prose, so the rules are held by what their files say:
   sentence once, a hand commit or a `check-ignore` test on the store survives only in its
   fallback for a `wi` older than the verb, and every librarian-mode file that commits the
   store names `$WI commit`;
-- the research family's item rule says that in a store that is its own repo `wi` commits
-  each write itself (item d1e9, F5).
+- the research family's item rule (that in a store that is its own repo `wi` commits each
+  write itself, item d1e9, F5) is held by tests/test_research_parity.py.
 
 Standard library only. Run from plugins/dev-flow:
 
@@ -33,9 +34,6 @@ PLUGIN = Path(__file__).resolve().parent.parent
 SKILLS = PLUGIN / "skills"
 COPIES = {
     "bindings.md § Store": (SKILLS / "dev-cycle" / "references" / "bindings.md", "## Store"),
-    "intensity-and-routing.md § Resolving the store": (
-        SKILLS / "research" / "references" / "intensity-and-routing.md",
-        "### Resolving the store"),
 }
 FIRST_START = SKILLS / "librarian-mode" / "references" / "first-start.md"
 
@@ -207,14 +205,6 @@ class StoreCommitTest(unittest.TestCase):
         self.assertEqual(bad, [])
         # first-start, decisions, decide-alone, ending-the-session at least
         self.assertGreaterEqual(seen, 4)
-
-    def test_research_item_says_wi_commits_an_own_store(self):
-        """d1e9 F5: the research run never commits its item, and says that in
-        a store that is its own repo `wi` commits each write itself."""
-        path = COPIES["intensity-and-routing.md § Resolving the store"][0]
-        text = flat(path.read_text(encoding="utf-8"))
-        self.assertIn("The run never commits it; in a store that is its own "
-                      "repo, `wi` commits each write itself.", text)
 
     def test_checkers_catch_the_old_rule(self):
         old = flat('the store\'s commit goes to the repo that holds it (`git -C\n'

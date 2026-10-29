@@ -2,11 +2,15 @@
 
 dev-cycle's agent-brief.md carries the Prohibitions bullet on stopping a process or a
 background task ("Never send a signal ..."), and says so in its paragraph "The stop rule's
-home". The review brief and the three research agents' bodies carry the same bullet word
-for word, because each prompt must stand alone. This test holds every copy to the home
-(whitespace and list marker aside), and holds the home to the parts the rule needs: the
-recorded-PID route, the task-id route through the harness's background-task stop, and no
-process found by name, pattern or listing.
+home". The review brief carries the same bullet word for word, because each prompt must
+stand alone. This test holds that copy to the home (whitespace and list marker aside), and
+holds the home to the parts the rule needs: the recorded-PID route, the task-id route
+through the harness's background-task stop, and no process found by name, pattern or
+listing.
+
+The research family's three agent bodies carry it too. tests/test_research_stop_rule.py
+holds them to one another (it travels with the family), and tests/test_research_parity.py
+holds the family's home to this one and checks that the home paragraph names them.
 
 Standard library only. Run from plugins/dev-flow:
 
@@ -21,10 +25,11 @@ REFS = PLUGIN / "skills" / "dev-cycle" / "references"
 HOME = REFS / "agent-brief.md"
 COPIES = [
     REFS / "review-brief.md",
-    PLUGIN / "agents" / "research-lane.md",
-    PLUGIN / "agents" / "research-lane-deep.md",
-    PLUGIN / "agents" / "research-verifier.md",
 ]
+# The research family's copies: held by test_research_stop_rule.py and
+# test_research_parity.py, and gone from this plugin once the family moves out.
+RESEARCH_COPIES = {PLUGIN / "agents" / f"{n}.md"
+                   for n in ("research-lane", "research-lane-deep", "research-verifier")}
 START = "Never send a signal"
 
 
@@ -64,12 +69,12 @@ class StopRule(unittest.TestCase):
     def test_home_paragraph_names_every_copy(self):
         text = HOME.read_text(encoding="utf-8")
         self.assertIn("**The stop rule's home.**", text)
-        for name in ("review-brief.md", "`research-lane`", "`research-lane-deep`",
-                     "`research-verifier`", "tests/test_stop_rule.py"):
+        for name in ("review-brief.md", "tests/test_stop_rule.py"):
             self.assertIn(name, text)
 
     def test_no_unlisted_copy(self):
-        listed = {HOME.resolve(), *(p.resolve() for p in COPIES)}
+        listed = {HOME.resolve(), *(p.resolve() for p in COPIES),
+                  *(p.resolve() for p in RESEARCH_COPIES)}
         bullet = re.compile(r"^(\s*)(- |\d+\. )" + re.escape(START), re.M)
         for path in PLUGIN.rglob("*.md"):
             if bullet.search(path.read_text(encoding="utf-8")):
