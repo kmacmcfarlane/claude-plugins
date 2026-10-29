@@ -3,7 +3,10 @@
 The skill is prose, so most rules are held by what its files say:
 
 - lanes launch on the `research-lane` agent type, routed by the research skill's
-  § Profiles, never `general-purpose`, and the interim routing row is gone;
+  § Profiles, never `general-purpose` (the Profiles rows naming deep-investigation, and the
+  interim routing row being gone, are research files' text: tests/test_research_parity.py
+  holds them);
+- no file of the skill names the dialog tool: its asks go as text (item d49c);
 - lanes write to the run's staging area, never into the series;
 - the scan floor, the verifier and the toolkit gate stand between staging and the series;
 - the strategy doc's ledger carries no lane wording;
@@ -34,7 +37,7 @@ SKILL = SKILL_DIR / "SKILL.md"
 LANE_CONTRACT = SKILL_DIR / "references" / "lane-contract.md"
 STRATEGY = SKILL_DIR / "references" / "research-strategy-format.md"
 GATE = SKILL_DIR / "references" / "security-gate.md"
-ROUTING = PLUGIN / "skills" / "research" / "references" / "intensity-and-routing.md"
+DIALOG = "AskUserQuestion"
 
 PLACEHOLDER = "<project dir>"
 HELD = "$H/.claude-sandbox/research/_held/"
@@ -71,20 +74,20 @@ class TestLaneAgentType(unittest.TestCase):
     def test_lane_contract_launches_research_lane(self):
         self.assertIn("research-lane", section(text(LANE_CONTRACT), "Lane prompt skeleton"))
 
-    def test_interim_routing_row_is_gone(self):
-        body = text(ROUTING)
-        self.assertNotIn("1ffd", body)
-        outside = section(body, "Dispatches outside the profiles")
-        self.assertIsNotNone(outside)
-        self.assertNotRegex(outside, r"(?m)^\| `deep-investigation` lanes")
 
-    def test_profiles_row_names_deep_investigation(self):
-        profiles = section(text(ROUTING), "Profiles")
-        row = next(l for l in profiles.splitlines() if l.startswith("| `research-lane` |"))
-        self.assertIn("`deep-investigation`", row)
-        self.assertNotIn("until", row)
-        verifier = next(l for l in profiles.splitlines() if l.startswith("| `research-verifier` |"))
-        self.assertIn("`deep-investigation`", verifier)
+class TestNoDialog(unittest.TestCase):
+    """deep-investigation asks as text (item d49c): no dialog in its SKILL.md or any of its
+    references. Moved here from the research family's test_research_asks.py."""
+
+    def test_no_dialog_in_the_skill(self):
+        self.assertNotIn(DIALOG, text(SKILL))
+
+    def test_no_dialog_in_the_references(self):
+        refs = sorted((SKILL_DIR / "references").glob("*.md"))
+        self.assertTrue(refs, "no references found: an empty glob must not pass")
+        for ref in refs:
+            with self.subTest(ref=ref.name):
+                self.assertNotIn(DIALOG, text(ref))
 
 
 class TestStaging(unittest.TestCase):

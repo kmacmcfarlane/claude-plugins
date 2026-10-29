@@ -4,10 +4,13 @@
   check reads, so the verifier's template and `check-sheet.py` stay in step;
 - the body says a source it did not open gets no verdict on its content, a run file is
   never a source, fetch prompts are neutral, and the header is counted from the table;
-- the verifier prompt names the run files, and the research skill and deep-investigation
-  run the sheet check and record its TALLY.
+- the verifier prompt names the run files, and the research skill runs the sheet check
+  and records its TALLY.
 
-Standard library only. Run from plugins/dev-flow:
+deep-investigation's security gate runs the check too: dev-flow's
+tests/test_research_parity.py holds its wording. This file travels with the family.
+
+Standard library only. Run from the plugin dir:
 
     python3 -m unittest discover -s tests -q
 """
@@ -21,7 +24,6 @@ AGENT = PLUGIN / "agents" / "research-verifier.md"
 RESEARCH = PLUGIN / "skills" / "research"
 RUN_RECORD = RESEARCH / "references" / "run-record.md"
 SKILL = RESEARCH / "SKILL.md"
-GATE = PLUGIN / "skills" / "deep-investigation" / "references" / "security-gate.md"
 CHECK = RESEARCH / "scripts" / "check-sheet.py"
 
 
@@ -73,9 +75,6 @@ class VerifierRules(unittest.TestCase):
         skill = flat(text(SKILL))
         self.assertIn("§ The sheet check", skill)
         self.assertIn("Ledger `VERIFIED` with the TALLY's counts", skill)
-        gate = flat(text(GATE))
-        self.assertIn("§ The sheet check", gate)
-        self.assertIn("`TALLY` counts", gate)
 
 
 if __name__ == "__main__":

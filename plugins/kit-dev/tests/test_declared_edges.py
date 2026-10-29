@@ -2,9 +2,13 @@
 
 A plugin's files reference another plugin when they name one of its skills, its CLIs or a
 data path it owns. Each such reference must be declared in two places: the source plugin's
-plugin.json description names the target plugin, and the source's README catalog "Depends
-on" cell lists it as a top-level entry (a backticked name outside any parenthesis). A
-reference with neither, or with only one, fails here, naming the file and line.
+plugin.json description names the target plugin at the head of an entry in its dependency
+clause (the clause opens at the first parenthesis starting "soft", "requires", "external",
+"optional" or "hard"; an entry head follows a ':' or ';', or "requires" or "works
+with"), and the source's README catalog "Depends on" cell lists it as a top-level entry (a
+backticked name outside any parenthesis). A name met only in prose, in the aim text or
+mid-entry, declares nothing. A reference with neither, or with only one, fails here,
+naming the file and line.
 
 What counts as a reference to plugin Q, from a file of plugin P (P != Q):
 
@@ -255,9 +259,32 @@ def references():
     return found
 
 
+# The description's dependency clause opens at the first parenthesis whose text starts
+# with one of these words, and runs to the end of the description.
+CLAUSE_START = re.compile(r"\((?=\s*(?:soft|requires|external|optional|hard)\b)", re.I)
+
+
+def dependency_clause(desc):
+    """The description from its dependency clause's opening parenthesis to the end, or ""
+    when it has none (a description with no clause declares nothing)."""
+    m = CLAUSE_START.search(desc)
+    return desc[m.start():] if m else ""
+
+
+def heads_entry_re(name):
+    """A name heading an entry of the dependency clause: right after a ':' or ';', or after
+    "requires" or "works with". A name met only in an entry's prose ("the research
+    skills record ...", "installing beta brings it") is not a declaration, so a plugin named
+    for a common word is not declared by every description that uses the word."""
+    return re.compile(r"(?:[:;]|requires|works with)\s*" + re.escape(name) + r"(?![\w-])",
+                      re.I)
+
+
 def is_declared(target, desc, cell):
-    """(named in the plugin.json description, a top-level entry of the catalog cell)."""
-    return bool(name_re(target).search(desc)), target in top_level_names(cell)
+    """(heads an entry of the plugin.json description's dependency clause, a top-level entry
+    of the catalog cell)."""
+    return (bool(heads_entry_re(target).search(dependency_clause(desc))),
+            target in top_level_names(cell))
 
 
 def declared(source, target, desc_cache, cells):
@@ -402,9 +429,44 @@ class Parsing(unittest.TestCase):
         desc = "Tools (soft dependency: alpha, for x; installing beta brings it)."
         cell = "`alpha` (soft; x; installing `beta` brings it), gamma repo (external)"
         self.assertEqual(is_declared("alpha", desc, cell), (True, True))
-        self.assertEqual(is_declared("beta", desc, cell), (True, False))
+        # beta is named in the clause but heads no entry: not declared.
+        self.assertEqual(is_declared("beta", desc, cell), (False, False))
         self.assertEqual(is_declared("gamma", desc, cell), (False, False))
         self.assertEqual(is_declared("alph", desc, cell), (False, False))
+
+    def test_dependency_clause(self):
+        cell = "`alpha`, `beta`, `gamma`"
+        # A name in the aim text, before the clause, declares nothing.
+        desc = "Tools for alpha work (soft dependency: beta, for x)."
+        self.assertEqual(is_declared("alpha", desc, cell), (False, True))
+        self.assertEqual(is_declared("beta", desc, cell), (True, True))
+        # A parenthesis that does not open the clause is aim text too.
+        desc = "Tools (alpha work, for x) and more (requires beta: x; optional: works with gamma)."
+        self.assertEqual(is_declared("alpha", desc, cell), (False, True))
+        self.assertEqual(is_declared("beta", desc, cell), (True, True))
+        self.assertEqual(is_declared("gamma", desc, cell), (True, True))
+        # Mid-entry prose in the clause declares nothing; an entry head after ';' does.
+        desc = ("Context tools (soft dependency: dev-flow, whose research skills record "
+                "the spend; research, for the lanes).")
+        self.assertEqual(is_declared("dev-flow", desc, cell)[0], True)
+        self.assertEqual(is_declared("research", desc, cell)[0], True)
+        desc = ("Context tools (soft dependency: dev-flow, whose dev-cycle and the research "
+                "skills record on a work item the agent ids).")
+        self.assertEqual(is_declared("research", desc, cell)[0], False)
+        # A name opening a nested parenthesis in the clause heads no entry.
+        self.assertEqual(
+            is_declared("beta", "Tools (soft dependency: alpha (beta brings it)).", cell)[0],
+            False)
+        # Only a parenthesis starting with a clause word opens the clause.
+        desc = "Tools (aim: alpha) (soft dependency: beta)."
+        self.assertEqual(is_declared("alpha", desc, cell)[0], False)
+        self.assertEqual(is_declared("beta", desc, cell)[0], True)
+        # The clause may open with any of its words, in any case.
+        for word in ("Soft dependencies", "external, soft", "hard dependency"):
+            desc = f"Tools ({word}: alpha)."
+            self.assertEqual(is_declared("alpha", desc, cell)[0], True, word)
+        # No clause: nothing is declared, even a name after a colon in the aim.
+        self.assertEqual(is_declared("alpha", "Tools: alpha and beta.", cell), (False, True))
 
     def test_excused_needs_file_target_and_line(self):
         table = {("a/SKILL.md", "q", "run `x`"): "why"}

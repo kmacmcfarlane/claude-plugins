@@ -9,9 +9,13 @@ are prose, so the rules are held by what their files say:
 - the owner section exists once and carries its load-bearing rules;
 - § When to ask points to it, and every skill that asks points to it;
 - the ledger knows the ASKED and ANSWERED entries;
-- the dev-flow manifest declares the research skills' soft edge to the decisions skill.
+- the plugin's manifest declares the research skills' soft edge to the decisions skill.
 
-Standard library only. Run from plugins/dev-flow:
+deep-investigation asks through the same section, but it is not of the family:
+dev-flow's tests/test_deep_investigation.py holds its no-dialog rule, and
+tests/test_research_parity.py its pointer to the section. This file travels with the family.
+
+Standard library only. Run from the plugin dir:
 
     python3 -m unittest discover -s tests -q
 """
@@ -24,8 +28,7 @@ PLUGIN = Path(__file__).resolve().parent.parent
 SKILLS = PLUGIN / "skills"
 ROUTING = SKILLS / "research" / "references" / "intensity-and-routing.md"
 RUN_RECORD = SKILLS / "research" / "references" / "run-record.md"
-ASKING_SKILLS = ("research", "research-deep", "research-refine", "research-prune",
-                 "deep-investigation")
+ASKING_SKILLS = ("research", "research-deep", "research-refine", "research-prune")
 HEADING = "Putting an ask to the operator"
 POINTER = "§ " + HEADING
 DIALOG = "AskUserQuestion"
@@ -54,7 +57,6 @@ class TestNoDialog(unittest.TestCase):
 
     def test_no_dialog_in_the_references(self):
         refs = sorted((SKILLS / "research" / "references").glob("*.md"))
-        refs += sorted((SKILLS / "deep-investigation" / "references").glob("*.md"))
         self.assertTrue(refs)
         for ref in refs:
             with self.subTest(ref=ref.name):
