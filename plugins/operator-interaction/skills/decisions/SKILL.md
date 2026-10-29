@@ -268,7 +268,9 @@ placed by its most pressing member:
 decision it depends on in the same group, and among those free to go, the same precedence
 holds. The members of a dependency cycle (a work-item store's lint flags one) are ordered among
 themselves by the precedence alone; their other dependencies still hold. Across groups the order is the precedence's (`references/rendering.md`
-§ Order).
+§ Order). A group's heading shows its decisions' numbers after its name, runs of consecutive
+numbers as ranges (*· 233–239, 242–250*), so the operator sees where the numbers jump; the
+order itself is unchanged (`references/rendering.md` § A bundle as a group).
 
 On a cold re-show, a deferred decision whose wake has not come goes last
 (`references/rendering.md` § Re-show with what changed).

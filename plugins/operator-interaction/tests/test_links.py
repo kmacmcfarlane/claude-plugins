@@ -244,8 +244,8 @@ class StoredGroupsAndText(unittest.TestCase):
         for p in (GALLERY, RENDERING, SKILL_MD):
             self.assertEqual(found(p.read_text()), [], p.name)
         # mutant: a group id on a group heading
-        text = GALLERY.read_text().replace("**Group: upload-service review findings**",
-                                           "**Group: upload-service review findings (g-1022-a3f)**", 1)
+        text = GALLERY.read_text().replace("**Group: upload-service review findings · 51–53**",
+                                           "**Group: upload-service review findings · 51–53 (g-1022-a3f)**", 1)
         self.assertTrue(found(text))
 
     def test_plain_names_says_a_group_id_is_never_shown(self):

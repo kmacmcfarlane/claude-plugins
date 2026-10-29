@@ -93,7 +93,7 @@ to type or open. The runner lints an id anywhere the page shows text (SKILL.md s
 |---|---|---|---|
 | `format` | `"decision-page/5"` | yes | the envelope's stamp: the template reads only this one (answer 343 (a)) |
 | `page` | object | no | `title` (the heading and tab title; set by SKILL.md step 2's title rule), `lede` (one or two sentences: what this set of decisions is about; slugs allowed; when any card carries an excerpt, an excerpt-shaped attachment or a Finding's excerpt, it names the repos they come from, so the operator knows what a share would expose: the runner's `lede` lint), `doc` (`{name, url}`, a reading copy; `url` must start `https://`, otherwise it is not shown) |
-| `layers` | array | yes | the groups, in display order: `[key, title, note, shared]` each, `shared` optional. `note` is one sentence under the group heading, after *What they share:*. `shared`, text, marks a **bundle** (the `decisions` skill's `references/rendering.md` § A bundle as a group): the shared context, the terms and the source every card in it uses, in plain words, shown in a closed **Shared context** fold under the heading; each item is a whole card, whose Context may lean on it (the runner reads a card's Context with its bundle's shared context). A bundle holds two or more cards; one answer for every item stays one card naming each |
+| `layers` | array | yes | the groups, in display order: `[key, title, note, shared]` each, `shared` optional. `note` is one sentence under the group heading, after *What they share:*. The heading and the map show the title with the numbers of the layer's cards after it (*· 233–239, 242–250*: sorted ascending, a run of two or more consecutive numbers first–last, a lone number alone, commas between), worked out from `cards`, never written here; the *Other decisions* layer too. `shared`, text, marks a **bundle** (the `decisions` skill's `references/rendering.md` § A bundle as a group): the shared context, the terms and the source every card in it uses, in plain words, shown in a closed **Shared context** fold under the heading; each item is a whole card, whose Context may lean on it (the runner reads a card's Context with its bundle's shared context). A bundle holds two or more cards; one answer for every item stays one card naming each |
 | `follow` | array | yes | the six follow-ups, exactly as in the example, in that order: `[key, label, placeholder, words prompt]`. Keys `later`, `tell me`, `expand`, `dig into`, `you decide`, `drop`; placeholders `[when]` on `later`, `[what]` on `tell me` and `dig into`, empty on the rest |
 | `cards` | array | yes | one card per decision, in list order (the `decisions` skill's order: inside a layer, each card after every card in its layer that its `dep` names, then the precedence; the runner's `deporder` lint flags a card placed before one in its own layer that its `dep` names, a pair in a dependency cycle skipped) |
 | `refs` | object | no | decisions mentioned by slug that are not on the page, keyed by number as a string: `{short, q, a, when}` — short name, the question as asked, the answer as given, when. Answered decisions only; one still open goes on the page as a card; a number that is a card is not a ref |
@@ -295,14 +295,14 @@ clear misses: thin (about 40% of a size) only on a part that carries levels, lon
 on any.
 
 **What the page adds.** The page opens on a map of its groups under the progress bar, a
-button per group with its count, and **Expand all** and **Collapse all**; every card is closed
+button per group with its decisions' numbers and its count in brackets (*Details · 42–43 (2)*), and **Expand all** and **Collapse all**; every card is closed
 to its one-line row, in its group: the number, the title, the ⚠ pill on a one-way card, the
 rec pill and the recommended option's effect with its letter, and the answer, with **Use
 recommendation** (on a card with one) and **Later** beside the row, outside it. A click on the
 row opens the card. Every view shows impact: a card's row the recommended option's effect; an
 open card the Impact, one facet a line; and each option's view its own effect, reach,
 undo (where it is one-way or costly) and cost. Each group opens on a band: the *Group* label,
-its title, a count of its decisions and *What they share:* its note; a bundle adds a closed
+its title and its decisions' numbers, a count of its decisions and *What they share:* its note; a bundle adds a closed
 **Shared context** fold whose summary is the context's first sentence. An Impact describes the system the work builds, never the review or the process, which
 is its Wait: the lede says so, and the runner's `process` lint catches a process phrase in an
 option's effect or reach, or the Impact's reach. A card with a `label` shows it after its title,

@@ -318,7 +318,7 @@ page-wide one prints `lint: page:`.
 | Key | Line starts | Fires on |
 |---|---|---|
 | `page` | `page:` | an id in the page title, the lede, a layer's title, note or shared context, or a `refs` short or question |
-| `group` | `page:` | a bundle (a layer with `shared`) holding fewer than two cards |
+| `group` | `page:` | a bundle (a layer with `shared`) holding fewer than two cards; a layer title ending in ` · ` and numbers, which the page draws after the title itself (answer 365 (a)) |
 | `lede` | `page:` | a page with an excerpt (an excerpt-shaped attachment, a Finding's excerpt) whose `lede` names no repo: it holds none of the words repo, repos, repository, repositories |
 | `refs` | `page:` | a `refs` answer holding an id (left as given when it is the operator's words) |
 | `id` | — | an id in any card text, the What part's `what` and `items`, the Finding's label, `title`, `where` and `mechanism` (never its excerpt), the Scope's `says`, the Likelihood's `seen` and `best`, each rejected alternative's `t` and `why`, and each attachment's `title`, `src`, `pointer` and text (never an excerpt-shaped body) included: a hash, an item tag, a ticket key, a label like OQ3, decision N; a label a card or its finding declares passes with its short name beside it |

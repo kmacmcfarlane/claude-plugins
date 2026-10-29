@@ -810,10 +810,15 @@ does not say what is decided (SKILL.md § The floor, item 1).
   the heading for shared terms; it still ends on its cue. The cards sit under one heading:
 
   ```
-  **Group: <plain name>** — *<N> decisions, <what they share>*
+  **Group: <plain name> · <numbers>** — *<N> decisions, <what they share>*
   **Shared context:** the terms and the source every card in the group uses, in plain words.
   ```
 
+  **The group's numbers** follow its name, so the operator sees where the numbers jump:
+  its cards' numbers, sorted ascending, a run of two or more consecutive numbers written
+  first–last (an en dash) and a lone number alone, the runs joined by commas (*· 51–53*,
+  *· 233–239, 242–250*, *· 149*). They are worked out from the cards shown, never stored; on
+  an answer page the group's heading and its map button show them too.
   The heading adds the shared context and replaces nothing on the cards. On an answer page a
   group is a layer carrying its shared context (the `decision-page` skill). **A group the
   caller stores is the group** (a librarian's group entity and member lines, which its store's
