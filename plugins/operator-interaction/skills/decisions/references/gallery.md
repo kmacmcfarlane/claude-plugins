@@ -941,7 +941,7 @@ the number stays the handle. Each card shows its finding after **What:** (exampl
 
 **Decisions** — *3*
 
-**Group: upload-service review findings** — *3 decisions, all from today's review, all before the merge*
+**Group: upload-service review findings · 51–53** — *3 decisions, all from today's review, all before the merge*
 **Shared context:** the review is today's code review of the upload-service change you asked for; it labels each finding with a number, and these three are the ones it left for you, the rest being fixed.
 
 **51 — F3 (oversize upload) · Check an upload's size before reading it?**

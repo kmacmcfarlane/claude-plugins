@@ -749,7 +749,7 @@ class Groups(unittest.TestCase):
     def test_the_rendering_names_the_group_heading(self):
         text = RENDERING.read_text()
         self.assertIn("## A bundle as a group", text)
-        self.assertIn("**Group: <plain name>** — *<N> decisions, <what they share>*", text)
+        self.assertIn("**Group: <plain name> · <numbers>** — *<N> decisions, <what they share>*", text)
         self.assertIn("**Shared context:**", text)
 
 

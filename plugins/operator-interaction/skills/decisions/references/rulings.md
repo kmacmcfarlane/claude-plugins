@@ -564,3 +564,14 @@ alternative not taken, in case practice argues for it.
   no line start, flags a card placed before a decision in its own layer that its `dep` names,
   skipping pairs in a dependency cycle and targets on another layer or in `refs`. Not taken: one
   precedence inside a group whatever the dependencies.
+- **A group's numbers on its heading, both surfaces** (2026-10-29, answer 365 (a), work item
+  33ae) — the order stays as it is (groups by what they block; inside a group, dependents after
+  their targets, 307 (a)); each group's heading shows the numbers of its decisions, so the
+  operator sees where the numbers jump: in chat after the group's name on its **Group:**
+  heading, and on the answer page after the group's title on its heading and on its map button.
+  Designs made in build, not the operator's: the numbers are sorted ascending, a run of two or
+  more consecutive numbers written first–last with an en dash and a lone number alone, the runs
+  joined by commas (*· 357–358*, *· 233–239, 242–250*, *· 149*); worked out from the cards shown,
+  never stored (on the page, from the layer's cards, never in `cards.json`), the *Other
+  decisions* layer included; the map button keeps its count, in brackets after the numbers.
+  Not taken: oldest-first groups (b); strict number order (c).

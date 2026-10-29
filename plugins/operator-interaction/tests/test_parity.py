@@ -605,10 +605,10 @@ class PageShell(unittest.TestCase):
 
     def test_the_map(self):
         res = node_page(example(), CARD_HARNESS)
-        want = [("direction", "Direction · 1"), ("details", "Details · 2")]
+        want = [("direction", "Direction · 41 (1)"), ("details", "Details · 42–43 (2)")]
         self.assertEqual(map_problems(res["map"], want), [])
         # mutant: a group dropped from the map
-        dropped = res["map"].replace('<button class="btn" type="button" data-go="layer-direction">Direction · 1</button>', "")
+        dropped = res["map"].replace('<button class="btn" type="button" data-go="layer-direction">Direction · 41 (1)</button>', "")
         self.assertTrue(map_problems(dropped, want))
 
     def test_expand_all_and_collapse_all(self):
@@ -663,6 +663,223 @@ class ShellText(unittest.TestCase):
         self.assertIn("a reference's tooltip shows a card's Context", bullet(self.rulings, "TLDR first on an answer page"))
         cut = self.rulings.replace("**Cards as rows under a group map**", "**Rows**")
         self.assertEqual(bullet(cut, "Cards as rows under a group map"), "")
+
+
+# ---- a group's numbers on its heading (answer 365 (a), work item 33ae), both surfaces
+
+def compact(ns):
+    """The compaction rule, stated once in rendering.md § A bundle as a group: the numbers, once
+    each, sorted ascending; a run of two or more consecutive numbers first–last (an en dash), a
+    lone number alone, the runs joined by ", "."""
+    v, out, i = sorted(set(ns)), [], 0
+    while i < len(v):
+        j = i
+        while j + 1 < len(v) and v[j + 1] == v[j] + 1:
+            j += 1
+        out.append("%d–%d" % (v[i], v[j]) if j > i else str(v[i]))
+        i = j + 1
+    return ", ".join(out)
+
+
+RANGE_CASES = [
+    ([357, 358], "357–358"),                                                   # contiguous
+    (list(range(233, 240)) + list(range(242, 251)), "233–239, 242–250"),       # a gap
+    ([149], "149"),                                                            # one decision
+    ([250, 233, 242, 239, 234, 235, 236, 237, 238, 243, 244, 245, 246, 247, 248, 249],
+     "233–239, 242–250"),                                                      # unsorted
+    ([7, 5, 9, 5], "5, 7, 9"),                                                 # no runs, a repeat
+    ([12, 11, 30, 13], "11–13, 30"),
+    ([], ""),
+]
+
+RANGE_HARNESS = r"""
+const cases = JSON.parse(require("fs").readFileSync(0, "utf8"));
+process.stdout.write(JSON.stringify(cases.map(ns => numRange(ns))));
+"""
+NUMRANGE_SORT = "const v=[...new Set(ns.filter(isPosInt))].sort((a,b)=>a-b),out=[];"
+RANGE_CALL = "+esc(title)+rangeHtml(cs)+'</h2>"
+
+
+def node_ranges(script=None):
+    out = subprocess.run([NODE, "-e", (script or page_free_script()) + RANGE_HARNESS],
+                         input=json.dumps([ns for ns, _ in RANGE_CASES]), capture_output=True,
+                         text=True, timeout=60)
+    if out.returncode != 0:
+        raise AssertionError("node failed: " + out.stderr)
+    return json.loads(out.stdout)
+
+
+def range_problems(got):
+    return ["%r gave %r, not %r" % (ns, g, want) for (ns, want), g in zip(RANGE_CASES, got) if g != want]
+
+
+def heading_numbers_problems(h, title, want):
+    """A layer's heading whose h2 is not its title, then its numbers, muted."""
+    m = re.search(r'<h2 id="[^"]+" tabindex="-1">(.*?)</h2>', h)
+    if not m:
+        return ["no heading"]
+    if m.group(1) != title + '<span class="grange"> · ' + want + '</span>':
+        return ["the heading reads %r, not the title then · %s" % (m.group(1), want)]
+    return []
+
+
+def regrouped():
+    """The example with card 43 moved to the first layer and 42 to a last Other decisions layer
+    beside 43's old group, the cards listed 43, 42, 41: a gap and page order not number order."""
+    d = example()
+    d["layers"].append(["other", "Other decisions", "not grouped with another decision; each stands alone"])
+    d["cards"][2]["L"] = "direction"
+    d["cards"][1]["L"] = "other"
+    d["cards"].append(dict(d["cards"][1], n=44, L="other"))
+    d["cards"][3]["dep"] = "none"
+    d["cards"].reverse()
+    return d
+
+
+class GroupNumbersRule(unittest.TestCase):
+
+    def test_the_python_rule(self):
+        self.assertEqual(range_problems([compact(ns) for ns, _ in RANGE_CASES]), [])
+
+
+@unittest.skipUnless(NODE, "node is not installed")
+class GroupNumbersPage(unittest.TestCase):
+
+    def test_the_page_rule_matches(self):
+        self.assertEqual(range_problems(node_ranges()), [])
+
+    def test_mutant_unsorted(self):
+        script = page_free_script()
+        self.assertIn(NUMRANGE_SORT, script)
+        mutant = script.replace(NUMRANGE_SORT, "const v=[...new Set(ns.filter(isPosInt))],out=[];")
+        self.assertTrue(range_problems(node_ranges(mutant)))
+
+    def test_mutant_a_pair_not_a_range(self):
+        script = page_free_script()
+        mutant = script.replace("out.push(j>i?", "out.push(j>i+1?")
+        self.assertNotEqual(mutant, script)
+        self.assertTrue(range_problems(node_ranges(mutant)))
+
+    def test_the_heading_and_the_map(self):
+        layers = node_page(example(), LAYER_HARNESS)["layers"]
+        self.assertEqual(heading_numbers_problems(layers[0], "Direction", "41"), [])
+        self.assertEqual(heading_numbers_problems(layers[1], "Details", "42–43"), [])
+        # a gap, the cards out of number order, and the Other decisions layer
+        d = regrouped()
+        res = node_page(d, LAYER_HARNESS)
+        self.assertEqual(res["bad"], [])
+        self.assertEqual(heading_numbers_problems(res["layers"][0], "Direction", "41, 43"), [])
+        self.assertEqual(heading_numbers_problems(res["layers"][2], "Other decisions", "42, 44"), [])
+        want = [("direction", "Direction · 41, 43 (2)"), ("details", "Details (0)"),
+                ("other", "Other decisions · 42, 44 (2)")]
+        self.assertEqual(map_problems(node_page(d, CARD_HARNESS)["map"], want), [])
+        # mutant reading: the heading's numbers checked against the wrong group's
+        self.assertTrue(heading_numbers_problems(res["layers"][0], "Direction", "41–43"))
+
+    def test_worked_out_never_stored(self):
+        # the layers carry key, title and note; no number is written into the data's titles
+        for l in example()["layers"]:
+            self.assertNotRegex(" ".join(l[:2]), r"\d")
+
+    def test_the_title_is_escaped_beside_the_numbers(self):
+        d = example()
+        d["layers"][1][1] = "<b>x</b>"
+        h = node_page(d, LAYER_HARNESS)["layers"][1]
+        self.assertEqual(heading_numbers_problems(h, "&lt;b&gt;x&lt;/b&gt;", "42–43"), [])
+        self.assertIn(">&lt;b&gt;x&lt;/b&gt; · 42–43 (2)</button>", node_page(d, CARD_HARNESS)["map"])
+
+    def test_mutant_no_numbers_on_the_heading(self):
+        script = page_free_script()
+        self.assertIn(RANGE_CALL, script)
+        mutant = script.replace(RANGE_CALL, "+esc(title)+'</h2>")
+        h = node_page(example(), LAYER_HARNESS, mutant)["layers"][1]
+        self.assertTrue(heading_numbers_problems(h, "Details", "42–43"))
+
+
+GROUP_LINE = re.compile(r"^\*\*Group: ")
+GROUP_NUMS = re.compile(r"^\*\*Group: [^*]+? · ([0-9]+(?:–[0-9]+)?(?:, [0-9]+(?:–[0-9]+)?)*)\*\* — \*\d+ decisions, ")
+CARD_NUM = re.compile(r"^\*\*(\d+) — ")
+
+
+def chat_heading_problems(text):
+    """Each **Group:** heading outside a fence must carry its cards' numbers by the rule."""
+    out, lines, fence = [], text.splitlines(), False
+    for i, line in enumerate(lines):
+        if line.startswith("```"):
+            fence = not fence
+        if fence or not GROUP_LINE.match(line):
+            continue
+        m = GROUP_NUMS.match(line)
+        if not m:
+            out.append("line %d: a group heading with no numbers" % (i + 1))
+            continue
+        nums = []
+        for x in lines[i + 1:]:
+            if x == "---" or x.startswith("#") or GROUP_LINE.match(x):
+                break
+            c = CARD_NUM.match(x)
+            if c:
+                nums.append(int(c.group(1)))
+        if m.group(1) != compact(nums):
+            out.append("line %d: the heading says %s, its cards %s" % (i + 1, m.group(1), compact(nums)))
+    return out
+
+
+RULE_TEXT = ("its cards' numbers, sorted ascending, a run of two or more consecutive numbers written "
+             "first–last (an en dash) and a lone number alone, the runs joined by commas")
+TEMPLATE = "**Group: <plain name> · <numbers>** — *<N> decisions, <what they share>*"
+SKILL_TEXT = "A group's heading shows its decisions' numbers after its name"
+SCHEMA_TEXT = "worked out from `cards`, never written here; the *Other decisions* layer too"
+
+
+def group_numbers_text_problems(rendering, skill, schema, rulings):
+    out = []
+    if TEMPLATE not in rendering or RULE_TEXT not in flat(rendering):
+        out.append("rendering.md lacks the heading form or the rule")
+    if SKILL_TEXT not in flat(skill):
+        out.append("SKILL.md § Order does not say it")
+    if SCHEMA_TEXT not in flat(schema) or "its title and its decisions' numbers" not in flat(schema):
+        out.append("the schema does not say it")
+    b = bullet(rulings, "A group's numbers on its heading, both surfaces")
+    if ("(2026-10-29, answer 365 (a)" not in b
+            or "Not taken: oldest-first groups (b); strict number order (c)." not in b):
+        out.append("no ruling for 365 (a), dated, with its Not taken")
+    return out
+
+
+class GroupNumbersText(unittest.TestCase):
+    def setUp(self):
+        d = PLUGIN / "skills" / "decisions"
+        self.args = [(d / "references" / "rendering.md").read_text(), (d / "SKILL.md").read_text(),
+                     SCHEMA.read_text(), RULINGS.read_text()]
+        self.gallery = (d / "references" / "gallery.md").read_text()
+
+    def test_the_skills_say_it(self):
+        self.assertEqual(group_numbers_text_problems(*self.args), [])
+
+    def test_the_gallery_headings_carry_their_numbers(self):
+        self.assertIn("**Group: upload-service review findings · 51–53**", self.gallery)
+        self.assertEqual(chat_heading_problems(self.gallery), [])
+        self.assertEqual(chat_heading_problems(self.args[0]), [])
+
+    def test_mutations(self):
+        r, sk, sc, ru = self.args
+        g = self.gallery
+        line = g[:g.index(" · 51–53**")].count("\n") + 1
+        self.assertEqual(chat_heading_problems(g.replace(" · 51–53**", "**")),
+                         ["line %d: a group heading with no numbers" % line])
+        self.assertTrue(chat_heading_problems(g.replace(" · 51–53**", " · 51, 52, 53**")))
+        self.assertTrue(chat_heading_problems(g.replace(" · 51–53**", " · 51–52**")))
+        self.assertIn("rendering.md lacks the heading form or the rule",
+                      group_numbers_text_problems(r.replace(" · <numbers>**", "**"), sk, sc, ru))
+        self.assertIn("rendering.md lacks the heading form or the rule",
+                      group_numbers_text_problems(r.replace("sorted ascending, a run", "a run"), sk, sc, ru))
+        self.assertIn("SKILL.md § Order does not say it",
+                      group_numbers_text_problems(r, sk.replace("shows its decisions' numbers", "shows"), sc, ru))
+        self.assertIn("the schema does not say it",
+                      group_numbers_text_problems(r, sk, sc.replace("never written here", "stored here"), ru))
+        self.assertIn("no ruling for 365 (a), dated, with its Not taken",
+                      group_numbers_text_problems(r, sk, sc, ru.replace("strict number order (c).", "none.")))
 
 
 if __name__ == "__main__":
