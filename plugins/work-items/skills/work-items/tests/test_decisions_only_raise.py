@@ -104,7 +104,8 @@ class TestRawNote(CounterCase):
         before = self.snapshot()
         r = self.wi("note", IID, "--raw", "--", "decision 5: five again?")
         self.assertEqual(r.returncode, 1, r.stdout + r.stderr)
-        self.assertIn(f"wi raise {IID} --revise 5", r.stderr)
+        self.assertIn(f"`wi raise {IID} --revise 5 --why '<why>' -- "
+                      "'<question>'`", r.stderr)
         self.assertEqual(self.snapshot(), before)
 
     def test_raw_other_decision_lines_pass(self):

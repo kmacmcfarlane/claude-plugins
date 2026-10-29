@@ -1050,7 +1050,7 @@ indented is read by nothing: the counter, `needs-input` and `lint` never see it.
   new N, a gap below the last N included, is refused and points to `$WI raise`, and so is
   a raw text that starts `decision N:` after whitespace (indented, it reads as nothing).
   A copy onto an item that already holds N is refused too, pointing to
-  `$WI raise <id> --revise N` for a restated question;
+  `$WI raise <id> --revise N --why '<why>' -- '<question>'` for a restated question;
 - `wi lint` prints a `wi: note: <file>:<line>: …` line on stderr, saying the line is not a
   column-0 headline and naming the fix, for a line whose `decision N:` opens it after
   whitespace, a bullet, or a date (`- 2026-10-26 decision 210: …`, an indented line). It

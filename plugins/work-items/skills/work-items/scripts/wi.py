@@ -4030,7 +4030,8 @@ def cmd_note(args):
                 if d in held:
                     raise WiError(1, f"text {n}: {args.id} already holds "
                                      f"decision {d}; a restated question is "
-                                     f"`wi raise {args.id} --revise {d}`; "
+                                     f"`wi raise {args.id} --revise {d} "
+                                     "--why '<why>' -- '<question>'`; "
                                      "nothing written")
         for line in lines:
             item.append_note(line)
