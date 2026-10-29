@@ -143,7 +143,7 @@ plugins/
   kit-dev/             # Maintaining this kit itself
     skills/
       {create-skill,update-kit,new-project-from-template,factor-analysis}/
-    tests/             # test_standalone.py: each plugin's suites pass from a copy of that plugin alone; test_declared_edges.py: every cross-plugin skill, CLI or data-path reference is declared in plugin.json and the catalog; test_fenced_wi.py: no fenced command in plugins/**/*.md runs a bare wi, or greps `^decision [0-9]` for a decision number (the older-wi fallbacks allowed), and the checkpoint skill raises with `$WI raise` and keeps that fallback
+    tests/             # test_standalone.py: each plugin's suites pass from a copy of that plugin alone; test_declared_edges.py: every cross-plugin skill, CLI or data-path reference is declared in plugin.json (its name heading an entry of the description's dependency clause) and the catalog; test_fenced_wi.py: no fenced command in plugins/**/*.md runs a bare wi, or greps `^decision [0-9]` for a decision number (the older-wi fallbacks allowed), and the checkpoint skill raises with `$WI raise` and keeps that fallback
   operator-interaction/ # The agent-operator interface, starting with how decisions are raised and shown
     skills/
       decisions/       # references/{worksheet,rendering,replies,evidence-basis,rationale,rulings,gallery,card-record,legacy-cards}.md
