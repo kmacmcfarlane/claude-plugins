@@ -1570,7 +1570,14 @@ def items_decision_max(root):
     block, over items/ and archive/*/ (the same marker and fence rule as
     unanswered_decisions); 0 when there is none. A file that cannot be
     read is skipped."""
-    best = 0
+    return max(items_decision_numbers(root), default=0)
+
+
+def items_decision_numbers(root):
+    """The set of N on a column-0 `decision N:` line outside a fenced code
+    block, over items/ and archive/*/ (items_decision_max's rule). A file
+    that cannot be read is skipped."""
+    found = set()
     for path in item_paths(root, archived=True):
         try:
             text = path.read_text(encoding="utf-8")
@@ -1583,8 +1590,8 @@ def items_decision_max(root):
         for i, line in enumerate(lines):
             m = DECISION_RE.match(line) if i not in fenced else None
             if m:
-                best = max(best, int(m.group(1)))
-    return best
+                found.add(int(m.group(1)))
+    return found
 
 
 def seed_counter(root):
@@ -3998,8 +4005,26 @@ def cmd_note(args):
         raise WiError(1, f"text {n}: is exactly '--', which the command line "
                          "cannot carry as a text; nothing written")
     lines = [_note_line(n, t, args.raw) for n, t in enumerate(args.lines, 1)]
+    for n, t in enumerate(args.lines, 1):
+        why = _note_decision_refusal(t, args.raw)
+        if why:
+            raise WiError(1, f"text {n}: {why}; nothing written")
     root = resolve_root(args.root)
     with Lock(root):
+        # 9fb8: a raw `decision N:` headline is a copy of a decision the
+        # store already holds; read under the lock the write takes
+        copies = [(n, int(m.group(1))) for n, t in enumerate(args.lines, 1)
+                  if args.raw and (m := DECISION_RE.match(t))]
+        if copies:
+            known = items_decision_numbers(root)
+            for n, d in copies:
+                if d not in known:
+                    raise WiError(1, f"text {n}: decision {d} is not in the "
+                                     "store; a new decision is raised with "
+                                     f"`wi raise {args.id} -- '<question>'`, "
+                                     "which gives out its number; --raw "
+                                     "only copies an existing decision's "
+                                     "headline; nothing written")
         item = load_item_anywhere(root, args.id)
         for line in lines:
             item.append_note(line)
@@ -4007,6 +4032,30 @@ def cmd_note(args):
         save_item(root, item)
     print(f"noted {item.id}" + (f" ({len(lines)} lines)" if len(lines) > 1 else ""))
     return 0
+
+
+# 9fb8: a `decision N:` headline at the start of a text, after any
+# whitespace; only `wi raise` writes a new one
+_NOTE_DECISION_RE = re.compile(r"\s*decision \d+:")
+
+
+def _note_decision_refusal(text, raw):
+    """Why a note text that would carry a `decision N:` headline is refused
+    before the lock, or None. Plain: any text opening `decision N:` (it
+    would be written bulleted, where no reader counts it). Raw: one opening
+    `decision N:` after whitespace (indented, no reader counts it). A raw
+    column-0 headline passes here; cmd_note checks its N under the lock.
+    The reason never quotes the text."""
+    if not _NOTE_DECISION_RE.match(text or ""):
+        return None
+    if raw and DECISION_RE.match(text):
+        return None
+    fix = ("a new decision is raised with `wi raise <id> -- '<question>'`; "
+           "an existing one is copied as a column-0 line with "
+           "`wi note <id> --raw -- 'decision N: …'`")
+    if raw:
+        return f"an indented `decision N:` line, which no reader counts; {fix}"
+    return f"starts `decision N:`, which a plain note would bullet; {fix}"
 
 
 def now_second():
@@ -7719,6 +7768,10 @@ def cmd_lint(args):
     problems.extend(card_problems(root, items, texts))
     # 03ab F2: the group and depends lines, store-wide
     problems.extend(_name_safe(p) for p in _lint_links(root, items, texts))
+    # 9fb8: a `decision N:` no reader counts; a note, the exit unchanged
+    for it in items:
+        for line in stray_decision_notes(it.path, texts[it.path]):
+            print(_name_safe(line), file=sys.stderr)
     # cycle detection over deps
     state = {}
 
@@ -7778,6 +7831,42 @@ def cmd_lint(args):
         return 3
     print(f"lint clean: {len(items)} items")
     return 0
+
+
+# 9fb8: `decision N:` inside a line, where it is not a column-0 headline
+_STRAY_DECISION_RE = re.compile(r"(?<![A-Za-z0-9_])decision \d+:")
+# the other column-0 decision lines, whose text may quote a decision
+_DECISION_LINE_RE = re.compile(
+    r"^(?:answer|shown|seen|closed|group|depends) \d+:")
+
+
+def stray_decision_notes(path, text):
+    """The `wi: note:` lines for each line of an item file that holds
+    `decision N:` but is not a column-0 headline (a bulleted note line,
+    an indented one): no reader counts it, so the counter, needs-input and
+    lint never see that decision. Front matter, fenced lines and the other
+    decision lines (answer N:, shown N:, ...) are skipped."""
+    lines = text.replace("\r\n", "\n").split("\n")
+    start = 0
+    if lines and lines[0] == "---":
+        start = next((i + 1 for i in range(1, len(lines))
+                      if lines[i] == "---"), len(lines))
+    fenced = set()
+    for i, j in _fence_spans(lines):
+        fenced.update(range(i, j + 1))
+    out = []
+    for i in range(start, len(lines)):
+        line = lines[i]
+        if (i in fenced or DECISION_RE.match(line)
+                or _DECISION_LINE_RE.match(line)
+                or not _STRAY_DECISION_RE.search(line)):
+            continue
+        out.append(f"wi: note: {path}:{i + 1}: a `decision N:` that is not "
+                   "a column-0 headline, which no reader counts; fix: raise "
+                   "a new decision with `wi raise <id> -- '<question>'`, or "
+                   "write an existing one's copy as a column-0 line with "
+                   "`wi note <id> --raw -- 'decision N: …'`")
+    return out
 
 
 def reseed_counter(root):
