@@ -222,8 +222,14 @@ class TestPointers(unittest.TestCase):
         sec = flat(body.split("### Step 1", 1)[1].split("\n### ", 1)[0])
         self.assertIn(POINTER, sec)
         self.assertIn("only after it passes the path check", sec)
-        self.assertIn("A prior run found outside the checkout is read, but the new run is never "
-                      "written beside it", sec)
+        self.assertIn("A prior run found outside both the checkout and the session scratchpad is "
+                      "read, but the new run is never written beside it", sec)
+
+    def test_refine_step_three_scratchpad_stays(self):
+        body = text(SKILLS / "research-refine" / "SKILL.md")
+        sec = flat(body.split("### Step 3", 1)[1].split("\n### ", 1)[0])
+        self.assertIn("for a prior outside both the checkout and the session scratchpad, the "
+                      "destination `research` Step 4 resolves", sec)
 
     def test_research_step_two_checks_links(self):
         body = text(SKILLS / "research" / "SKILL.md")

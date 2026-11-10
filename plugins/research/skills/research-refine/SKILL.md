@@ -38,8 +38,8 @@ question (grep `INDEX.md` and run briefs for its nouns). When the checkout has a
 `RESEARCH.md` at its top level, the locations it lists are searched first, each link target
 only after it passes the path check (the `research` skill's
 `references/storage-and-knowledge-base.md` § RESEARCH.md; a failure is ignored with a
-one-line NOTE). A prior run found outside the checkout is read, but the new run is never
-written beside it: Step 3 resolves its destination by `research` Step 4 instead. No hit →
+one-line NOTE). A prior run found outside both the checkout and the session scratchpad is
+read, but the new run is never written beside it: Step 3 resolves its destination by `research` Step 4 instead. No hit →
 say so and hand off to `research`; do not invent a prior.
 
 Read, in this order and nothing more yet: the prior brief's frontmatter and § Question, its
@@ -66,9 +66,9 @@ a new question; say so and offer `research-deep`, put per the `research` skill's
 ### Step 3 — Inherit, then brief
 
 The new brief (`research` Step 5) is written fresh, in the prior run's destination (or, for a
-prior outside the checkout, the destination `research` Step 4 resolves) and its
-layout — `runs/<today>-<slug>-r2/` (`-r3`…) in a knowledge base, `<today>-<slug>-r2/` beside
-the prior elsewhere — with:
+prior outside both the checkout and the session scratchpad, the destination `research` Step 4
+resolves) and its layout — `runs/<today>-<slug>-r2/` (`-r3`…) in a knowledge base,
+`<today>-<slug>-r2/` beside the prior elsewhere — with:
 
 - `supersedes: [<prior run>]` in its frontmatter;
 - § Question and § Operator situation copied from the prior, edited only where the
