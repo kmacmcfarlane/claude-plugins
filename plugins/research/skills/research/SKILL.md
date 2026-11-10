@@ -78,8 +78,9 @@ words, in under ten lines.
 ## Step 2 — Check for prior work
 
 Before anything launches, look for an existing run on the same question. When the checkout
-has a `RESEARCH.md` at its top level, search the locations it lists first
-(`references/storage-and-knowledge-base.md` § RESEARCH.md). Then the KB's `INDEX.md` if one
+has a `RESEARCH.md` at its top level, search the locations it lists first, each link
+target only after it passes the path check (`references/storage-and-knowledge-base.md`
+§ RESEARCH.md; a failure is ignored with a one-line NOTE). Then the KB's `INDEX.md` if one
 resolves (Step 4), `.claude-sandbox/research/`, the scratchpad, and any `investigations/`
 series in scope. Grep for the question's nouns, not its wording.
 

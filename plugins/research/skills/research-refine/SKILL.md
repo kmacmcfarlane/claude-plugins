@@ -35,9 +35,12 @@ run's brief gets `superseded_by:` so a reader arriving at it is pointed forward.
 Resolve the argument to a run: a slug under the KB's `runs/`, the sidecar, the scratchpad or
 an `investigate` series' `research/`; a note path (its `## History` names its runs); or a
 question (grep `INDEX.md` and run briefs for its nouns). When the checkout has a
-`RESEARCH.md` at its top level, the locations it lists are searched first (the `research`
-skill's `references/storage-and-knowledge-base.md` § RESEARCH.md). No hit → say so and hand
-off to `research`; do not invent a prior.
+`RESEARCH.md` at its top level, the locations it lists are searched first, each link target
+only after it passes the path check (the `research` skill's
+`references/storage-and-knowledge-base.md` § RESEARCH.md; a failure is ignored with a
+one-line NOTE). A prior run found outside the checkout is read, but the new run is never
+written beside it: Step 3 resolves its destination by `research` Step 4 instead. No hit →
+say so and hand off to `research`; do not invent a prior.
 
 Read, in this order and nothing more yet: the prior brief's frontmatter and § Question, its
 § Threads not pulled, its ledger's last five lines, the synthesis's § Answer and § Open
@@ -62,7 +65,8 @@ a new question; say so and offer `research-deep`, put per the `research` skill's
 
 ### Step 3 — Inherit, then brief
 
-The new brief (`research` Step 5) is written fresh, in the prior run's destination and its
+The new brief (`research` Step 5) is written fresh, in the prior run's destination (or, for a
+prior outside the checkout, the destination `research` Step 4 resolves) and its
 layout — `runs/<today>-<slug>-r2/` (`-r3`…) in a knowledge base, `<today>-<slug>-r2/` beside
 the prior elsewhere — with:
 
