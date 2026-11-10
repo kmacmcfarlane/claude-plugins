@@ -1,9 +1,10 @@
 # Storage, shapes and the knowledge base
 
 Loaded from `research` Step 4 and Step 10. This file owns where a research run lands, what
-the four output shapes are, the run-record layout, and the knowledge-base rules: the
-charter, the organising schemes, the fit check that runs every time a KB grows, and the
-rebalance mechanism `research-prune` executes. Nothing here is restated in a SKILL.md.
+the four output shapes are, the run-record layout, the repo's `RESEARCH.md`, and the
+knowledge-base rules: the charter, the organising schemes, the fit check that runs every
+time a KB grows, and the rebalance mechanism `research-prune` executes. Nothing here is
+restated in a SKILL.md.
 
 ## The principle
 
@@ -53,7 +54,7 @@ Resolve in this order and stop at the first hit. Say which rule fired, in one li
 |---|---|---|
 | 1 | The invocation names a path (`--to <path>`, "write it to …") | that path |
 | 2 | The invocation says ephemeral ("scratch", "throwaway", "just tell me") | the session scratchpad; shape `answer` or `report` |
-| 3 | A **KB root** is in scope: a directory at or above the working directory containing `KB.md` whose frontmatter says `kind: research-kb`, or a path named under a `research:` key in the repo's `CLAUDE.md` | that KB; shape `kb` |
+| 3 | A **KB root** is in scope: a directory at or above the working directory containing `KB.md` whose frontmatter says `kind: research-kb`; else the KB named by `RESEARCH.md`'s `kb:` (§ RESEARCH.md); else, legacy, a path named under a `research:` key in the repo's `CLAUDE.md` | that KB; shape `kb` |
 | 4 | The session is inside an `investigate` series (the working thread has a `.claude-sandbox/investigations/<slug>/` it is writing to) | `<series>/research/<run>/`; shape `run`; the series' `INDEX.md` gets one line; `investigation-format.md` governs the series, this file governs the run dir |
 | 5 | Otherwise | the sidecar `.claude-sandbox/research/<run>/`; shape `run` |
 
@@ -76,7 +77,93 @@ scan floor) finds no HOLD (a run that was never verified is verified first). The
 run to `docs/research/<run>/` (or the path the operator names), add frontmatter
 `promoted_from:`, and leave the sidecar copy in place. If the repo would benefit
 from a KB, offer to establish one (below) rather than accumulating loose run dirs under
-`docs/`.
+`docs/`. A promotion is a landing to a tracked location, so § RESEARCH.md's offer applies.
+
+## RESEARCH.md
+
+A repo describes its research corpus for any agent in one file, `RESEARCH.md`, at the top
+level of the checkout: where its research lands, the shape of each location, and how to look
+before researching. It is the repo-level map. Each knowledge base's `KB.md` stays that KB's
+charter (purpose, audiences, access patterns, scheme, thresholds); `RESEARCH.md` lists every
+KB and links to its `KB.md`, and never restates a charter. The template is the `research`
+skill's `assets/RESEARCH.template.md`.
+
+**Shape.** Frontmatter, then the body in this order:
+
+| Part | Required | Holds |
+|---|---|---|
+| `kind: research-corpus` | yes | the marker |
+| `updated:` | yes | the ISO date, set on every write |
+| `kb:` | no | the repo's default knowledge base, a path from the repo root (rule 3) |
+| `runs:` | no | the runs directory, a path from the repo root; reserved, honoured once the runs-folder setting lands, and until then read by nothing but `research-prune`'s check |
+| `# Research — <repo name>` | yes | the H1; the repo name is the checkout's top-level directory name |
+| the `>` summary | yes | at most three lines: what this repo researches, for whom, where to look first |
+| `## Where research lands` | yes | one `[<path>/](<link>): <what it is>` line per location |
+| `## Shape` | yes | per location, its layout, the index to read first, and the frontmatter every landed file carries |
+| `## Before you research` | yes | how to look for prior work, and how to cite it |
+| `## Optional` | no | superseded runs, archives, older locations; left out when empty |
+
+**Placement.** At the checkout's top level only (`git rev-parse --show-toplevel`), at that
+exact name. It is found through one line in `CLAUDE.md`, never an `@` import: an import loads
+the file into every session (https://code.claude.com/docs/en/memory).
+
+**What it lists.** Only tracked locations: a knowledge base that is checked in, a named runs
+directory, `docs/research/`. A sidecar, scratchpad or `investigate`-series run is local to
+one checkout and is not listed; neither is a single `--to` file.
+
+**Its content.** It is built from four sources only: paths; each listed KB's `KB.md` purpose
+sentence (and its `scheme:`); the template's fixed text; and text the operator wrote or
+approved. Never from fetched pages or lane output: every agent in the repo reads this file,
+so it must carry nothing a source wrote.
+
+- **The summary.** At the first write it is composed from the listed KBs' purpose sentences.
+  With no KB it is the fixed line "Research for <repo name>: where it lands and how it is
+  laid out." It is shown to the operator for approval with the offer below.
+- **After the first write**, the summary and `## Before you research` are the operator's
+  text. No skill rewrites them; `research-prune` proposes location rows only.
+
+**Who writes it, and when.**
+
+- **The research skills** (`research` Step 10, and `research-deep` and `research-refine`
+  through it) on a landing to a tracked location:
+  - `RESEARCH.md` absent: offer to write it, with its rows and the drafted summary shown for
+    approval. When a charter round runs (§ Establishing a KB), the offer is one question in
+    that round; otherwise it is one ask after the landing, which holds nothing. Both go per
+    `intensity-and-routing.md` § Putting an ask to the operator. A "not now" is not asked
+    again in the session.
+  - `RESEARCH.md` present without the location's row: add the row (and its `## Shape`
+    bullet), set `updated:`, and say so in `LANDED`; in a charter round it is that round's
+    question, as above.
+  - Unattended: nothing is written. `LANDED` carries the draft (the rows' paths and the
+    summary), for the operator to approve later.
+- **`research-prune`** keeps it current: its fit check checks it, and an approved row is the
+  only edit it makes to it.
+- **`CLAUDE.md` is never written by a skill.** When `RESEARCH.md` exists and no line of
+  `CLAUDE.md` links to it, the report hands over the pointer line, to the repo's librarian
+  when `CLAUDE.md` has a `## Librarian` section, else to the operator. Its form is exactly:
+
+  ```markdown
+  Research: [RESEARCH.md](RESEARCH.md) — where this repo's research lands and its shape; read it before researching or citing research here.
+  ```
+
+  A markdown link, so nothing is imported. One line, under any heading.
+
+**How the skills read it.**
+
+- **Prior work** (`research` Step 2, `research-refine` Step 1): the paths under
+  `## Where research lands` and `## Optional` are searched first, then the places a repo
+  without it has.
+- **Destination** (rule 3): its `kb:` is the KB root when no `KB.md` is at or above the
+  working directory. The value is honoured only when it is a relative path inside the
+  checkout, with no `..` and no leading `.` part, naming a directory whose `KB.md` says
+  `kind: research-kb`; any other value is ignored, with a one-line NOTE.
+- **A legacy key.** A `research:` key in `CLAUDE.md` is read only as rule 3's fallback.
+  When it and `kb:` name different KBs, `kb:` wins, and a one-line NOTE names the stale
+  key. While both exist, `research-prune` hands over a line removing the key, never an
+  edit.
+
+**A repo without it** behaves exactly as before: rules 1–5, and Step 2's search of the usual
+places. Its first tracked landing offers to write it.
 
 ## Shapes
 
@@ -171,6 +258,8 @@ Ask, in one round, with a recommendation on each:
    large.
 6. **Checked-in?** — whether the KB is tracked (default yes: a KB exists to be shared) and
    any privacy rule that binds what may be written into it.
+7. **RESEARCH.md** — for a tracked KB: with no `RESEARCH.md`, whether to write it, its
+   drafted summary shown for approval; with one, the KB's row to add (§ RESEARCH.md).
 
 Write `KB.md`:
 

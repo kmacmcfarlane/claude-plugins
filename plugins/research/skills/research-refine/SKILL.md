@@ -34,8 +34,10 @@ run's brief gets `superseded_by:` so a reader arriving at it is pointed forward.
 
 Resolve the argument to a run: a slug under the KB's `runs/`, the sidecar, the scratchpad or
 an `investigate` series' `research/`; a note path (its `## History` names its runs); or a
-question (grep `INDEX.md` and run briefs for its nouns). No hit → say so and hand off to
-`research`; do not invent a prior.
+question (grep `INDEX.md` and run briefs for its nouns). When the checkout has a
+`RESEARCH.md` at its top level, the locations it lists are searched first (the `research`
+skill's `references/storage-and-knowledge-base.md` § RESEARCH.md). No hit → say so and hand
+off to `research`; do not invent a prior.
 
 Read, in this order and nothing more yet: the prior brief's frontmatter and § Question, its
 § Threads not pulled, its ledger's last five lines, the synthesis's § Answer and § Open
