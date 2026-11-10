@@ -3,10 +3,10 @@
 `skills/deep-investigation/references/research-peer.md` § Finding the research plugin holds
 one fenced bash snippet. It finds the research plugin's root in this order and stops at the
 first complete hit: the install record (`research@kmacmcfarlane`, the entry that applies to
-the checkout), the newest cached copy, then `$MAIN/plugins/research/` only when the main
-checkout's marketplace.json is named `kmacmcfarlane`. A root is complete only with the scan
-floor, the sheet check and both agent bodies. The checkout in use never supplies the scanner
-otherwise: a planted `plugins/x/skills/research/` is never chosen.
+the checkout), then the newest cached copy; a miss at both is "no research found". A root is
+complete only with the scan floor, the sheet check and both agent bodies. No path under the
+working checkout is ever consulted: any repo can name itself `kmacmcfarlane`, so a checkout,
+this kit's own included, never supplies the scanner or agent bodies.
 
 This test extracts the snippet and runs it under bash in a temp tree, with a fake config dir
 and a fake checkout, one case per rule.
@@ -54,6 +54,9 @@ class TestSnippetShape(unittest.TestCase):
             if "python3" in line:
                 self.assertIn("python3 -I", line)
         self.assertNotIn("plugins/*/", block)
+        self.assertNotIn("$MAIN/plugins", block)
+        self.assertNotIn('"$MAIN"/plugins', block)
+        self.assertNotIn("marketplace.json", block)
 
 
 @unittest.skipUnless(shutil.which("bash") and shutil.which("python3"), "bash and python3 needed")
@@ -150,10 +153,10 @@ class TestLookupRuns(unittest.TestCase):
                 self.record(self.entry(p))
                 self.assertEqual(self.run_lookup(), NONE)
 
-    def test_this_marketplaces_checkout_with_nothing_installed(self):
-        self.marketplace()
-        p = self.root(self.checkout / "plugins" / "research")
-        self.assertFound(p, "this marketplace's checkout")
+    def test_a_kmacmcfarlane_checkout_never_supplies_the_scanner(self):
+        self.marketplace("kmacmcfarlane")
+        self.root(self.checkout / "plugins" / "research")
+        self.assertEqual(self.run_lookup(), NONE)
 
     def test_the_install_beats_this_marketplaces_checkout(self):
         self.marketplace()

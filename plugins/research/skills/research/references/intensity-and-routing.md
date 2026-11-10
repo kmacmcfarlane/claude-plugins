@@ -657,9 +657,9 @@ A step-down is not a hold: the run goes on.
 
 The lookup stops at the first hit: dev-flow's install record (`dev-flow@kmacmcfarlane`, the
 entry that applies here, ranked as § Resolving the store ranks it), then the newest cached
-copy, then `$MAIN/plugins/dev-flow/` only when the main checkout is this marketplace's own
-(its `.claude-plugin/marketplace.json` is named `kmacmcfarlane`). Never another
-`plugins/*/` tree: the checkout under research does not supply the script.
+copy; a miss at both is no quota sense. No path under the working checkout is ever
+consulted: any repo can name itself `kmacmcfarlane`, so neither the checkout under research,
+a fork, nor this kit's own checkout supplies the script.
 
 ```bash
 MAIN=$(git rev-parse --path-format=absolute --git-common-dir 2>/dev/null) && MAIN=${MAIN%/.git} || MAIN=$PWD
@@ -682,12 +682,11 @@ PY
 )"
 QB=; test -n "$IP" && test -f "$IP/$REL" && QB="$IP/$REL"
 test -n "$QB" || QB=$(ls -t "$P"/cache/kmacmcfarlane/dev-flow/*/$REL 2>/dev/null | head -1)
-test -n "$QB" || { python3 -I -c 'import json, sys; sys.exit(json.load(open(sys.argv[1])).get("name") != "kmacmcfarlane")' "$MAIN/.claude-plugin/marketplace.json" 2>/dev/null && test -f "$MAIN/plugins/dev-flow/$REL" && QB="$MAIN/plugins/dev-flow/$REL"; }
 if test -f "$QB"; then echo "quota sense: $QB"; else QB=no-quota-sense; echo "no quota sense found"; fi
 ```
 
 Then `python3 "$QB" --read-only`, only after it printed a path. `no quota sense found` reads
-as not below. Both `python3 -I` reads keep a `json.py` in the working directory from being
+as not below. The `python3 -I` read keeps a `json.py` in the working directory from being
 imported. This plugin's `tests/test_quota_lookup.py` runs the snippet.
 
 ## Fallback

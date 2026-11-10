@@ -3,10 +3,10 @@
 `skills/research/references/intensity-and-routing.md` § Finding the quota sense holds one
 fenced bash snippet that finds dev-flow's `librarian-mode` quota script for § Below the
 quota reserve. It stops at the first hit: dev-flow's install record
-(`dev-flow@kmacmcfarlane`, the entry that applies to the checkout), the newest cached copy,
-then `$MAIN/plugins/dev-flow/` only when the main checkout's marketplace.json is named
-`kmacmcfarlane`. A miss reads as not below. The checkout in use never supplies the script
-otherwise: a planted `plugins/x/skills/librarian-mode/` is never chosen.
+(`dev-flow@kmacmcfarlane`, the entry that applies to the checkout), then the newest cached
+copy. A miss reads as not below. No path under the working checkout is ever consulted: any
+repo can name itself `kmacmcfarlane`, so a checkout, this kit's own included, never supplies
+the script.
 
 This test extracts the snippet and runs it under bash in a temp tree, with a fake config dir
 and a fake checkout, one case per rule. It travels with the research plugin.
@@ -53,6 +53,9 @@ class TestSnippetShape(unittest.TestCase):
             if "python3" in line:
                 self.assertIn("python3 -I", line)
         self.assertNotIn("plugins/*/", block)
+        self.assertNotIn("$MAIN/plugins", block)
+        self.assertNotIn('"$MAIN"/plugins', block)
+        self.assertNotIn("marketplace.json", block)
 
     def test_the_reserve_section_points_at_it(self):
         body = ROUTING.read_text(encoding="utf-8")
@@ -100,8 +103,9 @@ class TestLookupRuns(unittest.TestCase):
         d.mkdir(exist_ok=True)
         (d / "marketplace.json").write_text(json.dumps({"name": name, "plugins": []}))
 
-    def run_lookup(self):
+    def run_lookup(self, extra=""):
         block = snippet()
+        block = block + extra if block else None
         self.assertIsNotNone(block)
         env = {"PATH": os.environ.get("PATH", "/usr/bin:/bin"), "HOME": str(self.tmp),
                "CLAUDE_CONFIG_DIR": str(self.cfg), "GIT_CEILING_DIRECTORIES": str(self.tmp),
@@ -137,10 +141,18 @@ class TestLookupRuns(unittest.TestCase):
         new = self.cache("1.1.0", age=10)
         self.assertFound(new)
 
-    def test_this_marketplaces_checkout_with_nothing_installed(self):
-        self.marketplace()
-        p = self.root(self.checkout / "plugins" / "dev-flow")
-        self.assertFound(p)
+    def test_a_kmacmcfarlane_checkout_never_supplies_the_script(self):
+        # A planted script that writes a sentinel: the lookup must not find it, and the
+        # guarded call after it must not run it.
+        self.marketplace("kmacmcfarlane")
+        sentinel = self.tmp / "sentinel"
+        f = self.checkout / "plugins" / "dev-flow" / REL
+        f.parent.mkdir(parents=True)
+        f.write_text("open(%r, 'w').write('ran')\n" % str(sentinel))
+        tail = '\ntest "$QB" != no-quota-sense && python3 "$QB" --read-only\ntrue\n'
+        out = self.run_lookup(extra=tail)
+        self.assertIn(NONE, out)
+        self.assertFalse(sentinel.exists(), "the planted script ran")
 
     def test_the_install_beats_this_marketplaces_checkout(self):
         self.marketplace()

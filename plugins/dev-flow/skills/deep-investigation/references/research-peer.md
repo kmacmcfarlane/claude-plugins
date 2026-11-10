@@ -15,9 +15,8 @@ The lookup stops at the first complete hit:
    (`local` before `project`), else the `user` entry. Another project's install never
    answers.
 2. **The cache.** The newest `…/plugins/cache/kmacmcfarlane/research/*/`.
-3. **This marketplace's own checkout.** `$MAIN/plugins/research/`, and only when
-   `$MAIN/.claude-plugin/marketplace.json` exists and its `name` is `kmacmcfarlane`. Never
-   another `plugins/*/` directory.
+
+A miss at both means the plugin is not installed.
 
 A hit is complete when it holds `skills/research/scripts/scan-findings.py`,
 `skills/research/scripts/check-sheet.py`, `agents/research-lane.md` and
@@ -48,15 +47,12 @@ test -n "$IP" && complete "$IP" && RESEARCH_ROOT=$IP FROM=installed
 if test -z "$RESEARCH_ROOT"; then
   while IFS= read -r c; do c=${c%/}; if complete "$c"; then RESEARCH_ROOT=$c FROM="cache, not installed"; break; fi; done < <(ls -td "$P"/cache/kmacmcfarlane/research/*/ 2>/dev/null)
 fi
-if test -z "$RESEARCH_ROOT" && python3 -I -c 'import json, sys; sys.exit(json.load(open(sys.argv[1])).get("name") != "kmacmcfarlane")' "$MAIN/.claude-plugin/marketplace.json" 2>/dev/null && complete "$MAIN/plugins/research"; then
-  RESEARCH_ROOT=$MAIN/plugins/research FROM="this marketplace's checkout"
-fi
 if test -n "$RESEARCH_ROOT"; then echo "research: $RESEARCH_ROOT ($FROM)"; else RESEARCH_ROOT=no-research-found; echo "no research found"; fi
 ```
 
 On a miss the snippet binds `RESEARCH_ROOT` to a name that is no path, so a command built on
-it fails rather than running something else. Both `python3 -I` reads keep a `json.py` in the
-working directory from being imported. Shell variables do not survive between Bash calls:
+it fails rather than running something else. The `python3 -I` read keeps a `json.py` in the
+working directory from being imported (`$MAIN` serves only the install record's ranking). Shell variables do not survive between Bash calls:
 re-run the snippet in each Bash call that needs `$RESEARCH_ROOT`, and carry the printed line
 in the conversation. Say once in the run's report which copy it used (the printed
 `research: <root> (<where>)` line). dev-flow's `tests/test_research_peer.py` runs the
@@ -64,9 +60,9 @@ snippet.
 
 **Why this order.** The scan floor is the gate the verifier cannot be talked out of. It comes
 from the installed copy, the same one the research skills and the agents they dispatch use.
-A checkout under research, a fork, or a plugin directory of any other name cannot supply it.
-The checkout step serves only this marketplace's own checkout with nothing installed (a
-contributor's session).
+No path under the working checkout is ever consulted: any repo can name itself
+`kmacmcfarlane`, so neither a checkout under research, a fork, nor this kit's own checkout
+supplies the scanner or agent bodies; a contributor installs the plugin.
 
 ## Where each read goes
 
@@ -95,7 +91,9 @@ contributor's session).
   lane output can exist. The run's result carries the disclosure "lanes not run: research
   plugin not installed". Read `echo "${KMACMCFARLANE_NO_PEER_HINTS-}"` once; unless it is
   `1` or a list naming `research`, add the hint once in the session, in the top-level
-  session only (in a sub-agent, return the disclosure alone):
+  session only (in a sub-agent, return the disclosure alone). It deliberately adds the
+  marketplace refresh and the restart to the install command, since the plugin may be one
+  the user has never had:
 
   ```
   dev-flow: a strategy doc, no lanes. research adds the lanes, their verifier and the scan floor: /plugin marketplace update kmacmcfarlane, then /plugin install research@kmacmcfarlane and restart (one-time tip; KMACMCFARLANE_NO_PEER_HINTS=1 hides these)

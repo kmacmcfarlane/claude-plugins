@@ -90,7 +90,7 @@ claude-plugins/
     │   ├── agents/            (scribe, scout, implementer, implementer-critical, implementer-deep, planner, planner-deep, reviewer, reviewer-light, cross-checker, cross-checker-deep — the dev cycle's role workers)
     │   ├── skills/
     │   │   ├── {investigate,implement,dev-cycle,foundation,deep-investigation,librarian-mode}/
-    │   │   ├── deep-investigation/references/research-peer.md (finding the research plugin: install record, cache, this marketplace's own checkout)
+    │   │   ├── deep-investigation/references/research-peer.md (finding the research plugin: install record, then cache; never the working checkout)
     │   │   └── librarian-mode/scripts/ (quota_budget.py: the librarian's quota sense + tests)
     │   └── tests/             (test_agents.py: every role agent file's model and effort pin;
     │                           test_deep_investigation.py: deep-investigation's security parity;

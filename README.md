@@ -332,8 +332,8 @@ Soft dependency on `research`: `deep-investigation` runs its lanes on that plugi
 `research-lane` agent and verifies on its `research-verifier`, routed by its `research`
 skill's profiles, and applies its scan floor, sheet check and held-path rules. It finds the
 plugin at the start of its Step 1 (`references/research-peer.md`): the install record, then
-the cache, then this marketplace's own checkout only, never the checkout under research, so
-the scanner is always the installed copy's. Without it, `deep-investigation` asks Step 1 as
+the cache, never a path in the working checkout (this kit's own included), so the scanner is
+always the installed copy's. Without it, `deep-investigation` asks Step 1 as
 a plain list, writes its strategy doc and stops before the first lane, saying so with the
 install line once, and resumes from the strategy doc once the plugin is installed.
 `foundation` runs its `research` skill for a fact a phase rests on, and without it looks the
@@ -465,7 +465,7 @@ research skills checkpoint before synthesis when its checkpoint skill is in the 
 Soft dependency on `dev-flow`: `chain-of-verification`'s checks run on its `scout` agent,
 and on `general-purpose` without it; the deep lane steps down to `research-lane` on opus
 below the quota reserve read from its `librarian-mode` quota sense (found by the install
-record, then the cache, then this marketplace's own checkout only), and without it reads as
+record, then the cache, never the working checkout), and without it reads as
 not below; destination rule 4 lands a run in an `investigate` series when one is in play,
 keyed on the series directory on disk, so it holds without the plugin.
 
