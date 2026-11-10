@@ -11,8 +11,10 @@ the two lane files share one body and one tool set. Every worker is named in CLA
 README.md and both manifests of the plugin that ships it, and that plugin's description is
 identical in the two manifests.
 
-This file travels with the research family; dev-flow's `tests/test_agents.py` holds the role
-workers, and dev-flow's `tests/test_research_parity.py` holds `scout`'s row to dev-flow's
+The workers ship in the research plugin, so every agent type the plugin names is
+`research:<worker>`: no `dev-flow:research-…` string is left in its files (dev-flow's
+`scout` keeps its own prefix). dev-flow's `tests/test_agents.py` holds the role workers, and
+dev-flow's `tests/test_research_parity.py` holds `scout`'s row to dev-flow's
 `agents/scout.md`. The frontmatter reader is a copy of test_agents.py's: test helpers are not
 shared across plugins.
 
@@ -169,8 +171,7 @@ def named(name, text):
 
 
 def worker_files():
-    """{stem: path} for the research workers on disk (the role workers beside them in
-    dev-flow, while the family ships there, are test_agents.py's)."""
+    """{stem: path} for the research workers on disk."""
     return {p.stem: p for p in sorted(AGENTS.glob("research-*.md"))}
 
 
@@ -353,6 +354,30 @@ class TestResearchProfiles(unittest.TestCase):
                 "| `scout` | sonnet / low | y |\n")
         self.assertEqual(profile_rows(text), {"research-lane": "sonnet / medium"})
         self.assertIsNone(profile_rows("## Other\n"))
+
+
+class TestPrefix(unittest.TestCase):
+    """The workers moved from dev-flow to this plugin (f4ef F3): every dispatch names them
+    under this plugin's prefix."""
+
+    OLD = "dev-flow:research-"
+
+    def test_no_old_prefix_left(self):
+        bad = []
+        for p in sorted(PLUGIN.rglob("*")):
+            rel = p.relative_to(PLUGIN)
+            if p.is_file() and "tests" not in rel.parts and "__pycache__" not in rel.parts \
+                    and p.suffix in (".md", ".py", ".json", ".sh"):
+                for n, line in enumerate(p.read_text(encoding="utf-8").splitlines(), 1):
+                    if self.OLD in line:
+                        bad.append(f"{rel}:{n}")
+        self.assertEqual(bad, [])
+
+    def test_dispatches_name_this_plugin(self):
+        body = ROUTING.read_text(encoding="utf-8")
+        self.assertIn('`subagent_type: "research:<agent>"`', body)
+        run_record = (ROUTING.parent / "run-record.md").read_text(encoding="utf-8")
+        self.assertIn('`subagent_type: "research:research-lane"`', run_record)
 
 
 class TestLaneVariants(unittest.TestCase):

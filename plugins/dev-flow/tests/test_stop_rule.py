@@ -8,9 +8,10 @@ holds the home to the parts the rule needs: the recorded-PID route, the task-id 
 through the harness's background-task stop, and no process found by name, pattern or
 listing.
 
-The research family's three agent bodies carry it too. tests/test_research_stop_rule.py
-holds them to one another (it travels with the family), and tests/test_research_parity.py
-holds the family's home to this one and checks that the home paragraph names them.
+The research plugin's three agent bodies carry it too. That plugin's
+tests/test_research_stop_rule.py holds them to one another, and this plugin's
+tests/test_research_parity.py holds their home to this one and checks that the home
+paragraph names them. No copy is left in this plugin: test_no_unlisted_copy fails on one.
 
 Standard library only. Run from plugins/dev-flow:
 
@@ -26,10 +27,6 @@ HOME = REFS / "agent-brief.md"
 COPIES = [
     REFS / "review-brief.md",
 ]
-# The research family's copies: held by test_research_stop_rule.py and
-# test_research_parity.py, and gone from this plugin once the family moves out.
-RESEARCH_COPIES = {PLUGIN / "agents" / f"{n}.md"
-                   for n in ("research-lane", "research-lane-deep", "research-verifier")}
 START = "Never send a signal"
 
 
@@ -73,8 +70,7 @@ class StopRule(unittest.TestCase):
             self.assertIn(name, text)
 
     def test_no_unlisted_copy(self):
-        listed = {HOME.resolve(), *(p.resolve() for p in COPIES),
-                  *(p.resolve() for p in RESEARCH_COPIES)}
+        listed = {HOME.resolve(), *(p.resolve() for p in COPIES)}
         bullet = re.compile(r"^(\s*)(- |\d+\. )" + re.escape(START), re.M)
         for path in PLUGIN.rglob("*.md"):
             if bullet.search(path.read_text(encoding="utf-8")):

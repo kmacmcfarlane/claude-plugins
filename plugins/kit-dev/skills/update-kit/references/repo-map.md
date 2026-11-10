@@ -86,15 +86,16 @@ claude-plugins/
     │       └── usage-report/scripts/ (usage_report.py + item_spend.py + prices.json: token-spend accounting, and one item's spend by agent id)
     ├── create-repo/           (start a new repo for a thread of work, with a session launched on it)
     │   └── skills/create-repo/ (references/launch-command.md)
-    ├── dev-flow/              (plan before you code; research into findings or a knowledge base; the librarian that takes custody of a repo)
-    │   ├── agents/            (scribe, scout, implementer, implementer-critical, implementer-deep, planner, planner-deep, reviewer, reviewer-light, cross-checker, cross-checker-deep — the dev cycle's role workers; research-lane, research-lane-deep, research-verifier — the research family's workers)
+    ├── dev-flow/              (plan before you code; deep research fan-outs; the librarian that takes custody of a repo)
+    │   ├── agents/            (scribe, scout, implementer, implementer-critical, implementer-deep, planner, planner-deep, reviewer, reviewer-light, cross-checker, cross-checker-deep — the dev cycle's role workers)
     │   ├── skills/
-    │   │   ├── {investigate,implement,dev-cycle,foundation,deep-investigation,research,research-deep,research-refine,research-prune,chain-of-verification,librarian-mode}/
-    │   │   ├── research/scripts/ (tool-preflight.sh, scan-findings.py: the scan floor under the verifier, check-sheet.py: the verifier's sheet against its own table + tests)
+    │   │   ├── {investigate,implement,dev-cycle,foundation,deep-investigation,librarian-mode}/
+    │   │   ├── deep-investigation/references/research-peer.md (finding the research plugin: install record, cache, this marketplace's own checkout)
     │   │   └── librarian-mode/scripts/ (quota_budget.py: the librarian's quota sense + tests)
-    │   └── tests/             (test_agents.py: every agent file's model and effort pin;
+    │   └── tests/             (test_agents.py: every role agent file's model and effort pin;
     │                           test_deep_investigation.py: deep-investigation's security parity;
-    │                           test_research_verifier.py: the verifier's procedure rules against check-sheet.py;
+    │                           test_research_peer.py: the research-plugin lookup, run;
+    │                           test_research_parity.py: dev-flow's pointers into the research plugin, skipped without it;
     │                           test_stop_rule.py: the stop rule's copies against its home in the agent brief)
     ├── kit-dev/               (maintaining this kit itself — where THIS skill lives)
     │   ├── skills/{create-skill,update-kit,new-project-from-template,factor-analysis}/
@@ -108,6 +109,14 @@ claude-plugins/
     │   └── skills/claim-md/   (the claim's format and the read-only claim check + tests)
     ├── ralph/                 (unattended agent loops over a backlog)
     │   └── skills/{backlog-yaml,backlog-entry,backlog-grooming}/
+    ├── research/              (research into sourced, verified findings or a knowledge base; chain-of-verification)
+    │   ├── agents/            (research-lane, research-lane-deep, research-verifier — the research family's workers)
+    │   ├── skills/
+    │   │   ├── {research,research-deep,research-refine,research-prune,chain-of-verification}/
+    │   │   └── research/scripts/ (tool-preflight.sh, scan-findings.py: the scan floor under the verifier, check-sheet.py: the verifier's sheet against its own table + tests)
+    │   └── tests/             (test_research_agents.py: the workers' pins and profiles;
+    │                           test_research_verifier.py: the verifier's procedure rules against check-sheet.py;
+    │                           test_research_stop_rule.py, test_research_asks.py, test_quota_lookup.py)
     ├── sandbox/               (isolated execution: claude-sandbox + checkout/worktree convention — a hook-owning plugin)
     │   ├── hooks/             (checkout guard + hooks.json + tests)
     │   └── skills/sandbox/

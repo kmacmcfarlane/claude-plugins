@@ -1,15 +1,16 @@
 """Pin test for dev-flow's role agent files.
 
 Every file in plugins/dev-flow/agents/ must be a row of EXPECTED and carry exactly that
-row's model and effort pin, except the research family's three workers (RESEARCH_WORKERS),
-which tests/test_research_agents.py holds and which leave with the family. The per-model
+row's model and effort pin; the research family's three workers left for the research
+plugin, whose tests/test_research_agents.py holds them, so a file of theirs left here fails
+as a file with no row. The per-model
 and per-effort rules hold on the table and on disk. The frontmatter must parse the way the
 harness needs it to: a plugin agent whose YAML does not parse still loads, with every field
 ignored (so no pin), and the error goes only to the debug log. Every role agent is named in
 CLAUDE.md, README.md and both manifests, and the dev-flow description is identical in the
 two manifests. Every role file is a row of dev-cycle's model-routing.md § Profiles, which
 its description points at, and the row carries the file's own pin. scout's row in the
-research skill's § Profiles, and the tools chain-of-verification's checks need, are held by
+research plugin's § Profiles, and the tools chain-of-verification's checks need, are held by
 tests/test_research_parity.py.
 
 Standard library only. Run from plugins/dev-flow:
@@ -25,10 +26,6 @@ PLUGIN = Path(__file__).resolve().parent.parent
 REPO = PLUGIN.parent.parent
 AGENTS = PLUGIN / "agents"
 ROUTING = PLUGIN / "skills" / "dev-cycle" / "references" / "model-routing.md"
-
-# The research family's workers: held by tests/test_research_agents.py (pins, profiles, lane
-# variants, docs), which travels with the family. Excluded here, never pinned twice.
-RESEARCH_WORKERS = frozenset({"research-lane", "research-lane-deep", "research-verifier"})
 
 # The keys a role file carries, and nothing else. `tools` stays out (every tool) until the
 # tool-limits change edits this table.
@@ -68,7 +65,7 @@ EXPECTED = {
 }
 
 # (rule, predicate on (model, effort), the only agents that may satisfy it).
-# test_research_agents.py holds the same rules for the research workers; the sets are
+# The research plugin's test_research_agents.py holds the same rules for its workers; the sets are
 # disjoint, so together they are the whole marketplace's rule per pin.
 RULES = [
     ("effort low", lambda m, e: e == "low", {"scribe"}),
@@ -188,8 +185,8 @@ def named(name, text):
 
 
 def agent_files():
-    """{stem: path} for every agent file on disk but the research workers."""
-    return {p.stem: p for p in sorted(AGENTS.glob("*.md")) if p.stem not in RESEARCH_WORKERS}
+    """{stem: path} for every agent file on disk."""
+    return {p.stem: p for p in sorted(AGENTS.glob("*.md"))}
 
 
 def pins():
@@ -287,10 +284,6 @@ class TestAgentFiles(unittest.TestCase):
 
     def test_every_file_on_disk_is_in_the_table(self):
         self.assertEqual(set(self.files) - set(EXPECTED), set())
-
-    def test_research_workers_are_not_role_rows(self):
-        # They are test_research_agents.py's; a role row of the same name would pin it twice.
-        self.assertEqual(RESEARCH_WORKERS & set(EXPECTED), set())
 
     def test_frontmatter_parses(self):
         for stem, path in self.files.items():

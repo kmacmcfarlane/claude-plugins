@@ -1,0 +1,10 @@
+{
+  "name": "research",
+  "description": "Research a subject into sourced, verified findings and fact-checked answers — an intensity with its cost stated, research lanes on a cheaper model, a verifier that is not the author, one synthesis, chain-of-verification for a single answer, landed as a reply, a report, a run record or a curated knowledge base (agents research-lane, research-lane-deep, research-verifier, routed by the research skill's own profiles) (soft dependencies: work-items, whose wi the research skills and chain-of-verification find in the repo's tree or the installed plugin and record their dispatches on a work item with, keeping the lines in the run's brief or report without a store or without wi; statusline-hub (installing statusline brings it), whose sensor record gives the research skills' quota, the five-hour and weekly usage that sizes a run, without which they ask; operator-interaction, whose decisions skill the research skills follow to put their intensity, round and other asks to the operator, as text, without which each ask is a plain lettered list; context-guard, for checkpoint, which the research skills run before synthesis when it is in the session; dev-flow, whose scout agent chain-of-verification's checks run on (general-purpose without it), whose librarian-mode quota sense steps the deep lane down below the quota reserve (not below, without it), and whose investigate series is destination rule 4, keyed on the series directory on disk, so it holds without the plugin).",
+  "author": {
+    "name": "Kyle McFarlane"
+  },
+  "homepage": "https://github.com/kmacmcfarlane/claude-plugins",
+  "repository": "https://github.com/kmacmcfarlane/claude-plugins",
+  "license": "GPL-3.0-only"
+}

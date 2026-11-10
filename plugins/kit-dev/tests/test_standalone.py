@@ -73,7 +73,7 @@ class EachPluginAlone(unittest.TestCase):
         # A plugin that ships hooks or scripts with tests must be found here; guard the finder.
         names = {p.name for p in plugins() if suites(p)}
         for expected in ("context-guard", "statusline", "statusline-hub", "sandbox",
-                         "work-items", "dev-flow", "operator-interaction", "kit-dev"):
+                         "work-items", "dev-flow", "research", "operator-interaction", "kit-dev"):
             self.assertIn(expected, names)
 
     def test_each_suite_passes_with_no_other_plugin_present(self):

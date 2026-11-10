@@ -8,9 +8,8 @@ marker aside), it names the parts the rule needs (the recorded-PID route, the ta
 through the harness's background-task stop, and no process found by name, pattern or
 listing), and no other family file carries a copy.
 
-The rule's home across the marketplace is dev-cycle's agent-brief.md; dev-flow's
-tests/test_research_parity.py holds this family's home to it while both are present. This
-file travels with the family.
+The rule's home across the marketplace is dev-flow's dev-cycle agent-brief.md; dev-flow's
+tests/test_research_parity.py holds this plugin's home to it while both are present.
 
 Standard library only. Run from the plugin dir:
 

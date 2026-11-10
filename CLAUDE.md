@@ -133,13 +133,13 @@ plugins/
   create-repo/         # Start a new repo for a thread of work, with a session launched on it
     skills/
       create-repo/     # references/{launch-command,gitignore}.md
-  dev-flow/            # Plan before you code; research into findings or a knowledge base; the librarian that takes custody of a repo
-    agents/            # scribe, scout, implementer, implementer-critical, implementer-deep, planner, planner-deep, reviewer, reviewer-light, cross-checker, cross-checker-deep (the dev cycle's role workers); research-lane, research-lane-deep, research-verifier (the research family's workers)
+  dev-flow/            # Plan before you code; deep research fan-outs; the librarian that takes custody of a repo
+    agents/            # scribe, scout, implementer, implementer-critical, implementer-deep, planner, planner-deep, reviewer, reviewer-light, cross-checker, cross-checker-deep (the dev cycle's role workers)
     skills/
-      {investigate,implement,dev-cycle,foundation,deep-investigation,research,research-deep,research-refine,research-prune,chain-of-verification,librarian-mode}/
-      research/scripts/  # tool-preflight.sh (Step 5.1 tool check), scan-findings.py (the scan floor under the verifier), check-sheet.py (the verifier's sheet against its own table) + unit tests
+      {investigate,implement,dev-cycle,foundation,deep-investigation,librarian-mode}/
+      deep-investigation/references/research-peer.md  # finding the research plugin (install record, cache, this marketplace's own checkout) and the run without it
       librarian-mode/scripts/  # quota_budget.py (the librarian's quota sense) + unit tests
-    tests/             # test_agents.py: every role agent file's model and effort pin, and its frontmatter shape; test_research_agents.py: the research workers' pins, frontmatter, § Profiles rows, lane variants and docs (moves with the family); test_deep_investigation.py: deep-investigation's research-family security parity and its no-dialog rule; test_research_asks.py: the research family's asks as text, the owner section, its pointers, the ledger kinds and the manifest edge (moves with the family); test_research_parity.py: dev-flow's homes and pointers held to the research family wherever it sits (the stop rule's home, the store lookup copy, scout's pin and tools, every § anchor into the research skill, deep-investigation's ask pointer and sheet check), skipped when the family is absent; test_frontmatter_parity.py: the review checklist's frontmatter key copy against kit-dev's house rule; test_decision_tags.py: the librarian's two-word decision tags, their order, the retired spellings and no residue of them; test_impact_line.py: the librarian's stored impact: line, its Effect across the options, and the ⚠ undo: marker stored only on a one-way or costly option, and the tag size and Groom row showing the recommended option's effect, its letter first; test_headline_label.py: a decision raised from one labelled item stores its label and short name first in the headline; test_stop_rule.py: the stop rule's copy in the review brief against its home in the agent brief; test_research_stop_rule.py: the research agents' three copies against `research-lane.md`, the family's home (moves with the family); test_research_verifier.py: the verifier's procedure rules, its sheet template against check-sheet.py, and the research skill's run of the check (moves with the family); test_store_records.py: the librarian's store on card records: the raise and revise commands, machine lines with no new record, the record checker and its disclosure, the headline-only fallback, the reader rule, the missing-file and older-wi rules, the never-upgraded cases; test_answer_lines.py: the librarian's answer lines hold final answers only, a reframe's two lines, and a page publish's counted `shown` lines; test_group_depends.py: the librarian's group and depends lines (who writes them, at raise, reframe, rename and regroup, the id never shown), lazy back-fill in its own store only, the `writer-run:` line, the answer page's writers (layer and dep from the store, refs and open targets, the records stored with `$WI raise`) and the counter's group-id sentence; test_counter_text.py: the librarian's decision numbers from `$WI raise` and `$WI counter`, never a grep or a hand-numbered line (Rehydrate's line, report.md § The counter, decisions.md, Intake step 3, the foundation item's gate decisions), and the older-wi fallback in each
+    tests/             # test_agents.py: every role agent file's model and effort pin, and its frontmatter shape; test_deep_investigation.py: deep-investigation's research-family security parity, its no-dialog rule, Step 1's research-plugin lookup, Step 4's stop without it and no `dev-flow:research-` agent type left; test_research_peer.py: deep-investigation's research-plugin lookup, run (install record, cache, this marketplace's checkout only, a planted plugin never chosen, an incomplete root passed over); test_research_parity.py: dev-flow's homes and pointers held to the research family wherever it sits (the stop rule's home, the store lookup copy, scout's pin and tools, every § anchor into the research skill, deep-investigation's ask pointer and sheet check, the files its lookup needs and its fallback lane model), skipped when the family is absent; test_frontmatter_parity.py: the review checklist's frontmatter key copy against kit-dev's house rule; test_decision_tags.py: the librarian's two-word decision tags, their order, the retired spellings and no residue of them; test_impact_line.py: the librarian's stored impact: line, its Effect across the options, and the ⚠ undo: marker stored only on a one-way or costly option, and the tag size and Groom row showing the recommended option's effect, its letter first; test_headline_label.py: a decision raised from one labelled item stores its label and short name first in the headline; test_stop_rule.py: the stop rule's copy in the review brief against its home in the agent brief, and no other copy left in dev-flow; test_store_records.py: the librarian's store on card records: the raise and revise commands, machine lines with no new record, the record checker and its disclosure, the headline-only fallback, the reader rule, the missing-file and older-wi rules, the never-upgraded cases; test_answer_lines.py: the librarian's answer lines hold final answers only, a reframe's two lines, and a page publish's counted `shown` lines; test_group_depends.py: the librarian's group and depends lines (who writes them, at raise, reframe, rename and regroup, the id never shown), lazy back-fill in its own store only, the `writer-run:` line, the answer page's writers (layer and dep from the store, refs and open targets, the records stored with `$WI raise`) and the counter's group-id sentence; test_counter_text.py: the librarian's decision numbers from `$WI raise` and `$WI counter`, never a grep or a hand-numbered line (Rehydrate's line, report.md § The counter, decisions.md, Intake step 3, the foundation item's gate decisions), and the older-wi fallback in each
   kit-dev/             # Maintaining this kit itself
     skills/
       {create-skill,update-kit,new-project-from-template,factor-analysis}/
@@ -157,6 +157,12 @@ plugins/
   ralph/               # Unattended agent loops over a backlog
     skills/
       {backlog-yaml,backlog-entry,backlog-grooming}/
+  research/            # Research into sourced, verified findings or a knowledge base; chain-of-verification
+    agents/            # research-lane, research-lane-deep, research-verifier (the research family's workers)
+    skills/
+      {research,research-deep,research-refine,research-prune,chain-of-verification}/
+      research/scripts/  # tool-preflight.sh (Step 5.1 tool check), scan-findings.py (the scan floor under the verifier), check-sheet.py (the verifier's sheet against its own table) + unit tests
+    tests/             # test_research_agents.py: the research workers' pins, frontmatter, § Profiles rows, lane variants, docs and no `dev-flow:research-` agent type left; test_research_asks.py: the family's asks as text, the owner section, its pointers, the ledger kinds and the manifest edge; test_research_stop_rule.py: the three agents' stop-rule copies against `research-lane.md`, the family's home; test_research_verifier.py: the verifier's procedure rules, its sheet template against check-sheet.py, and the research skill's run of the check; test_quota_lookup.py: the quota-sense lookup, run (install record, cache, this marketplace's checkout only, a planted plugin never chosen)
   sandbox/             # Isolated execution: claude-sandbox + the checkout/worktree convention (hook-owning)
     hooks/             # Checkout guard + hooks.json + unit tests
     skills/
@@ -189,22 +195,22 @@ optional `references/`, `scripts/`, `assets/`.
   Agent `.md` files define role, tools, model and effort. Task-specific context is injected via
   the Agent prompt, not baked into the definition. One role per file and one effort per file: a
   role that needs a second effort gets a second file, and the per-call `model` moves a file
-  across models. `dev-flow` ships fourteen:
-  - eleven role workers for the dev cycle — `scribe`, `scout`, `implementer`,
-    `implementer-critical`, `implementer-deep`, `planner`, `planner-deep`, `reviewer`,
-    `reviewer-light`, `cross-checker`, `cross-checker-deep` — whose frontmatter is `name`,
-    `description`, `model` and `effort` only (`tools` left out: every tool);
-  - `research-lane`, `research-lane-deep` (the same lane at a second effort) and
-    `research-verifier`, the workers of the `research` skill family, routed by the
+  across models. Two plugins ship agents:
+  - `dev-flow` ships eleven role workers for the dev cycle — `scribe`, `scout`,
+    `implementer`, `implementer-critical`, `implementer-deep`, `planner`, `planner-deep`,
+    `reviewer`, `reviewer-light`, `cross-checker`, `cross-checker-deep` — whose frontmatter
+    is `name`, `description`, `model` and `effort` only (`tools` left out: every tool);
+  - `research` ships three: `research-lane`, `research-lane-deep` (the same lane at a second
+    effort) and `research-verifier`, the workers of its skill family, routed by its
     `research` skill's `references/intensity-and-routing.md` § Profiles.
 
-  Bodies come in three classes: minimal (the role only; the prompt is the brief) on ten of the
-  eleven; a short read-only evidence contract on `scout`; and the research trio's full contract
-  (file shape, evidence and security rules), in the body so every lane loads it by
-  construction. `plugins/dev-flow/tests/test_agents.py` keeps every role file's model and
-  effort pin in step with its table, and `tests/test_research_agents.py` the research
-  trio's. (The three agents that served the deprecated plan-execution skill were retired at
-  Phase 3.)
+  Bodies come in three classes: minimal (the role only; the prompt is the brief) on ten of
+  dev-flow's eleven; a short read-only evidence contract on `scout`; and the research trio's
+  full contract (file shape, evidence and security rules), in the body so every lane loads it
+  by construction. `plugins/dev-flow/tests/test_agents.py` keeps every role file's model and
+  effort pin in step with its table, and `plugins/research/tests/test_research_agents.py` the
+  research trio's. (The three agents that served the deprecated plan-execution skill were
+  retired at Phase 3.)
 - **Hook location**: `plugins/<plugin>/hooks/<name>.py` — registered in that plugin's
   `plugins/<plugin>/hooks/hooks.json`, which lists each hook under its event (`PreToolUse`,
   `UserPromptSubmit`, `SessionStart`, `Stop`, …) with a `matcher` and a `command` that names
@@ -319,7 +325,8 @@ current home is the real home, and is where files go.
 | Survive the finite context window (gate, checkpoint, rehydration, token-spend report) | `plugins/context-guard/` | `plugins/context-guard/` — **landed** (Phase 1) |
 | Always-on status line (context left, plan usage, model, session name) | `plugins/statusline/` | `plugins/statusline/` — **landed** (3c48) |
 | The status-line slot, shared (the owner-mode dispatcher and its hook registry; the embed-mode tee) | `plugins/statusline-hub/` | `plugins/statusline-hub/` — **landed** (F1, bfe2; owner mode F2, b28f) |
-| Plan-before-code development flow, research that lands as sourced findings or a curated knowledge base, and a standing librarian that takes custody of a repo's work | `plugins/dev-flow/` | `plugins/dev-flow/` — **landed** (Phase 3) |
+| Plan-before-code development flow, deep research fan-outs that feed an investigation series, and a standing librarian that takes custody of a repo's work | `plugins/dev-flow/` | `plugins/dev-flow/` — **landed** (Phase 3) |
+| Research into sourced, verified findings, fact-checked answers and a curated knowledge base | `plugins/research/` | `plugins/research/` — **landed** (f4ef) |
 | Repo-durable work items / work-source interface | `plugins/work-items/` | `plugins/work-items/` — **landed** (Phase 4) |
 | Isolated execution (containers; the checkout/worktree convention and its guard) | `plugins/sandbox/` | `plugins/sandbox/` — **landed** (Phase 5) |
 | Unattended agent loops over a backlog ("ralph") | `plugins/ralph/` | `plugins/ralph/` — **landed** (Phase 5) |
@@ -345,8 +352,9 @@ Checks:
 - (cd plugins/context-guard/skills/usage-report && python3 -m unittest discover -s tests -q)
 - (cd plugins/statusline-hub/hooks && python3 -m unittest discover -s tests -q)
 - (cd plugins/dev-flow/skills/librarian-mode/scripts && python3 -m unittest discover -s tests -q)
-- (cd plugins/dev-flow/skills/research/scripts && python3 -m unittest discover -s tests -q)
+- (cd plugins/research/skills/research/scripts && python3 -m unittest discover -s tests -q)
 - (cd plugins/dev-flow && python3 -m unittest discover -s tests -q)
+- (cd plugins/research && python3 -m unittest discover -s tests -q)
 - (cd plugins/operator-interaction && python3 -m unittest discover -s tests -q)
 - (cd plugins/ownership/skills/claim-md/scripts && python3 -m unittest discover -s tests -q)
 - (cd plugins/kit-dev && python3 -m unittest discover -s tests -q)

@@ -83,10 +83,11 @@ dependency is marked (hard) here.
 |---|---|---|---|
 | …project context for the `ai-scripts` Python CLI utilities | `ai-scripts` | **moved** to the expertise marketplace (local scaffold, remote pending) | — |
 | …structured product research in a web chat session | `chat` | current; *family home under review* | — |
-| …to survive the finite context window (gate, checkpoint, rehydration, token-spend report) | `context-guard` | **current** | `statusline-hub` (soft; exact depth from the sensor record it writes, when it owns the status-line slot or tees from another renderer, and the weekly reading `usage-report`'s item mode shows a share of the week from; installing `statusline` brings it), `work-items` (soft; the checkpoint fills `items:` and writes open-item residue with `wi`, from the repo tree or the installed plugin's copy, when a store exists; with none, both are skipped; with a store and no `wi`, the residue stays in the manifest and its `Next` says the items were not updated; rehydration names `wi prime` only when a store exists), `dev-flow` (soft; `usage-report`'s item mode sums the spend of the agent ids and phase budgets `dev-cycle` and the research skills record on a work item (its `agent:`, `budget:` and `cost:` lines); without it an item carries none, and the item mode has no spend to report) |
+| …to survive the finite context window (gate, checkpoint, rehydration, token-spend report) | `context-guard` | **current** | `statusline-hub` (soft; exact depth from the sensor record it writes, when it owns the status-line slot or tees from another renderer, and the weekly reading `usage-report`'s item mode shows a share of the week from; installing `statusline` brings it), `work-items` (soft; the checkpoint fills `items:` and writes open-item residue with `wi`, from the repo tree or the installed plugin's copy, when a store exists; with none, both are skipped; with a store and no `wi`, the residue stays in the manifest and its `Next` says the items were not updated; rehydration names `wi prime` only when a store exists), `dev-flow` (soft; `usage-report`'s item mode sums the spend of the agent ids and phase budgets `dev-cycle` records on a work item (its `agent:`, `budget:` and `cost:` lines); without it an item carries none, and the item mode has no spend to report), `research` (soft; `usage-report`'s item mode sums the spend of the agent ids its research skills, `chain-of-verification` and `deep-investigation`'s lanes record on a work item (their `agent:` lines, bucketed as research); without it an item carries none of those) |
 | …an always-on status line (context left — the session's and each sub-agent's, in the agent panel — plan usage, model, session name) | `statusline` | **current** | `statusline-hub` (hard; the hub owns the status-line slot, and the footer draws as one of its display hooks), `context-guard` (soft; epoch and checkpoint thresholds in the gauge when installed) |
 | …to share the status-line slot, so the data Claude Code hands the status line reaches the tools that read it whatever renders the line (the hub owns the slot and runs the hooks other plugins register, or its `tee` feeds the record from another renderer) | `statusline-hub` | **current** | `statusline` (soft; its footer is the hub's first display hook, and the hub takes over a slot an earlier `statusline` version installed once that footer has registered), `context-guard` (soft; a `statusLine` entry still naming the status-line copy `context-guard` once shipped, in its data dir, counts as an older footer entry: the hub takes its slot once that copy draws nothing, and while it still draws says once that installing `statusline` lets the hub take over) |
-| …a plan before you code: investigate → reviewed plan → verified implementation, a foundation session for a new project (requirements, architecture and a phased plan behind review gates), research that lands as sourced findings or a curated knowledge base, and a standing librarian that takes custody of a repo's work (files, dispatches, reviews, lands) | `dev-flow` | **current** | `work-items` (soft; `librarian-mode`, `dev-cycle`, `investigate`, `implement`, `foundation` and the research skills find `wi` by the same lookup, via the repo tree, or the installed plugin's copy; `investigate` and `implement` show, claim and close an item with it, and without it say the item was not updated; `librarian-mode` stops at start without it, naming the install command; `dev-cycle` runs without it on a scratchpad record; `foundation` keeps its run, holds and filed features on one, and without a store, or without `wi`, keeps them in the series and lists the features to file; research, `deep-investigation` and `chain-of-verification` runs record their dispatches on a work item, and without a store in their brief, strategy doc or report), `statusline-hub` (soft; when a `model: fable` pin cannot run, `librarian-mode` and `dev-cycle` name the rate-limit reset time in the question to the operator, `librarian-mode`'s quota sense reads its five-hour and weekly usage, `dev-cycle`'s guard on a round past the fourth review reads the same weekly usage through the quota sense (without a reading those rounds are asked), and the `research` skills read its usage windows to size a run, from the sensor record it writes; without it the quota sense has a reading only from a live `claude-analytics` sink, and otherwise reports no signal; installing `statusline` brings it), `claude-analytics` (external, soft; the quota sense reads its sampler's sink, `${CLAUDE_CONFIG_DIR}/claude-analytics/samples/`, as usage history when it is live, and samples the sensor record itself into `${CLAUDE_CONFIG_DIR}/claude-kit/librarian/` without it), `context-guard` (soft; `investigate` offers a checkpoint-then-implement path when its checkpoint skill is present; the `research` skills checkpoint before synthesis when it is; `librarian-mode` answers its gate advisories with a checkpoint and weighs its manifest and ledger when it rehydrates, and without it says so in each conversation's first summary (no checkpoint, no context gate) and keeps the store's handoffs current at each idle turn and landing; `dev-cycle` reads its `usage-report`'s item spend at every review to hold each phase to its spend budget; without it the fourth review is the cap, and the Report says so), `kit-dev` (soft; the `investigate` and `implement` retrospectives hand findings to its user-invoked `update-kit`; without it the findings stand as the record; `dev-cycle`'s briefs point a skill change's builder and reviewer at its `create-skill`, from the repo tree or the installed plugin, and without it say the authoring rules are the brief's, the repo's and the review checklist's own), `create-repo` (soft; `investigate`'s scoping gate and `foundation`'s Frame point the user at it when the target repo does not exist yet), `sandbox` (soft; `investigate` and `deep-investigation` point to its skill for container mounts, `investigate`'s series move follows its sidecar commit rule, and `investigate` and `implement` point to its worktree-mode section for worktree details; without it the steps stand as written), `operator-interaction` (soft; `librarian-mode` and `dev-cycle` put their decision-channel decisions to the operator per its `decisions` skill, the research skills put their intensity and round asks per its `decisions` skill, `foundation` puts its questions and gate decisions per its `decisions` skill, and `librarian-mode` and `dev-cycle` name items in their Reports per its `plain-names` skill, `librarian-mode` records the shown and seen times its `decision-page` skill hands over, and `librarian-mode` writes each card record to its `decisions` skill's card-record reference and runs its `decision-page` skill's checker on each record before storing it, when node is present, when it is installed (without the checker the record is stored after `wi`'s own checks and the Report says so); without it, the librarian's numbered `decisions needed:` list, dev-cycle's own channel and the research skills' plain lettered ask stand, and their templates' `<plain name> (<tag>)` stands as the naming rule), `ownership` (soft; `foundation` writes or proposes its phase-1 scope through its `claim-md` skill when the session lists it, and its architecture gate checks the contracts against the claim's `## Boundaries` and `## Interfaces`; without it, the claim is read and proposed in the series as a file, unchecked, and the result says so) |
+| …a plan before you code: investigate → reviewed plan → verified implementation, a foundation session for a new project (requirements, architecture and a phased plan behind review gates), and a standing librarian that takes custody of a repo's work (files, dispatches, reviews, lands) | `dev-flow` | **current** | `work-items` (soft; `librarian-mode`, `dev-cycle`, `investigate`, `implement`, `foundation` and `deep-investigation` find `wi` by the same lookup, via the repo tree, or the installed plugin's copy; `investigate` and `implement` show, claim and close an item with it, and without it say the item was not updated; `librarian-mode` stops at start without it, naming the install command; `dev-cycle` runs without it on a scratchpad record; `foundation` keeps its run, holds and filed features on one, and without a store, or without `wi`, keeps them in the series and lists the features to file; `deep-investigation` runs record their dispatches on a work item, and without a store in their strategy doc), `statusline-hub` (soft; when a `model: fable` pin cannot run, `librarian-mode` and `dev-cycle` name the rate-limit reset time in the question to the operator, `librarian-mode`'s quota sense reads its five-hour and weekly usage, `dev-cycle`'s guard on a round past the fourth review reads the same weekly usage through the quota sense (without a reading those rounds are asked), from the sensor record it writes; without it the quota sense has a reading only from a live `claude-analytics` sink, and otherwise reports no signal; installing `statusline` brings it), `claude-analytics` (external, soft; the quota sense reads its sampler's sink, `${CLAUDE_CONFIG_DIR}/claude-analytics/samples/`, as usage history when it is live, and samples the sensor record itself into `${CLAUDE_CONFIG_DIR}/claude-kit/librarian/` without it), `context-guard` (soft; `investigate` offers a checkpoint-then-implement path when its checkpoint skill is present; `librarian-mode` answers its gate advisories with a checkpoint and weighs its manifest and ledger when it rehydrates, and without it says so in each conversation's first summary (no checkpoint, no context gate) and keeps the store's handoffs current at each idle turn and landing; `dev-cycle` reads its `usage-report`'s item spend at every review to hold each phase to its spend budget; without it the fourth review is the cap, and the Report says so), `kit-dev` (soft; the `investigate` and `implement` retrospectives hand findings to its user-invoked `update-kit`; without it the findings stand as the record; `dev-cycle`'s briefs point a skill change's builder and reviewer at its `create-skill`, from the repo tree or the installed plugin, and without it say the authoring rules are the brief's, the repo's and the review checklist's own), `create-repo` (soft; `investigate`'s scoping gate and `foundation`'s Frame point the user at it when the target repo does not exist yet), `sandbox` (soft; `investigate` and `deep-investigation` point to its skill for container mounts, `investigate`'s series move follows its sidecar commit rule, and `investigate` and `implement` point to its worktree-mode section for worktree details; without it the steps stand as written), `operator-interaction` (soft; `librarian-mode` and `dev-cycle` put their decision-channel decisions to the operator per its `decisions` skill, `deep-investigation` puts its closed choices per its `decisions` skill through the research skill's ask section, `foundation` puts its questions and gate decisions per its `decisions` skill, and `librarian-mode` and `dev-cycle` name items in their Reports per its `plain-names` skill, `librarian-mode` records the shown and seen times its `decision-page` skill hands over, and `librarian-mode` writes each card record to its `decisions` skill's card-record reference and runs its `decision-page` skill's checker on each record before storing it, when node is present, when it is installed (without the checker the record is stored after `wi`'s own checks and the Report says so); without it, the librarian's numbered `decisions needed:` list, dev-cycle's own channel and `deep-investigation`'s plain lettered ask stand, and their templates' `<plain name> (<tag>)` stands as the naming rule), `ownership` (soft; `foundation` writes or proposes its phase-1 scope through its `claim-md` skill when the session lists it, and its architecture gate checks the contracts against the claim's `## Boundaries` and `## Interfaces`; without it, the claim is read and proposed in the series as a file, unchecked, and the result says so), `research` (soft; `deep-investigation` runs its lanes on its `research-lane` agent, verifies on its `research-verifier`, and applies its scan floor, sheet check and held-path rules, found by `deep-investigation`'s own lookup of the installed plugin; without it `deep-investigation` writes its strategy doc and stops before the first lane, says why with the install line, and resumes from the strategy doc once it is installed; `foundation` runs its `research` skill for a fact a phase rests on, and without it looks the fact up in-session and says research was not run; `dev-cycle`'s routing and resume name its routing and record lines) |
+| …research into sourced, verified findings and fact-checked answers: a stated intensity and cost, lanes on a cheaper model, a verifier that is not the author, one synthesis, landed as a reply, a report, a run record or a curated knowledge base | `research` | **current** | `work-items` (soft; the research skills and `chain-of-verification` find `wi` by the same lookup, via the repo tree or the installed plugin's copy, and record their dispatches on a work item they file or are named; without a store, or without `wi`, the lines go in the run's brief or report), `statusline-hub` (soft; the research skills read its five-hour and weekly usage from the sensor record it writes to size a run; without it they ask; installing `statusline` brings it), `operator-interaction` (soft; the research skills put their intensity, round and other asks per its `decisions` skill, as text, never a dialog; without it each ask is a plain lettered list), `context-guard` (soft; the research skills checkpoint before synthesis when its checkpoint skill is in the session), `dev-flow` (soft; `chain-of-verification`'s checks run on its `scout` agent, and on `general-purpose` without it; the deep lane steps down below the quota reserve read from its `librarian-mode` quota sense, found by the research skill's own lookup, and without it reads as not below; destination rule 4 lands a run in an `investigate` series, keyed on the series directory on disk, so it holds without the plugin) |
 | …repo-durable work items and a pluggable work source | `work-items` | **current** | `statusline-hub` (soft; `work-review` adds a quota line and weighs its advice by the five-hour and weekly usage in the sensor record it writes; without it the review says it has no quota reading), `operator-interaction` (soft; a decision `work-review` puts to the operator follows its `decisions` skill, and its overview names items per its `plain-names` skill, when loaded, and a stored decision's `card:` line names its `decisions` skill's card-record reference; without it, a numbered list, and the review's own plain-words rule, and `wi` writes and reads card records all the same, only the reference the line points to is absent) |
 | …isolated execution for agent sessions (containers, and the checkout/worktree convention) | `sandbox` | **current** | claude-sandbox repo (external) |
 | …unattended agent loops over a backlog ("ralph") | `ralph` | **current** | claude-sandbox repo (external; its `init-ralph` seeds `backlog.py`, and the loops run in its containers), `sandbox` (soft; its skill bootstraps and troubleshoots those containers), `work-items` (soft; the `wi` ↔ `backlog.yaml` bridge, `wi export/import --format backlog-yaml`, two explicit `wi` commands run on demand, with `wi` from the repo tree or the installed plugin's copy; without it neither runs, and `backlog-yaml` says so) |
@@ -205,6 +206,13 @@ Its second skill's name, `plain-names`, is **confirmed** by the operator (2026-0
 Its third skill's name, `decision-page`, is the operator's (2026-10-01, in place of
 decision-pyramid).
 
+`research` is **confirmed** by the operator (2026-10-29, decision 376 (a)), with every skill
+and agent name kept from dev-flow (`/research:research`, `/research:research-deep`,
+`/research:research-refine`, `/research:research-prune`,
+`/research:chain-of-verification`; agents `research:research-lane`,
+`research:research-lane-deep`, `research:research-verifier`). It ships no state: no data
+dir, no settings path.
+
 `ownership` is **confirmed** by the operator (2026-10-09, decision 187), and so is its skill's
 name, `claim-md`. `CLAIM.md`, the file each repo writes, is the operator's term. The plugin
 ships no state: no data dir, no settings path.
@@ -259,9 +267,9 @@ or through `dev-cycle`, which takes one change from plan to merge through sub-ag
 routed implementer in its own worktree, a review gate with a capped fix loop, the repo's
 checks, a local merge on the user's say-so). For a new project or a large new aim,
 `foundation` comes first: requirements, architecture and a phased plan, each behind a review
-gate, whose features `dev-cycle` then builds. Plus the research and verification techniques
-that feed it — including a `research` family that turns any question into sourced, verified
-findings and, where a repo keeps one, a curated knowledge base — and a standing librarian that takes custody of a repo's work: it files every
+gate, whose features `dev-cycle` then builds. Plus `deep-investigation`, a multi-agent
+fan-out that feeds an investigation series (its lanes and verifier come from the `research`
+plugin), and a standing librarian that takes custody of a repo's work: it files every
 request, factors it, and dispatches each piece through `dev-cycle` with its own bindings
 (its Scope, checks and decision channel), then reports what landed.
 
@@ -272,11 +280,6 @@ request, factors it, and dispatches each piece through `dev-cycle` with its own 
 | `dev-cycle` | Carry one change — a work item, a plan, or the conversation — from plan to merge through sub-agents: route by model tier, build in a worktree, review with a capped fix loop, run the checks, land |
 | `foundation` | Lay a new project's or a large new aim's foundation before its first feature — requirements, architecture and a phased plan, each phase ending in a review gate, with named moves to reopen a phase, hold a question, factor an aspect out or probe ahead |
 | `deep-investigation` | Multi-agent research fan-out — strategy doc, lanes on a cheap model, one-pass synthesis |
-| `research` | Research a question into sourced, verified findings — intensity with its cost stated, lanes on a cheap model, a verifier that is not the author, one synthesis, landed as a reply, report, run record or knowledge-base note |
-| `research-deep` | The research skill at deep or exhaustive intensity — rounds, a gap gate, an adversarial lane, a forked synthesis |
-| `research-refine` | Extend or correct an existing research run — pull a thread, re-check a claim, change scope; a new run that supersedes the old |
-| `research-prune` | Curate a research knowledge base — fit check against its charter, propose and execute a rebalance, archive superseded notes, regenerate indexes |
-| `chain-of-verification` | CoVe fact-verification pipeline — baseline, verify, revise |
 | `librarian-mode` | Standing single-writer custodian of a repo's custody layer — a marketplace's shared agent layer, or whatever scope an operator opts a repo in with: file, factor, route by model tier, delegate to worktree agents, review, land, report |
 
 Which dev-flow skill:
@@ -286,22 +289,21 @@ Which dev-flow skill:
 | `investigate` | a scoped bug or feature needs a plan: one session reads the code, settles requirements with you, writes the series | the question is a broad landscape (`deep-investigation`) |
 | `foundation` | a new project, or a large new aim, has no requirements yet: requirements, architecture and a phased plan, each gated by a checklist, a fresh reviewer and your approval where it is yours | the work is a scoped bug or feature (`investigate`), or could be described in one sentence |
 | `deep-investigation` | a broad, open-ended question needs many sources: recon, a strategy doc, cheap-model lanes against a fixed contract, one synthesis | the problem is a scoped bug or feature (`investigate`) |
-| `research` | a question needs a sourced answer, kept or not: quick on its own, or lanes at a stated cost, verified and landed where the repo says | it is a bug or feature in this repo (`investigate`), or a fan-out writing a series' plan (`deep-investigation`) |
-| `research-deep` | the question is too broad for one round and the operator has said so | the question is narrow (`research`), or the fan-out feeds an investigation series (`deep-investigation`) |
-| `research-refine` | a prior run exists and a thread, claim or scope needs another pass | there is no prior run (`research`) |
-| `research-prune` | a knowledge base is strained: rebalance, archive, re-index | new research is wanted (`research`) |
 | `implement` | a finished investigation series is ready to build, hands-on in this session, fanning out to worktrees when the plan does | there is no plan yet (`investigate`), or you want the build delegated and reviewed (`dev-cycle`) |
 | `dev-cycle` | one change — item, series, plan or this conversation — should go to merge through a sub-agent build and a review gate | one session should own every change to the repo (`librarian-mode`) |
 | `librarian-mode` | one standing session should take custody of a repo's whole stream of work | the work is a one-off change (`dev-cycle`, or a worktree and a PR) |
-| `chain-of-verification` | a factual answer must be right: baseline, independent verification, revision | the prompt has no falsifiable factual content, or speed matters more than accuracy |
 
-The research family lives in `dev-flow` by operator decision (2026-09-22): its lanes, verifier
-and run record are the superset of `deep-investigation`'s, one plugin lets the two share
-references, and `deep-investigation` is planned to become a thin caller over `research`.
+The research family (`research`, `research-deep`, `research-refine`, `research-prune`,
+`chain-of-verification`) and its three agents moved to their own plugin, `research`, by
+operator decision 367 (a) (2026-10-29), superseding the 2026-09-22 decision that kept them
+here (their lanes, verifier and run record being the superset of `deep-investigation`'s, one
+plugin letting the two share references). That decision stays on record, superseded.
+`deep-investigation` stays in `dev-flow` and reaches the `research` plugin at run time
+(below); making it a thin caller over `research` is a separate change.
 
-The plugin ships fourteen agents, each pinned to one model and one effort: one role and one
+The plugin ships eleven agents, each pinned to one model and one effort: one role and one
 effort per file, so a role that needs a second effort has a second file, and the per-call
-model moves a file across models. Eleven are the dev cycle's role workers:
+model moves a file across models. All eleven are the dev cycle's role workers:
 
 | Agent | Pin (model, effort) | Role |
 |---|---|---|
@@ -326,26 +328,27 @@ first; one under a model pin alone falls back the same way, since the routed mod
 that pin. Their bodies are minimal, the role only, since the prompt is the brief; `scout` alone adds a short
 read-only evidence contract. The eleven names are **provisional** pending operator review.
 
-The other three serve the research family: `research-lane` (sonnet, effort medium — gathers
-evidence for one lane and writes one findings file to a fixed shape), `research-lane-deep`
-(opus, effort high — the same lane and body, for the adversarial lane of an exhaustive run)
-and `research-verifier` (sonnet, effort low — checks sampled claims against their sources and
-scores the run). Their contract lives in the agent body, so every dispatch loads it. The
-research skills, `deep-investigation` and `chain-of-verification` route by the `research`
-skill's own profiles (`references/intensity-and-routing.md`), shaped like dev-cycle's but a
-separate home, with the model passed on every call; `chain-of-verification`'s checks run on
-`scout`. Soft dependency
-on `statusline-hub` for the research skills: they read the usage windows from its sensor record
-(installing `statusline` brings the hub) to pick an intensity that fits; without it they ask.
+Soft dependency on `research`: `deep-investigation` runs its lanes on that plugin's
+`research-lane` agent and verifies on its `research-verifier`, routed by its `research`
+skill's profiles, and applies its scan floor, sheet check and held-path rules. It finds the
+plugin at the start of its Step 1 (`references/research-peer.md`): the install record, then
+the cache, then this marketplace's own checkout only, never the checkout under research, so
+the scanner is always the installed copy's. Without it, `deep-investigation` asks Step 1 as
+a plain list, writes its strategy doc and stops before the first lane, saying so with the
+install line once, and resumes from the strategy doc once the plugin is installed.
+`foundation` runs its `research` skill for a fact a phase rests on, and without it looks the
+fact up in-session and says research was not run. `dev-cycle`'s routing and resume name the
+research routing and record lines. The `research` plugin's `chain-of-verification`
+dispatches this plugin's `scout`.
 
 Soft dependency on `work-items`: the flow threads work items through `wi` when a store is
 present, and degrades to plain investigation series when it is not; `dev-cycle` then keeps
 its record in the session scratchpad. Every skill, `foundation` included, finds `wi` by the
 same lookup (the repo tree, else the installed plugin's copy); with a store but no `wi`,
-`investigate` and `implement` say the item was not updated. A research, `deep-investigation` or
-`chain-of-verification` run that dispatches an agent files a `spike` item tagged
-`research-run` (or adopts one named by `--item`) and records its dispatches on it; without a
-store, or inside a sub-agent, the lines go in the run's brief, strategy doc or report.
+`investigate` and `implement` say the item was not updated. A `deep-investigation` run that
+dispatches an agent files a `spike` item tagged `research-run` (or adopts one named by
+`--item`), by the `research` plugin's rules, and records its dispatches on it; without a
+store, or inside a sub-agent, the lines go in its strategy doc.
 A `foundation` run keeps one item for the run, its gate decisions and holds as `decision N:`
 lines, and files the plan's features under it after the plan gate; without a store, or
 without `wi`, it keeps them in the series (its Foundation block holds the holds) and the
@@ -367,8 +370,7 @@ usage history; without it the quota sense samples the sensor record itself into
 `${CLAUDE_CONFIG_DIR}/claude-kit/librarian/`, and with neither it reports no signal. Soft
 dependency on `context-guard`:
 `investigate` offers a checkpoint, `/clear`, then implement path when the checkpoint skill
-is in the session; the `research` skills checkpoint before synthesis when it is;
-`librarian-mode` answers the context gate's advisories with a
+is in the session; `librarian-mode` answers the context gate's advisories with a
 checkpoint and weighs its manifest and ledger when it rehydrates, and without it says so
 in each conversation's first summary (no checkpoint, no context gate) and keeps the
 store's handoffs current at each idle turn and landing; its `usage-report` skill reads
@@ -397,10 +399,9 @@ records the shown and seen times its `decision-page` skill hands over. Without i
 librarian keeps its numbered
 `decisions needed:` list, a standalone `dev-cycle` keeps its own channel
 (AskUserQuestion for one decision, a numbered list for several), and the templates'
-`<plain name> (<tag>)` stands as the naming rule. The research skills (`research`,
-`research-deep`, `research-refine`, `research-prune`, `deep-investigation`) load its
-`decisions` skill the same way and put their intensity, round and other asks per it, as
-text, never a dialog; without it, they put each ask as a plain lettered list in prose.
+`<plain name> (<tag>)` stands as the naming rule. `deep-investigation` loads its
+`decisions` skill the same way and puts its closed choices per it, through the `research`
+plugin's ask section, as text, never a dialog; without it, a plain lettered list in prose.
 `foundation` loads its `decisions` skill the same way for its question rounds and gate
 decisions; without it, a numbered list for questions and a plain lettered list for a gate.
 Soft dependency on `ownership`: `foundation` writes or proposes its phase-1 scope, the
@@ -409,6 +410,64 @@ draft, approved with the requirements gate and written by the first feature), an
 architecture gate checks the contracts against the claim's `## Boundaries` and
 `## Interfaces`; without it, the claim is read and proposed in the series as a file,
 unchecked, and the result says so.
+
+### research
+
+Research a subject into sourced, verified findings, or a single answer into a fact-checked
+one. A run picks an intensity whose cost is stated in numbers, fans research lanes out on a
+cheaper model when the question needs it, has a verifier that is not the author check
+sampled claims against their sources, synthesizes once, and lands the result where the repo
+says: a reply, a report file, a run record, or a note in a curated knowledge base.
+Fetched content is data throughout: a scan floor and the verifier stand between a lane's
+file and anything that reads it.
+
+| Skill | Description |
+|---|---|
+| `research` | Research a question into sourced, verified findings — intensity with its cost stated, lanes on a cheap model, a verifier that is not the author, one synthesis, landed as a reply, report, run record or knowledge-base note |
+| `research-deep` | The research skill at deep or exhaustive intensity — rounds, a gap gate, an adversarial lane, a forked synthesis |
+| `research-refine` | Extend or correct an existing research run — pull a thread, re-check a claim, change scope; a new run that supersedes the old |
+| `research-prune` | Curate a research knowledge base — fit check against its charter, propose and execute a rebalance, archive superseded notes, regenerate indexes |
+| `chain-of-verification` | CoVe fact-verification pipeline — baseline, verify, revise |
+
+Which research skill:
+
+| Skill | Use it when… | Not when… |
+|---|---|---|
+| `research` | a question needs a sourced answer, kept or not: quick on its own, or lanes at a stated cost, verified and landed where the repo says | it is a bug or feature in this repo (dev-flow's `investigate`), or a fan-out writing a series' plan (dev-flow's `deep-investigation`) |
+| `research-deep` | the question is too broad for one round and the operator has said so | the question is narrow (`research`), or the fan-out feeds an investigation series (`deep-investigation`) |
+| `research-refine` | a prior run exists and a thread, claim or scope needs another pass | there is no prior run (`research`) |
+| `research-prune` | a knowledge base is strained: rebalance, archive, re-index | new research is wanted (`research`) |
+| `chain-of-verification` | a factual answer must be right: baseline, independent verification, revision | the prompt has no falsifiable factual content, or speed matters more than accuracy |
+
+The plugin ships three agents, each pinned to one model and one effort: `research-lane`
+(sonnet, effort medium — gathers evidence for one lane and writes one findings file to a
+fixed shape), `research-lane-deep` (opus, effort high — the same lane and body, for the
+adversarial lane of an exhaustive run) and `research-verifier` (sonnet, effort low — checks
+sampled claims against their sources and scores the run). Their contract lives in the agent
+body, so every dispatch loads it. The research skills, `chain-of-verification` and dev-flow's
+`deep-investigation` route by the `research` skill's own profiles
+(`references/intensity-and-routing.md`), shaped like dev-flow's dev-cycle routing but a
+separate home, with the model passed on every call. A session that has not loaded an agent
+file yet falls back to `general-purpose` with the agent body pasted. The three names, and
+every skill name, kept their dev-flow names; only the prefix changed.
+
+Soft dependency on `work-items`: the research skills and `chain-of-verification` find `wi` by
+the same lookup (the repo tree, else the installed plugin's copy), and a run that dispatches
+an agent files a `spike` item tagged `research-run` (or adopts one named by `--item`) and
+records its dispatches on it; without a store, or inside a sub-agent, the lines go in the
+run's brief or report. Soft dependency on `statusline-hub`: the research skills read the
+five-hour and weekly usage from its sensor record (installing `statusline` brings the hub)
+to pick an intensity that fits; without it they ask. Soft dependency on
+`operator-interaction`: the research skills load its `decisions` skill when the session lists
+it and put their intensity, round and other asks per it, as text, never a dialog; without
+it, each ask is a plain lettered list in prose. Soft dependency on `context-guard`: the
+research skills checkpoint before synthesis when its checkpoint skill is in the session.
+Soft dependency on `dev-flow`: `chain-of-verification`'s checks run on its `scout` agent,
+and on `general-purpose` without it; the deep lane steps down to `research-lane` on opus
+below the quota reserve read from its `librarian-mode` quota sense (found by the install
+record, then the cache, then this marketplace's own checkout only), and without it reads as
+not below; destination rule 4 lands a run in an `investigate` series when one is in play,
+keyed on the series directory on disk, so it holds without the plugin.
 
 ### work-items
 
@@ -501,10 +560,12 @@ Rehydration reads the store's item files to name dead claims, and its stale-`Nex
 says to run `wi prime` only when a store exists.
 
 Soft dependency on `dev-flow`: `usage-report`'s item mode sums the spend of the agent ids
-and phase budgets `dev-cycle` and the research skills record on a work item (its
-`agent:`, `budget:` and `cost:` lines);
-without it an item carries none, and the item mode has no spend to report. The rest of
-`usage-report`, and the context system, run the same without it. The checkpoint's
+and phase budgets `dev-cycle` records on a work item (its `agent:`, `budget:` and `cost:`
+lines); without it an item carries none, and the item mode has no spend to report. Soft
+dependency on `research`: the item mode also sums the `agent:` lines its research skills,
+`chain-of-verification` and dev-flow's `deep-investigation` lanes record on a work item,
+bucketed as research; without it an item carries none of those. The rest of
+`usage-report`, and the context system, run the same without either. The checkpoint's
 references and tests name `dev-flow` skills only as examples of a manifest's resume
 command, and the ledger pointer counts a write under an `investigations/` path, dev-flow's
 series home, as a pointer.
@@ -870,6 +931,29 @@ It writes `~/.local/bin/wi`, which must be on your `PATH` (it says so when it is
 never edits a shell startup file). Remove it with `rm ~/.local/bin/wi`. It keeps working
 after plugin updates; after an uninstall it exits 127 with its install hint until removed.
 
+## Upgrading: research moved out of dev-flow
+
+The research skills and their agents left `dev-flow` for a plugin of their own, `research`
+(operator decision 367 (a), 2026-10-29). After a `dev-flow` update they are gone from the
+session until `research` is installed. Per machine, once:
+
+1. `/plugin marketplace update kmacmcfarlane`, so the new plugin is visible.
+2. `/plugin install research@kmacmcfarlane`.
+3. Restart the session.
+
+- **Invocations.** `/dev-flow:research` is now `/research:research`, and likewise
+  `/research:research-deep`, `/research:research-refine`, `/research:research-prune` and
+  `/research:chain-of-verification`. Agent types `dev-flow:research-lane`,
+  `dev-flow:research-lane-deep` and `dev-flow:research-verifier` are now
+  `research:research-lane`, `research:research-lane-deep` and `research:research-verifier`.
+  The old names are not kept: typing one finds no command.
+- **What carries over.** Run records, knowledge bases, `KB.md` charters and work items need
+  no change. Dispatch lines already recorded keep the old prefix, and `usage-report` reads
+  the role, not the prefix. No plugin data dir moves: the family keeps none.
+- **Without it.** `deep-investigation` writes its strategy doc and stops before the first
+  lane, saying so with the install line once; it resumes from the strategy doc after the
+  install. `foundation` looks a phase's fact up in-session and says research was not run.
+
 ## Migrating from `claude-kit`
 
 The `claude-kit` plugin is gone from the marketplace. Per machine, once:
@@ -913,6 +997,7 @@ claude-plugins/
 │   ├── operator-interaction/
 │   ├── ownership/
 │   ├── ralph/
+│   ├── research/
 │   ├── sandbox/
 │   ├── statusline/
 │   ├── statusline-hub/

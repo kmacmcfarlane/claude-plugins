@@ -81,6 +81,11 @@ ALLOWED = {
      "usage-report/scripts/ (usage_report.py"): "repo map",
     ("kit-dev/skills/update-kit/references/repo-map.md", "statusline-hub",
      "install-statusline-hub/scripts/ (install_hub.py"): "repo map",
+    ("kit-dev/skills/update-kit/references/repo-map.md", "research",
+     "research/scripts/ (tool-preflight.sh, scan-findings.py"): "repo map",
+    ("kit-dev/skills/update-kit/references/repo-map.md", "research",
+     "test_research_verifier.py: the verifier's procedure rules against check-sheet.py"):
+        "repo map",
     # work-items: a credit to the step that closes items on landing (72ef WI-5); the other
     # provider of the interface and its grooming skill, declared from ralph's side (WI-1);
     # and `implement` as an item stage name, not the skill.

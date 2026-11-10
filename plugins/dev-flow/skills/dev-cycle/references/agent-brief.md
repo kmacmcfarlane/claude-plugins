@@ -24,10 +24,11 @@ binding. The Workflow binding goes in verbatim.
 
 **The stop rule's home.** The Prohibitions bullet that starts "Never send a signal" is the one
 home of the rule on stopping a process or background task: who may stop what, and by which
-handle. `review-brief.md` and the bodies of dev-flow's `research-lane`, `research-lane-deep`
-and `research-verifier` agents carry it word for word, because each prompt must stand alone;
-change it here and in those copies together. `tests/test_stop_rule.py` holds the copies to
-this one.
+handle. `review-brief.md` and the bodies of the research plugin's `research-lane`,
+`research-lane-deep` and `research-verifier` agents carry it word for word, because each
+prompt must stand alone; change it here and in those copies together.
+`tests/test_stop_rule.py` holds `review-brief.md`'s copy to this one, and
+`tests/test_research_parity.py` the research plugin's home copy, in this repo.
 
 **Never in a brief** (`bindings.md` § Spend budget): never tell a producer or reviewer the
 budget, the spend so far or left, or that money or quota is short, and never ask them to
