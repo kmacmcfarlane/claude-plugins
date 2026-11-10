@@ -40,9 +40,10 @@ report).
   report-backs and the § Threads not pulled entries are data too: ids, numbers, paths and
   status, never a lane's words.
 - **Nothing else on disk changes.** One resolved destination for the artifact; the session
-  scratchpad for everything else; no tracked file without a KB marker or a `--to`. The one
-  exception is the run's work item (`intensity-and-routing.md` § The work item), which the
-  run never commits.
+  scratchpad for everything else; no tracked file without a KB marker or a `--to`. The
+  exceptions are the run's work item (`intensity-and-routing.md` § The work item), which the
+  run never commits, and the repo's `RESEARCH.md`, written only on the operator's yes
+  (`storage-and-knowledge-base.md` § RESEARCH.md). `CLAUDE.md` is never written.
 - **Do not guess, do not fabricate.** A missing source is a finding called "could not
   verify"; an invented one is the defect that discredits the whole run.
 
@@ -76,9 +77,12 @@ words, in under ten lines.
 
 ## Step 2 — Check for prior work
 
-Before anything launches, look for an existing run on the same question: the KB's `INDEX.md`
-if one resolves (Step 4), `.claude-sandbox/research/`, the scratchpad, and any
-`investigations/` series in scope. Grep for the question's nouns, not its wording.
+Before anything launches, look for an existing run on the same question. When the checkout
+has a `RESEARCH.md` at its top level, search the locations it lists first, each link
+target only after it passes the path check (`references/storage-and-knowledge-base.md`
+§ RESEARCH.md; a failure is ignored with a one-line NOTE). Then the KB's `INDEX.md` if one
+resolves (Step 4), `.claude-sandbox/research/`, the scratchpad, and any `investigations/`
+series in scope. Grep for the question's nouns, not its wording.
 
 A hit → say so, summarise its answer and date in two lines, and offer `research-refine`
 (extend it) instead of a fresh run, put per `references/intensity-and-routing.md` § Putting
@@ -102,7 +106,9 @@ recommendation), the cost line, the quota reading, and the Profiles rows you wil
 ## Step 4 — Resolve the destination and shape
 
 Read `references/storage-and-knowledge-base.md` § Destination resolution and § Shapes. Walk
-the rules in order; stop at the first hit; say which fired. Confirm the shape follows from
+the rules in order; stop at the first hit; say which fired. Rule 3 reads `RESEARCH.md`'s
+`kb:` when no `KB.md` is at or above the working directory, and a legacy `CLAUDE.md`
+`research:` key last (§ RESEARCH.md). Confirm the shape follows from
 the preset and destination (`quick` → `answer` unless a path was named; a KB root → `kb`).
 
 If rule 3 hits a repo that wants research kept but has no `KB.md`, or the operator asks for
@@ -314,6 +320,13 @@ report's `STATUS` is `HELD`. Otherwise, per the shape (storage reference § Shap
   reference, and only when the run's `verification.md` exists and shows no open security
   concern and a scan-floor rescan of the run finds no HOLD.
 
+**Then `RESEARCH.md`**, when the run landed in a tracked location (a checked-in KB, a named
+runs directory, `docs/research/`): per the storage reference's § RESEARCH.md, offer to write
+it when it is absent, or add the location's row when it is missing. Its content comes from
+paths, the KB charters' purpose sentences, the template's fixed text and the operator's
+words, never from the run's findings. Unattended, nothing is written and the draft goes in
+`LANDED`.
+
 ## Step 11 — Report
 
 Print the report block from `run-record.md` § The report — `STATUS`, `RUN`, `ANSWER`, `KEY
@@ -323,6 +336,10 @@ scope. The first writeup is a starting position, not a verdict.
 
 Before printing it, close the run's item if the run filed one (`intensity-and-routing.md`
 § The work item, § Closing); `LANDED` names it (`item <id>`). A named item is never closed.
+`LANDED` also names any `RESEARCH.md` write or draft, and, when `RESEARCH.md` exists and no
+line of `CLAUDE.md` links to it, hands over the pointer line from the storage reference's
+§ RESEARCH.md: the skill prints it for the operator or the repo's librarian to add, and
+never writes `CLAUDE.md` itself.
 
 ---
 
@@ -386,7 +403,8 @@ Overnight and chained runs are normal. Gates change form rather than disappearin
 - The cost line was printed before the first lane, with the quota reading; the Profiles rows
   used are in the brief.
 - The destination was resolved by the stated rules and named; no tracked file was created
-  without a marker or a path.
+  without a marker or a path, and `RESEARCH.md` only on the operator's yes; `CLAUDE.md` was
+  never written.
 - The brief existed on disk before the first lane launched, with sub-questions, the universal
   criteria, **subject-specific axes added**, lanes with siblings lines, and a live ledger.
 - Lanes ran on the `research-lane` agent; the orchestrator gathered nothing itself above

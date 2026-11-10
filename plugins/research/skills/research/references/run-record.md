@@ -430,7 +430,7 @@ ANSWER: <two or three sentences, with the overall confidence>
 KEY FINDINGS: <= 5 bullets
 CONCERNS: <the failing axes, the security check, the unreachable sources — or "none">
 THREADS NOT PULLED: <= 5 bullets, each with its value in a clause — or "none"
-LANDED: <files created or updated; the INDEX rows; the fit-check verdict; item <id>, when the run filed or adopted one>
+LANDED: <files created or updated; the INDEX rows; the fit-check verdict; item <id>, when the run filed or adopted one; the RESEARCH.md write, row or draft, and the CLAUDE.md pointer line to add, per storage-and-knowledge-base.md § RESEARCH.md>
 COST: <preset; lanes × model; searches used of budget; 5h/7d after; record: none (<reason>) and the dispatch lines, when the run has no item and no brief>
 TOOL REQUEST: <"none", or the block from § The tool request>
 ```
