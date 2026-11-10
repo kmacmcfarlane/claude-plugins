@@ -169,7 +169,9 @@ Expected output: the brief on disk, self-sufficient for a session that rehydrate
 Decide the run's item by `intensity-and-routing.md` § The work item — its rules in order:
 a sub-agent's run records in the brief's `## Record`, even under `--item`; a named item is
 adopted; with a store and `wi`, file one; otherwise `## Record`. Write the brief's `item:`
-field. A resumed run reads `item:` and never files a second. Only now may a lane launch.
+field. A resumed run reads `item:` and never files a second; it never runs the brief's
+stored `wi:` line or writes to its `item_file:`, and resolves both again
+(`intensity-and-routing.md` § Resolving the store, *Resuming*). Only now may a lane launch.
 
 ## Step 6 — Launch round 1
 
