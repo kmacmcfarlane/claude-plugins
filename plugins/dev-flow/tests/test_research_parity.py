@@ -13,8 +13,12 @@ rule the family's agents copy; and the family's chain-of-verification dispatches
   that assigns the store variables assigns both, with no hand commit of the store;
 - **scout:** the `scout` row's pin in research's § Profiles equals dev-flow's
   `agents/scout.md`, and scout keeps the tools chain-of-verification's checks use;
-- **anchors:** every "the `research` skill's `references/<file>` § <heading>" named in a
-  dev-flow file outside the family resolves to an existing file and heading;
+- **anchors:** every "the research plugin's `research` skill's `references/<file>`
+  § <heading>" named in a dev-flow file outside the family resolves to an existing file and
+  heading;
+- **the peer lookup:** every file deep-investigation's `references/research-peer.md` counts a
+  research root complete by exists in the family's plugin, and its fallback lane model is
+  the model on research's § Profiles `research-lane` row;
 - **deep-investigation:** its SKILL.md points at § Putting an ask to the operator, its gate
   names § The sheet check and the TALLY counts, and research's § Profiles rows name it with
   no interim routing row left.
@@ -62,6 +66,7 @@ BRIEF = SKILLS / "dev-cycle" / "references" / "agent-brief.md"
 SCOUT = PLUGIN / "agents" / "scout.md"
 DEEP = SKILLS / "deep-investigation"
 GATE = DEEP / "references" / "security-gate.md"
+PEER = DEEP / "references" / "research-peer.md"
 START = "Never send a signal"
 
 
@@ -132,7 +137,7 @@ def resolves(heading_text, files):
     return False
 
 
-ANCHOR = re.compile(r"the `research` skill's(?: `(references/[\w.-]+)`)?")
+ANCHOR = re.compile(r"the (?:research plugin's )?`research` skill's(?: `(references/[\w.-]+)`)?")
 LIST = re.compile(r"^ sections named here \(((?:§ [^,)]+(?:, )?)+)\)")
 
 
@@ -209,6 +214,9 @@ class TestResolver(unittest.TestCase):
         self.assertTrue(got[1][1][0].startswith("Profiles routes;"))
         self.assertEqual(got[2], (None, ["Recording"]))
         self.assertEqual(len(got), 3)
+        got = anchors(flat("per the research plugin's `research` skill's\n"
+                           "`references/run-record.md` § Creating staging."))
+        self.assertEqual(got, [("references/run-record.md", ["Creating staging."])])
 
     def test_heading_resolution(self):
         f = self.tmp / "r.md"
@@ -365,6 +373,29 @@ class TestAnchors(unittest.TestCase):
                         bad.append(f"{where} § {h[:40]}: no such heading")
         self.assertEqual(bad, [], "\n" + "\n".join(bad))
         self.assertEqual(self.KNOWN - seen, set(), "named sections not seen")
+
+
+@unittest.skipIf(RESEARCH_SKILLS is None, SKIP)
+class TestPeerLookup(unittest.TestCase):
+    """deep-investigation's research-plugin lookup asks for files the plugin really ships, and
+    its fallback lane model is the plugin's own."""
+
+    def test_every_file_the_lookup_needs_exists(self):
+        block = re.search(r"^complete\(\) \{(.*)\}$", text(PEER), re.M)
+        self.assertIsNotNone(block, "research-peer.md has no complete() line")
+        needed = re.findall(r'test -f "\$1/([^"]+)"', block.group(1))
+        self.assertGreaterEqual(len(needed), 4)
+        root = RESEARCH_SKILLS.parent
+        for rel in needed:
+            with self.subTest(file=rel):
+                self.assertTrue((root / rel).is_file(), f"{rel} is not in {root.name}")
+
+    def test_fallback_lane_model_is_the_row_model(self):
+        m = re.search(r"The lane model without it: `(\w+)`", flat(text(PEER)))
+        self.assertIsNotNone(m)
+        rows = h2(text(ROUTING), "Profiles")
+        row = next(l for l in rows.splitlines() if l.startswith("| `research-lane` |"))
+        self.assertEqual(row.split("|")[2].strip().split(" / ")[0], m.group(1))
 
 
 @unittest.skipIf(RESEARCH_SKILLS is None, SKIP)

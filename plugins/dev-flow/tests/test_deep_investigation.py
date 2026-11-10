@@ -2,10 +2,14 @@
 
 The skill is prose, so most rules are held by what its files say:
 
-- lanes launch on the `research-lane` agent type, routed by the research skill's
-  § Profiles, never `general-purpose` (the Profiles rows naming deep-investigation, and the
-  interim routing row being gone, are research files' text: tests/test_research_parity.py
-  holds them);
+- lanes launch on the research plugin's `research-lane` agent type, routed by its research
+  skill's § Profiles, never `general-purpose` (the Profiles rows naming deep-investigation,
+  and the interim routing row being gone, are research files' text:
+  tests/test_research_parity.py holds them);
+- the research plugin is found at the start of Step 1 by `references/research-peer.md`
+  (its lookup is run by tests/test_research_peer.py); without it Step 1 runs on that file's
+  fallbacks and Step 4 stops before the first lane, and no file of this plugin names an
+  agent type under its old `dev-flow:` prefix;
 - no file of the skill names the dialog tool: its asks go as text (item d49c);
 - lanes write to the run's staging area, never into the series;
 - the scan floor, the verifier and the toolkit gate stand between staging and the series;
@@ -37,6 +41,8 @@ SKILL = SKILL_DIR / "SKILL.md"
 LANE_CONTRACT = SKILL_DIR / "references" / "lane-contract.md"
 STRATEGY = SKILL_DIR / "references" / "research-strategy-format.md"
 GATE = SKILL_DIR / "references" / "security-gate.md"
+PEER = SKILL_DIR / "references" / "research-peer.md"
+OLD_PREFIX = "dev-flow:research-"
 DIALOG = "AskUserQuestion"
 
 PLACEHOLDER = "<project dir>"
@@ -68,7 +74,7 @@ def anchor_block():
 class TestLaneAgentType(unittest.TestCase):
     def test_skill_launches_research_lane(self):
         body = text(SKILL)
-        self.assertIn('subagent_type: "dev-flow:research-lane"', body)
+        self.assertIn('subagent_type: "research:research-lane"', body)
         self.assertNotIn("general-purpose", body)
 
     def test_lane_contract_launches_research_lane(self):
@@ -88,6 +94,49 @@ class TestNoDialog(unittest.TestCase):
         for ref in refs:
             with self.subTest(ref=ref.name):
                 self.assertNotIn(DIALOG, text(ref))
+
+
+class TestResearchPeer(unittest.TestCase):
+    """f4ef F3: the research family is a soft peer in its own plugin. Step 1 finds it first,
+    every agent type names its new plugin, and without it the run stops before any lane."""
+
+    def step(self, n):
+        body = text(SKILL)
+        m = re.search(r"^## Step %d — .*?(?=^## )" % n, body, re.S | re.M)
+        self.assertIsNotNone(m, f"no Step {n}")
+        return flat(m.group(0))
+
+    def test_step_1_opens_with_the_lookup(self):
+        step1 = self.step(1)
+        self.assertIn("references/research-peer.md` § Finding the research plugin", step1)
+        self.assertLess(step1.index("research-peer.md"), step1.index("One round"))
+
+    def test_step_4_stops_before_the_first_lane_without_it(self):
+        step4 = self.step(4)
+        guard = step4.index("**Without the research plugin, stop here.**")
+        self.assertIn("printed `no research found`, launch nothing", step4)
+        self.assertLess(guard, step4.index("Launch each lane with `Agent`"))
+
+    def test_no_old_prefix_left_in_the_plugin(self):
+        bad = []
+        for p in sorted(PLUGIN.rglob("*")):
+            if p.is_file() and "tests" not in p.relative_to(PLUGIN).parts \
+                    and "__pycache__" not in p.parts and p.suffix in (".md", ".py", ".json"):
+                for n, line in enumerate(text(p).splitlines(), 1):
+                    if OLD_PREFIX in line:
+                        bad.append(f"{p.relative_to(PLUGIN)}:{n}")
+        self.assertEqual(bad, [])
+
+    def test_peer_reference_carries_the_fallbacks(self):
+        peer = flat(text(PEER))
+        for needle in ("## Finding the research plugin", "## When it finds nothing",
+                       "plain lettered list", "The lane model without it: `sonnet`",
+                       "lanes not run: research plugin not installed",
+                       "/plugin install research@kmacmcfarlane",
+                       "KMACMCFARLANE_NO_PEER_HINTS", "`PLAN CHANGE`",
+                       "(cache, not installed)"):
+            self.assertIn(needle.replace("## ", ""), peer, needle)
+        self.assertRegex(text(PEER), r"(?m)^## Finding the research plugin$")
 
 
 class TestStaging(unittest.TestCase):
@@ -111,7 +160,7 @@ class TestGate(unittest.TestCase):
     def test_scan_verify_and_toolkit_gate_named(self):
         body = flat(text(SKILL) + text(GATE))
         for needle in ("§ The scan floor", "§ The toolkit gate", "§ The verifier prompt",
-                       "dev-flow:research-verifier", "--strip", "references/security-gate.md"):
+                       "research:research-verifier", "--strip", "references/security-gate.md"):
             self.assertIn(needle, body, needle)
 
     def test_landing_copies_only_scanned_files_without_a_hold(self):
@@ -129,7 +178,7 @@ class TestGate(unittest.TestCase):
     def test_verifier_routes_on_its_own_row(self):
         """Review r1 finding 8: not the lane model from Step 1."""
         verify = flat(section(text(GATE), "Step 6.5 — scan, verify, hold, land") or "")
-        self.assertIn("from its own row in the `research` skill's "
+        self.assertIn("from its own row in the research plugin's `research` skill's "
                       "`references/intensity-and-routing.md` § Profiles (not the lane model",
                       verify)
 

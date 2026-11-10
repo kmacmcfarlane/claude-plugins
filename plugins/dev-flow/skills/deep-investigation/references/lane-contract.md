@@ -119,7 +119,7 @@ Run slug for your frontmatter: <series-slug>
 <the privacy rule, verbatim — only if the corpus is sensitive>
 ```
 
-Launch with `Agent`, `subagent_type: "dev-flow:research-lane"` (the bare name under another
-prefix), as the `research` skill's `references/intensity-and-routing.md` § Profiles routes
-these lanes, `model:` on every call set to the run's cheap lane model, each dispatch recorded
+Launch with `Agent`, `subagent_type: "research:research-lane"` (the bare name under another
+prefix), as the research plugin's `research` skill's `references/intensity-and-routing.md`
+§ Profiles routes these lanes, `model:` on every call set to the run's cheap lane model, each dispatch recorded
 per that file's § Recording, all of a wave's lanes in one message so they run concurrently.

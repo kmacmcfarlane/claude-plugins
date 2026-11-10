@@ -336,10 +336,11 @@ Research routes its own dispatches, here. It is shaped like dev-cycle's routing 
 separate home: nothing in the `dev-cycle` skill governs a research run, and nothing here
 governs a cycle.
 
-- **Dispatch a role agent**: `subagent_type: "dev-flow:<agent>"`, one of § Profiles (or the
-  bare `<agent>` when the plugin is installed under another prefix: check the agent list in
-  your system prompt), and pass `model` on **every** call — `"sonnet"` or `"opus"`, or for
-  the synthesis fork the session's own tier, named. The file pins the effort; the per-call
+- **Dispatch a role agent**: `subagent_type: "research:<agent>"`, one of § Profiles
+  (`"dev-flow:scout"` for `scout`; or the bare `<agent>` when the plugin is installed under
+  another prefix: check the agent list in your system prompt), and pass `model` on
+  **every** call — `"sonnet"` or `"opus"`, or for the synthesis fork the session's own tier,
+  named. The file pins the effort; the per-call
   `model` sets the model and wins over the file's. A forgotten `model` falls to the file's
   pin, and in a `general-purpose` dispatch to the session's model, which is why the field is
   always passed.
@@ -361,7 +362,7 @@ governs a cycle.
 
 The agents a research run dispatches, each file one role at one pinned effort. The pin cell
 opens with the file's own `<model> / <effort>`; the per-call `model` moves it as the cell
-says. `plugins/dev-flow/tests/test_agents.py` holds every row to its file.
+says. This plugin's `tests/test_research_agents.py` holds every row to its file.
 
 | Agent | Pin: model / effort | Dispatched when |
 |---|---|---|
@@ -391,7 +392,8 @@ says. `plugins/dev-flow/tests/test_agents.py` holds every row to its file.
   Toolkit and mining lanes stay on `research-lane`; a stronger pass is `model: opus` on the
   call.
 - **`scout` is dev-cycle's role file, shared.** Its pin is held in step with both tables by
-  the test; a change to its pin is a change to both rows.
+  dev-flow's `tests/test_research_parity.py` (in the source repo) and this plugin's
+  `tests/test_research_agents.py`; a change to its pin is a change to both rows.
 - **The orchestrator** — this session — plans, recons and synthesizes at the session's model
   and effort: decomposition, criteria and synthesis gate everything downstream, and recon
   changes the plan, so it happens in the context that holds the plan. Published guidance
@@ -624,7 +626,7 @@ dispatch: synthesis opus inherit — fork (findings over 2,500 lines)
 dispatch: research-lane sonnet medium — deep-investigation wave 1 b2-landscape
 dispatch: research-verifier sonnet low — deep-investigation verify sample 20
 dispatch: scout sonnet medium — cove general batch 1 of 2
-dispatch: research-lane opus medium — adversarial (exhaustive) round 2 a1-break-answer; dev-flow:research-lane-deep not loaded
+dispatch: research-lane opus medium — adversarial (exhaustive) round 2 a1-break-answer; research:research-lane-deep not loaded
 ```
 
 Each line is one physical line, unindented, in the orchestrator's words. The lane prompt's
@@ -633,9 +635,10 @@ model mention is unchanged, so the transcript and the record agree.
 ## Below the quota reserve
 
 A run is below the reserve when the weekly window is spent down to the operator's reserve:
-`windows.seven_day.headroom` ≤ 0 from the `librarian-mode` skill's
-`scripts/quota_budget.py --read-only` (dev-flow's quota sense). Read it once, before the
-round that would dispatch `research-lane-deep`. No script, or no signal, reads as not below.
+`windows.seven_day.headroom` ≤ 0 from the dev-flow plugin's `librarian-mode` skill's
+`scripts/quota_budget.py --read-only` (dev-flow's quota sense), found by the snippet below.
+Read it once, before the round that would dispatch `research-lane-deep`. No script, or no
+signal, reads as not below.
 
 § The quota read (the sensor record's five-hour and weekly percentages) sizes the preset;
 § Below the quota reserve (the quota sense's weekly headroom) steps down only the deep lane
@@ -650,20 +653,57 @@ file.
 
 A step-down is not a hold: the run goes on.
 
+### Finding the quota sense
+
+The lookup stops at the first hit: dev-flow's install record (`dev-flow@kmacmcfarlane`, the
+entry that applies here, ranked as § Resolving the store ranks it), then the newest cached
+copy; a miss at both is no quota sense. No path under the working checkout is ever
+consulted: any repo can name itself `kmacmcfarlane`, so neither the checkout under research,
+a fork, nor this kit's own checkout supplies the script.
+
+```bash
+MAIN=$(git rev-parse --path-format=absolute --git-common-dir 2>/dev/null) && MAIN=${MAIN%/.git} || MAIN=$PWD
+P="${CLAUDE_CONFIG_DIR:-$HOME/.claude}/plugins"
+REL=skills/librarian-mode/scripts/quota_budget.py
+IP="$(python3 -I - "$P/installed_plugins.json" dev-flow@kmacmcfarlane "$MAIN" 2>/dev/null <<'PY'
+import json, os, sys
+es = json.load(open(sys.argv[1]))["plugins"][sys.argv[2]]
+here = os.path.realpath(sys.argv[3])
+def rank(e):  # the install that applies here: deepest local/project path, then user
+    pp = e.get("projectPath")
+    if e.get("scope") in ("local", "project") and pp:
+        pp = os.path.realpath(pp)
+        if here == pp or here.startswith(pp.rstrip("/") + "/"):
+            return (2, len(pp), e["scope"] == "local")
+    return (1, 0, False) if e.get("scope") == "user" else (0, 0, False)
+best = max(es, key=rank)
+print(best["installPath"] if rank(best)[0] else "")
+PY
+)"
+QB=; test -n "$IP" && test -f "$IP/$REL" && QB="$IP/$REL"
+test -n "$QB" || QB=$(ls -t "$P"/cache/kmacmcfarlane/dev-flow/*/$REL 2>/dev/null | head -1)
+if test -f "$QB"; then echo "quota sense: $QB"; else QB=no-quota-sense; echo "no quota sense found"; fi
+```
+
+Then `python3 "$QB" --read-only`, only after it printed a path. `no quota sense found` reads
+as not below. The `python3 -I` read keeps a `json.py` in the working directory from being
+imported. This plugin's `tests/test_quota_lookup.py` runs the snippet.
+
 ## Fallback
 
-**Not loaded** means `dev-flow:<agent>` is missing from the session's agent list, or a call
-naming it fails as an unknown agent type — typically after a plugin update without a
-restart. Nothing here is asked: research has no operator effort pin to protect.
+**Not loaded** means `research:<agent>` (`dev-flow:scout` for `scout`) is missing from the
+session's agent list, or a call naming it fails as an unknown agent type — typically after a
+plugin update without a restart. Nothing here is asked: research has no operator effort pin
+to protect.
 
 | Not loaded | Dispatch instead | Recorded |
 |---|---|---|
-| `research-lane-deep` | `research-lane`, `model: opus`: the step-down's shape, and the best pinned file left | `dispatch: research-lane opus medium — …; dev-flow:research-lane-deep not loaded` |
-| `research-lane` or `research-verifier` | `general-purpose`, the routed `model`, with the agent file's body pasted as the prompt's first section | `dispatch: <role> <model> inherit — …; dev-flow:<agent> not loaded`, plus a ledger line |
-| `scout` (`chain-of-verification`) | `general-purpose`, the routed `model` | `dispatch: scout <model> inherit — …; dev-flow:scout not loaded` |
+| `research-lane-deep` | `research-lane`, `model: opus`: the step-down's shape, and the best pinned file left | `dispatch: research-lane opus medium — …; research:research-lane-deep not loaded` |
+| `research-lane` or `research-verifier` | `general-purpose`, the routed `model`, with the agent file's body pasted as the prompt's first section | `dispatch: <role> <model> inherit — …; research:<agent> not loaded`, plus a ledger line |
+| `scout` (`chain-of-verification`), or dev-flow not installed | `general-purpose`, the routed `model` | `dispatch: scout <model> inherit — …; dev-flow:scout not loaded` |
 
 - **Say it once** in the report's `CONCERNS` (`chain-of-verification`: its Summary): "role
-  agents not loaded; update dev-flow and restart".
+  agents not loaded; update or install research and restart".
 - **A usage-limit error** (HTTP 429, "out of usage credits") on a dispatch is not a
   fallback: the lane is `FAILED` per `research` Step 6, with the reset time in its ledger
   line. No research dispatch is pinned to fable, so there is no fable row.

@@ -7,8 +7,8 @@
 - the verifier prompt names the run files, and the research skill runs the sheet check
   and records its TALLY.
 
-deep-investigation's security gate runs the check too: dev-flow's
-tests/test_research_parity.py holds its wording. This file travels with the family.
+deep-investigation's security gate, in dev-flow, runs the check too: dev-flow's
+tests/test_research_parity.py holds its wording.
 
 Standard library only. Run from the plugin dir:
 

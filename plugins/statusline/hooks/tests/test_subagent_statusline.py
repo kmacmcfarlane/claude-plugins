@@ -587,7 +587,7 @@ class Rows(Hermetic):
         import subagent_statusline as R
         m = "m" * R.MODEL_MAX
         names = ("dev-flow:implementer-critical", "x" * 70, "plugin:" + "模" * 20,
-                 "模" * 25, "dev-flow:research-lane-deep")
+                 "模" * 25, "research:research-lane-deep")
         tags = ((m, "high"), ("opus-5-5", "high"), (None, None))
         for name in names:
             for model, eff in tags:

@@ -1,10 +1,13 @@
 # The security gate
 
 Loaded from `deep-investigation` Step 4 (before a lane reads another lane's file) and
-Step 6.5 (before anything lands in the series). It applies the `research` family's scan floor,
-verifier and toolkit gate to a fan-out. The procedures themselves are the `research` skill's
-`references/run-record.md` sections named here (§ The scan floor, § The verifier prompt,
-§ The sheet check, § The toolkit gate); read them there, they are not restated.
+Step 6.5 (before anything lands in the series). It applies the research plugin's scan floor,
+verifier and toolkit gate to a fan-out. The procedures themselves are the research plugin's
+`research` skill's `references/run-record.md` sections named here (§ The scan floor, § The
+verifier prompt, § The sheet check, § The toolkit gate); read them there, they are not
+restated. That plugin's root, and so `<research skill dir>` in their commands, is the one
+`research-peer.md` § Finding the research plugin printed at Step 1; this gate never runs
+without it (Step 4 stops first).
 
 A lane's file is drafted from fetched text, so it is unscanned until the scan floor has run
 over it, and no agent reads it before then: not you, not the series, not a later lane.
@@ -31,11 +34,11 @@ When the last wave is in, or at the overrun deadline, and before you open any fi
 
 1. **Scan** `<staging>/findings` per § The scan floor; ledger `SCANNED`. A file the scan
    holds is never opened; a scan that fails holds every file it covered.
-2. **Verify.** Launch `subagent_type: "dev-flow:research-verifier"`, `model:` from its own
-   row in the `research` skill's `references/intensity-and-routing.md` § Profiles (not the
-   lane model from Step 1), its `dispatch:` and `agent:` lines recorded per § Recording
+2. **Verify.** Launch `subagent_type: "research:research-verifier"`, `model:` from its own
+   row in the research plugin's `research` skill's `references/intensity-and-routing.md`
+   § Profiles (not the lane model from Step 1), its `dispatch:` and `agent:` lines recorded per § Recording
    there, with § The verifier prompt: run `<series-slug>`; criteria the universal axes in the
-   `research` skill's `references/research-criteria.md` (the strategy doc has no criteria);
+   research plugin's `research` skill's `references/research-criteria.md` (the strategy doc has no criteria);
    the staged findings the scan did not hold; sample 20; `Scanner flags:` from every scan of
    the run; run files `<staging>` and the series directory; the sheet to
    `<staging>/verification.md`. Run the sheet check on it, with `--own` the series
@@ -76,7 +79,7 @@ esac
 ```
 
 In a worktree session `H` is the main checkout. Before moving a file, run the held-runs ignore
-check at `$H` (the `research` skill's `references/storage-and-knowledge-base.md` § The ignore
+check at `$H` (the research plugin's `research` skill's `references/storage-and-knowledge-base.md` § The ignore
 check: `_held/.gitignore` first, then every level). Ignored → move it, and the `HELD` line
 names the path. Not ignored, or no `.claude-sandbox/` at `$H` → it stays in staging, lost with
 the session, and the `HELD` line says so.

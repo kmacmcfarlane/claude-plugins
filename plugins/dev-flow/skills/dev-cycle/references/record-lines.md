@@ -32,7 +32,7 @@ interrupted run up again; a line that is missing reads there as not recorded:
     (`resume.md` S3b).
   - **a research run's line** — role `research-lane`, `research-verifier`, `scout` or
     `synthesis` — a research skill's run recording onto an item it filed or was named
-    (`--item`), written before each Agent call (the `research` skill's
+    (`--item`), written before each Agent call (the research plugin's `research` skill's
     `references/intensity-and-routing.md` § Recording), with its `agent:` lines. Each is a
     helper line: a **rider**, never a phase line (`resume.md` § Phase lines and riders).
 
@@ -54,7 +54,7 @@ interrupted run up again; a line that is missing reads there as not recorded:
   role word; under a `— resume` dispatch it repeats the resumed agent's id with the round
   it now serves. Under a helper line the caller writes `agent: <role> <id>`,
   with no round: a rider too, never in a resume's generation. A research run's `agent:`
-  line carries its own run round (the `research` skill's § Recording) and is a rider all
+  line carries its own run round (the research plugin's `research` skill's § Recording) and is a rider all
   the same: its role word is never a cycle role.
   `<n>` is the
   round that dispatch serves (the first build or the first review is round 1). It is what

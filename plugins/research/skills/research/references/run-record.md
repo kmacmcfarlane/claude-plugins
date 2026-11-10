@@ -255,7 +255,7 @@ doubt, report the shape and the count, not the instance.
 ```
 
 Launch every lane of a round in **one message** so they run concurrently, with
-`subagent_type: "dev-flow:research-lane"` — `"dev-flow:research-lane-deep"` for the
+`subagent_type: "research:research-lane"` — `"research:research-lane-deep"` for the
 adversarial lane of an `exhaustive` run — or the bare name when the plugin is installed under
 a different prefix (check the agent list in your system prompt). Pass `model:` on every call,
 from `intensity-and-routing.md` § Profiles, and record each dispatch (§ Recording there).

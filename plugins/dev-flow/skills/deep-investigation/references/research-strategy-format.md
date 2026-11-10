@@ -26,7 +26,7 @@ with a ledger entry marking it superseded — supersede, do not rewrite.
 
 Opening paragraph: when it was written, by which session, one sentence saying this document
 is the canonical brief and the rehydration point, and the run's item: `Item: <id>` or
-`Item: none — <reason>` (the `research` skill's `references/intensity-and-routing.md`
+`Item: none — <reason>` (the research plugin's `research` skill's `references/intensity-and-routing.md`
 § The work item), and with an item its `wi:` and `item_file:` lines (§ Stored names there).
 Then `Staging: <scratchpad>/research/<series-slug>/`, the absolute path where lanes and the
 verifier write; a resumed session finds the run's unlanded files there.
@@ -88,7 +88,7 @@ re-litigate decisions you already made. Write "none" rather than dropping the he
 
 ### `## Record`
 
-The `## Record` of the `research` skill's `references/intensity-and-routing.md` § Stored
+The `## Record` of the research plugin's `research` skill's `references/intensity-and-routing.md` § Stored
 names, placed just above the status ledger: the `dispatch:` and `agent:` lines of that file's
 § Recording, when its § The work item sends them here. Lines go in by an edit at the end of
 this section, never a `>>` to the file, which would land them under the ledger. Lane
@@ -124,7 +124,7 @@ allows. Cron wakeups and resumed sessions act from this doc, so a
 lane's words in it would be text an agent acts on; the results are one `Read` of the landed
 file's TL;DR away. `TOOLS REVIEWED`, `SCANNED`, `STRIPPED` and `VERIFIED` carry the scanner's
 and the verifier's counts, file names, line numbers, rule names and verdicts — never a line's
-text (the `research` skill's `references/run-record.md` § Ledger entries). A `HELD` line names
+text (the research plugin's `research` skill's `references/run-record.md` § Ledger entries). A `HELD` line names
 the lane ids and the held path, or says the files stayed in staging and are lost with the
 session. Wave wakeups act only on lines you wrote.
 

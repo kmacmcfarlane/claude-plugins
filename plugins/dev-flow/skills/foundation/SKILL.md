@@ -106,9 +106,11 @@ decision (`references/state.md` § Living docs). Under an orchestrator, ask only
 checked draft; the approval is the gate's. Without the skill, read `CLAIM.md` as a file and
 propose the claim in the series, unchecked (§ Composition says what the result discloses).
 
-**Research is optional per phase**: the `research` skill (quick by default) for a fact a
-requirement rests on, landing in `<series>/research/`; `deep-investigation` when the
-landscape itself is the question.
+**Research is optional per phase**: the research plugin's `research` skill (quick by
+default) for a fact a requirement rests on, landing in `<series>/research/`;
+`deep-investigation` when the landscape itself is the question. Without the research plugin
+in the session, look the fact up in-session per `investigate`'s
+`references/external-research.md`, and the result says research was not run.
 
 Write `00_initial.md` (`references/state.md` § The series), regenerate `INDEX.md` with its
 Foundation block, then **gate G1** (§ The gates).
@@ -219,8 +221,8 @@ Return `STATUS`, `SERIES` (absolute path), `OPEN QUESTIONS` (each blocking or no
 
 ## Composition
 
-`investigate` owns the series format and the open-question triage; `research` and
-`deep-investigation` feed a phase; `dev-cycle` reviews each gate under an orchestrator and
+`investigate` owns the series format and the open-question triage; the research plugin's
+`research` and `deep-investigation` feed a phase; `dev-cycle` reviews each gate under an orchestrator and
 builds each feature; the `operator-interaction:decisions` skill, when loaded, shapes every
 question and gate decision; the `work-items` skill carries the item, holds and features.
 Each is used by pointer, nothing copied. The `ownership:claim-md` skill, when listed,

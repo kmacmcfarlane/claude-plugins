@@ -711,9 +711,9 @@ in the store's own repository, never the host's.
 `wi` itself comes from the repo's own tree when it carries the `work-items` plugin, else
 from the installed plugin. This is dev-flow's canonical copy of the lookup: every dev-flow
 skill that drives `wi` (`investigate`, `implement`, `librarian-mode`, `foundation`) runs this
-snippet and names it rather than restating it. The research family keeps its own copy
-(the `research` skill's `references/intensity-and-routing.md` § Resolving the store), by the
-operator's 2026-10-02 ruling that the research skills stay separate from dev-cycle; a change
+snippet and names it rather than restating it. The research plugin keeps its own copy
+(the research plugin's `research` skill's `references/intensity-and-routing.md` § Resolving
+the store), by the operator's 2026-10-02 ruling that the research skills stay separate from dev-cycle; a change
 to `wi`'s install path touches both, and the work-items launcher beside `wi.py`, which
 carries the same install-record pick:
 

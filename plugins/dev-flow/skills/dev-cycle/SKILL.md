@@ -197,10 +197,10 @@ worked examples. When the agent is not loaded, dispatch `general-purpose` with t
 `model`, recorded `inherit` — asked first under an effort pin
 (`references/model-routing.md` § Fallback); below the quota reserve, its § Below the
 quota reserve. This step routes dev-cycle's own dispatches — planner, implementer,
-reviewer, and the fable cross-checks the operator accepts. The research family (`research`,
-`research-deep`, `research-refine`, `research-prune`), `deep-investigation` and
-`chain-of-verification` route by the `research` skill's `references/intensity-and-routing.md`;
-nothing here governs them, though `scout` serves both. Fix round n = the nth re-dispatch or
+reviewer, and the fable cross-checks the operator accepts. The research plugin's skills
+(`research`, `research-deep`, `research-refine`, `research-prune`,
+`chain-of-verification`) and `deep-investigation` route by the research plugin's `research`
+skill's `references/intensity-and-routing.md`, when it is installed; nothing here governs them, though `scout` serves both. Fix round n = the nth re-dispatch or
 resume with findings = review round n+1; the cap: Step 4.3.
 
 1. **Implementer: sonnet for mechanical edits**, on `implementer`. In a kit repo only the

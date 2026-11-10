@@ -101,8 +101,8 @@ Pass both the questions AND their how-to-check methods (from Step 2) to the suba
 **Routing and record.** Every batch goes to the `scout` agent with `model: "<model>"` on the
 call — `sonnet`, or `opus` only when the invocation names a stronger model — as the
 `research` skill's `references/intensity-and-routing.md` § Profiles routes it; when
-`dev-flow:scout` is not loaded, that file's § Fallback. Before each call write its
-`dispatch:` line (`dispatch: scout <model> medium — cove <mode> batch <n> of <m>`), and after
+`dev-flow:scout` is not loaded (or dev-flow is not installed), that file's § Fallback. Before
+each call write its `dispatch:` line (`dispatch: scout <model> medium — cove <mode> batch <n> of <m>`), and after
 it its `agent:` line (`agent: scout <id> round 1`), per that file's § Recording.
 
 Before the first batch, decide the run's item by that file's § The work item, its rules in
