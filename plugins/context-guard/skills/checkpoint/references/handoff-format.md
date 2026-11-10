@@ -4,8 +4,9 @@ One per session, **authored by the checkpoint skill** (never machine-synthesized
 is a snapshot only its author can write; the facts around it — age, drift, dirty count
 — are computed live by `hooks/rehydrate.py` at injection). Session-addressed: it lives in
 the Claude config dir at `${CLAUDE_CONFIG_DIR:-~/.claude}/claude-kit/handoff/<sid>/HANDOFF.md`
-(`python3 hooks/handoff_path.py --path "$CLAUDE_CODE_SESSION_ID"` prints it; `<sid>` is
-the session id made path-safe), never in a repo — so no session overwrites another's,
+(`R="<plugin root>"; case $R in /*) python3 "$R/hooks/handoff_path.py" --path "$CLAUDE_CODE_SESSION_ID";; *) echo "plugin root not absolute: $R" >&2; false;; esac`
+prints it, `<plugin root>` the absolute path the checkpoint `SKILL.md`'s **Plugin root** line
+gives; `<sid>` is the session id made path-safe), never in a repo — so no session overwrites another's,
 and it is never committed. The path cannot be guessed, so every checkpoint prints it. What
 must outlast the config dir goes where Step 3 routes it: the work item's handoff block
 (`wi handoff`) and its Notes (Step 4a½ appends what only the conversation held about each
@@ -62,9 +63,8 @@ outside the store.
 
 A spin-off is a new session that starts from a compacted, topic-scoped handoff of this
 one while this session goes on. Its manifest is written by this session, before the new
-one exists, with `python3 "${CLAUDE_PLUGIN_ROOT}/hooks/spin_off.py" --from <draft> --topic
-<topic> [--name <name>] [--launch-dir <dir>] [--librarian <name>] [--prompt-file <file>]
-[--no-session-id]`. It is never a checkpoint of this session: it records no checkpoint,
+one exists, with
+`R="<plugin root>"; case $R in /*) python3 "$R/hooks/spin_off.py" --from <draft> --topic <topic> [--name <name>] [--launch-dir <dir>] [--librarian <name>] [--prompt-file <file>] [--no-session-id];; *) echo "plugin root not absolute: $R" >&2; false;; esac`. It is never a checkpoint of this session: it records no checkpoint,
 leaves this session's own manifest and gate state as they were, and adds one ledger line,
 `P spin-off <name> (<child>) -> <path>`.
 
@@ -360,8 +360,9 @@ TOC, read on demand: `path — one line on what it holds`.
   `$CLAUDE_CODE_SESSION_ID`, which follows `/clear`) are written by `mark_checkpoint.py` at
   the end of Step 4b: write each as `<stamped>`. What it stamps is the author's **own**
   per-session manifest, `${CLAUDE_CONFIG_DIR:-~/.claude}/claude-kit/handoff/<sid>/HANDOFF.md`
-  (`python3 hooks/handoff_path.py --path` prints it), when that file exists — and, only
-  while it does not, an old-layout repo manifest. It rewrites those frontmatter lines only (adding any that
+  (`R="<plugin root>"; case $R in /*) python3 "$R/hooks/handoff_path.py" --path;; *) echo "plugin root not absolute: $R" >&2; false;; esac`
+  prints it), when that file
+  exists — and, only while it does not, an old-layout repo manifest. It rewrites those frontmatter lines only (adding any that
   are missing before the closing `---`), leaves every other byte as written, and replaces
   the file atomically. It stamps only a manifest written in the last 30 minutes. A
   per-session manifest is the author's **by its path**, so a `session:` copied from the

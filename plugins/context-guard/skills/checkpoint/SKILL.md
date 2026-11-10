@@ -18,6 +18,15 @@ Rationale and numbers: `references/design-rationale.md` (and the fuller series i
 Operator tool guide: `references/operator-playbook.md`. Manifest spec:
 `references/handoff-format.md`.
 
+**Plugin root:** `${CLAUDE_PLUGIN_ROOT}`. Loading this skill fills in that absolute path; a
+reference file read with a tool is not filled in, and the Bash tool's environment does not
+carry the variable (https://code.claude.com/docs/en/plugins-reference § Environment
+variables). A command in this skill's `references/` that runs a file of this plugin starts
+`R="<plugin root>"; case $R in /*) …` and runs `"$R/…"`: put this path in `R`. The
+guard refuses a root that is not absolute, so a root left unfilled runs nothing. Never run such a file as `scripts/…` or
+`hooks/…` from the working directory, which is the checkout and may hold a file of that
+name, and never run a command whose root is not an absolute path.
+
 **Lean path:** if the state file shows fewer than ~60K tokens left, skip every optional read,
 do Steps 0, 2, 4a½ in its lean form, and 4b only, then Step 7's close (the echo line when
 Step 0 acted, the manifest path, for a handoff `/clear`, the `/compact` line, the opener) —

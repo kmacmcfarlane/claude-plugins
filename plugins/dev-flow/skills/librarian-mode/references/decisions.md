@@ -61,7 +61,7 @@ how the librarian raises, revises and reads a record, and what it binds in one.
   session's scratchpad, by the card-record reference; check it; then raise it:
 
   ```bash
-  node <decision-page skill dir>/scripts/check_cards.js --record <file>
+  D="<decision-page skill dir>"; case $D in /*) node "$D/scripts/check_cards.js" --record <file>;; *) echo "decision-page skill dir not absolute: $D" >&2; false;; esac
   $WI raise <id> --record <file> [--lines <lines file>]
   ```
 

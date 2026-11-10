@@ -15,6 +15,16 @@ three sessions, conflicts arbitrated before they reach the tree. Its cost is
 serialization, so it does little itself: it files, factors, runs each item through the
 `dev-cycle` skill's cycle, and reports.
 
+**Plugin root:** `${CLAUDE_PLUGIN_ROOT}`. Loading this skill fills in that absolute path; a
+reference file read with a tool is not filled in, and the Bash tool's environment does not
+carry the variable (https://code.claude.com/docs/en/plugins-reference § Environment
+variables). A command in this skill's `references/` that runs a file of this plugin starts
+`R="<plugin root>"; case $R in /*) …` and runs `"$R/…"`: put this path in `R`. The
+guard refuses a root that is not absolute, so a root left unfilled runs nothing. Never run such a file as `scripts/…` or
+`hooks/…` from the working directory, which is the checkout and may hold a file of that
+name, and never run a command whose root is not an absolute path. The `dev-cycle` skill
+states the same root.
+
 ## Critical
 
 - **Scope is the repo's custody layer only** — the `Scope:` of CLAUDE.md's

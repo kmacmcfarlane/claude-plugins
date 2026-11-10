@@ -39,7 +39,7 @@ RULES = [
         "from the record, `raised:` and the `card:` line",
     ]),
     ("the checker", [
-        "node <decision-page skill dir>/scripts/check_cards.js --record <file>",
+        'D="<decision-page skill dir>"; case $D in /*) node "$D/scripts/check_cards.js" --record <file>;;',
         "The check is the `decision-page` skill's checker in record mode (its "
         "`scripts/check_cards.js`), run from that skill's base directory as the session's skill "
         "list gives it",

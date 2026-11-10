@@ -31,8 +31,14 @@ reports exist (§ The numbers, Spend inputs).
 ## Running it
 
 ```bash
-python3 scripts/quota_budget.py            # from the skill dir; one JSON object on stdout
+# one JSON object on stdout
+R="<plugin root>"; case $R in /*) python3 "$R/skills/librarian-mode/scripts/quota_budget.py";; *) echo "plugin root not absolute: $R" >&2; false;; esac
 ```
+
+`<plugin root>` is the absolute path `SKILL.md`'s **Plugin root** line gives; the `case`
+refuses any other root, and `scripts/quota_budget.py` is never run from the working
+directory, which is the checkout. Flags go after the script path, inside the `case`:
+`--read-only` takes a reading without a claim.
 
 | Flag | Effect |
 |---|---|
@@ -401,14 +407,14 @@ The guard on a round that would open unasked past a phase's fourth review is the
 the one self-granted build round of answer 114 (b): no standing grant is needed, the item's
 spend budget being the grant.
 
-The librarian's part: it takes that reading itself, `python3 scripts/quota_budget.py
---read-only`, at that moment, never waiting on the idle-turn integration (the opening of
-this file), and reads no signal as a stop — a step-down only saves quota and may err
-toward spending; a round spent unasked needs evidence the quota is there. Answer 145 (a)
-supersedes 68's words for rounds inside an item's budget, as 114 (b) did for one round;
-68's hold on the F2 plan (item c79e) stands. Lifting a hold, crossing the reserve and an
-expensive one-off (a deeper research preset, live probes) stay raised (`decide-alone.md`,
-`spend`).
+The librarian's part: it takes that reading itself,
+`R="<plugin root>"; case $R in /*) python3 "$R/skills/librarian-mode/scripts/quota_budget.py" --read-only;; *) echo "plugin root not absolute: $R" >&2; false;; esac`
+(§ Running it), at that moment, never waiting on the idle-turn integration (the opening of this file), and reads no
+signal as a stop — a step-down only saves quota and may err toward spending; a round spent
+unasked needs evidence the quota is there. Answer 145 (a) supersedes 68's words for rounds
+inside an item's budget, as 114 (b) did for one round; 68's hold on the F2 plan (item c79e)
+stands. Lifting a hold, crossing the reserve and an expensive one-off (a deeper research
+preset, live probes) stay raised (`decide-alone.md`, `spend`).
 
 ## Not here yet
 

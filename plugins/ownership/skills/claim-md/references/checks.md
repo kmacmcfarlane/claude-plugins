@@ -6,7 +6,9 @@ the repos. Nothing runs continuously. The line forms the script parses are `form
 
 ## Running the script
 
-`scripts/claim_check.py` is under this skill's base directory. Run it with `python3`:
+`scripts/claim_check.py` is under this skill's base directory. Run it with `python3`, by the
+absolute path `SKILL.md`'s commands give, never from the working directory, which is the
+checkout:
 
 ```
 claim_check.py [--repo DIR] [--claim PATH] [--estate] [--dir DIR] [--today YYYY-MM-DD] [--json]
