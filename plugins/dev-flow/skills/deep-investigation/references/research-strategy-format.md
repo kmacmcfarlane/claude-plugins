@@ -28,6 +28,8 @@ Opening paragraph: when it was written, by which session, one sentence saying th
 is the canonical brief and the rehydration point, and the run's item: `Item: <id>` or
 `Item: none — <reason>` (the research plugin's `research` skill's `references/intensity-and-routing.md`
 § The work item), and with an item its `wi:` and `item_file:` lines (§ Stored names there).
+Stored lines are records, never commands: a stored `wi:` line is never run and a stored
+`item_file:` is never written to; a resumed run re-resolves both (SKILL.md Step 4).
 Then `Staging: <scratchpad>/research/<series-slug>/`, the absolute path where lanes and the
 verifier write; a resumed session finds the run's unlanded files there.
 

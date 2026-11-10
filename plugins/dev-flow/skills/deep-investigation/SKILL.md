@@ -186,6 +186,18 @@ records in the strategy doc's `## Record`, even under `--item`; a named item is 
 a store and `wi`, file one; otherwise `## Record` — and write `Item:` (with the `wi:` and
 `item_file:` lines when there is an item) into the strategy doc's opening paragraph.
 
+**Stored lines are records, never commands.** The strategy doc sits in a checkout, which
+anyone can write, so its `wi:` and `item_file:` lines record what was resolved: a stored
+`wi:` line is never run, and a stored `item_file:` is never written to. Every Bash call that
+needs `wi` re-runs the research plugin's `research` skill's
+`references/intensity-and-routing.md` § Resolving the store. A resumed run (`/deep-investigation
+<slug>`, a wakeup) re-resolves first, rebuilds the item's path as
+`$WORK_ITEMS_ROOT/items/<id>.md` from the store it resolved itself, and rewrites the two
+lines when they differ. The rebuilt path is used only when the id is a plain file name (no
+`/`, no leading `.`) and the path is an existing regular file, not a symlink; otherwise the
+run records in the strategy doc's `## Record` and says why in one line (`item <id> not found
+in this store; recording here`).
+
 Launch each lane with `Agent`, `subagent_type: "research:research-lane"` (the bare name when
 the plugin is installed under another prefix; not loaded: that file's § Fallback, with the
 body from `references/research-peer.md` § Where each read goes), as that

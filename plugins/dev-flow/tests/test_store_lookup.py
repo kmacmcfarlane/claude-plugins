@@ -22,6 +22,10 @@ are held by what their files say:
 - the research family's item rule (that in a store that is its own repo `wi` commits each
   write itself, item d1e9, F5) is held by tests/test_research_parity.py.
 
+How § Store finds `wi` itself (the install record, then the cache only when the record
+cannot answer, never a path under the working checkout; item 185f, F1) is run, not read, by
+tests/test_lookup_runs.py.
+
 Standard library only. Run from plugins/dev-flow:
 
     python3 -m unittest discover -s tests -q
