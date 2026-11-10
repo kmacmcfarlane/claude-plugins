@@ -30,11 +30,12 @@ writer, and the caller may write it itself; the rest of this file is for a page 
 "L", "dep"}, …], "refs": {"38": {}}}`; anything else is ignored). Then it splits it:
 
 ```bash
-node "<plugin root>/skills/decision-page/scripts/split_writers.js" [--cap N] skeleton.json
+R="<plugin root>"; case $R in /*) node "$R/skills/decision-page/scripts/split_writers.js" [--cap N] skeleton.json;; *) echo "plugin root not absolute: $R" >&2; false;; esac
 ```
 
 `<plugin root>` is the absolute path the `decision-page` `SKILL.md`'s **Plugin root** line
-gives; never run a script of this skill from the working directory, which is the checkout.
+gives; the `case` refuses any other root, and no script of this skill is run from the
+working directory, which is the checkout.
 It prints
 `{"cap", "writers": [{"cards": [n…], "layers": [key…], "over_cap": bool}], "notes": […]}`,
 each writer's cards in page order, and exits 1 on a skeleton it cannot read (a card with no
@@ -70,13 +71,15 @@ finished example card, so the cards read as one page.
 1. **The example card first.** The caller writes, or writer 1 writes as its first step, the
    first card in page order, at every level its decision scales to, as a `decision-card/5`
    record (the `decisions` skill's `references/card-record.md`). It is checked with
-   `node "<plugin root>/skills/decision-page/scripts/check_cards.js" --record <file>` until
-   it has no refusal and every lint is fixed or left knowingly, before the other writers
+   `R="<plugin root>"; case $R in /*) node "$R/skills/decision-page/scripts/check_cards.js" --record <file>;; *) echo "plugin root not absolute: $R" >&2; false;; esac`
+   until it has no refusal and every lint is fixed or left knowingly, before the other writers
    start. That card, from the current set, is the example.
 2. **Every writer's brief**, in this order:
    - the writer digest (`references/writer-digest.md`, pasted or by path);
    - the plugin root, the absolute path the `SKILL.md`'s **Plugin root** line gives, so the
-     writer runs `node "<plugin root>/skills/decision-page/scripts/check_cards.js"`, never
+     writer runs
+     `R="<plugin root>"; case $R in /*) node "$R/skills/decision-page/scripts/check_cards.js" --record <file>;; *) echo "plugin root not absolute: $R" >&2; false;; esac`,
+     never
      `scripts/check_cards.js` from its working directory, which is the checkout;
    - the example card's JSON, labelled "match its voice, density and level shapes; do not copy
      its facts";
@@ -93,7 +96,8 @@ With one writer there is no example stage, and the brief is the digest and the p
 
 - **A writer returns records**: one `decision-card/5` record per card it was given, each
   checked with
-  `node "<plugin root>/skills/decision-page/scripts/check_cards.js" --record <file>` before
+  `R="<plugin root>"; case $R in /*) node "$R/skills/decision-page/scripts/check_cards.js" --record <file>;; *) echo "plugin root not absolute: $R" >&2; false;; esac`
+  before
   it is handed back. A writer never writes `L`, `dep` or `refs`: they are the caller's, from
   the skeleton.
 - **The caller stores them**, each with its store's write path (a new decision raised, a
@@ -103,6 +107,7 @@ With one writer there is no example stage, and the brief is the digest and the p
   stored record plus its `L` and `dep`, then the page's `refs`. So the page shows exactly what
   the store holds, and a record the store refused never reaches it.
 - **One check over the whole file**:
-  `node "<plugin root>/skills/decision-page/scripts/check_cards.js" cards.json`, once. Each
+  `R="<plugin root>"; case $R in /*) node "$R/skills/decision-page/scripts/check_cards.js" cards.json;; *) echo "plugin root not absolute: $R" >&2; false;; esac`,
+  once. Each
   line goes back to the writer of the card it names, whose fix is a new revision stored the
   same way, or the caller fixes it itself; a `page:` line is the caller's.

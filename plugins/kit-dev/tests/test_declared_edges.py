@@ -92,6 +92,11 @@ ALLOWED = {
      '= "skills/decision-page/scripts/'): "a repo scan's list of the runs it guards, not a use",
     ("kit-dev/tests/test_relative_runs.py", "ownership",
      '= "skills/claim-md/scripts/'): "a repo scan's list of the runs it guards, not a use",
+    ("kit-dev/tests/test_relative_runs.py", "operator-interaction", 'DP_'):
+        "a repo scan's list of the runs it guards, not a use",
+    ("kit-dev/tests/test_relative_runs.py", "statusline-hub",
+     '= "skills/install-statusline-hub/scripts/'):
+        "a repo scan's list of the runs it guards, not a use",
     # work-items: a credit to the step that closes items on landing (72ef WI-5); the other
     # provider of the interface and its grooming skill, declared from ralph's side (WI-1);
     # and `implement` as an item stage name, not the skill.

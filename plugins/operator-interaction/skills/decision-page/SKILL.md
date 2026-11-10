@@ -23,8 +23,9 @@ line. Generation time does not limit use: a new set is a data file and a publish
 **Plugin root:** `${CLAUDE_PLUGIN_ROOT}`. Loading this skill fills in that absolute path; a
 reference file read with a tool is not filled in, and the Bash tool's environment does not
 carry the variable (https://code.claude.com/docs/en/plugins-reference § Environment
-variables). A command in this skill's `references/` that runs a file of this plugin writes
-it as `"<plugin root>/…"`: put this path there. Never run such a file as `scripts/…` or
+variables). A command in this skill's `references/` that runs a file of this plugin starts
+`R="<plugin root>"; case $R in /*) …` and runs `"$R/…"`: put this path in `R`. The
+guard refuses a root that is not absolute, so a root left unfilled runs nothing. Never run such a file as `scripts/…` or
 `hooks/…` from the working directory, which is the checkout and may hold a file of that
 name, and never run a command whose root is not an absolute path. A writer sub-agent loads
 no skill, so its brief carries this root (`references/writers.md` § The brief).
@@ -289,8 +290,8 @@ The rules below are what the digest condenses:
   option but (z) with its effect, no TLDR bullet that carries the recommendation, an option's
   `act` a non-empty list of one-line steps with no fill-in placeholder and never on (z), the
   fields required to render.
-- With node present, run the skill's `scripts/check_cards.js` (under its base directory) on
-  the working copy's `cards.json`. Fix every refusal it prints. For an id, name the thing;
+- With node present, run the skill's check on the working copy's `cards.json`:
+  `node "${CLAUDE_PLUGIN_ROOT}/skills/decision-page/scripts/check_cards.js" cards.json`. Fix every refusal it prints. For an id, name the thing;
   for a count or a named thing, add the gloss to `context`; or leave the term knowingly. For
   each `shape:` line, reshape the level; for an `impact:` line, give the option's effect its
   mechanism, or write the Impact's reach across the options. For each `depth:` line, fix the
@@ -425,7 +426,8 @@ answer to a card whose `rev` has not moved is a new answer and hands over one mo
 - *The page says the decisions didn't load*: `cards.json` was not published at that path, or
   it does not parse. Republish with the url.
 - *The page says cards.json is not valid*: it names the first problems; fix them, republish.
-  With node present, run the skill's `scripts/check_cards.js` (under its base directory) on
+  With node present, run
+  `node "${CLAUDE_PLUGIN_ROOT}/skills/decision-page/scripts/check_cards.js" cards.json` on
   the working copy's `cards.json` first: it prints every refusal, then the lints.
 - *The page says it can't save answers*: the view has no db (signed out, or the capability
   was not declared). Republish with step 3's `capabilities`; meanwhile answers come in chat.

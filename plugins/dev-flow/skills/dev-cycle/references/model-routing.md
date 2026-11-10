@@ -494,9 +494,8 @@ items still ask.**
 **Below the reserve** means the quota sense's reading shows a window spent down to its
 reserve: `headroom` ≤ 0 in the **weekly** (`seven_day`) window (the `librarian-mode`
 skill's `references/budget.md` § The numbers). The five-hour window never triggers it. A librarian uses its latest reading; a
-standalone run takes one with that skill's quota sense,
-`python3 "<plugin root>/skills/librarian-mode/scripts/quota_budget.py" --read-only`
-(`<plugin root>` the absolute path `SKILL.md`'s **Plugin root** line gives). No
+standalone run takes one with that skill's quota sense and `--read-only` (its
+`references/budget.md` § Running it, the guarded command). No
 signal reads as not below — except at the guard on a round past the fourth review, where
 no signal is a stop (`bindings.md` § Decisions). Read it before each dispatch or offer the
 table names.

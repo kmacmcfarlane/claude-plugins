@@ -274,7 +274,7 @@ SPLIT_PHRASES = (
     "It is the page's alone: chat shows a lone decision with no heading.",
     "A decision a card depends on that is not on the page goes in `refs` when it is answered; "
     "an open one is added to the page as a card",
-    "node \"<plugin root>/skills/decision-page/scripts/split_writers.js\" [--cap N] skeleton.json",
+    'case $R in /*) node "$R/skills/decision-page/scripts/split_writers.js" [--cap N] skeleton.json;;',
     "A depends chain is never cut; only same-layer links are.",
     "Each writer takes the next whole one while the total stays at or under the cap",
     "a group is never split across writers unless its unit (the group with what it depends on, or "
@@ -286,7 +286,7 @@ SPLIT_PHRASES = (
 BRIEF_PHRASES = (
     "the same digest and the same finished example card",
     "as a `decision-card/5` record",
-    "`node \"<plugin root>/skills/decision-page/scripts/check_cards.js\" --record <file>`",
+    'case $R in /*) node "$R/skills/decision-page/scripts/check_cards.js" --record <file>;;',
     "before the other writers start",
     "That card, from the current set, is the example.",
     "the writer digest (`references/writer-digest.md`, pasted or by path)",
@@ -297,7 +297,9 @@ BRIEF_PHRASES = (
 )
 MERGE_PHRASES = (
     "**A writer returns records**",
-    "checked with `node \"<plugin root>/skills/decision-page/scripts/check_cards.js\" --record <file>` before it is handed back",
+    'checked with `R="<plugin root>"; case $R in /*) node "$R/skills/decision-page/scripts/'
+    'check_cards.js" --record <file>;;',
+    "before it is handed back",
     "A writer never writes `L`, `dep` or `refs`",
     "**The caller builds `cards.json` from the records it has stored** (for a caller with no store, "
     "the checked files it kept), not from the writers' files",

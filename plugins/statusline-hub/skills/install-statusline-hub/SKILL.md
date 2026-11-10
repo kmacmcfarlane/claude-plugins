@@ -75,7 +75,7 @@ Read.
 ### Step 3: Run it
 
 ```bash
-python3 "<plugin root>/skills/install-statusline-hub/scripts/install_hub.py" $ARGUMENTS
+R="<plugin root>"; case $R in /*) python3 "$R/skills/install-statusline-hub/scripts/install_hub.py" $ARGUMENTS;; *) echo "plugin root not absolute: $R" >&2; false;; esac
 ```
 
 Exit codes:
