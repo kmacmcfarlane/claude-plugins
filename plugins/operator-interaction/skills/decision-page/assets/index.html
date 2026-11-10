@@ -118,6 +118,12 @@ details.gfold>summary::before{content:"▸ ";color:var(--accent);display:inline-
 details.gfold[open]>summary::before{transform:rotate(90deg)}
 details.gfold>summary .lbl{display:inline;margin-right:.4em}
 .gsum{color:var(--muted)}
+/* the header's "How this page works" fold: closed, the full walk-through of a card */
+details.how{color:var(--muted);max-width:66ch}
+details.how ul{margin:0;padding-left:1.2em;display:flex;flex-direction:column;gap:4px}
+details.how ul ul{margin-top:4px;gap:2px}
+details.how li{min-width:0;overflow-wrap:anywhere}
+details.how .slug-t{white-space:normal}
 details.gfold>div{padding:6px 0 2px 1.1em}
 .gcards{display:flex;flex-direction:column;gap:10px;padding-left:14px;border-left:2px solid var(--line);min-width:0}
 @media (max-width:640px){.gcards{padding-left:8px}}
@@ -371,7 +377,31 @@ footer{color:var(--muted);font-size:.85rem;max-width:70ch}
   <header>
     <h1 id="title">Decision answers</h1>
     <p class="lede" id="lede"></p>
-    <p class="lede">For each decision, pick one option or one follow-up (the radio buttons allow only one), and add your words if you like. Each click saves at once; there is no submit button. Tell Claude in chat when you're done. The map under the progress bar lists the groups; each decision is one line in its group, and a click on the line opens its card (<b>Expand all</b> and <b>Collapse all</b> open or close every card). <b>Use recommendation</b> and <b>Later</b> beside a line answer without opening the card. A <span class="slug-t">number · name</span> is a decision: hover over it or focus it to see it, and click it to open its card; on one not on this page, a tap or click pins what it shows, and a second tap, a tap elsewhere or Escape closes it. Each line shows, after an arrow (→) and its letter, what the recommended option changes in the system the work builds (with no recommendation, each option's, in a few words); each card opens on a TLDR, then, on a decision that depends on another, a <i>depends:</i> line saying on which answer (a click on the decision it names opens its card), then its Context (the terms it uses), then its What (what is decided; a set lists every item it acts on, and each item's outcome under each option where they differ), then, on a decision raised from a finding, its Finding (where it lives, how it happens, and its code, shown exactly as written), then, where the work states requirements, its Scope (<i>required</i> by a criterion, <i>shapes the work</i>, or <i>outside the criteria</i>), then, on a decision about a failure that may or may not happen, its Likelihood (how often it happens, <i>observed</i> or from the <i>evidence</i> there is) and its <b>Best response?</b> (whether acting here is the response that matters), then its <b>Open questions</b> and its <b>Assumptions</b>, both folded, then its impact, one facet a line, then what a round of waiting costs, then one line per option, each but (z) with its <b>Pros</b> and <b>Cons</b> under it and <b>More</b> beside it, then the follow-ups and your words, then <b>Clear answer</b>, then its folds, from compressed to full detail: Background, Attached, Rejected alternatives. A part with a <i>more detail</i> button, above or inside a fold, shows more detail as short bullets when you click it or its text, and full detail in headed sections on a second click; picking an option opens its view (and closes the card's other one), and <b>More</b> beside an option opens or closes its view alone: its plan in brief, its <b>Pros</b> and <b>Cons</b> side by side, then its own effect, reach, undo and cost. A part with nothing to say (none) is left out. An Impact describes the system the work builds, never the review or the process; its <i>later:</i> line says what waiting holds up. <b>Open questions</b>, folded above the Impact, lists what is not known yet; <b>Assumptions</b>, folded under it, gives the basis of the call, its evidence, and each assumption it rests on with its tripwire, the sign that would change it. <b>Attached</b>, the fold after Background, holds the material a decision rests on (an excerpt, a table, check results and the like), each entry closed until you open it; a dotted link opens the attachment it names. <b>Rejected alternatives</b>, the last fold, lists the choices that were weighed and not offered, each with why.<span id="doclink"></span></p>
+    <p class="lede">Pick one option per decision and add words if you like; each click saves at once (no submit button); tell Claude in chat when you're done. Click a line in the map to open its card, or use <b>Use recommendation</b> / <b>Later</b> to answer from the line.<span id="doclink"></span></p>
+    <details class="gfold how" id="how"><summary><span class="lbl">How this page works</span></summary><div><ul>
+      <li>For each decision, pick one option or one follow-up (the radio buttons allow only one), and add your words if you like. Each click saves at once; there is no submit button. Tell Claude in chat when you're done.</li>
+      <li>The map under the progress bar lists the groups; each decision is one line in its group, and a click on the line opens its card (<b>Expand all</b> and <b>Collapse all</b> open or close every card). <b>Use recommendation</b> and <b>Later</b> beside a line answer without opening the card.</li>
+      <li>A <span class="slug-t">number · name</span> is a decision: hover over it or focus it to see it, and click it to open its card; on one not on this page, a tap or click pins what it shows, and a second tap, a tap elsewhere or Escape closes it.</li>
+      <li>Each line shows, after an arrow (→) and its letter, what the recommended option changes in the system the work builds (with no recommendation, each option's, in a few words).</li>
+      <li>Each card, in this order:<ul>
+        <li>opens on a TLDR;</li>
+        <li>on a decision that depends on another, a <i>depends:</i> line saying on which answer (a click on the decision it names opens its card);</li>
+        <li>its Context (the terms it uses);</li>
+        <li>its What (what is decided; a set lists every item it acts on, and each item's outcome under each option where they differ);</li>
+        <li>on a decision raised from a finding, its Finding (where it lives, how it happens, and its code, shown exactly as written);</li>
+        <li>where the work states requirements, its Scope (<i>required</i> by a criterion, <i>shapes the work</i>, or <i>outside the criteria</i>);</li>
+        <li>on a decision about a failure that may or may not happen, its Likelihood (how often it happens, <i>observed</i> or from the <i>evidence</i> there is) and its <b>Best response?</b> (whether acting here is the response that matters);</li>
+        <li>its <b>Open questions</b> and its <b>Assumptions</b>, both folded. <b>Open questions</b>, folded above the Impact, lists what is not known yet; <b>Assumptions</b>, folded under it, gives the basis of the call, its evidence, and each assumption it rests on with its tripwire, the sign that would change it;</li>
+        <li>its impact, one facet a line. An Impact describes the system the work builds, never the review or the process; its <i>later:</i> line says what waiting holds up;</li>
+        <li>what a round of waiting costs;</li>
+        <li>one line per option, each but (z) with its <b>Pros</b> and <b>Cons</b> under it and <b>More</b> beside it; picking an option opens its view (and closes the card's other one), and <b>More</b> beside an option opens or closes its view alone: its plan in brief, its <b>Pros</b> and <b>Cons</b> side by side, then its own effect, reach, undo and cost;</li>
+        <li>the follow-ups and your words;</li>
+        <li><b>Clear answer</b>;</li>
+        <li>its folds, from compressed to full detail: Background; <b>Attached</b>, the fold after Background, holds the material a decision rests on (an excerpt, a table, check results and the like), each entry closed until you open it, and a dotted link opens the attachment it names; <b>Rejected alternatives</b>, the last fold, lists the choices that were weighed and not offered, each with why.</li>
+      </ul></li>
+      <li>A part with a <i>more detail</i> button, above or inside a fold, shows more detail as short bullets when you click it or its text, and full detail in headed sections on a second click.</li>
+      <li>A part with nothing to say (none) is left out.</li>
+    </ul></div></details>
     <div class="banner" id="nodb" hidden>This view can't save answers. Nothing you pick here is kept; answer in chat instead (<code id="nodbex">N: a</code>).</div>
     <div class="banner" id="viewonly" hidden>You are viewing these answers. Only the page's owner can answer here.</div>
     <div class="banner" id="nodata" hidden>The decisions didn't load. Reload the page; if it keeps failing, ask Claude for them in chat.</div>

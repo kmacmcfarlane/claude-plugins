@@ -101,8 +101,15 @@ class BothSurfaces(unittest.TestCase):
 
 # ---- S1 (system impact on the page), rule 259
 
-def static_lede(html):
-    m = re.search(r'<p class="lede">(For each decision.*?)</p>', html, re.S)
+def how_fold(html):
+    """The header's closed "How this page works" fold: the walk-through the lede once held (5216)."""
+    m = re.search(r'<details class="gfold how" id="how">(.*?)</details>', html, re.S)
+    return " ".join(m.group(1).split()) if m else ""
+
+
+def visible_lede(html):
+    """The header's static lede, the two short sentences shown above the fold."""
+    m = re.search(r'<p class="lede">(.*?)</p>', html, re.S)
     return m.group(1) if m else ""
 
 
@@ -111,7 +118,7 @@ SYSTEM_LEDE = "An Impact describes the system the work builds, never the review 
 
 def system_text_problems(html, fallback, schema, rulings):
     out = []
-    lede = static_lede(html)
+    lede = how_fold(html)
     if SYSTEM_LEDE not in lede or "changes in the system the work builds" not in lede:
         out.append("the lede does not say the Impact describes the system")
     if "describing the system the work builds, never the review or the process" not in flat(fallback):
@@ -122,6 +129,81 @@ def system_text_problems(html, fallback, schema, rulings):
     if "On the answer page (2026-10-22, *Both surfaces*" not in b or "`process` lint" not in b:
         out.append("rule 259 does not name its page form")
     return out
+
+
+# ---- the header: a short lede, the walk-through in a closed fold (5216)
+
+LEDE_MAX_WORDS = 50
+# sentences of the old one-paragraph lede, each still said, now in the fold
+HOW_PHRASES = (
+    "the radio buttons allow only one", "Each click saves at once; there is no submit button.",
+    "Tell Claude in chat when you're done.", "The map under the progress bar lists the groups",
+    "<b>Expand all</b> and <b>Collapse all</b> open or close every card",
+    "<b>Use recommendation</b> and <b>Later</b> beside a line answer without opening the card",
+    "after an arrow (→) and its letter", "opens on a TLDR", "<i>depends:</i> line saying on which answer",
+    "its Context (the terms it uses)", "its Finding (where it lives, how it happens, and its code, shown exactly as written)",
+    "<i>outside the criteria</i>", "<b>Best response?</b>", "both folded", "one facet a line",
+    "what a round of waiting costs", "each but (z) with its <b>Pros</b> and <b>Cons</b>", "<b>Clear answer</b>",
+    "from compressed to full detail", "full detail in headed sections on a second click",
+    "A part with nothing to say (none) is left out.", "its <i>later:</i> line says what waiting holds up",
+    "each assumption it rests on with its tripwire", "<b>Attached</b>, the fold after Background",
+    "a dotted link opens the attachment it names",
+    "<b>Rejected alternatives</b>, the last fold, lists the choices that were weighed and not offered, each with why.",
+)
+
+
+def header_problems(html):
+    out = []
+    lede = visible_lede(html)
+    words = re.sub(r"<[^>]+>", " ", lede).split()
+    if not words or len(words) > LEDE_MAX_WORDS:
+        out.append("the visible lede is %d words, not 1 to %d" % (len(words), LEDE_MAX_WORDS))
+    if not lede.endswith('<span id="doclink"></span>'):
+        out.append("the visible lede does not end on the doc link")
+    if "<b>Use recommendation</b>" not in lede or "<b>Later</b>" not in lede:
+        out.append("the visible lede does not name the line's quick answers")
+    m = re.search(r'<p class="lede">.*?</p>\s*(<details[^>]*>)\s*<summary><span class="lbl">How this page works</span></summary>',
+                  html, re.S)
+    if not m:
+        out.append("no How this page works fold directly under the lede")
+    elif re.search(r"\sopen\b", m.group(1)):
+        out.append("the How this page works fold is not closed by default")
+    fold = how_fold(html)
+    for p in HOW_PHRASES:
+        if p not in fold:
+            out.append("the fold does not say: " + p)
+    return out
+
+
+class HeaderText(unittest.TestCase):
+    def setUp(self):
+        self.html = PAGE.read_text()
+
+    def test_the_header(self):
+        self.assertEqual(header_problems(self.html), [])
+
+    def test_mutations(self):
+        h = self.html
+        lede = visible_lede(h)
+        long = h.replace(lede, "word " * 45 + lede, 1)
+        self.assertNotEqual(long, h)
+        self.assertTrue(header_problems(long)[0].startswith("the visible lede is "))
+        opened = h.replace('<details class="gfold how" id="how">', '<details class="gfold how" id="how" open>', 1)
+        self.assertNotEqual(opened, h)
+        self.assertIn("the How this page works fold is not closed by default", header_problems(opened))
+        gone = h.replace('<span class="lbl">How this page works</span>', '<span class="lbl">Help</span>', 1)
+        self.assertNotEqual(gone, h)
+        self.assertIn("no How this page works fold directly under the lede", header_problems(gone))
+        for p in ("there is no submit button", "<b>Rejected alternatives</b>, the last fold", "<b>Use recommendation</b> and"):
+            cut = h.replace(p, "x", 1)
+            self.assertNotEqual(cut, h)
+            self.assertTrue([x for x in header_problems(cut) if x.startswith("the fold does not say")], p)
+        nolink = h.replace('<span id="doclink"></span></p>', '</p><span id="doclink"></span>', 1)
+        self.assertNotEqual(nolink, h)
+        self.assertIn("the visible lede does not end on the doc link", header_problems(nolink))
+        noquick = h.replace(" or use <b>Use recommendation</b> / <b>Later</b> to answer from the line", "", 1)
+        self.assertNotEqual(noquick, h)
+        self.assertIn("the visible lede does not name the line's quick answers", header_problems(noquick))
 
 
 class SystemText(unittest.TestCase):
@@ -629,7 +711,7 @@ def popup_problems(schema, html):
         out.append("the schema names a popup")
     if re.search(r"tag size[^.|]*\bin\s+the\s+map|\bthe map and a closed card", flat(schema)):
         out.append("the schema puts the effect in the map")
-    lede = static_lede(html)
+    lede = how_fold(html)
     if ("hover over it or focus it to see it, and click it to open its card" not in lede
             or "a second tap, a tap elsewhere or Escape closes it" not in lede
             or "hover or click it to see that decision" in lede):

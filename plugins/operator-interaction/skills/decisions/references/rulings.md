@@ -152,7 +152,7 @@ alternative not taken, in case practice argues for it.
   its code, data, users, deploys and downstream consumers. An effect on the process — a held
   review comment, a round, a blocked session — goes only in Wait. Cost keeps build time and
   spend, and the operator's attention only on a round ask. On the answer page (2026-10-22,
-  *Both surfaces*; a design made in planning, not the operator's): the lede says it, and the
+  *Both surfaces*; a design made in planning, not the operator's): the page's **How this page works** fold says it, and the
   pre-publish runner's `process` lint catches a process phrase in an Effect or Reach. Not taken: a process clause in
   Effect when the process is all the decision changes (259 (b)).
 - **Undo only where an option is one-way or costly** (2026-10-20, answer 260 (a): "we

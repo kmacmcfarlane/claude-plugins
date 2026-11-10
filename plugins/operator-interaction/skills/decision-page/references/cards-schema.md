@@ -304,7 +304,8 @@ open card the Impact, one facet a line; and each option's view its own effect, r
 undo (where it is one-way or costly) and cost. Each group opens on a band: the *Group* label,
 its title and its decisions' numbers, a count of its decisions and *What they share:* its note; a bundle adds a closed
 **Shared context** fold whose summary is the context's first sentence. An Impact describes the system the work builds, never the review or the process, which
-is its Wait: the lede says so, and the runner's `process` lint catches a process phrase in an
+is its Wait: the page's closed **How this page works** fold, under the header's two-sentence
+introduction, says so, and the runner's `process` lint catches a process phrase in an
 option's effect or reach, or the Impact's reach. A card with a `label` shows it after its title,
 muted, with its short name, in every view. It opens every card on its TLDR, then its dependency line when it waits on another decision, then its Context,
 then its What, then its Finding when it has one, then its Scope and its Likelihood when it has them, then its Open questions, then its Assumptions, then its Impact: a page is read away from the conversation, so its
