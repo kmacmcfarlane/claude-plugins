@@ -52,6 +52,7 @@ MISS = None
 BRIEF_SLOT = "<absolute path of 00-brief.md>"
 PRIOR_SLOT = "<absolute path of the prior 00-brief.md>"
 REFINE = PLUGIN / "skills" / "research-refine" / "SKILL.md"
+STORAGE = PLUGIN / "skills" / "research" / "references" / "storage-and-knowledge-base.md"
 TOOLS = all(shutil.which(t) for t in ("bash", "python3", "git", "sed"))
 
 LOOKUPS = {
@@ -759,6 +760,53 @@ class TestPriorItem(unittest.TestCase):
         self.assertEqual(self._pasted(prior_block()), (False, [""]))
 
 
+# -- a path holding a quote is never pasted ----------------------------------------------
+def pasteable(path):
+    """The stated rule: a path holding `'` or a newline is never pasted into `X='<path>'`."""
+    return "'" not in path and "\n" not in path
+
+
+def pasteable_without_the_quote_rule(path):
+    return "\n" not in path
+
+
+def paste_and_run(text, slot, path, rule):
+    """Paste the path into the block as the text says, unless the rule refuses it."""
+    fx = Fx("W2")
+    try:
+        p = path.replace("<S>", str(fx.sentinel))
+        if not rule(p):
+            return "refused", fx.sentinel_written()
+        fx.bash(text.replace(slot, p))
+        return "pasted", fx.sentinel_written()
+    finally:
+        fx.close()
+
+
+# A brief path, and a RESEARCH.md link target a refine run takes as its prior brief.
+QUOTED = "/tmp/x'; touch '<S>'; '/00-brief.md"
+
+
+@unittest.skipUnless(TOOLS, "the shell tools are needed")
+class TestQuotedPaths(unittest.TestCase):
+    def cases(self):
+        return (("brief path", resume_block(), BRIEF_SLOT),
+                ("RESEARCH.md link as a prior brief", prior_block(), PRIOR_SLOT))
+
+    def test_refused(self):
+        for name, text, slot in self.cases():
+            with self.subTest(case=name):
+                self.assertEqual(paste_and_run(text, slot, QUOTED, pasteable), ("refused", False))
+        self.assertFalse(pasteable("/tmp/a\nb"))
+
+    def test_mutant_without_the_quote_rule_runs_the_path(self):
+        for name, text, slot in self.cases():
+            with self.subTest(case=name):
+                self.assertEqual(
+                    paste_and_run(text, slot, QUOTED, pasteable_without_the_quote_rule),
+                    ("pasted", True))
+
+
 # -- the rule in prose ------------------------------------------------------------------
 RULE = {
     ROUTING: ("a stored `wi:` line is never run, and a stored `item_file:` is never written to",
@@ -770,7 +818,10 @@ RULE = {
               "*A prior run's item*", "on `prior item: none` it carries no such ref",
               "with none printed, the held item is not touched",
               "appended to the `item_file:` this run resolved (on a resume, the one *Resuming* printed)",
-              "appended to the `item_file:` this run resolved (on a resume, the one *Resuming* printed; § The work item)"),
+              "appended to the `item_file:` this run resolved (on a resume, the one *Resuming* printed; § The work item)",
+              "so a path holding `'` or a newline is never pasted: the run stops and says why in one line (`brief path holds a quote or a newline; not resuming`)",
+              "so a path holding `'` or a newline is never pasted: the run stops and says why in one line (`prior brief path holds a quote or a newline; not refining`)"),
+    STORAGE: ("A path holding `'` or a newline fails too, since a path is later pasted between single quotes in a command",),
     REFINE: ("`--ref \"wi:$PRIOR\"`, the id read from the prior brief as data and filtered first",
              "when that block prints `prior item: none`, the filing carries no such ref",
              "both with only the id *A prior run's item* printed",
@@ -808,7 +859,7 @@ class TestTheRuleIsStated(unittest.TestCase):
         for path in RULE:
             with self.subTest(file=path.name):
                 t = self.texts()
-                t[path] = t[path].replace("never", "").replace("only", "")
+                t[path] = t[path].replace("never", "").replace("only", "").replace("fails too", "")
                 self.assertTrue(rule_problems(t))
 
     def test_each_phrase_is_needed(self):

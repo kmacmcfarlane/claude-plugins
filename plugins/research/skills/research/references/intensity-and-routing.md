@@ -594,7 +594,10 @@ case $ID in ""|none|.*|-*|*[!A-Za-z0-9._-]*) ;; *) OK=$ID; F=$WORK_ITEMS_ROOT/it
 if test -n "$ITEM_FILE" && test -f "$WI_PY"; then echo "item: $ID"; echo "item_file: $ITEM_FILE"; else ITEM_FILE=; ID=; echo "item ${OK:-(no plain id)} not found in this store; recording here"; fi
 ```
 
-The id is read from the file as data, never pasted into a command, and is used only when it
+The brief's path is pasted between the single quotes of `BRIEF='…'`, so a path holding `'`
+or a newline is never pasted: the run stops and says why in one line (`brief path holds a
+quote or a newline; not resuming`). The id is read from the file as data, never pasted into
+a command, and is used only when it
 is a plain file name (letters, digits, `.`, `_`, `-`; no `/`, no leading `.` or `-`) whose
 `$WORK_ITEMS_ROOT/items/<id>.md` is an existing regular file, not a symlink, and resolves to
 a path inside the main checkout: a symlinked item, `items/` or store directory in a
@@ -617,7 +620,10 @@ PRIOR=$(sed -n 's/^item: *//p' "$PRIOR_BRIEF" | head -1); PRIOR=${PRIOR%%[[:spac
 case $PRIOR in ""|none|.*|-*|*[!A-Za-z0-9._-]*) PRIOR=; echo "prior item: none (no plain id in the prior brief)";; *) echo "prior item: $PRIOR";; esac
 ```
 
-The filing then adds `--ref "wi:$PRIOR"` only after a printed `prior item: <id>`, with the
+The prior brief's path is pasted between the single quotes of `PRIOR_BRIEF='…'`, so a path
+holding `'` or a newline is never pasted: the run stops and says why in one line (`prior
+brief path holds a quote or a newline; not refining`). The filing then adds
+`--ref "wi:$PRIOR"` only after a printed `prior item: <id>`, with the
 id from that line; on `prior item: none` it carries no such ref. Closing a held prior's item
 (§ Closing) names only that printed id, `$WI done "$PRIOR" --note "…"` or
 `$WI block "$PRIOR" "…"`; with none printed, the held item is not touched and the report
