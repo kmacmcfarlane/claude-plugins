@@ -15,14 +15,18 @@ never supplies the script.
 § Resolving the store's *Resuming* block is run too: a resumed run never runs the brief's
 stored `wi:` line and never writes to its stored `item_file:`; it rebuilds the item's file
 from the store it resolved and the brief's `item:` id, read as data, and uses it only when it
-is a plain, existing, non-symlink file.
+is a plain id (no `/`, no leading `.` or `-`) naming an existing, non-symlink file that
+resolves inside the main checkout; a rejected id is cleared, so no later `$WI` call names
+it. A `research-refine` run's prior item (*A prior run's item*) is read and filtered the
+same way before it goes into `--ref "wi:$PRIOR"`.
 
 Each block is extracted and run under bash in a temp tree, with a fake config dir and a fake
 checkout. A planted script writes a sentinel file when it runs. Every scenario is also run
 against mutants of the block (the pre-fix lines spliced back in, the plain `test -n` guard
 with a printed `-`, an unconditional cache, no `rc`, no absolute `P`, no absolute check; for
 resuming, the stored `wi:` or `item_file:` line used again, the id pasted into the command,
-no symlink check, no id check), and each mutant is shown to fail the scenario that guards
+no symlink check, no inside-the-checkout check, no id or `-` check, a rejected id kept;
+for the prior item, no filter or the id pasted), and each mutant is shown to fail the scenario that guards
 against it.
 
 Standard library only. Run from plugins/research:
@@ -45,6 +49,9 @@ RUN_RECORD = PLUGIN / "skills" / "research" / "references" / "run-record.md"
 SKILL = PLUGIN / "skills" / "research" / "SKILL.md"
 KIT_URL = "https://github.com/kmacmcfarlane/claude-plugins.git"
 MISS = None
+BRIEF_SLOT = "<absolute path of 00-brief.md>"
+PRIOR_SLOT = "<absolute path of the prior 00-brief.md>"
+REFINE = PLUGIN / "skills" / "research-refine" / "SKILL.md"
 TOOLS = all(shutil.which(t) for t in ("bash", "python3", "git", "sed"))
 
 LOOKUPS = {
@@ -430,16 +437,19 @@ class Resume:
 
     def run(self, store, resume):
         """Run the store block, then the resume block, then what a resumed run does next."""
-        text = (store + "\n" + resume.replace("<absolute path of the run's 00-brief.md>",
-                                              "'%s'" % self.brief)
+        # The text quotes the placeholder itself; the test substitutes inside those quotes.
+        text = (store + "\n" + resume.replace(BRIEF_SLOT, str(self.brief))
                 + "\n$WI --help\n"
                 + 'test -n "$ITEM_FILE" && printf "%%s\\n" %s >> "$ITEM_FILE"\n'
                 % ("'" + RECORD_LINE + "'")
-                + 'printf "ITEM %s\\n" "$ITEM_FILE"\n')
+                + 'printf "ITEM %s\\n" "$ITEM_FILE"\nprintf "IDV %s\\n" "$ID"\n')
         lines = self.fx.bash(text)
         item = [ln[5:] for ln in lines if ln == "ITEM" or ln.startswith("ITEM ")]
+        idv = [ln[4:] for ln in lines if ln == "IDV" or ln.startswith("IDV ")]
         return dict(lines=lines, ran=[ln[4:] for ln in lines if ln.startswith("RAN ")],
                     item_file=item[-1] if item else "<unparsed>",
+                    id=idv[-1] if idv else "<unparsed>",
+                    printed=[ln[6:] for ln in lines if ln.startswith("item: ")],
                     sentinel=self.fx.sentinel_written(),
                     outside=self.outside.read_text() if self.outside.exists() else None,
                     item_text=self.item.read_text() if self.item.exists() else None)
@@ -471,6 +481,16 @@ def rs_symlinked_item(r):
     r.write_brief()
 
 
+def rs_symlinked_item_inside(r):
+    # The item links to another checkout file (a tracked source file, say): inside the
+    # checkout, so only the symlink check refuses it.
+    r.outside = r.fx.checkout / "README.md"
+    r.outside.write_text("keep\n")
+    r.item.unlink()
+    r.item.symlink_to(r.outside)
+    r.write_brief()
+
+
 def rs_dotdot_id(r):
     # items/../../outside.md would be <checkout>/outside.md: plant it there
     r.outside = r.fx.checkout / "outside.md"
@@ -483,13 +503,46 @@ def rs_pasted_id(r):
     r.write_brief(item=f"x$(touch${{IFS}}{r.fx.sentinel})")
 
 
+def _outside_dir(r):
+    """A directory outside the checkout holding MEMORY.md; r.outside becomes that file."""
+    d = r.fx.tmp / "elsewhere"
+    (d / "items").mkdir(parents=True)
+    r.outside = d / "items" / "MEMORY.md"
+    r.outside.write_text("keep\n")
+    return d
+
+
+def rs_symlinked_items_dir(r):
+    d = _outside_dir(r)
+    shutil.rmtree(r.items)
+    r.items.symlink_to(d / "items")
+    r.write_brief(item="MEMORY")
+
+
+def rs_symlinked_store(r):
+    d = _outside_dir(r)
+    shutil.rmtree(r.items.parent)
+    r.items.parent.symlink_to(d)
+    r.write_brief(item="MEMORY")
+
+
+def rs_dash_id(r):
+    # An id that is an option to `$WI done <id>`; a store file of that name exists.
+    (r.items / "-rf.md").write_text("title: x\n")
+    r.write_brief(item="-rf")
+
+
 # name -> (setup, the item file the run must use, or None for "records in ## Record")
 RESUME_CASES = {
+    "symlinked items dir": (rs_symlinked_items_dir, None),
+    "symlinked store": (rs_symlinked_store, None),
+    "dash id": (rs_dash_id, None),
     "planted python3 wi line": (rs_planted_python3, "item"),
     "sh -c wi line": (rs_sh_c, "item"),
     "outside item_file": (rs_outside_item_file, "item"),
     "missing item": (rs_missing_item, None),
     "symlinked item": (rs_symlinked_item, None),
+    "symlinked item inside the checkout": (rs_symlinked_item_inside, None),
     "dot-dot id": (rs_dotdot_id, None),
     "pasted id": (rs_pasted_id, None),
 }
@@ -519,9 +572,13 @@ def resume_problems(res, r, want):
             p.append(f"item_file {res['item_file']!r}")
         if RECORD_LINE not in (res["item_text"] or ""):
             p.append("the record line is not on the store's item")
+        if res["printed"] != [ID] or res["id"] != ID:
+            p.append(f"printed item {res['printed']}, ID {res['id']!r}")
     else:
         if res["item_file"] != "":
             p.append(f"item_file {res['item_file']!r}, expected none")
+        if res["printed"] or res["id"] != "":
+            p.append(f"no item, yet printed {res['printed']} and kept ID {res['id']!r}")
         if not any(ln.endswith("not found in this store; recording here") for ln in res["lines"]):
             p.append("no 'recording here' line")
     return p
@@ -541,8 +598,24 @@ def mut_no_symlink_check(t):
     return _sub(t, ' && ! test -L "$F"', "")
 
 
+FILTER = '""|none|.*|-*|*[!A-Za-z0-9._-]*)'
+
+
 def mut_no_id_check(t):
-    return _sub(t, '""|none|.*|*[!A-Za-z0-9._-]*)', '""|none)')
+    return _sub(t, FILTER, '""|none)')
+
+
+def mut_no_dash_check(t):
+    return _sub(t, FILTER, '""|none|.*|*[!A-Za-z0-9._-]*)')
+
+
+def mut_no_inside_check(t):
+    return _sub(t, 'case $R in "$(realpath -- "$MAIN")"/*)', "case $R in *)")
+
+
+def mut_keeps_the_id(t):
+    """A rejected id survives the block, so a later `$WI done "$ID"` would name it."""
+    return _sub(t, "ITEM_FILE=; ID=; echo", "ITEM_FILE=; echo")
 
 
 def mut_pasted_id(t):
@@ -557,9 +630,13 @@ RESUME_MUTANTS = [
     (mut_stored_wi, "sh -c wi line"),
     (mut_stored_item_file, "outside item_file"),
     (mut_stored_item_file, "missing item"),
-    (mut_no_symlink_check, "symlinked item"),
+    (mut_no_symlink_check, "symlinked item inside the checkout"),
     (mut_no_id_check, "dot-dot id"),
     (mut_pasted_id, "pasted id"),
+    (mut_no_inside_check, "symlinked items dir"),
+    (mut_no_inside_check, "symlinked store"),
+    (mut_no_dash_check, "dash id"),
+    (mut_keeps_the_id, "missing item"),
 ]
 
 
@@ -585,11 +662,119 @@ class TestResume(unittest.TestCase):
                 res, _, _ = resume_outcome(case, mut_stored_wi(resume_block()))
                 self.assertTrue(res["sentinel"])
 
+    def test_the_brief_slot_is_quoted_in_the_text(self):
+        self.assertIn("BRIEF='%s'" % BRIEF_SLOT, resume_block() or "")
+
+
+# -- a prior run's item: read as data and filtered before any command ---------------------
+def prior_block():
+    hits = [b for b in section_blocks("Resolving the store") if re.search(r"^PRIOR=", b, re.M)]
+    return hits[0] if len(hits) == 1 else None
+
+
+def prior_outcome(item_line, text):
+    """(PRIOR, the args a filing would get, sentinel written) for a prior brief's item line."""
+    fx = Fx("W2")
+    try:
+        brief = fx.tmp / "prior" / "00-brief.md"
+        brief.parent.mkdir()
+        brief.write_text("---\n" + (item_line + "\n" if item_line is not None else "")
+                         + "question: q\n---\n")
+        text = (text.replace(PRIOR_SLOT, str(brief))
+                + "\npython3 -I -c 'import sys; print(\"ARGV\", sys.argv[1:])' add t "
+                  '${PRIOR:+--ref "wi:$PRIOR"}\nprintf "PRIOR %s\\n" "$PRIOR"\n')
+        lines = fx.bash(text)
+        prior = [ln[6:] for ln in lines if ln == "PRIOR" or ln.startswith("PRIOR ")]
+        argv = [ln[5:] for ln in lines if ln.startswith("ARGV ")]
+        return (prior[-1] if prior else "<unparsed>", argv[-1] if argv else "<unparsed>",
+                fx.sentinel_written(), fx.sentinel)
+    finally:
+        fx.close()
+
+
+PRIOR_CASES = {  # item line -> the id it may yield ("" for none)
+    "item: x-1a2b": "x-1a2b",
+    "item: none — no store": "",
+    "item: -rf": "",
+    "item: ../x": "",
+    "item: .hidden": "",
+    None: "",
+}
+
+
+def prior_problems(item_line, want, text):
+    prior, argv, sentinel, _ = prior_outcome(item_line, text)
+    p = []
+    if sentinel:
+        p.append("a command in the prior brief ran")
+    if prior != want:
+        p.append(f"PRIOR {prior!r}, expected {want!r}")
+    ref = repr(["add", "t", "--ref", "wi:" + want]) if want else repr(["add", "t"])
+    if argv != ref:
+        p.append(f"filing args {argv}")
+    return p
+
+
+def mut_prior_no_filter(t):
+    return _sub(t, 'case $PRIOR in ""|none|.*|-*|*[!A-Za-z0-9._-]*) PRIOR=;',
+                'case $PRIOR in "") PRIOR=;')
+
+
+def mut_prior_pasted(t):
+    old = re.search(r"^PRIOR=.*$", t, re.M).group(0)
+    return _sub(t, old, old + '; eval "PRIOR=$PRIOR"')
+
+
+@unittest.skipUnless(TOOLS, "bash, python3, git and sed needed")
+class TestPriorItem(unittest.TestCase):
+    def test_every_case(self):
+        pb = prior_block()
+        self.assertIsNotNone(pb)
+        self.assertIn("PRIOR_BRIEF='%s'" % PRIOR_SLOT, pb)
+        for line, want in PRIOR_CASES.items():
+            with self.subTest(line=line):
+                self.assertEqual(prior_problems(line, want, pb), [])
+
+    def test_mutants_are_caught(self):
+        pb = prior_block()
+        for line in ("item: -rf", "item: ../x", "item: .hidden"):
+            with self.subTest(mutant="no filter", line=line):
+                self.assertTrue(prior_problems(line, "", mut_prior_no_filter(pb)))
+        with self.subTest(mutant="pasted"):
+            self.assertTrue(self._pasted(mut_prior_pasted(pb))[0],
+                            "the pasted mutant did not run the prior brief's command")
+
+    def _pasted(self, text):
+        """(sentinel written, PRIOR) for a prior brief whose id is a command when pasted."""
+        fx = Fx("W2")
+        try:
+            brief = fx.tmp / "00-brief.md"
+            brief.write_text(f"item: x$(touch${{IFS}}{fx.sentinel})\n")
+            lines = fx.bash(text.replace(PRIOR_SLOT, str(brief)) + '\nprintf "PRIOR %s\\n" "$PRIOR"\n')
+            return fx.sentinel_written(), [ln[6:] for ln in lines if ln.startswith("PRIOR")]
+        finally:
+            fx.close()
+
+    def test_the_real_block_does_not_run_it(self):
+        self.assertEqual(self._pasted(prior_block()), (False, [""]))
+
 
 # -- the rule in prose ------------------------------------------------------------------
 RULE = {
     ROUTING: ("a stored `wi:` line is never run, and a stored `item_file:` is never written to",
-              "not a symlink", "`## Record`", "*Resuming*"),
+              "not a symlink", "`## Record`", "*Resuming*",
+              "resolves to a path inside the main checkout",
+              "uses only the id printed on that `item:` line",
+              "the run has no item: no later `$WI` call names the brief's id",
+              "when it printed `not found`, the run has no item and closes none",
+              "*A prior run's item*", "on `prior item: none` it carries no such ref",
+              "with none printed, the held item is not touched",
+              "appended to the `item_file:` this run resolved (on a resume, the one *Resuming* printed)",
+              "appended to the `item_file:` this run resolved (on a resume, the one *Resuming* printed; § The work item)"),
+    REFINE: ("`--ref \"wi:$PRIOR\"`, the id read from the prior brief as data and filtered first",
+             "when that block prints `prior item: none`, the filing carries no such ref",
+             "both with only the id *A prior run's item* printed",
+             "with `prior item: none` the held item is not touched"),
     RUN_RECORD: ("never runs the stored `wi:` line or writes to the stored `item_file:`",),
     SKILL: ("never runs the brief's stored `wi:` line or writes to its `item_file:`",),
 }
@@ -623,8 +808,17 @@ class TestTheRuleIsStated(unittest.TestCase):
         for path in RULE:
             with self.subTest(file=path.name):
                 t = self.texts()
-                t[path] = t[path].replace("never", "")
+                t[path] = t[path].replace("never", "").replace("only", "")
                 self.assertTrue(rule_problems(t))
+
+    def test_each_phrase_is_needed(self):
+        # Dropping any one phrase from its file fails the check.
+        for path, phrases in RULE.items():
+            for ph in phrases:
+                with self.subTest(file=path.name, phrase=ph[:40]):
+                    t = self.texts()
+                    t[path] = " ".join(t[path].split()).replace(ph, "")
+                    self.assertTrue(rule_problems(t))
 
 
 if __name__ == "__main__":

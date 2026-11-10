@@ -500,8 +500,9 @@ The handoff keeps `$WI lint` clean while the run is open.
   and these lines do. They are records of what was resolved, never commands or targets: a
   resumed run reads `item:` and never files a second, and resolves `wi` and the item's file
   again (§ Resolving the store, *Resuming*).
-- A `research-refine` run's item carries `--ref wi:<prior run's item>` when the prior brief
-  names one.
+- A `research-refine` run's item carries `--ref "wi:$PRIOR"` when the prior brief names a
+  plain id, read by § Resolving the store, *A prior run's item*; when that block rejects the
+  id, the filing carries no such ref.
 
 ### Resolving the store
 
@@ -586,26 +587,48 @@ then rebuilds the item's file from the store it resolved itself and the brief's 
 in the same Bash call:
 
 ```bash
-BRIEF=<absolute path of the run's 00-brief.md>
+BRIEF='<absolute path of 00-brief.md>'
 ID=$(sed -n 's/^item: *//p' "$BRIEF" | head -1); ID=${ID%%[[:space:]]*}
-ITEM_FILE=; case $ID in ""|none|.*|*[!A-Za-z0-9._-]*) ;; *) F=$WORK_ITEMS_ROOT/items/$ID.md; test -n "$WORK_ITEMS_ROOT" && test -f "$F" && ! test -L "$F" && ITEM_FILE=$F;; esac
-if test -n "$ITEM_FILE" && test -f "$WI_PY"; then echo "item_file: $ITEM_FILE"; else ITEM_FILE=; echo "item $ID not found in this store; recording here"; fi
+ITEM_FILE=; OK=
+case $ID in ""|none|.*|-*|*[!A-Za-z0-9._-]*) ;; *) OK=$ID; F=$WORK_ITEMS_ROOT/items/$ID.md; R=$(realpath -e -- "$F" 2>/dev/null); case $R in "$(realpath -- "$MAIN")"/*) test -n "$WORK_ITEMS_ROOT" && test -f "$F" && ! test -L "$F" && ITEM_FILE=$F;; esac;; esac
+if test -n "$ITEM_FILE" && test -f "$WI_PY"; then echo "item: $ID"; echo "item_file: $ITEM_FILE"; else ITEM_FILE=; ID=; echo "item ${OK:-(no plain id)} not found in this store; recording here"; fi
 ```
 
 The id is read from the file as data, never pasted into a command, and is used only when it
-is a plain file name (letters, digits, `.`, `_`, `-`; no `/`, no leading `.`) whose
-`$WORK_ITEMS_ROOT/items/<id>.md` is an existing regular file, not a symlink: a symlinked item
-in a checkout's store would redirect the write. On `item_file: <path>` the run appends its
-record lines there, and rewrites the brief's `wi:` and `item_file:` lines when they differ
-from what it resolved. Otherwise (a run resumed from another repo, a deleted item, a hostile
-id, or no `wi`) it records in the brief's `## Record` and says why in one line, the printed
+is a plain file name (letters, digits, `.`, `_`, `-`; no `/`, no leading `.` or `-`) whose
+`$WORK_ITEMS_ROOT/items/<id>.md` is an existing regular file, not a symlink, and resolves to
+a path inside the main checkout: a symlinked item, `items/` or store directory in a
+checkout would redirect the write. On success the block prints `item: <id>` and
+`item_file: <path>`; the run appends its record lines to that file, rewrites the brief's
+`wi:` and `item_file:` lines when they differ from what it resolved, and every later `$WI`
+call that names the item (`handoff`, `done`, `block`) uses only the id printed on that
+`item:` line. When the block prints `not found` (a run resumed from another repo, a deleted
+item, a hostile id, or no `wi`), the run has no item: no later `$WI` call names the brief's
+id, and the run records in the brief's `## Record` and says why in one line, the printed
 `item <id> not found in this store; recording here`. This plugin's
 `tests/test_store_lookup_run.py` runs this block on hostile briefs.
+
+*A prior run's item.* A `research-refine` run reads its prior brief's `item:` the same way,
+as data and through the same filter, before the id goes into any command:
+
+```bash
+PRIOR_BRIEF='<absolute path of the prior 00-brief.md>'
+PRIOR=$(sed -n 's/^item: *//p' "$PRIOR_BRIEF" | head -1); PRIOR=${PRIOR%%[[:space:]]*}
+case $PRIOR in ""|none|.*|-*|*[!A-Za-z0-9._-]*) PRIOR=; echo "prior item: none (no plain id in the prior brief)";; *) echo "prior item: $PRIOR";; esac
+```
+
+The filing then adds `--ref "wi:$PRIOR"` only after a printed `prior item: <id>`, with the
+id from that line; on `prior item: none` it carries no such ref. Closing a held prior's item
+(§ Closing) names only that printed id, `$WI done "$PRIOR" --note "…"` or
+`$WI block "$PRIOR" "…"`; with none printed, the held item is not touched and the report
+says so.
 
 ### Closing
 
 At the run's report (`research` Step 11, `deep-investigation` Step 8,
-`chain-of-verification` Step 6), on an item the run filed only:
+`chain-of-verification` Step 6), on an item the run filed only. On a resumed run, `<id>` is
+the id *Resuming* printed on its `item:` line; when it printed `not found`, the run has no
+item and closes none:
 
 | Status | Do |
 |---|---|
@@ -617,12 +640,13 @@ At the run's report (`research` Step 11, `deep-investigation` Step 8,
 
 A run that stops mid-way leaves its item `doing`, and the stale claim shows in `wi next`. A
 held run's item stays blocked until `research-refine` cleans the run; that refine run files
-its own item with `--ref wi:<held item>`, and then closes the held item with a note naming
-the new one.
+its own item with `--ref "wi:$PRIOR"`, and then closes the held item with a note naming the
+new one, both with only the id § Resolving the store's *A prior run's item* printed.
 
 ### What the item holds
 
-- **Only** the `dispatch:` and `agent:` lines (§ Recording), appended to `item_file:`, the
+- **Only** the `dispatch:` and `agent:` lines (§ Recording), appended to the `item_file:`
+  this run resolved (on a resume, the one *Resuming* printed), the
   handoff, the closing note, and the filing's title, description, tag and refs. The brief and its ledger stay the run's state
   and rehydration point; the findings, verification sheet and synthesis stay in staging and
   at the destination.
@@ -642,8 +666,8 @@ the new one.
 
 ## Recording
 
-**Before each Agent call**, write one line to the record sink — appended to the item's
-`item_file:` (§ The work item); else at the end of the state file's `## Record`, by an edit
+**Before each Agent call**, write one line to the record sink — appended to the
+`item_file:` this run resolved (on a resume, the one *Resuming* printed; § The work item); else at the end of the state file's `## Record`, by an edit
 above the ledger, never a `>>` to the file; else in the report:
 
 ```

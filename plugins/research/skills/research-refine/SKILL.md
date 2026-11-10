@@ -81,8 +81,10 @@ resolves) and its layout — `runs/<today>-<slug>-r2/` (`-r3`…) in a knowledge
 - lanes whose **read-first** line names the prior findings and synthesis paths.
 
 The new run's item follows `research` Step 5.5. When it files one and the prior brief's
-`item:` names an item, the filing carries `--ref wi:<prior run's item>` (the `research`
-skill's `references/intensity-and-routing.md` § The work item).
+`item:` names an item, the filing carries `--ref "wi:$PRIOR"`, the id read from the prior
+brief as data and filtered first (the `research` skill's
+`references/intensity-and-routing.md` § Resolving the store, *A prior run's item*); when that
+block prints `prior item: none`, the filing carries no such ref.
 
 Step 5.1's tool preflight runs as in `research`, so this run's lane prompts carry a `Tools:`
 line and its report a `TOOL REQUEST` built from the preflight's `FIX` lines. Staging is
@@ -131,9 +133,10 @@ searched.
   find it at the `staging:` path its brief names (`.claude-sandbox/research/_held/<run>/`),
   clean it first (`research` Step 8), re-verify, and only then refine; a refinement never
   promotes over an open security concern. When the held run's item is blocked as held,
-  this run's item carries `--ref wi:<held item>`, and the held item is closed with a note
-  naming this run's (the `research` skill's `references/intensity-and-routing.md`
-  § Closing).
+  this run's item carries `--ref "wi:$PRIOR"`, and the held item is closed with a note
+  naming this run's, both with only the id *A prior run's item* printed; with `prior item:
+  none` the held item is not touched (the `research` skill's
+  `references/intensity-and-routing.md` § Closing).
 - **The prior's brief says its held record was lost with the session**, or the prior lives
   in the scratchpad of a dead session — it is gone; say so, and run `research` fresh with the
   operator's memory of the answer as an assumption.
