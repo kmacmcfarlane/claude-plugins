@@ -100,7 +100,8 @@ supplies the scanner or agent bodies; a contributor installs the plugin.
   `PLAN CHANGE` ledger line that says the lanes were not run because the research plugin
   was not found, and launch nothing: no lane can run without the scan floor, so no unscanned
   lane output can exist. The run's result carries the disclosure "lanes not run: research
-  plugin not installed". Read `echo "${KMACMCFARLANE_NO_PEER_HINTS-}"` once; unless it is
+  plugin not installed"; not found also covers a plugin installed only for another project,
+  or its recorded install is incomplete (update or reinstall it). Read `echo "${KMACMCFARLANE_NO_PEER_HINTS-}"` once; unless it is
   `1` or a list naming `research`, add the hint once in the session, in the top-level
   session only (in a sub-agent, return the disclosure alone). It deliberately adds the
   marketplace refresh and the restart to the install command, since the plugin may be one

@@ -116,6 +116,7 @@ version only when that record cannot answer (missing, unreadable, or no entry fo
 `work-items`). A path under the working checkout is never used, this kit's own included: a
 `wi.py` change in this repo reaches the librarian's store calls after a push and a plugin
 update, or by running it by its path. `no wi found` means `work-items` is not installed on
-this machine, or is installed only for another project — install it
+this machine, or is installed only for another project, or its recorded install is
+incomplete (update or reinstall it) — install it
 (`/plugin install work-items@kmacmcfarlane`) before continuing; Rehydrate step 1 stops
 there and touches nothing else.

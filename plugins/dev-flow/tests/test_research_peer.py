@@ -191,6 +191,18 @@ class TestLookupRuns(unittest.TestCase):
                            'test -n "$IP" && complete "$IP" && RESEARCH_ROOT=$IP FROM=installed'))
         self.assertEqual(self.run_lookup(bad), "research: - (installed)")
 
+    def test_a_relative_config_dir_never_points_into_the_checkout(self):
+        rel = self.checkout / "cfgrel" / "plugins"
+        self.root(rel / "cache" / "kmacmcfarlane" / "research" / "1.0.0")
+        evil = self.root(self.checkout / "evil")
+        (rel / "installed_plugins.json").write_text(
+            json.dumps({"plugins": {KEY: [self.entry(evil)]}}))
+        self.cfg = Path("cfgrel")
+        self.assertEqual(self.run_lookup(), NONE)
+        # Mutant: without the absolute-P guard the checkout's record answers.
+        bad = self.mutant(("; case $P in /*) ;; *) P=/dev/null/plugins;; esac", ""))
+        self.assertEqual(self.run_lookup(bad), f"research: {evil} (installed)")
+
     def test_a_relative_install_path_never_answers(self):
         self.root(self.checkout / "plugins" / "research")
         self.record(self.entry("plugins/research"))

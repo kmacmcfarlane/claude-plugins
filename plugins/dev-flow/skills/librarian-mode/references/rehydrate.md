@@ -8,9 +8,10 @@ Run the `dev-cycle` skill's `references/bindings.md` § Store snippet, dev-flow'
 copy of the lookup: it sets `MAIN`, exports `WORK_ITEMS_ROOT` (and the deprecated `WI_ROOT`,
 the same path) for the store it finds, and prints the `wi` command from the installed
 plugin's copy, never the working checkout's, this kit's own included. The librarian's store
-is `$MAIN/.work-items`, or an existing one at an old location (`.claude-sandbox/work/`, `.work/`), which the snippet finds
-too. When it prints `no wi found`, `work-items` is not installed, and the librarian cannot
-run without it — its whole queue is the store. Stop there: say "librarian-mode needs
+is `$MAIN/.work-items`, or an existing one at an old location (`.claude-sandbox/work/`,
+`.work/`), which the snippet finds too. When it prints `no wi found`, `work-items` is not
+installed, or installed only for another project, or its recorded install is incomplete
+(update or reinstall it), and the librarian cannot run without it — its whole queue is the store. Stop there: say "librarian-mode needs
 work-items, which is not installed: /plugin install work-items@kmacmcfarlane", and touch
 nothing else (no opt-in, no store, no dispatch). This is a repair notice, not a peer hint,
 so the hint switch never hides it. No store yet: `first-start.md`. `MAIN` is not this

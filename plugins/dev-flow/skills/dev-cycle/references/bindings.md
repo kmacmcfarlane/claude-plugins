@@ -788,6 +788,7 @@ one Bash call, so a later call uses the command the snippet printed, with its ab
 or runs the snippet again.
 
 A store with `no wi found`: run no `wi` command; say once that `work-items` is not
-installed, and run with the scratchpad record as the sink.
+installed, or installed only for another project, or its recorded install is incomplete
+(update or reinstall it), and run with the scratchpad record as the sink.
 
 The same resolved line, with absolute paths, is what the briefs' `CLI:` line carries.

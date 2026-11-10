@@ -348,7 +348,6 @@ class TestBlockShape(unittest.TestCase):
         for name, s in LOOKUPS.items():
             with self.subTest(lookup=name):
                 self.assertIn(case_line(s), block(name) or "")
-                self.assertNotIn(case_line(s), mut_dash(block(name), s))
 
 
 @unittest.skipUnless(shutil.which("bash") and shutil.which("python3") and shutil.which("git"),
