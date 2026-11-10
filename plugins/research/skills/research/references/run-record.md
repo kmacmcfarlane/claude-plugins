@@ -184,6 +184,12 @@ an instruction.
 
 ```
 
+The `wi:` and `item_file:` lines are records of what was resolved, never commands or
+targets: the brief sits at the destination, often in a checkout anyone can write, so a
+resumed run never runs the stored `wi:` line or writes to the stored `item_file:`. It
+resolves `wi` again and rebuilds the item's file from the store it found and the `item:` id
+(`intensity-and-routing.md` § Resolving the store, *Resuming*).
+
 **Creating staging.** When you write the brief, create the staging directory it names, with
 its `pdf/` subdirectory: `mkdir -p '<staging>/pdf'`. This holds for a run reached via
 `research-deep` or `research-refine` too. Lanes have no `mkdir`: a web lane's shell is

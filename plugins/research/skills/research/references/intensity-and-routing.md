@@ -461,7 +461,7 @@ lines that quote it.
 | Name | What it is |
 |---|---|
 | `research-run` | the tag on every item a run files |
-| `item: <id> \| none — <reason>` | the brief's frontmatter field naming the run's item (`Item:` in a strategy doc's opening paragraph); beside it, `wi:` (the resolved command) and `item_file:` (the item's absolute path) when there is an item |
+| `item: <id> \| none — <reason>` | the brief's frontmatter field naming the run's item (`Item:` in a strategy doc's opening paragraph); beside it, `wi:` (the resolved command) and `item_file:` (the item's absolute path) when there is an item: records of what was resolved, never run or written to (§ Resolving the store) |
 | `## Record` | the state file's section just above its ledger, used when the run records on no item: a sub-agent run, or no store |
 | `--item <id>` | the argument that names an existing item (rule 2) |
 | `synthesis` | the role word on a synthesis fork's `dispatch:` line |
@@ -497,7 +497,9 @@ The handoff keeps `$WI lint` clean while the run is open.
   WORK_ITEMS_ROOT>`, and the file the record lines are appended to,
   `item_file: <WORK_ITEMS_ROOT>/items/<id>.md`:
   shell variables do not survive between Bash calls or into a wakeup or a resumed session,
-  and these lines do. A resumed run reads them and never files a second.
+  and these lines do. They are records of what was resolved, never commands or targets: a
+  resumed run reads `item:` and never files a second, and resolves `wi` and the item's file
+  again (§ Resolving the store, *Resuming*).
 - A `research-refine` run's item carries `--ref wi:<prior run's item>` when the prior brief
   names one.
 
@@ -506,31 +508,37 @@ The handoff keeps `$WI lint` clean while the run is open.
 From the working directory, the main checkout's `.work-items/`, then `.claude-sandbox/work/`,
 then `.work/` (the last two are old locations `wi` still finds); the first that holds `items/`
 is the store. The snippet exports it under both `WORK_ITEMS_ROOT` and the deprecated
-`WI_ROOT`, so an installed `wi` older than this copy still finds it. `wi` comes from the
-repo's own tree when it carries the `work-items` plugin, else from the installed plugin:
+`WI_ROOT`, so an installed `wi` older than this copy still finds it. `wi` itself comes from
+the installed `work-items` plugin: the install record, then the cache only when the record
+cannot answer. No path under the working checkout is ever used, this kit's own included,
+since any repo can carry a `wi.py` of its own or name itself `kmacmcfarlane`; to run an
+in-tree `wi.py`, run it by its path, an explicit act.
 
 ```bash
 MAIN=$(git rev-parse --path-format=absolute --git-common-dir 2>/dev/null) && MAIN=${MAIN%/.git} || MAIN=$PWD
 for d in "$MAIN/.work-items" "$MAIN/.claude-sandbox/work" "$MAIN/.work"; do test -d "$d/items" && { export WORK_ITEMS_ROOT="$d" WI_ROOT="$d"; break; }; done
-WI_PY=$(ls "$MAIN"/plugins/*/skills/work-items/scripts/wi.py 2>/dev/null | head -1)
-P="${CLAUDE_CONFIG_DIR:-$HOME/.claude}/plugins"
+P="${CLAUDE_CONFIG_DIR:-$HOME/.claude}/plugins"; case $P in /*) ;; *) P=/dev/null/plugins;; esac
 IP="$(python3 -I - "$P/installed_plugins.json" work-items@kmacmcfarlane "$MAIN" 2>/dev/null <<'PY'
 import json, os, sys
-es = json.load(open(sys.argv[1]))["plugins"][sys.argv[2]]
-here = os.path.realpath(sys.argv[3])
-def rank(e):  # the install that applies here: deepest local/project path, then user
-    pp = e.get("projectPath")
-    if e.get("scope") in ("local", "project") and pp:
-        pp = os.path.realpath(pp)
-        if here == pp or here.startswith(pp.rstrip("/") + "/"):
-            return (2, len(pp), e["scope"] == "local")
-    return (1, 0, False) if e.get("scope") == "user" else (0, 0, False)
-best = max(es, key=rank)
-print(best["installPath"] if rank(best)[0] else "")
+try:  # any failure here means the record cannot answer: exit 1, and the cache is asked
+    es = json.load(open(sys.argv[1]))["plugins"][sys.argv[2]]
+    here = os.path.realpath(sys.argv[3])
+    def rank(e):  # the install that applies here: deepest local/project path, then user
+        pp = e.get("projectPath")
+        if e.get("scope") in ("local", "project") and pp:
+            pp = os.path.realpath(pp)
+            if here == pp or here.startswith(pp.rstrip("/") + "/"):
+                return (2, len(pp), e["scope"] == "local")
+        return (1, 0, False) if e.get("scope") == "user" else (0, 0, False)
+    best = max(es, key=rank)
+    ip = best["installPath"] if rank(best)[0] else ""
+    print(ip if os.path.isabs(ip) else "")
+except Exception:
+    sys.exit(1)
 PY
-)"
-test -n "$WI_PY" || WI_PY="$IP/skills/work-items/scripts/wi.py"
-test -f "$WI_PY" || WI_PY=$(ls -t "$P"/cache/kmacmcfarlane/work-items/*/skills/work-items/scripts/wi.py 2>/dev/null | head -1)
+)"; rc=$?
+WI_PY=; case $IP in /*) test -f "$IP/skills/work-items/scripts/wi.py" && WI_PY=$IP/skills/work-items/scripts/wi.py;; esac
+test -n "$WI_PY" || { test "$rc" -ne 0 && WI_PY=$(ls -t "$P"/cache/kmacmcfarlane/work-items/*/skills/work-items/scripts/wi.py 2>/dev/null | head -1); }
 if test -f "$WI_PY"; then WI="python3 $WI_PY"; echo "$WI"; else WI=no-wi-found; echo "no wi found"; fi
 ```
 
@@ -540,18 +548,59 @@ runs a bare `python3`. The install-record read runs `python3 -I`, so a `json.py`
 working directory is never imported. The install record holds one entry per install scope,
 so the read takes the entry that applies to this repo, never the first listed: a `local` or
 `project` entry whose `projectPath` is the main checkout or a directory above it (the
-deepest, `local` before `project`), else the `user` entry; another project's install never
-answers. The pick is the `dev-cycle` skill's `references/bindings.md` § Store's, kept in
-step with it.
+deepest, `local` before `project`), else the `user` entry; `$MAIN` serves only that ranking.
+
+Each step guards against a path the checkout could supply:
+- `P` is kept only when absolute; a relative `CLAUDE_CONFIG_DIR` or `HOME` would resolve
+  against the working directory, so it becomes a path that cannot exist.
+- The read exits non-zero, kept as `rc`, when the record cannot answer: missing,
+  unreadable, malformed, or holding no entry for the key. Otherwise it prints the applying
+  `installPath` when absolute, or an empty line when no entry applies here.
+- A hit is used only when it is absolute (the `case` line), so a relative `installPath`
+  never resolves against the checkout.
+- The cache is asked only when `rc` is non-zero. A record that holds the key but no entry
+  for this repo is a miss, never the cache: a real `installPath` is itself a cache copy, so
+  an unconditional cache step would hand back another project's install. Another project's
+  install never answers.
+
+No checkout file adds an install-record entry or a cache copy; an install the operator
+accepted, including one a repo's project settings propose, is trusted at both steps. The
+pick is the `dev-cycle` skill's `references/bindings.md` § Store's, kept in step with it.
+This plugin's `tests/test_store_lookup_run.py` runs the snippet.
 
 Rule 4's test is `test -n "$WORK_ITEMS_ROOT" && test -f "$WI_PY"` after the snippet (`no wi
-found` fails it): when it fails, rule 4, and no `wi` command runs. Run the snippet once, at
-the record's opening, and from then on use the `wi:` and `item_file:` lines the state file
-carries (with no state file — a quick run, `chain-of-verification` — re-run the snippet in
-each Bash call that needs `wi`, and carry the item id in the conversation). This snippet
-restates the `dev-cycle` skill's store resolution in research's own home, by the operator's
-ruling that the research skills stay separate from dev-cycle; a change to `wi`'s install
-path touches both.
+found` fails it): when it fails, rule 4, and no `wi` command runs. With `no wi found`, say
+once that `work-items` is not installed, or installed only for another project, or its
+recorded install is incomplete (update or reinstall it). Shell state does not outlive one
+Bash call, so every Bash call that needs `wi` re-runs the snippet and uses the command it
+printed, with its absolute path; with no state file (a quick run, `chain-of-verification`)
+the item id is carried in the conversation. This snippet restates the `dev-cycle` skill's
+store resolution in research's own home, by the operator's ruling that the research skills
+stay separate from dev-cycle; a change to `wi`'s install path touches both.
+
+*Resuming.* The state file sits at the run's destination, often in a checkout, which anyone
+can write, so its `wi:`, `--root` and `item_file:` lines are records of what was resolved,
+never commands or targets: a stored `wi:` line is never run, and a stored `item_file:` is
+never written to. A resumed run (`/research <slug>`, a wakeup) re-runs the snippet above,
+then rebuilds the item's file from the store it resolved itself and the brief's `item:` id,
+in the same Bash call:
+
+```bash
+BRIEF=<absolute path of the run's 00-brief.md>
+ID=$(sed -n 's/^item: *//p' "$BRIEF" | head -1); ID=${ID%%[[:space:]]*}
+ITEM_FILE=; case $ID in ""|none|.*|*[!A-Za-z0-9._-]*) ;; *) F=$WORK_ITEMS_ROOT/items/$ID.md; test -n "$WORK_ITEMS_ROOT" && test -f "$F" && ! test -L "$F" && ITEM_FILE=$F;; esac
+if test -n "$ITEM_FILE" && test -f "$WI_PY"; then echo "item_file: $ITEM_FILE"; else ITEM_FILE=; echo "item $ID not found in this store; recording here"; fi
+```
+
+The id is read from the file as data, never pasted into a command, and is used only when it
+is a plain file name (letters, digits, `.`, `_`, `-`; no `/`, no leading `.`) whose
+`$WORK_ITEMS_ROOT/items/<id>.md` is an existing regular file, not a symlink: a symlinked item
+in a checkout's store would redirect the write. On `item_file: <path>` the run appends its
+record lines there, and rewrites the brief's `wi:` and `item_file:` lines when they differ
+from what it resolved. Otherwise (a run resumed from another repo, a deleted item, a hostile
+id, or no `wi`) it records in the brief's `## Record` and says why in one line, the printed
+`item <id> not found in this store; recording here`. This plugin's
+`tests/test_store_lookup_run.py` runs this block on hostile briefs.
 
 ### Closing
 
@@ -657,37 +706,44 @@ A step-down is not a hold: the run goes on.
 
 The lookup stops at the first hit: dev-flow's install record (`dev-flow@kmacmcfarlane`, the
 entry that applies here, ranked as § Resolving the store ranks it), then the newest cached
-copy; a miss at both is no quota sense. No path under the working checkout is ever
+copy only when the record cannot answer; a miss is no quota sense. No path under the working checkout is ever
 consulted: any repo can name itself `kmacmcfarlane`, so neither the checkout under research,
 a fork, nor this kit's own checkout supplies the script.
 
 ```bash
 MAIN=$(git rev-parse --path-format=absolute --git-common-dir 2>/dev/null) && MAIN=${MAIN%/.git} || MAIN=$PWD
-P="${CLAUDE_CONFIG_DIR:-$HOME/.claude}/plugins"
+P="${CLAUDE_CONFIG_DIR:-$HOME/.claude}/plugins"; case $P in /*) ;; *) P=/dev/null/plugins;; esac
 REL=skills/librarian-mode/scripts/quota_budget.py
 IP="$(python3 -I - "$P/installed_plugins.json" dev-flow@kmacmcfarlane "$MAIN" 2>/dev/null <<'PY'
 import json, os, sys
-es = json.load(open(sys.argv[1]))["plugins"][sys.argv[2]]
-here = os.path.realpath(sys.argv[3])
-def rank(e):  # the install that applies here: deepest local/project path, then user
-    pp = e.get("projectPath")
-    if e.get("scope") in ("local", "project") and pp:
-        pp = os.path.realpath(pp)
-        if here == pp or here.startswith(pp.rstrip("/") + "/"):
-            return (2, len(pp), e["scope"] == "local")
-    return (1, 0, False) if e.get("scope") == "user" else (0, 0, False)
-best = max(es, key=rank)
-print(best["installPath"] if rank(best)[0] else "")
+try:  # any failure here means the record cannot answer: exit 1, and the cache is asked
+    es = json.load(open(sys.argv[1]))["plugins"][sys.argv[2]]
+    here = os.path.realpath(sys.argv[3])
+    def rank(e):  # the install that applies here: deepest local/project path, then user
+        pp = e.get("projectPath")
+        if e.get("scope") in ("local", "project") and pp:
+            pp = os.path.realpath(pp)
+            if here == pp or here.startswith(pp.rstrip("/") + "/"):
+                return (2, len(pp), e["scope"] == "local")
+        return (1, 0, False) if e.get("scope") == "user" else (0, 0, False)
+    best = max(es, key=rank)
+    ip = best["installPath"] if rank(best)[0] else ""
+    print(ip if os.path.isabs(ip) else "")
+except Exception:
+    sys.exit(1)
 PY
-)"
-QB=; test -n "$IP" && test -f "$IP/$REL" && QB="$IP/$REL"
-test -n "$QB" || QB=$(ls -t "$P"/cache/kmacmcfarlane/dev-flow/*/$REL 2>/dev/null | head -1)
+)"; rc=$?
+QB=; case $IP in /*) test -f "$IP/$REL" && QB=$IP/$REL;; esac
+test -n "$QB" || { test "$rc" -ne 0 && QB=$(ls -t "$P"/cache/kmacmcfarlane/dev-flow/*/$REL 2>/dev/null | head -1); }
 if test -f "$QB"; then echo "quota sense: $QB"; else QB=no-quota-sense; echo "no quota sense found"; fi
 ```
 
 Then `python3 "$QB" --read-only`, only after it printed a path. `no quota sense found` reads
 as not below. The `python3 -I` read keeps a `json.py` in the working directory from being
-imported. This plugin's `tests/test_quota_lookup.py` runs the snippet.
+imported. The guards are § Resolving the store's: `P` only when absolute, a hit only when
+absolute, and the cache only when the read exits non-zero, so another project's install,
+itself a cache copy, never answers. This plugin's `tests/test_quota_lookup.py` and
+`tests/test_store_lookup_run.py` run the snippet.
 
 ## Fallback
 
