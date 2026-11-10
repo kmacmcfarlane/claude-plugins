@@ -157,12 +157,13 @@ plugins/
   ralph/               # Unattended agent loops over a backlog
     skills/
       {backlog-yaml,backlog-entry,backlog-grooming}/
-  research/            # Research into sourced, verified findings or a knowledge base; chain-of-verification
+  research/            # Research into sourced, verified findings or a knowledge base; chain-of-verification; a repo's RESEARCH.md
     agents/            # research-lane, research-lane-deep, research-verifier (the research family's workers)
     skills/
       {research,research-deep,research-refine,research-prune,chain-of-verification}/
       research/scripts/  # tool-preflight.sh (Step 5.1 tool check), scan-findings.py (the scan floor under the verifier), check-sheet.py (the verifier's sheet against its own table) + unit tests
-    tests/             # test_research_agents.py: the research workers' pins, frontmatter, § Profiles rows, lane variants, docs and no `dev-flow:research-` agent type left; test_research_asks.py: the family's asks as text, the owner section, its pointers, the ledger kinds and the manifest edge; test_research_stop_rule.py: the three agents' stop-rule copies against `research-lane.md`, the family's home; test_research_verifier.py: the verifier's procedure rules, its sheet template against check-sheet.py, and the research skill's run of the check; test_quota_lookup.py: the quota-sense lookup, run (install record, then cache; no checkout, even one named kmacmcfarlane, ever supplies the script)
+      research/assets/   # RESEARCH.template.md (the repo-root map of a repo's research corpus)
+    tests/             # test_research_agents.py: the research workers' pins, frontmatter, § Profiles rows, lane variants, docs and no `dev-flow:research-` agent type left; test_research_asks.py: the family's asks as text, the owner section, its pointers, the ledger kinds and the manifest edge; test_research_stop_rule.py: the three agents' stop-rule copies against `research-lane.md`, the family's home; test_research_verifier.py: the verifier's procedure rules, its sheet template against check-sheet.py, and the research skill's run of the check; test_quota_lookup.py: the quota-sense lookup, run (install record, then cache; no checkout, even one named kmacmcfarlane, ever supplies the script); test_research_md.py: the RESEARCH.md template, its owner section (the four content sources, the exact pointer line, CLAUDE.md never written, no `@` import), rule 3's order, the skills' pointers and the docs naming it
   sandbox/             # Isolated execution: claude-sandbox + the checkout/worktree convention (hook-owning)
     hooks/             # Checkout guard + hooks.json + unit tests
     skills/

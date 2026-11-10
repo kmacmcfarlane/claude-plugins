@@ -113,10 +113,12 @@ claude-plugins/
     │   ├── agents/            (research-lane, research-lane-deep, research-verifier — the research family's workers)
     │   ├── skills/
     │   │   ├── {research,research-deep,research-refine,research-prune,chain-of-verification}/
-    │   │   └── research/scripts/ (tool-preflight.sh, scan-findings.py: the scan floor under the verifier, check-sheet.py: the verifier's sheet against its own table + tests)
+    │   │   ├── research/scripts/ (tool-preflight.sh, scan-findings.py: the scan floor under the verifier, check-sheet.py: the verifier's sheet against its own table + tests)
+    │   │   └── research/assets/ (RESEARCH.template.md: the repo-root map of a repo's research corpus)
     │   └── tests/             (test_research_agents.py: the workers' pins and profiles;
     │                           test_research_verifier.py: the verifier's procedure rules against check-sheet.py;
-    │                           test_research_stop_rule.py, test_research_asks.py, test_quota_lookup.py)
+    │                           test_research_stop_rule.py, test_research_asks.py, test_quota_lookup.py,
+    │                           test_research_md.py: RESEARCH.md's template, owner section and pointers)
     ├── sandbox/               (isolated execution: claude-sandbox + checkout/worktree convention — a hook-owning plugin)
     │   ├── hooks/             (checkout guard + hooks.json + tests)
     │   └── skills/sandbox/
