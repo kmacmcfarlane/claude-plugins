@@ -199,6 +199,7 @@ class HeaderText(unittest.TestCase):
             self.assertNotEqual(cut, h)
             self.assertTrue([x for x in header_problems(cut) if x.startswith("the fold does not say")], p)
         nolink = h.replace('<span id="doclink"></span></p>', '</p><span id="doclink"></span>', 1)
+        self.assertNotEqual(nolink, h)
         self.assertIn("the visible lede does not end on the doc link", header_problems(nolink))
         noquick = h.replace(" or use <b>Use recommendation</b> / <b>Later</b> to answer from the line", "", 1)
         self.assertNotEqual(noquick, h)
