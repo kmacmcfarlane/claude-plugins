@@ -6,9 +6,9 @@ The five steps SKILL.md § Rehydrate lists as headlines, in full.
 
 Run the `dev-cycle` skill's `references/bindings.md` § Store snippet, dev-flow's canonical
 copy of the lookup: it sets `MAIN`, exports `WORK_ITEMS_ROOT` (and the deprecated `WI_ROOT`,
-the same path) for the store it finds, and prints the `wi` command, from the repo's own tree
-or else the installed plugin's copy. The librarian's store is `$MAIN/.work-items`, or an
-existing one at an old location (`.claude-sandbox/work/`, `.work/`), which the snippet finds
+the same path) for the store it finds, and prints the `wi` command from the installed
+plugin's copy, never the working checkout's, this kit's own included. The librarian's store
+is `$MAIN/.work-items`, or an existing one at an old location (`.claude-sandbox/work/`, `.work/`), which the snippet finds
 too. When it prints `no wi found`, `work-items` is not installed, and the librarian cannot
 run without it — its whole queue is the store. Stop there: say "librarian-mode needs
 work-items, which is not installed: /plugin install work-items@kmacmcfarlane", and touch

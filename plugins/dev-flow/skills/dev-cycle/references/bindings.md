@@ -81,29 +81,34 @@ block, and the checklist's scope check (section 1) compares the diff against it.
 ## Authoring rules
 
 A change that adds or edits a skill points its implementer and reviewer at kit-dev's
-create-skill skill (soft): the copy in the change's worktree (`$WORKTREE`) when its tree
-carries kit-dev, else the installed plugin's, found as `wi` is (§ Store):
+create-skill skill (soft): the installed plugin's copy, found as `wi` is (§ Store), the
+install record ranked against `$WORKTREE`. The copy in the change's worktree is never used,
+this kit's own included: the rules a skill change is built and reviewed against never come
+from the tree under review:
 
 ```bash
-CS=$(ls "$WORKTREE"/plugins/*/skills/create-skill/SKILL.md 2>/dev/null | head -1)
-P="${CLAUDE_CONFIG_DIR:-$HOME/.claude}/plugins"
+P="${CLAUDE_CONFIG_DIR:-$HOME/.claude}/plugins"; case $P in /*) ;; *) P=/dev/null/plugins;; esac
 IP="$(python3 -I - "$P/installed_plugins.json" kit-dev@kmacmcfarlane "$WORKTREE" 2>/dev/null <<'PY'
 import json, os, sys
-es = json.load(open(sys.argv[1]))["plugins"][sys.argv[2]]
-here = os.path.realpath(sys.argv[3])
-def rank(e):  # the install that applies here: deepest local/project path, then user
-    pp = e.get("projectPath")
-    if e.get("scope") in ("local", "project") and pp:
-        pp = os.path.realpath(pp)
-        if here == pp or here.startswith(pp.rstrip("/") + "/"):
-            return (2, len(pp), e["scope"] == "local")
-    return (1, 0, False) if e.get("scope") == "user" else (0, 0, False)
-best = max(es, key=rank)
-print(best["installPath"] if rank(best)[0] else "")
+try:  # any failure here means the record cannot answer: exit 1, and the cache is asked
+    es = json.load(open(sys.argv[1]))["plugins"][sys.argv[2]]
+    here = os.path.realpath(sys.argv[3])
+    def rank(e):  # the install that applies here: deepest local/project path, then user
+        pp = e.get("projectPath")
+        if e.get("scope") in ("local", "project") and pp:
+            pp = os.path.realpath(pp)
+            if here == pp or here.startswith(pp.rstrip("/") + "/"):
+                return (2, len(pp), e["scope"] == "local")
+        return (1, 0, False) if e.get("scope") == "user" else (0, 0, False)
+    best = max(es, key=rank)
+    ip = best["installPath"] if rank(best)[0] else ""
+    print(ip if os.path.isabs(ip) else "")
+except Exception:
+    sys.exit(1)
 PY
-)"
-test -n "$CS" || CS="$IP/skills/create-skill/SKILL.md"
-test -f "$CS" || CS=$(ls -t "$P"/cache/kmacmcfarlane/kit-dev/*/skills/create-skill/SKILL.md 2>/dev/null | head -1)
+)"; rc=$?
+CS=; case $IP in /*) test -f "$IP/skills/create-skill/SKILL.md" && CS=$IP/skills/create-skill/SKILL.md;; esac
+test -n "$CS" || { test "$rc" -ne 0 && CS=$(ls -t "$P"/cache/kmacmcfarlane/kit-dev/*/skills/create-skill/SKILL.md 2>/dev/null | head -1); }
 if test -f "$CS"; then echo "$CS"; else echo "no create-skill found"; fi
 ```
 
@@ -561,33 +566,35 @@ operator's or an answer's.
 **The reader** is context-guard's `usage-report` (soft), found as `wi` is (§ Store):
 
 ```bash
-UR_PY=$(ls "$MAIN"/plugins/*/skills/usage-report/scripts/usage_report.py 2>/dev/null | head -1)
-P="${CLAUDE_CONFIG_DIR:-$HOME/.claude}/plugins"
+P="${CLAUDE_CONFIG_DIR:-$HOME/.claude}/plugins"; case $P in /*) ;; *) P=/dev/null/plugins;; esac
 IP="$(python3 -I - "$P/installed_plugins.json" context-guard@kmacmcfarlane "$MAIN" 2>/dev/null <<'PY'
 import json, os, sys
-es = json.load(open(sys.argv[1]))["plugins"][sys.argv[2]]
-here = os.path.realpath(sys.argv[3])
-def rank(e):  # the install that applies here: deepest local/project path, then user
-    pp = e.get("projectPath")
-    if e.get("scope") in ("local", "project") and pp:
-        pp = os.path.realpath(pp)
-        if here == pp or here.startswith(pp.rstrip("/") + "/"):
-            return (2, len(pp), e["scope"] == "local")
-    return (1, 0, False) if e.get("scope") == "user" else (0, 0, False)
-best = max(es, key=rank)
-print(best["installPath"] if rank(best)[0] else "")
+try:  # any failure here means the record cannot answer: exit 1, and the cache is asked
+    es = json.load(open(sys.argv[1]))["plugins"][sys.argv[2]]
+    here = os.path.realpath(sys.argv[3])
+    def rank(e):  # the install that applies here: deepest local/project path, then user
+        pp = e.get("projectPath")
+        if e.get("scope") in ("local", "project") and pp:
+            pp = os.path.realpath(pp)
+            if here == pp or here.startswith(pp.rstrip("/") + "/"):
+                return (2, len(pp), e["scope"] == "local")
+        return (1, 0, False) if e.get("scope") == "user" else (0, 0, False)
+    best = max(es, key=rank)
+    ip = best["installPath"] if rank(best)[0] else ""
+    print(ip if os.path.isabs(ip) else "")
+except Exception:
+    sys.exit(1)
 PY
-)"
-test -n "$UR_PY" || UR_PY="$IP/skills/usage-report/scripts/usage_report.py"
-test -f "$UR_PY" || UR_PY=$(ls -t "$P"/cache/kmacmcfarlane/context-guard/*/skills/usage-report/scripts/usage_report.py 2>/dev/null | head -1)
+)"; rc=$?
+UR_PY=; case $IP in /*) test -f "$IP/skills/usage-report/scripts/usage_report.py" && UR_PY=$IP/skills/usage-report/scripts/usage_report.py;; esac
+test -n "$UR_PY" || { test "$rc" -ne 0 && UR_PY=$(ls -t "$P"/cache/kmacmcfarlane/context-guard/*/skills/usage-report/scripts/usage_report.py 2>/dev/null | head -1); }
 if test -f "$UR_PY"; then timeout 120 python3 "$UR_PY" item <record sink file> --json --no-week
 else echo "no reader found"; fi
 ```
 
-The last line runs the reader only when a file was found: with none, every lookup leaves
-`UR_PY` empty or a path that does not exist, and `python3` on it would fail, or, given an
-empty name, run whatever the working directory holds. `no reader found` is then the
-reason on the `cost:` line, word for word.
+The last line runs the reader only when a file was found: with none, `UR_PY` is empty, and
+`python3` is never handed it. `no reader found` is then the reason on the `cost:` line, word
+for word.
 
 The record sink file is the item's `$WORK_ITEMS_ROOT/items/<id>.md`, or the scratchpad
 `record.md`. Phase spend is `phases.<phase>.usd` when that phase's `reading` is `read`.
@@ -708,8 +715,11 @@ there, any other exit than 0 or 1 means the snippet was not run in this call: re
 first. The store still outlives the session on this checkout, and any history it keeps lives
 in the store's own repository, never the host's.
 
-`wi` itself comes from the repo's own tree when it carries the `work-items` plugin, else
-from the installed plugin. This is dev-flow's canonical copy of the lookup: every dev-flow
+`wi` itself comes from the installed `work-items` plugin: the install record, then the cache
+only when the record cannot answer. No path under the working checkout is ever used, this
+kit's own included, since any repo can carry a `wi.py` of its own or name itself
+`kmacmcfarlane`; to run an in-tree `wi.py`, run it by its path, an explicit act. This
+is dev-flow's canonical copy of the lookup: every dev-flow
 skill that drives `wi` (`investigate`, `implement`, `librarian-mode`, `foundation`) runs this
 snippet and names it rather than restating it. The research plugin keeps its own copy
 (the research plugin's `research` skill's `references/intensity-and-routing.md` § Resolving
@@ -720,40 +730,59 @@ carries the same install-record pick:
 ```bash
 MAIN=$(git rev-parse --path-format=absolute --git-common-dir 2>/dev/null) && MAIN=${MAIN%/.git} || MAIN=$PWD
 for d in "$MAIN/.work-items" "$MAIN/.claude-sandbox/work" "$MAIN/.work"; do test -d "$d/items" && { export WORK_ITEMS_ROOT="$d" WI_ROOT="$d"; break; }; done
-WI_PY=$(ls "$MAIN"/plugins/*/skills/work-items/scripts/wi.py 2>/dev/null | head -1)
-P="${CLAUDE_CONFIG_DIR:-$HOME/.claude}/plugins"
+P="${CLAUDE_CONFIG_DIR:-$HOME/.claude}/plugins"; case $P in /*) ;; *) P=/dev/null/plugins;; esac
 IP="$(python3 -I - "$P/installed_plugins.json" work-items@kmacmcfarlane "$MAIN" 2>/dev/null <<'PY'
 import json, os, sys
-es = json.load(open(sys.argv[1]))["plugins"][sys.argv[2]]
-here = os.path.realpath(sys.argv[3])
-def rank(e):  # the install that applies here: deepest local/project path, then user
-    pp = e.get("projectPath")
-    if e.get("scope") in ("local", "project") and pp:
-        pp = os.path.realpath(pp)
-        if here == pp or here.startswith(pp.rstrip("/") + "/"):
-            return (2, len(pp), e["scope"] == "local")
-    return (1, 0, False) if e.get("scope") == "user" else (0, 0, False)
-best = max(es, key=rank)
-print(best["installPath"] if rank(best)[0] else "")
+try:  # any failure here means the record cannot answer: exit 1, and the cache is asked
+    es = json.load(open(sys.argv[1]))["plugins"][sys.argv[2]]
+    here = os.path.realpath(sys.argv[3])
+    def rank(e):  # the install that applies here: deepest local/project path, then user
+        pp = e.get("projectPath")
+        if e.get("scope") in ("local", "project") and pp:
+            pp = os.path.realpath(pp)
+            if here == pp or here.startswith(pp.rstrip("/") + "/"):
+                return (2, len(pp), e["scope"] == "local")
+        return (1, 0, False) if e.get("scope") == "user" else (0, 0, False)
+    best = max(es, key=rank)
+    ip = best["installPath"] if rank(best)[0] else ""
+    print(ip if os.path.isabs(ip) else "")
+except Exception:
+    sys.exit(1)
 PY
-)"
-test -n "$WI_PY" || WI_PY="$IP/skills/work-items/scripts/wi.py"
-test -f "$WI_PY" || WI_PY=$(ls -t "$P"/cache/kmacmcfarlane/work-items/*/skills/work-items/scripts/wi.py 2>/dev/null | head -1)
+)"; rc=$?
+WI_PY=; case $IP in /*) test -f "$IP/skills/work-items/scripts/wi.py" && WI_PY=$IP/skills/work-items/scripts/wi.py;; esac
+test -n "$WI_PY" || { test "$rc" -ne 0 && WI_PY=$(ls -t "$P"/cache/kmacmcfarlane/work-items/*/skills/work-items/scripts/wi.py 2>/dev/null | head -1); }
 if test -f "$WI_PY"; then WI="python3 $WI_PY"; echo "$WI"; else WI=no-wi-found; echo "no wi found"; fi
 ```
 
-The last line binds `WI` only to a file that exists: with none, every lookup leaves
-`WI_PY` empty or a path that does not exist, and `python3` on it would fail, or, with no
-name at all, take the verb as a script to run from the working directory, or read one from
-stdin. So `no wi found` binds `WI` to a name that is no command, and a `$WI` call run by
-mistake fails with exit 127 instead of running anything. The install-record read runs
-`python3 -I`, so a `json.py` in the working directory is never imported. The install
-record holds one entry per install scope, so the read takes the entry that applies to this
-repo, never the first listed: a `local` or `project` entry whose `projectPath` is the main
-checkout or a directory above it (the deepest, `local` before `project`), else the `user`
-entry; another project's install never answers. The authoring-rules and budget-reader
-lookups above run this same pick with their own plugin's key (the authoring one against
-`$WORKTREE`).
+The last line binds `WI` only to a file that exists: with none, `WI_PY` is empty, and
+`python3` with no script name would take the verb as a script to run from the working
+directory, or read one from stdin. So `no wi found` binds `WI` to a name that is no command,
+and a `$WI` call run by mistake fails with exit 127 instead of running anything. The
+install-record read runs `python3 -I`, so a `json.py` in the working directory is never
+imported. The install record holds one entry per install scope, so the read takes the entry
+that applies to this repo, never the first listed: a `local` or `project` entry whose
+`projectPath` is the main checkout or a directory above it (the deepest, `local` before
+`project`), else the `user` entry; `$MAIN` serves only that ranking.
+
+Each step guards against a path the checkout could supply:
+- `P` is kept only when absolute; a relative `CLAUDE_CONFIG_DIR` or `HOME` would resolve
+  against the working directory, so it becomes a path that cannot exist.
+- The read exits non-zero, kept as `rc`, when the record cannot answer: missing,
+  unreadable, malformed, or holding no entry for the key. Otherwise it prints the applying
+  `installPath` when absolute, or an empty line when no entry applies here.
+- A hit is used only when it is absolute (the `case` line), so a relative `installPath`
+  never resolves against the checkout.
+- The cache is asked only when `rc` is non-zero. A record that holds the key but no entry
+  for this repo is a miss, never the cache: a real `installPath` is itself a cache copy, so
+  an unconditional cache step would hand back another project's install. Another project's
+  install never answers.
+
+No checkout file adds an install-record entry or a cache copy; an install the operator
+accepted, including one a repo's project settings propose, is trusted at both steps. The
+authoring-rules and budget-reader lookups above run this same pick with their own plugin's
+key (the authoring one against `$WORKTREE`). dev-flow's `tests/test_lookup_runs.py` runs all
+three.
 `${CLAUDE_PLUGIN_ROOT}` is dev-flow's root and carries no `wi`. Shell state does not outlive
 one Bash call, so a later call uses the command the snippet printed, with its absolute path,
 or runs the snippet again.

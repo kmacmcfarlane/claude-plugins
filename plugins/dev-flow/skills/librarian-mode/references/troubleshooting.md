@@ -8,8 +8,9 @@ skill's decision channel, `decision N:` under `decisions needed` (SKILL.md § Th
 
 ## The librarian's
 
-- **`wi` not found by the glob.** Normal when the repo does not carry the plugin: the store
-  lookup goes on to the installed copy (below). No store at any of the three locations
+- **`wi` not found in the repo's tree.** Normal, and by design: the store lookup never
+  takes `wi` from the working checkout, this kit's own included; it finds the installed
+  copy (below). No store at any of the three locations
   (`.work-items/`, then the old `.claude-sandbox/work/` and `.work/`): `start` and `intake`
   run `$WI init` once a custody layer resolves; `status` reports "not opted in; `start`
   offers opt-in" when CLAUDE.md has no `## Librarian` section, else "no store", and stops.
@@ -108,10 +109,13 @@ states it; the one line here is what the librarian binds:
 ## Installing `wi`
 
 Rehydrate step 1 finds `wi` with the `dev-cycle` skill's `references/bindings.md` § Store
-snippet: the repo's own tree first, then the installed `work-items` plugin's copy (not
-`${CLAUDE_PLUGIN_ROOT}`, which is this plugin's root and carries no `wi`), keyed by the
-harness's own install record (the entry for this repo's install scope, never simply the
-first listed), with the newest cached version as the fallback. `no wi
-found` after all three means `work-items` is not installed on this machine — install it
+snippet: the installed `work-items` plugin's copy (not `${CLAUDE_PLUGIN_ROOT}`, which is
+this plugin's root and carries no `wi`), keyed by the harness's own install record (the
+entry for this repo's install scope, never simply the first listed), with the newest cached
+version only when that record cannot answer (missing, unreadable, or no entry for
+`work-items`). A path under the working checkout is never used, this kit's own included: a
+`wi.py` change in this repo reaches the librarian's store calls after a push and a plugin
+update, or by running it by its path. `no wi found` means `work-items` is not installed on
+this machine, or is installed only for another project — install it
 (`/plugin install work-items@kmacmcfarlane`) before continuing; Rehydrate step 1 stops
 there and touches nothing else.

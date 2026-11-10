@@ -1,15 +1,17 @@
 """deep-investigation's research-plugin lookup, run (f4ef F3).
 
 `skills/deep-investigation/references/research-peer.md` § Finding the research plugin holds
-one fenced bash snippet. It finds the research plugin's root in this order and stops at the
-first complete hit: the install record (`research@kmacmcfarlane`, the entry that applies to
-the checkout), then the newest cached copy; a miss at both is "no research found". A root is
-complete only with the scan floor, the sheet check and both agent bodies. No path under the
-working checkout is ever consulted: any repo can name itself `kmacmcfarlane`, so a checkout,
-this kit's own included, never supplies the scanner or agent bodies.
+one fenced bash snippet. It finds the research plugin's root from the install record
+(`research@kmacmcfarlane`, the entry that applies to the checkout), then from the newest
+cached copy only when the record cannot answer (its read exits non-zero: missing,
+unreadable, or no entry for the key; item 185f, F1); otherwise a miss is "no research
+found". An install is used only when its path is absolute. A root is complete only with the
+scan floor, the sheet check and both agent bodies. No path under the working checkout is
+ever consulted: any repo can name itself `kmacmcfarlane`, so a checkout, this kit's own
+included, never supplies the scanner or agent bodies, nor does a planted `-/` dir.
 
 This test extracts the snippet and runs it under bash in a temp tree, with a fake config dir
-and a fake checkout, one case per rule.
+and a fake checkout, one case per rule; the 185f guards are each shown to catch a mutant.
 
 Standard library only. Run from plugins/dev-flow:
 
@@ -100,8 +102,8 @@ class TestLookupRuns(unittest.TestCase):
         d.mkdir(exist_ok=True)
         (d / "marketplace.json").write_text(json.dumps({"name": name, "plugins": []}))
 
-    def run_lookup(self):
-        block = snippet()
+    def run_lookup(self, block=None):
+        block = block or snippet()
         self.assertIsNotNone(block)
         env = {"PATH": os.environ.get("PATH", "/usr/bin:/bin"), "HOME": str(self.tmp),
                "CLAUDE_CONFIG_DIR": str(self.cfg), "GIT_CEILING_DIRECTORIES": str(self.tmp),
@@ -140,11 +142,64 @@ class TestLookupRuns(unittest.TestCase):
         new = self.cache("1.1.0", age=10)
         self.assertFound(new, "cache, not installed")
 
-    def test_an_incomplete_install_is_passed_over(self):
+    def test_an_incomplete_install_is_a_miss_not_the_cache(self):
+        # The record answered, so the cache is not asked (185f F1): an incomplete install
+        # is passed over, and the lookup misses.
         p = self.root(self.tmp / "inst" / "user", missing=("agents/research-verifier.md",))
         self.record(self.entry(p))
+        self.cache("1.0.0")
+        self.assertEqual(self.run_lookup(), NONE)
+
+    # -- 185f F1: cache only when the record cannot answer; an absolute hit only --------
+    DASH_GUARD = 'case $IP in /*) complete "$IP" && RESEARCH_ROOT=$IP FROM=installed;; esac'
+    CACHE_IF = 'if test -z "$RESEARCH_ROOT" && test "$rc" -ne 0; then'
+
+    def mutant(self, *pairs):
+        block = snippet()
+        for old, new in pairs:
+            self.assertIn(old, block)
+            block = block.replace(old, new)
+        return block
+
+    def test_another_projects_cached_install_never_answers(self):
+        other = self.cache("1.0.0")  # a real installPath is a cache copy
+        self.record(self.entry(other, "local", self.tmp / "elsewhere"))
+        self.assertEqual(self.run_lookup(), NONE)
+        # Mutant: an unconditional cache step hands back that copy.
+        bad = self.mutant((self.CACHE_IF, 'if test -z "$RESEARCH_ROOT"; then'))
+        self.assertEqual(self.run_lookup(bad), f"research: {other} (cache, not installed)")
+
+    def test_a_record_without_the_key_takes_the_cache(self):
+        c = self.cache("1.0.0")
+        (self.cfg / "plugins" / "installed_plugins.json").write_text(
+            json.dumps({"plugins": {"other@kmacmcfarlane": []}}))
+        self.assertFound(c, "cache, not installed")
+
+    def test_a_missing_record_takes_the_cache(self):
         c = self.cache("1.0.0")
         self.assertFound(c, "cache, not installed")
+        # Mutant: without the `rc` capture the record's failure is never seen.
+        bad = self.mutant((')"; rc=$?', ')"'))
+        self.assertEqual(self.run_lookup(bad), NONE)
+
+    def test_a_planted_dash_dir_never_supplies_the_scanner(self):
+        self.root(self.checkout / "-")
+        self.assertEqual(self.run_lookup(), NONE)
+        # Mutant: a heredoc that prints `-` on failure, read by a plain `test -n` guard.
+        bad = self.mutant(("    sys.exit(1)", '    print("-"); sys.exit(1)'),
+                          (self.DASH_GUARD,
+                           'test -n "$IP" && complete "$IP" && RESEARCH_ROOT=$IP FROM=installed'))
+        self.assertEqual(self.run_lookup(bad), "research: - (installed)")
+
+    def test_a_relative_install_path_never_answers(self):
+        self.root(self.checkout / "plugins" / "research")
+        self.record(self.entry("plugins/research"))
+        self.assertEqual(self.run_lookup(), NONE)
+        # Mutant: no absolute check on either side.
+        bad = self.mutant(('print(ip if os.path.isabs(ip) else "")', "print(ip)"),
+                          (self.DASH_GUARD,
+                           'test -n "$IP" && complete "$IP" && RESEARCH_ROOT=$IP FROM=installed'))
+        self.assertEqual(self.run_lookup(bad), "research: plugins/research (installed)")
 
     def test_each_missing_file_makes_a_root_incomplete(self):
         for rel in FILES:
