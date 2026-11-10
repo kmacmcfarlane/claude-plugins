@@ -168,10 +168,13 @@ class PageView(unittest.TestCase):
         self.assertNotEqual(m, src)
         self.assertEqual(page_with(m, d)["bad"], [])
 
-    def test_every_view_starts_closed_and_the_lede_says_how_it_opens(self):
+    def test_every_view_starts_closed_and_the_how_fold_says_how_it_opens(self):
         res = run_page(example())
         self.assertNotIn('class="btn omore on"', "".join(c["html"] for c in res["cards"]))
-        flat = " ".join(PAGE.read_text().split())
+        # the walk-through sits in the header's closed "How this page works" fold (5216)
+        m = re.search(r'<details class="gfold how" id="how">(.*?)</details>', PAGE.read_text(), re.S)
+        self.assertIsNotNone(m)
+        flat = " ".join(m.group(1).split())
         self.assertIn("picking an option opens its view (and closes the card's other one)", flat)
         self.assertIn("its plan in brief, its <b>Pros</b> and <b>Cons</b> side by side, then its own effect", flat)
 
