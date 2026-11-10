@@ -360,10 +360,13 @@ escape hatches:
    else the `user` entry — so run it from the project directory. The fallback, when that
    record is missing, unreadable or has no entry that applies, is the update-stable
    `current-hooks` link in the newest `context-guard-*` data dir (one per marketplace the
-   plugin was installed from — list them with plain `ls -d` and pick yours if unsure):
+   plugin was installed from — list them with plain `ls -d` and pick yours if unsure). No
+   path the working directory could supply is run: `P` is kept only when absolute, the read
+   prints `installPath` only when absolute, and the script runs only from an absolute path,
+   so with neither the record nor a data dir it prints `no mark_checkpoint.py found`:
 
 ```bash
-P="${CLAUDE_CONFIG_DIR:-$HOME/.claude}/plugins"
+P="${CLAUDE_CONFIG_DIR:-$HOME/.claude}/plugins"; case $P in /*) ;; *) P=/dev/null/plugins;; esac
 MC="$(python3 -I - "$P/installed_plugins.json" 2>/dev/null <<'PY'
 import json, os, sys
 es = json.load(open(sys.argv[1]))["plugins"]["context-guard@kmacmcfarlane"]
@@ -376,11 +379,12 @@ def rank(e):  # the scope that applies here: deepest project/local path, then us
             return (2, len(pp), e["scope"] == "local")
     return (1, 0, False) if e.get("scope") == "user" else (0, 0, False)
 best = max(es, key=rank)
-print(best["installPath"] if rank(best)[0] else "")
+ip = best["installPath"] if rank(best)[0] else ""
+print(ip if os.path.isabs(ip) else "")
 PY
 )/hooks/mark_checkpoint.py"
 test -f "$MC" || MC="$(ls -td "$P"/data/context-guard-*/ 2>/dev/null | head -1)current-hooks/mark_checkpoint.py"
-python3 "$MC" <session_id>
+case $MC in /*) python3 "$MC" <session_id>;; *) echo "no mark_checkpoint.py found";; esac
 ```
 3. Turn the window mirror off: `CONTEXT_GUARD_DERIVE=off` in the environment Claude Code is
    launched from. The gate is then exactly what it was before the mirror: exact from the

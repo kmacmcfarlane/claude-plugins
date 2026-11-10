@@ -26,32 +26,38 @@ not write it**. The bridge to `wi` is `wi export --format backlog-yaml` before a
 `wi import --format backlog-yaml --update` after it.
 
 **Reaching `wi`.** `wi` may not be on `PATH`, and a `wi` that is may be another tool or
-another install: it is a script in the `work-items` plugin, found
-from the repo's own tree when it carries that plugin, else from the installed copy. This is
-ralph's one copy of the lookup; run it before either bridge command:
+another install: it is a script in the `work-items` plugin, taken from the installed copy:
+the install record, then the cache only when the record cannot answer. No path under the
+working checkout is ever used, this kit's own included, since any repo can carry a `wi.py`
+of its own or name itself `kmacmcfarlane`; to run an in-tree `wi.py`, run it by its path,
+an explicit act. This is ralph's one copy of the lookup, kept byte for byte in step with
+the kit's other copies; run it before either bridge command:
 
 ```bash
 MAIN=$(git rev-parse --path-format=absolute --git-common-dir 2>/dev/null) && MAIN=${MAIN%/.git} || MAIN=$PWD
 for d in "$MAIN/.work-items" "$MAIN/.claude-sandbox/work" "$MAIN/.work"; do test -d "$d/items" && { export WORK_ITEMS_ROOT="$d" WI_ROOT="$d"; break; }; done
-WI_PY=$(ls "$MAIN"/plugins/*/skills/work-items/scripts/wi.py 2>/dev/null | head -1)
-P="${CLAUDE_CONFIG_DIR:-$HOME/.claude}/plugins"
+P="${CLAUDE_CONFIG_DIR:-$HOME/.claude}/plugins"; case $P in /*) ;; *) P=/dev/null/plugins;; esac
 IP="$(python3 -I - "$P/installed_plugins.json" work-items@kmacmcfarlane "$MAIN" 2>/dev/null <<'PY'
 import json, os, sys
-es = json.load(open(sys.argv[1]))["plugins"][sys.argv[2]]
-here = os.path.realpath(sys.argv[3])
-def rank(e):  # the install that applies here: deepest local/project path, then user
-    pp = e.get("projectPath")
-    if e.get("scope") in ("local", "project") and pp:
-        pp = os.path.realpath(pp)
-        if here == pp or here.startswith(pp.rstrip("/") + "/"):
-            return (2, len(pp), e["scope"] == "local")
-    return (1, 0, False) if e.get("scope") == "user" else (0, 0, False)
-best = max(es, key=rank)
-print(best["installPath"] if rank(best)[0] else "")
+try:  # any failure here means the record cannot answer: exit 1, and the cache is asked
+    es = json.load(open(sys.argv[1]))["plugins"][sys.argv[2]]
+    here = os.path.realpath(sys.argv[3])
+    def rank(e):  # the install that applies here: deepest local/project path, then user
+        pp = e.get("projectPath")
+        if e.get("scope") in ("local", "project") and pp:
+            pp = os.path.realpath(pp)
+            if here == pp or here.startswith(pp.rstrip("/") + "/"):
+                return (2, len(pp), e["scope"] == "local")
+        return (1, 0, False) if e.get("scope") == "user" else (0, 0, False)
+    best = max(es, key=rank)
+    ip = best["installPath"] if rank(best)[0] else ""
+    print(ip if os.path.isabs(ip) else "")
+except Exception:
+    sys.exit(1)
 PY
-)"
-test -n "$WI_PY" || WI_PY="$IP/skills/work-items/scripts/wi.py"
-test -f "$WI_PY" || WI_PY=$(ls -t "$P"/cache/kmacmcfarlane/work-items/*/skills/work-items/scripts/wi.py 2>/dev/null | head -1)
+)"; rc=$?
+WI_PY=; case $IP in /*) test -f "$IP/skills/work-items/scripts/wi.py" && WI_PY=$IP/skills/work-items/scripts/wi.py;; esac
+test -n "$WI_PY" || { test "$rc" -ne 0 && WI_PY=$(ls -t "$P"/cache/kmacmcfarlane/work-items/*/skills/work-items/scripts/wi.py 2>/dev/null | head -1); }
 if test -f "$WI_PY"; then WI="python3 $WI_PY"; echo "$WI"; else WI=no-wi-found; echo "no wi found"; fi
 ```
 
@@ -62,10 +68,27 @@ call run anyway fails with exit 127. The install-record read runs `python3 -I`, 
 `json.py` in the working directory is never imported. The install record holds one entry
 per install scope, so the read takes the entry that applies to this repo, never the first
 listed: a `local` or `project` entry whose `projectPath` is the main checkout or a
-directory above it (the deepest, `local` before `project`), else the `user` entry; another
-project's install never answers. On `no wi found`, run neither command and say that the
-work items and `backlog.yaml` were not synced because `work-items` is not installed. The
-store is the first of `.work-items/`, `.claude-sandbox/work/` and `.work/` that holds
+directory above it (the deepest, `local` before `project`), else the `user` entry; `$MAIN`
+serves only that ranking. Each step guards against a path the checkout could supply:
+- `P` is kept only when absolute; a relative `CLAUDE_CONFIG_DIR` or `HOME` would resolve
+  against the working directory, so it becomes a path that cannot exist.
+- The read exits non-zero, kept as `rc`, when the record cannot answer: missing,
+  unreadable, malformed, or holding no entry for the key. Otherwise it prints the applying
+  `installPath` when absolute, or an empty line when no entry applies here.
+- A hit is used only when it is absolute (the `case` line), so a relative `installPath`
+  never resolves against the checkout.
+- The cache is asked only when `rc` is non-zero. A record that holds the key but no entry
+  for this repo is a miss, never the cache: a real `installPath` is itself a cache copy, so
+  an unconditional cache step would hand back another project's install. Another project's
+  install never answers.
+
+No checkout file adds an install-record entry or a cache copy; an install the operator
+accepted, including one a repo's project settings propose, is trusted at both steps. The
+`kit-dev` plugin's `tests/test_checkout_lookups.py` runs this snippet.
+
+On `no wi found`, run neither command and say that the work items and `backlog.yaml` were
+not synced because `work-items` is not installed, or installed only for another project, or
+its recorded install is incomplete. The store is the first of `.work-items/`, `.claude-sandbox/work/` and `.work/` that holds
 `items/`, the order `wi` itself uses (the last two are old locations, still read). The loop
 exports both `WORK_ITEMS_ROOT` and the deprecated `WI_ROOT`, so an older installed `wi`
 finds the same store. No store (no `WORK_ITEMS_ROOT` exported) means there is nothing to
