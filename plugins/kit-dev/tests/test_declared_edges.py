@@ -86,6 +86,12 @@ ALLOWED = {
     ("kit-dev/skills/update-kit/references/repo-map.md", "research",
      "test_research_verifier.py: the verifier's procedure rules against check-sheet.py"):
         "repo map",
+    # kit-dev: the relative-runs scan (185f F6) names the scripts whose runs it checks in
+    # other plugins' skill text, and runs stand-ins for them; it uses none of them.
+    ("kit-dev/tests/test_relative_runs.py", "operator-interaction",
+     '= "skills/decision-page/scripts/'): "a repo scan's list of the runs it guards, not a use",
+    ("kit-dev/tests/test_relative_runs.py", "ownership",
+     '= "skills/claim-md/scripts/'): "a repo scan's list of the runs it guards, not a use",
     # work-items: a credit to the step that closes items on landing (72ef WI-5); the other
     # provider of the interface and its grooming skill, declared from ralph's side (WI-1);
     # and `implement` as an item stage name, not the skill.

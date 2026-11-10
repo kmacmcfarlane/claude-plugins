@@ -274,7 +274,7 @@ SPLIT_PHRASES = (
     "It is the page's alone: chat shows a lone decision with no heading.",
     "A decision a card depends on that is not on the page goes in `refs` when it is answered; "
     "an open one is added to the page as a card",
-    "node scripts/split_writers.js [--cap N] skeleton.json",
+    "node \"<plugin root>/skills/decision-page/scripts/split_writers.js\" [--cap N] skeleton.json",
     "A depends chain is never cut; only same-layer links are.",
     "Each writer takes the next whole one while the total stays at or under the cap",
     "a group is never split across writers unless its unit (the group with what it depends on, or "
@@ -286,18 +286,18 @@ SPLIT_PHRASES = (
 BRIEF_PHRASES = (
     "the same digest and the same finished example card",
     "as a `decision-card/5` record",
-    "`node scripts/check_cards.js --record <file>`",
+    "`node \"<plugin root>/skills/decision-page/scripts/check_cards.js\" --record <file>`",
     "before the other writers start",
     "That card, from the current set, is the example.",
     "the writer digest (`references/writer-digest.md`, pasted or by path)",
     "\"match its voice, density and level shapes; do not copy its facts\"",
     "the page's whole `layers` list and every card's `n` and `t`",
     "Writer 1 keeps the example card, unchanged unless the merged check names it.",
-    "With one writer there is no example stage, and the brief is the digest alone.",
+    "With one writer there is no example stage, and the brief is the digest and the plugin root.",
 )
 MERGE_PHRASES = (
     "**A writer returns records**",
-    "checked with `node scripts/check_cards.js --record <file>` before it is handed back",
+    "checked with `node \"<plugin root>/skills/decision-page/scripts/check_cards.js\" --record <file>` before it is handed back",
     "A writer never writes `L`, `dep` or `refs`",
     "**The caller builds `cards.json` from the records it has stored** (for a caller with no store, "
     "the checked files it kept), not from the writers' files",

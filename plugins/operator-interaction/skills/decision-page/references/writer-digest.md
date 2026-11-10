@@ -9,8 +9,9 @@ keeps this digest naming every field with its Required cell, every lint key with
 start, and the runner's thresholds.
 
 **Write only `decision-page/5`, each card a `decision-card/5` record plus `L` and `dep`.** A
-`cards.json` in an older format is upgraded first: `node scripts/upgrade_cards.js IN OUT
---questions QMAP` (format only, every `rev` kept byte for byte), then written on.
+`cards.json` in an older format is upgraded first:
+`node "<plugin root>/skills/decision-page/scripts/upgrade_cards.js" IN OUT --questions QMAP`
+(format only, every `rev` kept byte for byte), then written on.
 
 ## The floor, per card
 
@@ -250,9 +251,12 @@ The lints fire past these values, except `mech`, which fires at or under its val
 
 ## The checks
 
-`node scripts/check_cards.js cards.json` checks a page; `node scripts/check_cards.js --record
-FILE` checks one record (no layer, no slug check, and `L` and `dep` refused in it), before it
-is raised. Exit codes are the same.
+`node "<plugin root>/skills/decision-page/scripts/check_cards.js" cards.json` checks a page;
+`node "<plugin root>/skills/decision-page/scripts/check_cards.js" --record FILE` checks one
+record (no layer, no slug check, and `L` and `dep` refused in it), before it is raised. Exit
+codes are the same. `<plugin root>` is the absolute plugin root your brief gives (the
+caller's, from the `decision-page` `SKILL.md`); with none, ask for it, and never run a
+script of this skill from the working directory, which is the checkout.
 
 **Refusals** (the page renders nothing; the runner prints them first, exit 1): a `what` not
 text; an `items` not a non-empty list of objects with a `name`, an item's `where` or `about`

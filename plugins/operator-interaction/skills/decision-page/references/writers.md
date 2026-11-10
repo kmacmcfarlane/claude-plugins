@@ -30,14 +30,16 @@ writer, and the caller may write it itself; the rest of this file is for a page 
 "L", "dep"}, …], "refs": {"38": {}}}`; anything else is ignored). Then it splits it:
 
 ```bash
-node scripts/split_writers.js [--cap N] skeleton.json
+node "<plugin root>/skills/decision-page/scripts/split_writers.js" [--cap N] skeleton.json
 ```
 
-run from this skill's base directory. It prints `{"cap", "writers": [{"cards": [n…],
-"layers": [key…], "over_cap": bool}], "notes": […]}`, each writer's cards in page order, and
-exits 1 on a skeleton it cannot read (a card with no `n` or `L`, an `L` not in `layers`, a
-repeated `n`, a repeated layer key, the `other` layer not last). The rule it applies, short enough to apply by hand
-where there is no node:
+`<plugin root>` is the absolute path the `decision-page` `SKILL.md`'s **Plugin root** line
+gives; never run a script of this skill from the working directory, which is the checkout.
+It prints
+`{"cap", "writers": [{"cards": [n…], "layers": [key…], "over_cap": bool}], "notes": […]}`,
+each writer's cards in page order, and exits 1 on a skeleton it cannot read (a card with no
+`n` or `L`, an `L` not in `layers`, a repeated `n`, a repeated layer key, the `other` layer
+not last). The rule it applies, short enough to apply by hand where there is no node:
 
 1. Cards that share a layer are linked. A card is linked to each `[[M]]` in its `dep` that is
    a card on the page. The linked sets, closed transitively, are the **units**. A `[[M]]` in
@@ -68,11 +70,14 @@ finished example card, so the cards read as one page.
 1. **The example card first.** The caller writes, or writer 1 writes as its first step, the
    first card in page order, at every level its decision scales to, as a `decision-card/5`
    record (the `decisions` skill's `references/card-record.md`). It is checked with
-   `node scripts/check_cards.js --record <file>` until it has no refusal and every lint is
-   fixed or left knowingly, before the other writers start. That card, from the current set,
-   is the example.
+   `node "<plugin root>/skills/decision-page/scripts/check_cards.js" --record <file>` until
+   it has no refusal and every lint is fixed or left knowingly, before the other writers
+   start. That card, from the current set, is the example.
 2. **Every writer's brief**, in this order:
    - the writer digest (`references/writer-digest.md`, pasted or by path);
+   - the plugin root, the absolute path the `SKILL.md`'s **Plugin root** line gives, so the
+     writer runs `node "<plugin root>/skills/decision-page/scripts/check_cards.js"`, never
+     `scripts/check_cards.js` from its working directory, which is the checkout;
    - the example card's JSON, labelled "match its voice, density and level shapes; do not copy
      its facts";
    - the `decisions` skill's floor, by pointer;
@@ -82,19 +87,22 @@ finished example card, so the cards read as one page.
    - its own card numbers, their approved text and their source paths.
 3. Writer 1 keeps the example card, unchanged unless the merged check names it.
 
-With one writer there is no example stage, and the brief is the digest alone.
+With one writer there is no example stage, and the brief is the digest and the plugin root.
 
 ## The merge
 
 - **A writer returns records**: one `decision-card/5` record per card it was given, each
-  checked with `node scripts/check_cards.js --record <file>` before it is handed back. A writer
-  never writes `L`, `dep` or `refs`: they are the caller's, from the skeleton.
+  checked with
+  `node "<plugin root>/skills/decision-page/scripts/check_cards.js" --record <file>` before
+  it is handed back. A writer never writes `L`, `dep` or `refs`: they are the caller's, from
+  the skeleton.
 - **The caller stores them**, each with its store's write path (a new decision raised, a
   revision as a new revision); a caller with no store keeps the checked files.
 - **The caller builds `cards.json` from the records it has stored** (for a caller with no
   store, the checked files it kept), not from the writers' files: the envelope (`format`, `page`, `layers`, `follow`), then each card in page order, its
   stored record plus its `L` and `dep`, then the page's `refs`. So the page shows exactly what
   the store holds, and a record the store refused never reaches it.
-- **One check over the whole file**: `node scripts/check_cards.js cards.json`, once. Each line
-  goes back to the writer of the card it names, whose fix is a new revision stored the same
-  way, or the caller fixes it itself; a `page:` line is the caller's.
+- **One check over the whole file**:
+  `node "<plugin root>/skills/decision-page/scripts/check_cards.js" cards.json`, once. Each
+  line goes back to the writer of the card it names, whose fix is a new revision stored the
+  same way, or the caller fixes it itself; a `page:` line is the caller's.

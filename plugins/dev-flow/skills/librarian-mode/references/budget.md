@@ -31,8 +31,11 @@ reports exist (§ The numbers, Spend inputs).
 ## Running it
 
 ```bash
-python3 scripts/quota_budget.py            # from the skill dir; one JSON object on stdout
+python3 "<plugin root>/skills/librarian-mode/scripts/quota_budget.py"   # one JSON object on stdout
 ```
+
+`<plugin root>` is the absolute path `SKILL.md`'s **Plugin root** line gives; never run
+`scripts/quota_budget.py` from the working directory, which is the checkout.
 
 | Flag | Effect |
 |---|---|
@@ -401,14 +404,14 @@ The guard on a round that would open unasked past a phase's fourth review is the
 the one self-granted build round of answer 114 (b): no standing grant is needed, the item's
 spend budget being the grant.
 
-The librarian's part: it takes that reading itself, `python3 scripts/quota_budget.py
---read-only`, at that moment, never waiting on the idle-turn integration (the opening of
-this file), and reads no signal as a stop — a step-down only saves quota and may err
-toward spending; a round spent unasked needs evidence the quota is there. Answer 145 (a)
-supersedes 68's words for rounds inside an item's budget, as 114 (b) did for one round;
-68's hold on the F2 plan (item c79e) stands. Lifting a hold, crossing the reserve and an
-expensive one-off (a deeper research preset, live probes) stay raised (`decide-alone.md`,
-`spend`).
+The librarian's part: it takes that reading itself,
+`python3 "<plugin root>/skills/librarian-mode/scripts/quota_budget.py" --read-only`, at that
+moment, never waiting on the idle-turn integration (the opening of this file), and reads no
+signal as a stop — a step-down only saves quota and may err toward spending; a round spent
+unasked needs evidence the quota is there. Answer 145 (a) supersedes 68's words for rounds
+inside an item's budget, as 114 (b) did for one round; 68's hold on the F2 plan (item c79e)
+stands. Lifting a hold, crossing the reserve and an expensive one-off (a deeper research
+preset, live probes) stay raised (`decide-alone.md`, `spend`).
 
 ## Not here yet
 

@@ -323,10 +323,11 @@ otherwise raised as an ask for another round:
 
 - the **caller's stop** does not stop it (§ The ten, Decision channel); standalone binds
   none;
-- a **fresh weekly reading**, taken at that moment with the `librarian-mode` skill's
-  `scripts/quota_budget.py --read-only`, exists and is not below the reserve
-  (`model-routing.md` § Below the quota reserve). Here **no signal is a stop**, not a
-  pass: a round spent unasked needs evidence the quota is there.
+- a **fresh weekly reading**, taken at that moment with the `librarian-mode` skill's quota
+  sense, `python3 "<plugin root>/skills/librarian-mode/scripts/quota_budget.py" --read-only`
+  (`<plugin root>` the absolute path `SKILL.md`'s **Plugin root** line gives), exists and is
+  not below the reserve (`model-routing.md` § Below the quota reserve). Here **no signal is
+  a stop**, not a pass: a round spent unasked needs evidence the quota is there.
 
 No standing grant is needed: the phase's budget is the grant. Before answer 145 a
 standalone run raised every cap, and a librarian took at most one extra build round, inside
@@ -461,7 +462,8 @@ spends a later round finding what it left out. The restatements: `agent-brief.md
 
 **While the quota is plentiful** (answer 176 (a)). At a spend check that shows the budget
 reached (at a verdict, or before a round opens), take a fresh weekly reading at that
-moment with the `librarian-mode` skill's `scripts/quota_budget.py --read-only`, as the
+moment with the `librarian-mode` skill's quota sense,
+`python3 "<plugin root>/skills/librarian-mode/scripts/quota_budget.py" --read-only`, as the
 guard past the fourth review reads it (§ Decisions, Past the fourth review): its weekly
 `used` (`windows.seven_day.used`).
 

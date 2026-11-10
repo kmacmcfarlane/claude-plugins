@@ -14,6 +14,15 @@ the change itself. A caller such as `librarian-mode` reads this skill as its cyc
 supplies the run's bindings. Run standalone, it resolves them itself and asks the user a
 few questions, each asked once: the cycle brief, the checks, how to land.
 
+**Plugin root:** `${CLAUDE_PLUGIN_ROOT}`. Loading this skill fills in that absolute path; a
+reference file read with a tool is not filled in, and the Bash tool's environment does not
+carry the variable (https://code.claude.com/docs/en/plugins-reference § Environment
+variables). A command in this skill's `references/` that runs a file of this plugin writes
+it as `"<plugin root>/…"`: put this path there. Never run such a file as `scripts/…` or
+`hooks/…` from the working directory, which is the checkout and may hold a file of that
+name, and never run a command whose root is not an absolute path. The `librarian-mode` skill
+states the same root.
+
 ## Critical
 
 - **Nothing passes on an agent's word.** Every `DONE`, a plan-mode series included,

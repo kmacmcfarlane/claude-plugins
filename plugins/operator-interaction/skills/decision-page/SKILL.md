@@ -20,6 +20,15 @@ line. Generation time does not limit use: a new set is a data file and a publish
 
 *The example data (`assets/cards.example.json`) is invented, not about any real project.*
 
+**Plugin root:** `${CLAUDE_PLUGIN_ROOT}`. Loading this skill fills in that absolute path; a
+reference file read with a tool is not filled in, and the Bash tool's environment does not
+carry the variable (https://code.claude.com/docs/en/plugins-reference § Environment
+variables). A command in this skill's `references/` that runs a file of this plugin writes
+it as `"<plugin root>/…"`: put this path there. Never run such a file as `scripts/…` or
+`hooks/…` from the working directory, which is the checkout and may hold a file of that
+name, and never run a command whose root is not an absolute path. A writer sub-agent loads
+no skill, so its brief carries this root (`references/writers.md` § The brief).
+
 ## Critical
 
 - **Every decision meets the `decisions` skill's floor first** — load that skill (same
@@ -84,10 +93,11 @@ The rules below are what the digest condenses:
   `dep`, which only a page has. A record the caller already holds is composed as it stands,
   with `L` and `dep` added. **Older data is upgraded first**: a `cards.json` with no stamp
   (a page published before, its read-back copy) goes through `scripts/upgrade_cards.js`
-  (`node scripts/upgrade_cards.js IN OUT --questions QMAP`, under the skill's base directory;
-  format only, every `rev` kept byte for byte), which refuses, all or nothing, a card it cannot map; the
-  `decisions` skill's `references/legacy-cards.md` reads what it leaves. A card in a newer
-  format than the template reads stays off the page and is handed back to the caller.
+  (`node "${CLAUDE_PLUGIN_ROOT}/skills/decision-page/scripts/upgrade_cards.js" IN OUT --questions QMAP`;
+  format only, every `rev` kept byte for byte), which refuses, all or nothing, a card it
+  cannot map; the `decisions` skill's `references/legacy-cards.md` reads what it leaves. A
+  card in a newer format than the template reads stays off the page and is handed back to
+  the caller.
 - One card per decision, in the `decisions` skill's order, so inside a layer each card comes
   after every card in its layer that its `dep` names (the runner's `deporder` lint); groups (`layers`) as its
   groups. A bundle whose items need different answers is a layer carrying its `shared`
