@@ -25,18 +25,19 @@ all skill text (every `.md` under plugins/, tests excluded), in three parts.
    - `checkout-var`: any expansion before `/plugins` but `$P`, `$IP` and the config dir
      (`$MAIN`, `${MAIN:-.}`, `$PWD`, `$OLDPWD`, `$(pwd)`, a backtick one, `~+`,
      `$(git … rev-parse …)`, a variable bound to one on an earlier line);
-   - `plugins-path`: a path `plugins/*` or `plugins/<x>/{skills,hooks,agents}/`, unless it
-     sits under `"$P"/cache/kmacmcfarlane/` or `$IP/` (relative, it resolves against the
-     checkout);
+   - `plugins-path`: a path `plugins/*` or `plugins/<x>/…`, unless it sits under
+     `"$P"/cache/kmacmcfarlane/`, `$IP/` or the config dir (relative, it resolves against
+     the checkout);
    - `cd-ls`: `cd … && ls`, a listing of the checkout;
    - `find-name`: `find` with a `-name`, `-path`, `-wholename` or `-regex` (or its `-i`
      form) of a script (`.py`, `.js`, `.sh`), `SKILL.md` or `wi`;
    - `ls-script`: `ls` of a script or `SKILL.md` not under `"$P"/cache/kmacmcfarlane/` or
      `$IP/`;
    - `rel-run`: an interpreter (any `python` version, `node`, `bash`, `sh`, `source`, `.`,
-     with flags) handed a script path that is not `/…`, `$…` or `<…>`; a direct run of
-     `scripts/…` or `hooks/…`; a relative script path as a fallback (`|| X=…`, `:-…`).
-     Each resolves against the working directory;
+     with flags) handed a script path that is not `/…`, `$…` or `<…>`, as an argument or
+     on stdin (`< …`); `-m scripts…` or `-m hooks…`; a direct run of `scripts/…` or
+     `hooks/…`; a relative script path as a fallback (`|| X=…`, `:-…`). Each resolves
+     against the working directory;
    - `placeholder-run`: an interpreter run of `<placeholder>/…` without the guard: unfilled
      or filled with a relative path, it runs a checkout file;
    - `unguarded-var`: a variable bound to a `<placeholder>` and run without the
@@ -47,13 +48,17 @@ all skill text (every `.md` under plugins/, tests excluded), in three parts.
    Also, a code block that globs `"$P"/cache/` binds `P` by the template's `P=` line,
    byte for byte, before it.
 
-3. **Frozen lists.** ALLOWED excuses the known safe hits, each keyed by (rule, file or `*`,
+3. **Frozen lists.** ALLOWED excuses the known safe hits, each keyed by (rule, file,
    a substring of the line, how many lines it covers) with its reason; only lines that run
    nothing from the checkout belong there. VARIANTS and REL_LINE_COPIES are the template's
    exceptions. Each list must equal its FROZEN_* literal, fixed at landing: an entry added
    to either fails, and an entry that no longer matches fails as stale, so a list can only
    shrink. Adding an entry to a list or its frozen literal needs an operator ruling, cited
    in the entry's reason (CLAUDE.md § Conventions).
+
+Accepted gaps, not covered: a run through a launcher (`uv run …`, `npx …`); a bare read
+of a relative instruction file (`cat SKILL.md`, `cat references/…`); `cd … ; ls` with a
+`;` in place of `&&`.
 
 Every check is proved by a mutant: one changed byte in each literal line of each copy, each
 hole set to a wrong literal, the REL line in a copy not listed, a variant's held line
@@ -264,12 +269,14 @@ REL_SCRIPT = r"(?![/$<\"'-])[^\s\"';|&)}]*\.(?:py|js|sh)(?!\w)"
 # command substitution, a backtick one, or `~+`.
 EXPANSION = (r"(?:\$\{?(?!(?:P|IP|CLAUDE_CONFIG_DIR)\b)\w+[^}/\s\"]*\}?|\$\([^)]*\)"
              r"|`[^`]*`|~\+)")
-SAFE_ROOTS = ('"$P"/cache/kmacmcfarlane/', "$IP/", '"$IP"/')
+# Roots a plugins/ path may sit under: the install cache, an install, the config dir.
+SAFE_ROOTS = ('"$P"/cache/kmacmcfarlane/', "$IP/", '"$IP"/', "$HOME/.claude}/",
+              "$HOME/.claude/", "~/.claude/")
 SCRIPTISH = re.compile(r"(?:\.py|\.js|\.sh|SKILL\.md)(?![A-Za-z0-9_])")
 RULES = {
     "checkout-var": re.compile(EXPANSION + r'"?/plugins(?![\w-])'),
     "plugins-path": re.compile(
-        r'(?<![A-Za-z0-9_.-])plugins/(?:\*|[^/\s"\'`]+/(?:skills|hooks|agents)/)'),
+        r'(?<![A-Za-z0-9_.-])plugins/(?:\*|[^/\s"\'`]+/)'),
     "cd-ls": re.compile(r"\bcd\b[^;&|\n]*&&\s*ls\b"),
     "find-name": re.compile(
         r"\bfind\b[^|;&\n]*\s-i?(?:name|path|wholename|regex)\s+['\"]?[^\s'\"]*"
@@ -277,6 +284,8 @@ RULES = {
     "ls-script": None,  # ls_script() below
     "rel-run": re.compile(
         INTERP + r"\s+['\"]?" + REL_SCRIPT
+        + r"|" + INTERP + r"\s+-m\s+(?:scripts|hooks)\b"
+        + r"|" + INTERP + r"(?:\s+-)?\s*<\s*['\"]?" + REL_SCRIPT
         + r"|(?:^|[;&|(]|\b(?:then|do|else|exec|xargs)\s)\s*['\"]?\.?/?(?:scripts|hooks)/[^\s/\"']"
         + r"|(?:\|\|\s*\{?\s*[A-Za-z_]\w*=|:-)['\"]?" + REL_SCRIPT),
     "placeholder-run": re.compile(INTERP + r"\s+['\"]?<[^>]+>/"),
@@ -402,7 +411,7 @@ def p_line_problems(texts):
     return out
 
 
-# (rule, file relative to plugins/ or "*" for any, a substring of the line, the number of
+# (rule, file relative to plugins/, a substring of the line, the number of
 # lines it covers) -> why the line is safe. The count pins the entry: one more such line
 # fails. Only lines that run nothing from the checkout belong here.
 ALLOWED = {
@@ -418,14 +427,26 @@ ALLOWED = {
     ("checkout-var", "dev-flow/skills/dev-cycle/references/review-checklist.md",
      "(cd $W/plugins/*/skills/work-items && python3 -m unittest", 1):
         "runs the change's own tests in its worktree by design, as every Checks command does",
+    ("plugins-path", "dev-flow/skills/dev-cycle/references/bindings.md",
+     '(cd plugins/<p>/hooks && python3 -m unittest', 1):
+        "the test command a change to a hook-owning plugin runs in its own worktree, by design, as every Checks command does",
+    ("plugins-path", "dev-flow/skills/dev-cycle/references/review-checklist.md",
+     "grep -o 'plugins/[^/]*/skills/[^/]*'", 2):
+        "a pattern matched against changed file names; no file is resolved, read or run",
+    ("plugins-path", "dev-flow/skills/dev-cycle/references/review-checklist.md",
+     "grep -o '^plugins/[^/]*/hooks'", 1):
+        "a pattern matched against changed file names; no file is resolved, read or run",
+    ("plugins-path", "dev-flow/skills/dev-cycle/references/review-checklist.md",
+     "f'{w}/plugins/{p}/.claude-plugin/plugin.json'", 1):
+        "the change's own marketplace check in its worktree by design; it reads manifests and runs nothing there",
     ("plugins-path", "kit-dev/skills/update-kit/SKILL.md", "## claude-plugins (plugins/", 1):
         "a heading in a fenced sample report, not a command",
     ("plugins-path", "kit-dev/skills/update-kit/SKILL.md", "## claude-expertise (plugins/", 1):
         "a heading in a fenced sample report, not a command",
     ("plugins-path", "kit-dev/skills/update-kit/references/repo-map.md",
      "ls ../claude-plugins/plugins/*/skills", 1):
-        "update-kit, invoked only by the user, lists the sibling kit checkout it syncs; it "
-        "runs and reads nothing there (the plan's Out of Scope)",
+        "update-kit, user-invoked only, syncs into the sibling claude-plugins checkout by "
+        "design; this listing names its target and runs nothing",
     ("plugins-path", "work-items/skills/work-items/SKILL.md", "install-launcher", 1):
         "the person runs it in their own terminal",
     ("rel-run", "work-items/skills/work-items/SKILL.md", "install-launcher", 1):
@@ -437,13 +458,22 @@ ALLOWED = {
      "os.listdir('$W/plugins')", 1):
         "the change's own marketplace check in its worktree by design, as every Checks "
         "command does; it lists names and runs nothing there",
-    ("rel-run", "statusline/skills/install-statusline/SKILL.md",
-     '-NAME/current-hooks/', 1):
-        "a settings value the person writes with their own path for the elided part, not a "
-        "command the session runs",
-    ("rel-run", "*", ".claude-sandbox/", 36):
-        "ralph's backlog.py, seeded by the sandbox into the project: the operator's "
-        "decision on it (OQ4) is pending, out of this guard's reach",
+    ("rel-run", "ralph/skills/backlog-yaml/SKILL.md",
+     "python3 .claude-sandbox/scripts/backlog/backlog.py", 16):
+        "ralph's backlog.py, seeded into the project by the sandbox, run from the "
+        "checkout: pending the operator's decision 383",
+    ("rel-run", "ralph/skills/backlog-grooming/SKILL.md",
+     "python3 .claude-sandbox/scripts/backlog/backlog.py", 14):
+        "ralph's backlog.py, seeded into the project by the sandbox, run from the "
+        "checkout: pending the operator's decision 383",
+    ("rel-run", "ralph/skills/backlog-entry/SKILL.md",
+     "python3 .claude-sandbox/scripts/backlog/backlog.py", 5):
+        "ralph's backlog.py, seeded into the project by the sandbox, run from the "
+        "checkout: pending the operator's decision 383",
+    ("rel-run", "ralph/skills/backlog-yaml/references/cli-reference.md",
+     "python3 .claude-sandbox/scripts/backlog/backlog.py", 1):
+        "ralph's backlog.py, seeded into the project by the sandbox, run from the "
+        "checkout: pending the operator's decision 383",
 }
 FROZEN_ALLOWED = frozenset({
     ("placeholder-run", "context-guard/skills/checkpoint/references/operator-playbook.md",
@@ -454,6 +484,14 @@ FROZEN_ALLOWED = frozenset({
      "(cd $W/plugins/*/skills/work-items && python3 -m unittest", 1),
     ("checkout-var", "dev-flow/skills/dev-cycle/references/review-checklist.md",
      "(cd $W/plugins/*/skills/work-items && python3 -m unittest", 1),
+    ("plugins-path", "dev-flow/skills/dev-cycle/references/bindings.md",
+     '(cd plugins/<p>/hooks && python3 -m unittest', 1),
+    ("plugins-path", "dev-flow/skills/dev-cycle/references/review-checklist.md",
+     "grep -o 'plugins/[^/]*/skills/[^/]*'", 2),
+    ("plugins-path", "dev-flow/skills/dev-cycle/references/review-checklist.md",
+     "grep -o '^plugins/[^/]*/hooks'", 1),
+    ("plugins-path", "dev-flow/skills/dev-cycle/references/review-checklist.md",
+     "f'{w}/plugins/{p}/.claude-plugin/plugin.json'", 1),
     ("plugins-path", "kit-dev/skills/update-kit/SKILL.md", "## claude-plugins (plugins/", 1),
     ("plugins-path", "kit-dev/skills/update-kit/SKILL.md", "## claude-expertise (plugins/", 1),
     ("plugins-path", "kit-dev/skills/update-kit/references/repo-map.md",
@@ -464,9 +502,14 @@ FROZEN_ALLOWED = frozenset({
      "python scripts/validate.py --input", 1),
     ("checkout-var", "dev-flow/skills/dev-cycle/references/review-checklist.md",
      "os.listdir('$W/plugins')", 1),
-    ("rel-run", "statusline/skills/install-statusline/SKILL.md",
-     '-NAME/current-hooks/', 1),
-    ("rel-run", "*", ".claude-sandbox/", 36),
+    ("rel-run", "ralph/skills/backlog-yaml/SKILL.md",
+     "python3 .claude-sandbox/scripts/backlog/backlog.py", 16),
+    ("rel-run", "ralph/skills/backlog-grooming/SKILL.md",
+     "python3 .claude-sandbox/scripts/backlog/backlog.py", 14),
+    ("rel-run", "ralph/skills/backlog-entry/SKILL.md",
+     "python3 .claude-sandbox/scripts/backlog/backlog.py", 5),
+    ("rel-run", "ralph/skills/backlog-yaml/references/cli-reference.md",
+     "python3 .claude-sandbox/scripts/backlog/backlog.py", 1),
 })
 
 
@@ -478,7 +521,7 @@ def rule_problems(texts, allowed=None):
         if not rel.endswith(".md"):
             continue
         for rule, f, n, line in hits_in(rel, text):
-            keys = [k for k in allowed if k[0] == rule and k[1] in (f, "*") and k[2] in line]
+            keys = [k for k in allowed if k[0] == rule and k[1] == f and k[2] in line]
             if keys:
                 counts[keys[0]] += 1
             else:
@@ -632,6 +675,7 @@ BYPASSES = [
     ("checkout-var", 'D=$PWD; cat "$D"/plugins/x/README.md'),
     ("plugins-path", "python3 plugins/x/skills/y/scripts/z.py"),
     ("plugins-path", "cat plugins/*"),
+    ("plugins-path", "cat plugins/x/README.md"),
     ("cd-ls", 'cd "$MAIN" && ls'),
     ("find-name", 'find "$MAIN" -name wi.py'),
     ("find-name", "find . -iname 'SKILL.md'"),
@@ -642,6 +686,8 @@ BYPASSES = [
     ("ls-script", "ls -t ./x/*/scripts/z.py"),
     ("rel-run", "python3 scripts/z.py"),
     ("rel-run", "python3 -I ./hooks/z.py"),
+    ("rel-run", "python3 -m scripts.z"),
+    ("rel-run", "python3 - < scripts/z.py"),
     ("rel-run", "python3.11 -u -B scripts/z.py"),
     ("rel-run", "python -I tools/z.py"),
     ("rel-run", "node scripts/z.js"),
@@ -735,13 +781,26 @@ class TestRules(unittest.TestCase):
     def test_mutant_duplicated_allowed_line(self):
         texts = all_texts()
         for (rule, rel, sub, _) in ALLOWED:
-            hit = next(h for r, tx in texts.items() if r.endswith(".md") and rel in (r, "*")
+            hit = next(h for r, tx in texts.items() if r.endswith(".md") and r == rel
                        for h in hits_in(r, tx) if h[0] == rule and sub in h[3])
             with self.subTest(file=rel, sub=sub):
                 t = dict(texts)
                 t[hit[1]] = t[hit[1]] + "\n" + fence(hit[3])
                 problems = rule_problems(t)
                 self.assertTrue(any("covers" in p for p in problems), problems)
+
+    def test_mutant_swap_an_allowed_line_for_a_new_run(self):
+        """One backlog line gone, a new `.claude-sandbox/` run elsewhere: both caught."""
+        texts = all_texts()
+        rel = "ralph/skills/backlog-yaml/SKILL.md"
+        line = next(ln for ln in texts[rel].split("\n")
+                    if "python3 .claude-sandbox/scripts/backlog/backlog.py" in ln)
+        texts[rel] = _once(texts[rel], line + "\n", "")
+        other = "dev-flow/skills/dev-cycle/references/bindings.md"
+        texts[other] += "\n" + fence("python3 .claude-sandbox/../scripts/evil.py")
+        problems = rule_problems(texts)
+        self.assertTrue(any(other in p for p in problems), problems)
+        self.assertTrue(any("covers 15 lines, not 16" in p for p in problems), problems)
 
     def test_mutant_stale_allowed_entry(self):
         a = dict(ALLOWED)
