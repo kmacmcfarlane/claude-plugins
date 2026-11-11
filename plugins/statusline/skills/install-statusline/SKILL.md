@@ -169,7 +169,7 @@ If another enabled plugin also ships a `subagentStatusLine`, Claude Code uses th
 loads last. The default reaches the script through this plugin's data directory
 (`~/.claude/plugins/data/statusline-kmacmcfarlane/`), because a plugin's `settings.json`
 cannot name the plugin's own install path; installed from a marketplace under another name,
-set `subagentStatusLine` yourself to `python3 ".../plugins/data/statusline-NAME/current-hooks/subagent_statusline.py"`.
+set `subagentStatusLine` yourself to `python3 "${CLAUDE_CONFIG_DIR:-$HOME/.claude}/plugins/data/statusline-NAME/current-hooks/subagent_statusline.py"`.
 
 Each render also records this session's numbers (context used, window, plan usage) in
 `~/.claude/statusline/sensor/SESSION.json` (under `$CLAUDE_CONFIG_DIR` when that is set),
