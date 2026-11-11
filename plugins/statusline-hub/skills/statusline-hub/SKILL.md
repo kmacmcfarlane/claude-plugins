@@ -71,7 +71,8 @@ none is installed it drains stdin and prints nothing:
 ```sh
 #!/bin/sh
 # statusline-hub tee launcher: runs the most recently modified installed copy of the tee.
-t=$(ls -td "${CLAUDE_CONFIG_DIR:-$HOME/.claude}"/plugins/cache/kmacmcfarlane/statusline-hub/*/hooks/tee.py 2>/dev/null | head -n 1)
+P="${CLAUDE_CONFIG_DIR:-$HOME/.claude}/plugins"; case $P in /*) ;; *) P=/dev/null/plugins;; esac
+t=$(ls -td "$P"/cache/kmacmcfarlane/statusline-hub/*/hooks/tee.py 2>/dev/null | head -n 1)
 [ -n "$t" ] && exec python3 "$t"
 cat >/dev/null
 ```

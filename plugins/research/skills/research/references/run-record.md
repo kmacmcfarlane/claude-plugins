@@ -288,7 +288,7 @@ Source cell is resolved from the sheet's directory, its `findings/`, every `--ow
 directory and the working directory.
 
 ```
-timeout 60 python3 '<research skill dir>/scripts/check-sheet.py' '<staging>/verification.md' [--own '<series dir>']
+R="<research skill dir>"; case $R in /*) timeout 60 python3 "$R/scripts/check-sheet.py" '<staging>/verification.md' [--own '<series dir>'];; *) echo "research skill dir not absolute: $R" >&2; false;; esac
 ```
 
 It tallies the Sampled claims table and prints one line per defect, `<file>:<line>: <rule>`,
@@ -345,9 +345,9 @@ It runs:
   toolkit gate).
 
 ```
-timeout 120 python3 '<research skill dir>/scripts/scan-findings.py' '<staging>/findings'
-timeout 120 python3 '<research skill dir>/scripts/scan-findings.py' --scripts '<staging>/tools'
-timeout 120 python3 '<research skill dir>/scripts/scan-findings.py' --strip '<file>' --lines <n,…>
+R="<research skill dir>"; case $R in /*) timeout 120 python3 "$R/scripts/scan-findings.py" '<staging>/findings';; *) echo "research skill dir not absolute: $R" >&2; false;; esac
+R="<research skill dir>"; case $R in /*) timeout 120 python3 "$R/scripts/scan-findings.py" --scripts '<staging>/tools';; *) echo "research skill dir not absolute: $R" >&2; false;; esac
+R="<research skill dir>"; case $R in /*) timeout 120 python3 "$R/scripts/scan-findings.py" --strip '<file>' --lines <n,…>;; *) echo "research skill dir not absolute: $R" >&2; false;; esac
 ```
 
 Always run it under `timeout 120`. A scan that times out (exit 124) holds the run, as a

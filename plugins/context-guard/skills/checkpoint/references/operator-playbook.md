@@ -210,8 +210,9 @@ session; run from inside one (as the commands in "Unattended checkpoints need th
 allowed" below are), `$CLAUDE_CODE_SESSION_ID` wins over a passed id and the command prints
 the running session's own path, never another session's (the format spec's "Where it lives"
 has the argv contract). Asking a session for a *different* session's path needs
-`env -u CLAUDE_CODE_SESSION_ID python3 "<root>/hooks/handoff_path.py" --path <sid>`, `<root>`
-resolved the same way as those commands; it starts with `env`, not `python3`, so the allow
+`R="<root>"; case $R in /*) env -u CLAUDE_CODE_SESSION_ID python3 "$R/hooks/handoff_path.py" --path <sid>;; *) echo "root not absolute: $R" >&2; false;; esac`, `<root>`
+resolved the same way as those commands (the guard runs nothing when it is not absolute); it
+runs through `env`, not as a `python3` command, so the allow
 rule for `handoff_path.py` below does not cover it and it prompts.
 
 A continue's close, for example (Step 0 acted on its drafts; one open item, one hold, one
