@@ -99,7 +99,7 @@ claude-plugins/
     │                           test_stop_rule.py: the stop rule's copies against its home in the agent brief)
     ├── kit-dev/               (maintaining this kit itself — where THIS skill lives)
     │   ├── skills/{create-skill,update-kit,new-project-from-template,factor-analysis}/
-    │   └── tests/             (test_standalone.py: each plugin's suites alone; test_declared_edges.py: cross-plugin references declared)
+    │   └── tests/             (test_standalone.py: each plugin's suites alone; test_declared_edges.py: cross-plugin references declared; test_lookup_guard.py: one lookup template, no checkout path or relative run)
     ├── operator-interaction/  (the agent-operator interface, starting with how decisions are raised and shown)
     │   └── skills/
     │       ├── decisions/     (references/{worksheet,rendering,replies,evidence-basis,rationale,rulings,gallery}.md)

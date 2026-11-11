@@ -726,8 +726,11 @@ skill that drives `wi` (`investigate`, `implement`, `librarian-mode`, `foundatio
 snippet and names it rather than restating it. The research plugin keeps its own copy
 (the research plugin's `research` skill's `references/intensity-and-routing.md` § Resolving
 the store), by the operator's 2026-10-02 ruling that the research skills stay separate from dev-cycle; a change
-to `wi`'s install path touches both, and the work-items launcher beside `wi.py`, which
-carries the same install-record pick:
+to `wi`'s install path touches every copy named here, and the work-items launcher beside `wi.py`, which
+carries the same install-record pick. Two more copies, context-guard's checkpoint skill
+(§ Reaching `wi`) and ralph's backlog YAML skill (Reaching `wi`), are held byte-equal to
+this one by the kit-dev plugin's `tests/test_checkout_lookups.py`, and its
+`tests/test_lookup_guard.py` holds every lookup copy to one template:
 
 ```bash
 MAIN=$(git rev-parse --path-format=absolute --git-common-dir 2>/dev/null) && MAIN=${MAIN%/.git} || MAIN=$PWD
