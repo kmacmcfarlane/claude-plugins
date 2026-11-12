@@ -1,5 +1,5 @@
 {
-  "description": "sandbox: the checkout/worktree convention, enforced — a PreToolUse guard that denies Edit/Write/MultiEdit/NotebookEdit on git-tracked files when the session's cwd is a main checkout (the direction the harness's own worktree guard does not cover). Fails open on any git error; escape hatches SANDBOX_ALLOW_CHECKOUT_EDITS=1 (deprecated alias CLAUDE_KIT_ALLOW_CHECKOUT_EDITS=1) and per-repo allow/deny path rules in .claude/allow-checkout-edits (implicit first deny *, last match wins; an empty or broken file allows nothing), a file the edit tools may not write.",
+  "description": "sandbox: the checkout/worktree convention, enforced — a PreToolUse guard that denies Edit/Write/MultiEdit/NotebookEdit on git-tracked files when the session's cwd is a main checkout (the direction the harness's own worktree guard does not cover). Fails open on any git error; escape hatches SANDBOX_ALLOW_CHECKOUT_EDITS=1 (deprecated alias CLAUDE_KIT_ALLOW_CHECKOUT_EDITS=1) and per-repo allow/deny path rules in .claude/allow-checkout-edits (implicit first deny *, last match wins; an empty or broken file allows nothing), a file the edit tools may not write. Announced up front: a SessionStart and SubagentStart notice puts one factual paragraph into the context of each session and sub-agent whose cwd is a main checkout the guard is on for, saying Bash writes are not checked; it prints nothing when the guard is off or the rules allow every file.",
   "hooks": {
     "PreToolUse": [
       {
@@ -8,6 +8,28 @@
           {
             "type": "command",
             "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/checkout_guard.py\"",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/checkout_notice.py\"",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "SubagentStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/checkout_notice.py\"",
             "timeout": 10
           }
         ]

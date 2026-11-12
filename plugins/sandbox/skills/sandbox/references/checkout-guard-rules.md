@@ -111,6 +111,8 @@ file's own protection.
 
 - **Bash writes** (sed, heredocs, redirects) are not guarded, the rules file included. The
   guard enforces a convention against accidental main-checkout edits; it is not a boundary.
+  The notice hook (`hooks/checkout_notice.py`) says so up front, at session and sub-agent
+  start, wherever the guard is on; it states facts and enforces nothing.
 - **Submodules:** files inside a submodule, edited from the superproject's checkout, read as
   untracked (the superproject tracks only the gitlink).
 - **Case:** on a case-insensitive filesystem, a path spelled in a different case from the

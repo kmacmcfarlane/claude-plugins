@@ -41,7 +41,7 @@ Block contract: exit 0 with hookSpecificOutput.permissionDecision "deny" on
 stdout, per the hooks reference (PreToolUse decision control,
 https://code.claude.com/docs/en/hooks).
 """
-import collections, json, os, re, stat, subprocess, sys
+import collections, json, os, re, stat, subprocess, sys, unicodedata
 
 MARKER_DIR = ".claude"
 MARKER_NAME = "allow-checkout-edits"
@@ -438,6 +438,29 @@ def checkout_state(cwd, env=None):
         return CheckoutState(False, "override", None)
     why, top = git_state(cwd)
     return CheckoutState(why == "main-checkout", why, top)
+
+
+ESCAPED_CATEGORIES = ("Cc", "Cf", "Zl", "Zp")
+
+
+def escape_path(s):
+    """A path made safe to put in text: `\\` -> `\\\\`, the backtick -> `\\x60`,
+    and every control, format, line- or paragraph-separator character as
+    `\\xNN`, `\\uNNNN` or `\\UNNNNNNNN`. A directory name can be chosen by
+    whoever made the repo, so nothing in it may break a line or a code span."""
+    out = []
+    for ch in s:
+        o = ord(ch)
+        if ch == "\\":
+            out.append("\\\\")
+        elif ch == "`":
+            out.append("\\x60")
+        elif unicodedata.category(ch) in ESCAPED_CATEGORIES:
+            out.append("\\x%02x" % o if o < 0x100 else
+                       "\\u%04x" % o if o <= 0xFFFF else "\\U%08x" % o)
+        else:
+            out.append(ch)
+    return "".join(out)
 
 
 def judge_path(cwd, path, env=None):

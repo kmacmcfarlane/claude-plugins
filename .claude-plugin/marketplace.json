@@ -48,7 +48,7 @@
     {
       "name": "sandbox",
       "source": "./plugins/sandbox",
-      "description": "Isolated execution for Claude Code sessions — configure, bootstrap and troubleshoot claude-sandbox containers, with the checkout/worktree convention their launcher follows enforced by a PreToolUse guard."
+      "description": "Isolated execution for Claude Code sessions — configure, bootstrap and troubleshoot claude-sandbox containers, with the checkout/worktree convention their launcher follows enforced by a PreToolUse guard and announced at session and sub-agent start."
     },
     {
       "name": "create-repo",
