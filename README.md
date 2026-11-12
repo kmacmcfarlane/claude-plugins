@@ -751,7 +751,10 @@ the rules file fails closed. Beside it, `checkout_notice.py`, on SessionStart an
 puts one factual paragraph into the context of each session and sub-agent whose cwd is a main
 checkout the guard is on for, before its first edit: what the guard denies, the worktree routes,
 and that Bash writes are not checked; it shares the guard's predicate and prints nothing when the
-guard is off or the rules allow every file. Unit tests:
+guard is off or the rules allow every file. The paragraph ends with the guard's status command,
+`checkout_guard.py --status [--cwd DIR] [--path FILE]`, which asks the same predicate from a
+shell and prints one line: `on main-checkout <top>` or `off <why>`, or with `--path` the file's
+`allowed`/`denied` verdict and its code, from a frozen word list. Unit tests:
 `cd plugins/sandbox/hooks && python3 -m unittest discover -s tests -q`.
 
 ### ralph
