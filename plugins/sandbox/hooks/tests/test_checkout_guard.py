@@ -633,5 +633,219 @@ class TestInProcess(RulesBase):
             self.assertEqual(self.run_main(self.tracked), {})
 
 
+# --- the shared predicate (item 7f9c, F1) ------------------------------------
+#
+# checkout_state is the "is the guard on for this cwd" test the notice hook
+# shares; judge_path runs the guard's whole order and returns a code. Each
+# check is a method returning its problems, so the mutant test can feed it a
+# mutated copy of checkout_guard.py and see it fail. The existing tests above
+# are the refactor's net: they pass unedited.
+
+import types  # noqa: E402
+
+GUARD_SRC = os.path.join(HOOKS, "checkout_guard.py")
+
+
+def guard_module(edits=()):
+    """checkout_guard loaded from its source, each (old, new) in `edits`
+    applied (each `old` found exactly once): a mutant."""
+    with open(GUARD_SRC) as f:
+        src = f.read()
+    for old, new in edits:
+        if src.count(old) != 1:
+            raise AssertionError("mutant target not found once: %r" % old)
+        src = src.replace(old, new)
+    mod = types.ModuleType("checkout_guard_mutant")
+    mod.__file__ = GUARD_SRC
+    exec(compile(src, GUARD_SRC, "exec"), mod.__dict__)
+    return mod
+
+
+class PredicateBase(RulesBase):
+    def setUp(self):
+        super().setUp()
+        self.wt = os.path.join(self.tmp.name, "wt")
+        git(self.repo, "worktree", "add", "-q", self.wt, "-b", "wt-branch")
+        self.plain = os.path.join(self.tmp.name, "plain")
+        os.makedirs(self.plain)
+
+    def state_cases(self):
+        """(label, cwd, env, extra os.environ, want (on, why, top))."""
+        main = (True, "main-checkout", self.repo)
+        cases = [
+            ("main", self.repo, {}, {}, main),
+            ("main subdir", os.path.join(self.repo, "issues"), {}, {}, main),
+            ("worktree", self.wt, {}, {}, (False, "linked-worktree", None)),
+            ("non-git", self.plain, {}, {}, (False, "not-git", None)),
+            ("git absent", self.repo, {},
+             {"PATH": os.path.join(self.tmp.name, "nobin")},
+             (False, "not-git", None)),
+            ("git broken", self.repo, {},
+             {"GIT_DIR": os.path.join(self.tmp.name, "no.git")},
+             (False, "not-git", None)),
+        ]
+        for name in cg.ALLOW_ENV_VARS:
+            cases.append(("override " + name, self.repo, {name: "1"}, {},
+                          (False, "override", None)))
+            for val in ("", "0", "true", " 1"):
+                cases.append(("override %s=%r" % (name, val), self.repo,
+                              {name: val}, {}, main))
+        return cases
+
+    def state_problems(self, mod):
+        out = []
+        for label, cwd, env, osenv, want in self.state_cases():
+            with _clean_env(), mock.patch.dict(os.environ, osenv):
+                try:
+                    got = tuple(mod.checkout_state(cwd, env))
+                except Exception as e:
+                    got = ("raised", repr(e))
+            if got != want:
+                out.append((label, got, want))
+        return out
+
+    def code_cases(self):
+        """(label, cwd, path, env, rules text or None, (allowed, code))."""
+        r, wt, plain = self.repo, self.wt, self.plain
+        marker = os.path.join(".claude", "allow-checkout-edits")
+        return [
+            ("override", r, self.p("README.md"),
+             {"SANDBOX_ALLOW_CHECKOUT_EDITS": "1"}, None, (True, "override")),
+            ("override beats marker", r, self.marker,
+             {"CLAUDE_KIT_ALLOW_CHECKOUT_EDITS": "1"}, None,
+             (True, "override")),
+            ("no path", r, "", {}, None, (True, "no-path")),
+            ("path not a string", r, 7, {}, None, (True, "no-path")),
+            ("marker from main", r, self.marker, {}, None, (False, "marker")),
+            ("marker from worktree", wt, os.path.join(wt, marker), {}, None,
+             (False, "marker")),
+            ("marker from non-git", plain, os.path.join(plain, marker), {},
+             None, (False, "marker")),
+            ("worktree", wt, os.path.join(wt, "README.md"), {}, None,
+             (True, "linked-worktree")),
+            ("non-git", plain, os.path.join(plain, "f"), {}, None,
+             (True, "not-git")),
+            ("outside", r, os.path.join(self.tmp.name, "x"), {}, None,
+             (True, "outside")),
+            ("exempt .claude", r, self.p(".claude/settings.json"), {}, None,
+             (True, "exempt")),
+            ("exempt .claude-sandbox", r, self.p(".claude-sandbox/b.yaml"), {},
+             None, (True, "exempt")),
+            ("untracked", r, self.p("new.txt"), {}, None, (True, "untracked")),
+            ("no rules file", r, self.p("README.md"), {}, None,
+             (False, "rules")),
+            ("rule allows", r, self.p("issues/x.md"), {}, "allow issues/**\n",
+             (True, "rules")),
+            ("rule denies", r, self.p("bin/tool"), {}, "allow issues/**\n",
+             (False, "rules")),
+            ("broken file", r, self.p("issues/x.md"), {}, "allow [\n",
+             (False, "broken")),
+        ]
+
+    def code_problems(self, mod):
+        out = []
+        for label, cwd, path, env, rules, want in self.code_cases():
+            if os.path.exists(self.marker):
+                os.remove(self.marker)
+            if rules is not None:
+                self.rules(rules)
+            with _clean_env():
+                try:
+                    allowed, code, msg = mod.judge_path(cwd, path, env)
+                except Exception as e:
+                    out.append((label, "raised", repr(e)))
+                    continue
+            if (allowed, code) != want:
+                out.append((label, (allowed, code), want))
+            if code not in mod.CODES:
+                out.append((label, "code not frozen", code))
+            if allowed != (msg is None):
+                out.append((label, "message", msg))
+        return out
+
+
+class TestPredicate(PredicateBase):
+    def test_checkout_state_matrix(self):
+        self.assertEqual(self.state_problems(cg), [])
+
+    def test_judge_path_codes(self):
+        self.assertEqual(self.code_problems(cg), [])
+
+    def test_codes_frozen(self):
+        self.assertEqual(cg.CODES, (
+            "override", "no-path", "marker", "not-git", "linked-worktree",
+            "outside", "exempt", "untracked", "rules", "broken"))
+
+    def test_judge_path_messages_match_the_hook(self):
+        # judge_path's deny message is the hook's deny reason, byte for byte.
+        with _clean_env():
+            _, _, msg = cg.judge_path(self.repo, self.p("README.md"), {})
+            self.assertEqual(
+                msg, BLOCK["hookSpecificOutput"]["permissionDecisionReason"])
+            _, _, msg = cg.judge_path(self.repo, self.marker, {})
+            self.assertEqual(
+                msg,
+                MARKER_EDIT["hookSpecificOutput"]["permissionDecisionReason"])
+
+    def test_default_env_is_the_process_env(self):
+        with _clean_env():
+            self.assertTrue(cg.checkout_state(self.repo).on)
+        with _clean_env(), mock.patch.dict(
+                os.environ, {"SANDBOX_ALLOW_CHECKOUT_EDITS": "1"}):
+            self.assertEqual(cg.checkout_state(self.repo).why, "override")
+
+
+# Each mutant: (name, old, new, the check that must catch it, and any
+# further (old, new) edits the mutant needs).
+PREDICATE_MUTANTS = (
+    ("worktree comparison dropped",
+     "        if (os.path.realpath(os.path.join(cwd, git_dir))",
+     "        if False and (os.path.realpath(os.path.join(cwd, git_dir))",
+     "state"),
+    ("override accepts any non-empty value",
+     'return any(env.get(v) == "1" for v in ALLOW_ENV_VARS)',
+     "return any(env.get(v) for v in ALLOW_ENV_VARS)",
+     "state"),
+    ("git failure raises",
+     'return "not-git", None  # not a git repo, or git unavailable/broken',
+     'raise RuntimeError("git failed")',
+     "state",
+     ("    except Exception:\n        return \"not-git\", None",
+      "    except ZeroDivisionError:\n        return \"not-git\", None")),
+    ("git state before the rules-file check",
+     "    # The rules file is the operator's: no agent edit of it, from any cwd.",
+     "    if git_state(cwd)[0] != \"main-checkout\":\n"
+     "        return True, git_state(cwd)[0], None",
+     "code"),
+    ("broken file reported as rules",
+     'return False, "broken", broken_msg(str(e))',
+     'return False, "rules", broken_msg(str(e))',
+     "code"),
+    ("exempt reported as outside",
+     'return True, "exempt", None',
+     'return True, "outside", None',
+     "code"),
+    ("untracked reported as rules",
+     'return True, "untracked", None',
+     'return True, "rules", None',
+     "code"),
+)
+
+
+class TestPredicateMutants(PredicateBase):
+    def test_each_mutant_is_caught(self):
+        for name, old, new, check, *more in PREDICATE_MUTANTS:
+            with self.subTest(mutant=name):
+                mod = guard_module(((old, new),) + tuple(more))
+                probs = (self.state_problems(mod) if check == "state"
+                         else self.code_problems(mod))
+                self.assertNotEqual(probs, [], name)
+
+    def test_unmutated_copy_passes(self):
+        mod = guard_module()
+        self.assertEqual(self.state_problems(mod), [])
+        self.assertEqual(self.code_problems(mod), [])
+
+
 if __name__ == "__main__":
     unittest.main()
