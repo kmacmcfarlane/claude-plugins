@@ -747,7 +747,11 @@ is installed; the per-repo opt-out is a set of `allow`/`deny` path rules in a
 an empty or broken file allows nothing, and agents cannot edit it) or
 `SANDBOX_ALLOW_CHECKOUT_EDITS=1` in the environment (`CLAUDE_KIT_ALLOW_CHECKOUT_EDITS=1` is still
 honoured as a deprecated alias, so existing env files keep working). Every git failure fails open;
-the rules file fails closed. Unit tests:
+the rules file fails closed. Beside it, `checkout_notice.py`, on SessionStart and SubagentStart,
+puts one factual paragraph into the context of each session and sub-agent whose cwd is a main
+checkout the guard is on for, before its first edit: what the guard denies, the worktree routes,
+and that Bash writes are not checked; it shares the guard's predicate and prints nothing when the
+guard is off or the rules allow every file. Unit tests:
 `cd plugins/sandbox/hooks && python3 -m unittest discover -s tests -q`.
 
 ### ralph

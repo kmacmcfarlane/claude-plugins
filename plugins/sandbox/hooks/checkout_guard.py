@@ -31,11 +31,17 @@ are not guarded from the superproject's checkout (ls-files in the
 superproject sees only the gitlink, so the target reads as untracked), and a
 path spelled in a different case from the index reads as untracked.
 
+The predicate is shared: checkout_state(cwd) says whether the guard is on for
+a cwd (the override, then git state), and judge_path(cwd, path) runs the whole
+order and returns (allowed, code, message), its codes frozen in CODES. The
+order is: override, no path, the rules-file check (before any git call, so the
+rules file is denied from every cwd), git state, then the per-path steps.
+
 Block contract: exit 0 with hookSpecificOutput.permissionDecision "deny" on
 stdout, per the hooks reference (PreToolUse decision control,
 https://code.claude.com/docs/en/hooks).
 """
-import json, os, re, stat, subprocess, sys
+import collections, json, os, re, stat, subprocess, sys, unicodedata
 
 MARKER_DIR = ".claude"
 MARKER_NAME = "allow-checkout-edits"
@@ -295,25 +301,27 @@ def load_marker(top, st):
 
 
 def judge_marker(top, path):
-    """(allowed, reason) for tracked `path` (index spelling) under the rules
-    file. Every failure past this point is closed: a deny, never an allow."""
+    """(allowed, code, reason) for tracked `path` (index spelling) under the
+    rules file; code `rules`, or `broken` when the file cannot be used. Every
+    failure past this point is closed: a deny, never an allow."""
     try:
         marker = os.path.join(top, MARKER_DIR, MARKER_NAME)
         try:
             st = os.lstat(marker)
         except FileNotFoundError:
-            return False, BLOCK_MSG
+            return False, "rules", BLOCK_MSG
         except NotADirectoryError:
-            return False, broken_msg("`.claude` is not a directory")
+            return False, "broken", broken_msg("`.claude` is not a directory")
         except OSError as e:
-            return False, broken_msg("cannot read it (%s)" % (e.strerror or e))
+            return False, "broken", broken_msg(
+                "cannot read it (%s)" % (e.strerror or e))
         try:
             rules = load_marker(top, st)
         except (MarkerBroken, RuleError) as e:
-            return False, broken_msg(str(e))
+            return False, "broken", broken_msg(str(e))
         allowed, rule = decide(rules, path)
         if allowed:
-            return True, None
+            return True, "rules", None
         if rule.line != DEFAULT_RULE_LINE:
             why = "`%s` is the last rule that matches" % rule.describe()
         elif len(rules) == 1:
@@ -322,9 +330,9 @@ def judge_marker(top, path):
         else:
             why = ("no rule in the file matches, so the default rule "
                    "`deny *` applies")
-        return False, rule_msg(path, why)
+        return False, "rules", rule_msg(path, why)
     except Exception:
-        return False, broken_msg("internal error")
+        return False, "broken", broken_msg("internal error")
 
 
 # --- the hook ----------------------------------------------------------------
@@ -391,53 +399,117 @@ def deny(reason=BLOCK_MSG):
     emit("deny", reason)
 
 
+# --- the predicate: one order, shared by the guard and the notice -----------
+
+# Every code judge_path returns, frozen: skills and tests match these words.
+CODES = ("override", "no-path", "marker", "not-git", "linked-worktree",
+         "outside", "exempt", "untracked", "rules", "broken")
+
+CheckoutState = collections.namedtuple("CheckoutState", "on why top")
+
+
+def override_set(env=None):
+    """True when either override name is exactly "1"."""
+    env = os.environ if env is None else env
+    return any(env.get(v) == "1" for v in ALLOW_ENV_VARS)
+
+
+def git_state(cwd):
+    """(why, top): `main-checkout` with the realpath'd top, `linked-worktree`,
+    or `not-git` (no repo, git absent or broken). Never raises."""
+    try:
+        lines = (git(cwd, "rev-parse", "--git-dir", "--git-common-dir",
+                     "--show-toplevel") or "").splitlines()
+        if len(lines) != 3:
+            return "not-git", None  # not a git repo, or git unavailable/broken
+        git_dir, common_dir, top = lines
+        if (os.path.realpath(os.path.join(cwd, git_dir))
+                != os.path.realpath(os.path.join(cwd, common_dir))):
+            return "linked-worktree", None  # the harness guards this direction
+        return "main-checkout", os.path.realpath(top)
+    except Exception:
+        return "not-git", None
+
+
+def checkout_state(cwd, env=None):
+    """Is the guard on for this cwd? `why` is `override`, `not-git`,
+    `linked-worktree` or `main-checkout`; `on` only for the last."""
+    if override_set(env):
+        return CheckoutState(False, "override", None)
+    why, top = git_state(cwd)
+    return CheckoutState(why == "main-checkout", why, top)
+
+
+ESCAPED_CATEGORIES = ("Cc", "Cf", "Zl", "Zp")
+
+
+def escape_path(s):
+    """A path made safe to put in text: `\\` -> `\\\\`, the backtick -> `\\x60`,
+    and every control, format, line- or paragraph-separator character as
+    `\\xNN`, `\\uNNNN` or `\\UNNNNNNNN`. A directory name can be chosen by
+    whoever made the repo, so nothing in it may break a line or a code span."""
+    out = []
+    for ch in s:
+        o = ord(ch)
+        if ch == "\\":
+            out.append("\\\\")
+        elif ch == "`":
+            out.append("\\x60")
+        elif unicodedata.category(ch) in ESCAPED_CATEGORIES:
+            out.append("\\x%02x" % o if o < 0x100 else
+                       "\\u%04x" % o if o <= 0xFFFF else "\\U%08x" % o)
+        else:
+            out.append(ch)
+    return "".join(out)
+
+
+def judge_path(cwd, path, env=None):
+    """(allowed, code, message) for an edit of `path` from `cwd`, in this
+    order: (a) override, (b) no path, (c) the rules-file check, before any git
+    call, so the rules file is denied from every cwd, (d) git state, (e) the
+    per-path steps. `message` is the deny reason, None when allowed."""
+    if override_set(env):
+        return True, "override", None
+    if not path or not isinstance(path, str):
+        return True, "no-path", None
+
+    # The rules file is the operator's: no agent edit of it, from any cwd.
+    try:
+        hit = is_marker_path(cwd, path)
+    except Exception:
+        return False, "marker", MARKER_CHECK_MSG
+    if hit:
+        return False, "marker", MARKER_EDIT_MSG
+
+    why, top = git_state(cwd)
+    if why != "main-checkout":
+        return True, why, None
+
+    target = path if os.path.isabs(path) else os.path.join(cwd, path)
+    target = os.path.realpath(target)
+    rel = os.path.relpath(target, top)
+    if rel == ".." or rel.startswith(".." + os.sep):
+        return True, "outside", None
+    if rel.split(os.sep, 1)[0] in (".claude-sandbox", ".claude"):
+        return True, "exempt", None  # sandbox/config paths are process, not work
+
+    spelled = tracked_spelling(top, rel)
+    if spelled is None:
+        return True, "untracked", None  # untracked (or git failed): fail open
+
+    return judge_marker(top, spelled)
+
+
 def main():
     try:
         inp = json.load(sys.stdin)
     except Exception:
         allow()
 
-    if any(os.environ.get(v) == "1" for v in ALLOW_ENV_VARS):
-        allow()
-
     tool_input = inp.get("tool_input") or {}
     path = tool_input.get("file_path") or tool_input.get("notebook_path")
-    if not path or not isinstance(path, str):
-        allow()
-
     cwd = inp.get("cwd") or os.getcwd()
-
-    # The rules file is the operator's: no agent edit of it, from any cwd.
-    try:
-        hit = is_marker_path(cwd, path)
-    except Exception:
-        deny(MARKER_CHECK_MSG)
-    if hit:
-        deny(MARKER_EDIT_MSG)
-
-    lines = (git(cwd, "rev-parse", "--git-dir", "--git-common-dir",
-                 "--show-toplevel") or "").splitlines()
-    if len(lines) != 3:
-        allow()  # not a git repo, or git unavailable/broken
-    git_dir, common_dir, top = lines
-    if (os.path.realpath(os.path.join(cwd, git_dir))
-            != os.path.realpath(os.path.join(cwd, common_dir))):
-        allow()  # linked worktree: the harness already guards that direction
-    top = os.path.realpath(top)
-
-    target = path if os.path.isabs(path) else os.path.join(cwd, path)
-    target = os.path.realpath(target)
-    rel = os.path.relpath(target, top)
-    if rel == ".." or rel.startswith(".." + os.sep):
-        allow()  # outside the repo
-    if rel.split(os.sep, 1)[0] in (".claude-sandbox", ".claude"):
-        allow()  # sandbox/config paths are process, not work
-
-    spelled = tracked_spelling(top, rel)
-    if spelled is None:
-        allow()  # untracked (or git failed): fail open
-
-    allowed, reason = judge_marker(top, spelled)
+    allowed, _code, reason = judge_path(cwd, path)
     if allowed:
         allow()
     deny(reason)
