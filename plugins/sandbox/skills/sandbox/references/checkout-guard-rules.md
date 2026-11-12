@@ -107,6 +107,11 @@ in a session started with `SANDBOX_ALLOW_CHECKOUT_EDITS=1`.
 stays the blanket override: it allows everything, above the rules, a broken file and the
 file's own protection.
 
+## Asking the guard
+
+To ask whether the guard is on for a directory, or what it would decide for one file, rules
+included, run the status command in the sandbox `SKILL.md`'s **Asking the guard** paragraph.
+
 ## Limitations
 
 - **Bash writes** (sed, heredocs, redirects) are not guarded, the rules file included. The

@@ -16,9 +16,11 @@ wording; "is not checked" dropped; the rules-file clause dropped; the
 boundary sentence dropped; the convention stated as fact; the allow-all test
 ignored; the allow clause always on; `{}` printed when silent; a timestamp in
 the text; a `<system-reminder>` tag in the text; the fixed text padded over
-its cap.
+its cap; the status sentence dropped; the guard's path relative; the command
+unquoted; the guard's path unescaped; no cap on the guard's path; that cap
+measured on the raw path.
 """
-import json, os, shutil, subprocess, sys, tempfile, unittest
+import json, os, shlex, shutil, subprocess, sys, tempfile, unittest
 
 HOOKS = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 EVENTS = ("SessionStart", "SubagentStart")
@@ -40,6 +42,8 @@ BOUNDARY = ("The guard catches accidental edits through the edit tools; it is "
 CONVENTION = ("The sandbox convention is that changes to tracked files are "
               "made from a linked worktree")
 BASH = "The guard does not check Bash writes"
+STATUS = (" python3 %s --status prints whether the guard is on for the "
+          "current directory.")
 OLD_RULES_WORDING = "which agents may not change by any tool"
 
 # Characters escape_path must escape, and their escaped forms.
@@ -278,7 +282,9 @@ class Fixture(unittest.TestCase):
 
     def check_fixed_budget(self, hooks):
         out = []
-        n = module_eval(hooks, "len(n.notice_text('', True))")
+        # Every optional clause in, both paths empty (the guard's path
+        # quoted: '').
+        n = module_eval(hooks, "len(n.notice_text('', True, ''))")
         if n > FIXED_CAP:
             out.append(("fixed text", n))
         return out
@@ -337,6 +343,58 @@ class Fixture(unittest.TestCase):
                 out.append(("raw character in text", repr(c)))
         if text.count("`") != 2:
             out.append(("backticks", text.count("`")))
+        return out
+
+    def check_status_sentence(self, hooks):
+        """The notice ends with the guard's status command, its path the real
+        absolute one beside the hook, quoted; and the command runs."""
+        out = []
+        self.rules(None)
+        script = os.path.realpath(os.path.join(hooks, "checkout_guard.py"))
+        want = STATUS % shlex.quote(script)
+        for event in EVENTS:
+            text = context(run_notice(hooks, self.repo, event)[1]) or ""
+            if not text.endswith(want):
+                out.append((event, "status sentence", text[-160:]))
+                continue
+            argv = shlex.split(text[len(text) - len(want):].split(
+                " prints whether")[0])
+            if not os.path.isabs(argv[1]):
+                out.append((event, "path not absolute", argv[1]))
+            p = subprocess.run([sys.executable] + argv[1:], cwd=self.repo,
+                               capture_output=True, text=True,
+                               env=scrubbed({}), timeout=30)
+            if (p.returncode, p.stdout) != (
+                    0, "on main-checkout %s\n" % self.repo):
+                out.append((event, "command", p.returncode, p.stdout,
+                            p.stderr[-200:]))
+        return out
+
+    def check_status_cap(self, hooks):
+        """The guard's path: escaped, then quoted, then capped at PATH_CAP;
+        over it the sentence is left out."""
+        out = []
+        cases = (
+            ("/" + "d" * (PATH_CAP - 1), True),
+            ("/" + "d" * PATH_CAP, False),
+            ("/" + "d" * (PATH_CAP - 2) + "\t", False),  # 256 raw, 259 shown
+            ("/a b/" + PATH_SPECIALS + "/checkout_guard.py", True),
+        )
+        texts = module_eval(hooks, "[n.notice_text('/r', False, s) "
+                            "for s in arg]", [c[0] for c in cases])
+        for (script, kept), text in zip(cases, texts):
+            label = (len(script), script[-12:])
+            esc = "".join(ESCAPES.get(c, c) for c in script)
+            if kept and not text.endswith(STATUS % shlex.quote(esc)):
+                out.append((label, "sentence not kept", text[-120:]))
+            if not kept and ("--status" in text or
+                             not text.endswith("are the operator's to set.")):
+                out.append((label, "sentence not left out", text[-120:]))
+            if len(text) > TOTAL_CAP:
+                out.append((label, "over the total cap", len(text)))
+            for c in PATH_SPECIALS + "\t":
+                if c not in "`\\" and c in text:
+                    out.append((label, "raw character", repr(c)))
         return out
 
     def parity_mismatches(self, hooks):
@@ -430,10 +488,18 @@ class TestNotice(Fixture):
 
     def test_shipped_text(self):
         # The text as it ships, in this repo's shape, for the record.
-        text = module_eval(HOOKS, "n.notice_text(arg, False)", "/r")
+        text = module_eval(HOOKS, "n.notice_text(arg, False, '/g/cg.py')",
+                           "/r")
         self.assertTrue(text.startswith("sandbox checkout guard: `/r` is a "
                                         "main git checkout"))
-        self.assertTrue(text.endswith("are the operator's to set."))
+        self.assertTrue(text.endswith("are the operator's to set." +
+                                      STATUS % "/g/cg.py"))
+
+    def test_status_sentence(self):
+        self.assertEqual(self.check_status_sentence(HOOKS), [])
+
+    def test_status_cap(self):
+        self.assertEqual(self.check_status_cap(HOOKS), [])
 
 
 # (name, file, old, new, the check that must catch it)
@@ -515,6 +581,26 @@ MUTANTS = (
      '"overrides (SANDBOX_ALLOW_CHECKOUT_EDITS=1, rules in "',
      '"overrides " + "x" * 200 + "(SANDBOX_ALLOW_CHECKOUT_EDITS=1, rules in "',
      "check_fixed_budget"),
+    ("status sentence dropped", "checkout_notice.py",
+     "                       status=status)", '                       status="")',
+     "check_status_sentence"),
+    ("guard's path relative", "checkout_notice.py",
+     "return os.path.realpath(cg.__file__)",
+     "return os.path.relpath(os.path.realpath(cg.__file__))",
+     "check_status_sentence"),
+    ("command unquoted", "checkout_notice.py",
+     "cmd = shlex.quote(cg.escape_path(", "cmd = (cg.escape_path(",
+     "check_status_cap"),
+    ("guard's path unescaped", "checkout_notice.py",
+     "cmd = shlex.quote(cg.escape_path(", "cmd = shlex.quote((",
+     "check_status_cap"),
+    ("no cap on the guard's path", "checkout_notice.py",
+     'STATUS_CLAUSE.format(cmd=cmd) if len(cmd) <= PATH_CAP else ""',
+     'STATUS_CLAUSE.format(cmd=cmd)', "check_status_cap"),
+    ("guard's path cap measured raw", "checkout_notice.py",
+     "if len(cmd) <= PATH_CAP",
+     "if len(guard_script() if script is None else script) <= PATH_CAP",
+     "check_status_cap"),
 )
 
 

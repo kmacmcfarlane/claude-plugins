@@ -21,12 +21,16 @@ stdout on SessionStart is added to the model's context
 (https://code.claude.com/docs/en/hooks § Exit code output), so no stray output
 is harmless. No notice is the safe failure: the guard still enforces.
 
+The paragraph ends with the guard's status command, naming the real absolute
+path of checkout_guard.py (escaped and shell-quoted), so a session can ask the
+guard about its cwd, or one file, with no lookup.
+
 The text is deterministic for a given repo state (no timestamps or ids): on a
 repeat SubagentStart for the same sub-agent the copy already in its context is
 not injected again (https://code.claude.com/docs/en/hooks § SubagentStart).
 Stateless: no marker, no file written.
 """
-import json, os, sys
+import json, os, shlex, sys
 
 try:
     import checkout_guard as cg  # this script's own directory, never the cwd's
@@ -41,6 +45,11 @@ PATH_CAP = 256
 FALLBACK_TOP = "this repository's main checkout"
 
 ALLOW_CLAUSE = " except paths .claude/allow-checkout-edits allows"
+
+# The status sentence names the guard script's real absolute path, escaped and
+# shell-quoted; over PATH_CAP it is left out (a cut command would not run).
+STATUS_CLAUSE = (" python3 {cmd} --status prints whether the guard is on for "
+                 "the current directory.")
 
 TEXT = (
     "sandbox checkout guard: {top} is a main git checkout, and the sandbox "
@@ -58,7 +67,7 @@ TEXT = (
     "that is a linked worktree is not affected. The guard catches accidental "
     "edits through the edit tools; it is not a security boundary. The "
     "overrides (SANDBOX_ALLOW_CHECKOUT_EDITS=1, rules in "
-    ".claude/allow-checkout-edits) are the operator's to set."
+    ".claude/allow-checkout-edits) are the operator's to set.{status}"
 )
 
 
@@ -85,11 +94,22 @@ def rules_view(top):
     return allow_all, any(r.kind == "allow" for r in rules)
 
 
-def notice_text(top, has_allow):
-    """The paragraph for main checkout `top`."""
+def guard_script():
+    """The absolute, symlink-resolved path of the checkout_guard.py this hook
+    shares its predicate with."""
+    return os.path.realpath(cg.__file__)
+
+
+def notice_text(top, has_allow, script=None):
+    """The paragraph for main checkout `top`; `script` is the guard's path
+    for the status sentence (default: guard_script())."""
     esc = cg.escape_path(top)
     shown = "`%s`" % esc if len(esc) <= PATH_CAP else FALLBACK_TOP
-    return TEXT.format(top=shown, allow=ALLOW_CLAUSE if has_allow else "")
+    cmd = shlex.quote(cg.escape_path(
+        guard_script() if script is None else script))
+    status = STATUS_CLAUSE.format(cmd=cmd) if len(cmd) <= PATH_CAP else ""
+    return TEXT.format(top=shown, allow=ALLOW_CLAUSE if has_allow else "",
+                       status=status)
 
 
 def notice(inp, env=None):

@@ -37,6 +37,12 @@ order and returns (allowed, code, message), its codes frozen in CODES. The
 order is: override, no path, the rules-file check (before any git call, so the
 rules file is denied from every cwd), git state, then the per-path steps.
 
+Status mode: `checkout_guard.py --status [--cwd DIR] [--path FILE]` asks the
+same predicate from a shell and prints one line: `on main-checkout <top>`
+(escaped) or `off <why>`, or with --path `allowed <code>` / `denied <code>`.
+It never reads stdin and exits 0 (2 on bad arguments). With no arguments the
+script is the hook, unchanged.
+
 Block contract: exit 0 with hookSpecificOutput.permissionDecision "deny" on
 stdout, per the hooks reference (PreToolUse decision control,
 https://code.claude.com/docs/en/hooks).
@@ -527,5 +533,65 @@ def run():
         sys.exit(0)
 
 
+# --- the status mode: the same predicate, asked from a shell ----------------
+
+STATUS_USAGE = ("usage: checkout_guard.py --status [--cwd DIR] [--path FILE]")
+
+
+def parse_status_args(argv):
+    """{"cwd": …, "path": …} from argv, or None when it is not exactly
+    `--status` with at most one `--cwd` and one `--path`, each with a value
+    (`--opt VALUE` or `--opt=VALUE`)."""
+    opts, seen, i = {}, set(), 0
+    while i < len(argv):
+        arg = argv[i]
+        name, eq, val = arg.partition("=")
+        if name in seen:
+            return None
+        if name == "--status" and not eq:
+            seen.add(name)
+        elif name in ("--cwd", "--path"):
+            if not eq:
+                i += 1
+                if i >= len(argv):
+                    return None
+                val = argv[i]
+            seen.add(name)
+            opts[name[2:]] = val
+        else:
+            return None
+        i += 1
+    return opts if "--status" in seen else None
+
+
+def status_line(cwd, path=None, env=None):
+    """The status mode's one line. Without a path: `on main-checkout <top>`
+    (top escaped) or `off <why>`. With one: `allowed <code>` or
+    `denied <code>`, judge_path's verdict, rules included."""
+    if path is not None:
+        allowed, code, _ = judge_path(cwd, path, env)
+        return "%s %s" % ("allowed" if allowed else "denied", code)
+    state = checkout_state(cwd, env)
+    if state.on:
+        return "on main-checkout " + escape_path(state.top)
+    return "off " + state.why
+
+
+def status_main(argv):
+    """`--status [--cwd DIR] [--path FILE]`: one line on stdout, exit 0; a
+    usage line on stderr and exit 2 on bad arguments. Never reads stdin. A
+    relative --cwd is resolved against the process's working directory; the
+    override is read from the process environment, as the hook reads it."""
+    opts = parse_status_args(argv)
+    if opts is None:
+        sys.stderr.write(STATUS_USAGE + "\n")
+        return 2
+    cwd = os.path.join(os.getcwd(), opts.get("cwd", ""))
+    sys.stdout.write(status_line(cwd, opts.get("path")) + "\n")
+    return 0
+
+
 if __name__ == "__main__":
+    if len(sys.argv) > 1:
+        sys.exit(status_main(sys.argv[1:]))
     run()
