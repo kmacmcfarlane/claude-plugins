@@ -22,8 +22,9 @@ stdout on SessionStart is added to the model's context
 is harmless. No notice is the safe failure: the guard still enforces.
 
 The paragraph ends with the guard's status command, naming the real absolute
-path of checkout_guard.py (escaped and shell-quoted), so a session can ask the
-guard about its cwd, or one file, with no lookup.
+path of checkout_guard.py, shell-quoted, so a session can ask the guard about
+its cwd, or one file, with no lookup. A path that needs escaping, or is over the
+cap, leaves the sentence out.
 
 The text is deterministic for a given repo state (no timestamps or ids): on a
 repeat SubagentStart for the same sub-agent the copy already in its context is
@@ -46,8 +47,9 @@ FALLBACK_TOP = "this repository's main checkout"
 
 ALLOW_CLAUSE = " except paths .claude/allow-checkout-edits allows"
 
-# The status sentence names the guard script's real absolute path, escaped and
-# shell-quoted; over PATH_CAP it is left out (a cut command would not run).
+# The status sentence names the guard script's real absolute path,
+# shell-quoted; it is left out when the path needs escaping or is over
+# PATH_CAP quoted (either way the command would not run as printed).
 STATUS_CLAUSE = (" python3 {cmd} --status prints whether the guard is on for "
                  "the current directory.")
 
@@ -105,9 +107,12 @@ def notice_text(top, has_allow, script=None):
     for the status sentence (default: guard_script())."""
     esc = cg.escape_path(top)
     shown = "`%s`" % esc if len(esc) <= PATH_CAP else FALLBACK_TOP
-    cmd = shlex.quote(cg.escape_path(
-        guard_script() if script is None else script))
-    status = STATUS_CLAUSE.format(cmd=cmd) if len(cmd) <= PATH_CAP else ""
+    script = guard_script() if script is None else script
+    cmd = shlex.quote(script)
+    # An escaped path would not run as printed, so it is left out, as is one
+    # over the cap.
+    ok = cg.escape_path(script) == script and len(cmd) <= PATH_CAP
+    status = STATUS_CLAUSE.format(cmd=cmd) if ok else ""
     return TEXT.format(top=shown, allow=ALLOW_CLAUSE if has_allow else "",
                        status=status)
 

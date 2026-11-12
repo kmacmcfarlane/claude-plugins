@@ -17,8 +17,8 @@ boundary sentence dropped; the convention stated as fact; the allow-all test
 ignored; the allow clause always on; `{}` printed when silent; a timestamp in
 the text; a `<system-reminder>` tag in the text; the fixed text padded over
 its cap; the status sentence dropped; the guard's path relative; the command
-unquoted; the guard's path unescaped; no cap on the guard's path; that cap
-measured on the raw path.
+unquoted; a guard's path that needs escaping kept; no cap on the guard's
+path; that cap measured on the raw path.
 """
 import json, os, shlex, shutil, subprocess, sys, tempfile, unittest
 
@@ -371,21 +371,23 @@ class Fixture(unittest.TestCase):
         return out
 
     def check_status_cap(self, hooks):
-        """The guard's path: escaped, then quoted, then capped at PATH_CAP;
-        over it the sentence is left out."""
+        """The guard's path, shell-quoted, capped at PATH_CAP; a path that
+        needs escaping, or is over the cap quoted, leaves the sentence out."""
         out = []
         cases = (
             ("/" + "d" * (PATH_CAP - 1), True),
             ("/" + "d" * PATH_CAP, False),
-            ("/" + "d" * (PATH_CAP - 2) + "\t", False),  # 256 raw, 259 shown
-            ("/a b/" + PATH_SPECIALS + "/checkout_guard.py", True),
+            ("/a b/it's/checkout_guard.py", True),  # quoted, runs as printed
+            ("/a b" + "d" * (PATH_CAP - 5), False),  # 255 raw, 257 quoted
+            ("/a`b/checkout_guard.py", False),  # the backtick needs escaping
+            ("/" + "d" * 10 + "\t", False),
+            ("/a b/" + PATH_SPECIALS + "/checkout_guard.py", False),
         )
         texts = module_eval(hooks, "[n.notice_text('/r', False, s) "
                             "for s in arg]", [c[0] for c in cases])
         for (script, kept), text in zip(cases, texts):
             label = (len(script), script[-12:])
-            esc = "".join(ESCAPES.get(c, c) for c in script)
-            if kept and not text.endswith(STATUS % shlex.quote(esc)):
+            if kept and not text.endswith(STATUS % shlex.quote(script)):
                 out.append((label, "sentence not kept", text[-120:]))
             if not kept and ("--status" in text or
                              not text.endswith("are the operator's to set.")):
@@ -589,17 +591,15 @@ MUTANTS = (
      "return os.path.relpath(os.path.realpath(cg.__file__))",
      "check_status_sentence"),
     ("command unquoted", "checkout_notice.py",
-     "cmd = shlex.quote(cg.escape_path(", "cmd = (cg.escape_path(",
-     "check_status_cap"),
-    ("guard's path unescaped", "checkout_notice.py",
-     "cmd = shlex.quote(cg.escape_path(", "cmd = shlex.quote((",
-     "check_status_cap"),
+     "cmd = shlex.quote(script)", "cmd = script", "check_status_cap"),
+    ("guard's path needing escaping kept", "checkout_notice.py",
+     "ok = cg.escape_path(script) == script and len(cmd) <= PATH_CAP",
+     "ok = len(cmd) <= PATH_CAP", "check_status_cap"),
     ("no cap on the guard's path", "checkout_notice.py",
-     'STATUS_CLAUSE.format(cmd=cmd) if len(cmd) <= PATH_CAP else ""',
-     'STATUS_CLAUSE.format(cmd=cmd)', "check_status_cap"),
+     "ok = cg.escape_path(script) == script and len(cmd) <= PATH_CAP",
+     "ok = cg.escape_path(script) == script", "check_status_cap"),
     ("guard's path cap measured raw", "checkout_notice.py",
-     "if len(cmd) <= PATH_CAP",
-     "if len(guard_script() if script is None else script) <= PATH_CAP",
+     "and len(cmd) <= PATH_CAP", "and len(script) <= PATH_CAP",
      "check_status_cap"),
 )
 

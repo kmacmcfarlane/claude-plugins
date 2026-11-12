@@ -14,9 +14,11 @@ the rules allow every file (the notice is silent, the session line still
 
 Mutants: status reads stdin; `--path` lets the rules file's denials through;
 `off` printed as `on`; the off word dropped; `<top>` unescaped; a relative
---cwd taken as given; a duplicate option accepted; a code renamed in the code
-only; a code renamed in SKILL.md only; the rules sentence dropped from
-SKILL.md; the notice speaking with the override set.
+--cwd taken as given; an error escaping on a deleted working directory; the
+working directory read for an absolute --cwd; a relative --path resolved
+against the process's directory; a duplicate option accepted; a code renamed
+in the code only; a code renamed in SKILL.md only; the rules sentence dropped
+from SKILL.md; the notice speaking with the override set.
 """
 import contextlib, json, os, re, shutil, subprocess, sys, tempfile, unittest
 from unittest import mock
@@ -39,6 +41,7 @@ RULE_SETS = (("none", None), ("partial", "allow issues/**\n"),
              ("broken", "allow [\n"), ("allow-all", "allow **\n"))
 FILES = ("issues/x.md", "bin/tool", "new.txt", ".claude/allow-checkout-edits",
          ".claude/settings.json", "../outside.txt", "")
+REL_FILES = ("bin/tool",)  # handed over relative: resolved against --cwd
 
 
 def run_status(hooks, args, cwd=None, env=None):
@@ -119,6 +122,29 @@ class Fixture(tn.Fixture):
             return [("escaped top", rc, so)]
         return []
 
+    def check_deleted_cwd(self, hooks):
+        """A deleted working directory: still exit 0 and one line; an absolute
+        --cwd is still answered."""
+        out = []
+        gone = os.path.join(self.base, "gone")
+        script = os.path.join(hooks, "checkout_guard.py")
+        for args, want in (([], "off not-git\n"),
+                           (["--cwd", "rel"], "off not-git\n"),
+                           (["--path", "x"], "off not-git\n"),
+                           (["--cwd", self.repo],
+                            "on main-checkout %s\n" % self.repo)):
+            os.makedirs(gone)
+            p = subprocess.run(
+                ["sh", "-c", 'cd "$1" && rmdir "$1" && shift && exec "$@"',
+                 "sh", gone, sys.executable, script, "--status"] + args,
+                stdin=subprocess.DEVNULL, capture_output=True, text=True,
+                env=tn.scrubbed({}), timeout=30)
+            if (p.returncode, p.stdout) != (0, want):
+                out.append((args, p.returncode, p.stdout, p.stderr[-200:]))
+            if os.path.isdir(gone):
+                os.rmdir(gone)
+        return out
+
     def check_bad_args(self, hooks):
         out = []
         for args in (["--stat"], ["--status", "--path"], ["--status", "x"],
@@ -158,8 +184,9 @@ class Fixture(tn.Fixture):
         for label, cwd, env, _ in cwds or self.cwds():
             for rname, rules in rule_sets:
                 self.rules(rules)
-                for rel in FILES:
-                    path = os.path.join(cwd, rel) if rel else ""
+                for rel in FILES + tuple("rel:" + f for f in REL_FILES):
+                    path = (rel[4:] if rel.startswith("rel:") else
+                            os.path.join(cwd, rel) if rel else "")
                     rc, so, _ = run_status(
                         hooks, ["--status", "--cwd", cwd, "--path=" + path],
                         env=env)
@@ -226,6 +253,9 @@ class TestStatus(Fixture):
     def test_bad_args(self):
         self.assertEqual(self.check_bad_args(HOOKS), [])
 
+    def test_deleted_cwd(self):
+        self.assertEqual(self.check_deleted_cwd(HOOKS), [])
+
     def test_never_reads_stdin(self):
         self.assertEqual(self.check_no_stdin(HOOKS), [])
 
@@ -268,10 +298,20 @@ MUTANTS = (
      'return "on main-checkout " + escape_path(state.top)',
      'return "on main-checkout " + state.top', "check_escaped_top"),
     ("relative --cwd taken as given", "checkout_guard.py",
-     'cwd = os.path.join(os.getcwd(), opts.get("cwd", ""))',
-     'cwd = opts.get("cwd") or os.getcwd()\n'
-     '    cwd = cwd if os.path.isabs(cwd) else os.path.join("/", cwd)',
-     "check_session_lines"),
+     'cwd = os.path.join(os.getcwd(), cwd or "")',
+     'cwd = os.path.join("/", cwd or "")', "check_session_lines"),
+    ("an error escapes status_main", "checkout_guard.py",
+     '    except Exception:\n        line = "off not-git"',
+     '    except ZeroDivisionError:\n        line = "off not-git"',
+     "check_deleted_cwd"),
+    ("getcwd read even for an absolute --cwd", "checkout_guard.py",
+     "        if not cwd or not os.path.isabs(cwd):\n",
+     "        if os.getcwd() and (not cwd or not os.path.isabs(cwd)):\n",
+     "check_deleted_cwd"),
+    ("--path relative to the process cwd", "checkout_guard.py",
+     '        line = status_line(cwd, opts.get("path"))',
+     '        line = status_line(cwd, opts.get("path") and os.path.abspath('
+     'opts["path"]))', "path_parity"),
     ("duplicate option accepted", "checkout_guard.py",
      "        if name in seen:\n            return None\n", "",
      "check_bad_args"),

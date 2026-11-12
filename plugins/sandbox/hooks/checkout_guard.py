@@ -580,14 +580,22 @@ def status_line(cwd, path=None, env=None):
 def status_main(argv):
     """`--status [--cwd DIR] [--path FILE]`: one line on stdout, exit 0; a
     usage line on stderr and exit 2 on bad arguments. Never reads stdin. A
-    relative --cwd is resolved against the process's working directory; the
-    override is read from the process environment, as the hook reads it."""
+    relative --cwd is resolved against the process's working directory (read
+    only then, so an absolute --cwd works from a deleted one); any error
+    prints `off not-git`. The override is read from the process environment,
+    as the hook reads it."""
     opts = parse_status_args(argv)
     if opts is None:
         sys.stderr.write(STATUS_USAGE + "\n")
         return 2
-    cwd = os.path.join(os.getcwd(), opts.get("cwd", ""))
-    sys.stdout.write(status_line(cwd, opts.get("path")) + "\n")
+    cwd = opts.get("cwd")
+    try:
+        if not cwd or not os.path.isabs(cwd):
+            cwd = os.path.join(os.getcwd(), cwd or "")
+        line = status_line(cwd, opts.get("path"))
+    except Exception:
+        line = "off not-git"  # e.g. the working directory was deleted
+    sys.stdout.write(line + "\n")
     return 0
 
 
