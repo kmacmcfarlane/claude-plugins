@@ -233,9 +233,9 @@ optional `references/`, `scripts/`, `assets/`.
   `plugins/kit-dev/tests/test_declared_edges.py` requires, e.g. `(soft: a; b)`,
   `(requires X; soft: …)`. An external entry carries its kind, the same as its catalog
   cell: `external:`, `external, soft:`, `external, required:` or `external, optional:`.
-  The plugin.json and
-  marketplace.json descriptions are identical. Why: the plugin menu shows the whole
-  description, and a long one overflows it (observed by the operator, 2026-11-17).
+  The plugin.json and marketplace.json descriptions are identical. Why: the plugin menu
+  shows the whole description, and a long one overflows it (observed by the operator,
+  2026-11-17).
   `plugins/kit-dev/tests/test_description_length.py` caps the summary and the whole.
 - **README footer**: a `README.md` inside a skill folder is allowed, for humans, and ends
   with the line `*User-facing documentation, not agent instructions.*` (the dev-cycle

@@ -8,7 +8,8 @@ plugins/*/.claude-plugin/plugin.json and every .claude-plugin/marketplace.json e
 - the whole description is at most TOTAL_MAX characters;
 - the plugin.json description and the marketplace.json entry's are identical;
 - the dependency clause holds names only: each entry, its kind head stripped, is a bare
-  name (KIND_HEAD, NAME_ENTRY), never how-it-degrades prose.
+  name (KIND_HEAD, NAME_ENTRY, MULTIWORD), never how-it-degrades prose, and the clause
+  closes the description (CLAUSE_TAIL).
 
 Each check is a plain function returning a list of problems, and each is proved by a mutant:
 a deliberately bad description fed to it must fail. The mutants run anywhere; the scan of
@@ -43,14 +44,19 @@ TOTAL_MAX = 420
 CLAUSE_OPEN = re.compile(r"\((?=\s*(?:soft|requires|external|optional|hard)\b)", re.I)
 
 # Names only, held by shape rather than by a list of banned phrases: the clause is split
-# on ';', each entry loses its kind head, and what is left must be a bare name of one or
-# two words (letters, digits, '.', '-': `claude.ai Artifacts`, `node`), optionally marked
-# ", optional". Anything else, a comma clause or a sentence such as "without it nothing is
-# filed", is how-it-degrades prose, which belongs in the README catalog cell and the skill
-# text. Two words is the longest name today (claude.ai Artifacts).
+# on ';', each entry loses its kind head, and what is left must be a bare one-word name
+# (letters, digits, '.', '-': `node`, `claude-sandbox`) or a name in MULTIWORD. Anything
+# else, a comma clause, two words such as "plan file" or a sentence such as "without it
+# nothing is filed", is how-it-degrades prose, which belongs in the README catalog cell and
+# the skill text. A kind such as optional goes in the head (`external, optional:`), never
+# after the name. The clause ends the description: only its ')' and an optional '.'
+# follow it, so no prose can trail in a second parenthesis.
 KIND_HEAD = re.compile(
     r"^(?:soft:|requires\b|agents:|external(?:,\s*(?:soft|required|optional))?:)\s*")
-NAME_ENTRY = re.compile(r"^[A-Za-z0-9.\-]+( [A-Za-z0-9.\-]+)?(, optional)?$")
+NAME_ENTRY = re.compile(r"^[A-Za-z0-9.\-]+$")
+# Real names of more than one word, each added by hand.
+MULTIWORD = {"claude.ai Artifacts"}
+CLAUSE_TAIL = re.compile(r"^\)\.?$")
 
 
 def summary(desc):
@@ -59,13 +65,14 @@ def summary(desc):
 
 
 def dependency_clause(desc):
-    """The dependency clause's text inside its parentheses; '' when it has none."""
+    """(the clause's text inside its parentheses, the text from its ')' to the end);
+    ('', '') when it has none, and the tail '' when it never closes."""
     m = CLAUSE_OPEN.search(desc)
     if not m:
-        return ""
+        return "", ""
     body = desc[m.end():]
     end = body.find(")")
-    return body[:end] if end >= 0 else body
+    return (body[:end], body[end:]) if end >= 0 else (body, "")
 
 
 def check_summary(desc):
@@ -85,13 +92,15 @@ def check_identical(plugin_desc, market_desc):
 
 
 def check_names_only(desc):
-    clause = dependency_clause(desc)
+    clause, tail = dependency_clause(desc)
     if not clause:
         return []
     problems = []
+    if not CLAUSE_TAIL.match(tail):
+        problems.append(f"text after the dependency clause: {tail!r}")
     for raw in clause.split(";"):
         name = KIND_HEAD.sub("", raw.strip()).strip()
-        if not NAME_ENTRY.match(name):
+        if not (NAME_ENTRY.match(name) or name in MULTIWORD):
             problems.append(f"dependency entry is not a bare name: {raw.strip()!r}")
     return problems
 
@@ -134,6 +143,10 @@ class Mutants(unittest.TestCase):
             "Summary (external: some-repo, Without It the launch is plain).",
             "Summary (Soft dependencies: work-items, whose wi files items).",
             "Summary (soft: work-items, to file items when installed).",
+            "S (soft: a; b) (without it nothing is filed).",
+            "Summary (soft: dev-flow; plan file).",
+            "Summary (external: claude-kit, optional).",
+            "Summary (soft: a; b",
         ):
             with self.subTest(bad=bad):
                 self.assertTrue(check_names_only(bad))
