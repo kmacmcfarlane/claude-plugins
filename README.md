@@ -49,7 +49,8 @@ repo; link here.
    a skill. Never at install, never because a peer is merely absent, never a question or a
    dialog, never mid-flow, and never when the user has switched hints off. The mechanics are
    in [CLAUDE.md](CLAUDE.md) § Conventions. A dependency is declared in the plugin
-   description and the catalog, and points at a named support plugin or an external repo.
+   description, by name only, and in the catalog, whose cell says how the plugin degrades
+   without it; it points at a named support plugin or an external repo.
    The one exception is a **hard** dependency, which the framework installs with the
    dependent and without which it disables the dependent. A plugin may declare one only when
    it has no function at all without the other, the edge stays within this marketplace, the
