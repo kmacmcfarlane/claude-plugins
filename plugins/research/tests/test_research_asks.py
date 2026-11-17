@@ -117,13 +117,13 @@ class TestLedger(unittest.TestCase):
 
 
 class TestDeclaration(unittest.TestCase):
-    def test_manifest_names_the_research_skills_on_the_decisions_edge(self):
+    def test_manifest_declares_the_decisions_edge(self):
+        # The research skills' asks follow operator-interaction's decisions skill; the
+        # manifest declares that edge by name only (short descriptions, d2b0).
         desc = json.loads(
             text(PLUGIN / ".claude-plugin" / "plugin.json"))["description"]
-        m = re.search(r"operator-interaction, whose decisions skill ([^;)]*)", desc)
+        m = re.search(r"\(soft:[^)]*[:;]\s*operator-interaction(?![\w-])", desc)
         self.assertIsNotNone(m)
-        follow = m.group(1).split(" follow ")[0]
-        self.assertIn("the research skills", follow)
 
 
 if __name__ == "__main__":

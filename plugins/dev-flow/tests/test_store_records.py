@@ -165,14 +165,11 @@ class StoreRecords(unittest.TestCase):
                       problems(self.text + "\n    what: <what is decided>\n"))
 
     def test_the_manifest_declares_the_checker(self):
+        # The card-record checker is operator-interaction's; the manifest declares that edge
+        # by name only (descriptions stay short for the plugin menu, d2b0).
         desc = json.loads(MANIFEST.read_text())["description"]
-        want = ("whose decisions skill's card-record reference librarian-mode writes each card "
-                "record to, and whose decision-page skill's checker it runs on each record "
-                "before storing it, when node is present")
-        self.assertIn(want, desc)
-        self.assertIn("without the checker the record is stored after wi's own checks and the "
-                      "Report says so", desc)
-        self.assertNotIn(want, desc.replace("whose decisions skill's card-record", "whose"))
+        clause = desc[desc.index("(soft:"):]
+        self.assertRegex(clause, r"[:;]\s*operator-interaction(?![\w-])")
 
 
 if __name__ == "__main__":
