@@ -1,6 +1,6 @@
 {
   "name": "kit-dev",
-  "description": "Maintain this plugin kit: create skills, update the kit, start projects from templates, factor analysis (external: claude-templates; soft: dev-flow; work-items; create-repo).",
+  "description": "Maintain this plugin kit: create skills, update the kit, start projects from templates, factor analysis (external: claude-templates; claude-plugins; claude-sandbox; claude-expertise; claude-kit, optional; soft: dev-flow; work-items; create-repo).",
   "author": {
     "name": "Kyle McFarlane"
   },

@@ -1,6 +1,6 @@
 {
   "name": "sandbox",
-  "description": "Isolated execution in claude-sandbox containers, with a guard that keeps edits off the main checkout.",
+  "description": "Set up and troubleshoot claude-sandbox containers, with a guard that keeps edits off the main checkout (external: claude-sandbox).",
   "author": {
     "name": "Kyle McFarlane"
   },

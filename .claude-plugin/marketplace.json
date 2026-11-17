@@ -8,7 +8,7 @@
     {
       "name": "kit-dev",
       "source": "./plugins/kit-dev",
-      "description": "Maintain this plugin kit: create skills, update the kit, start projects from templates, factor analysis (external: claude-templates; soft: dev-flow; work-items; create-repo)."
+      "description": "Maintain this plugin kit: create skills, update the kit, start projects from templates, factor analysis (external: claude-templates; claude-plugins; claude-sandbox; claude-expertise; claude-kit, optional; soft: dev-flow; work-items; create-repo)."
     },
     {
       "name": "context-guard",
@@ -23,12 +23,12 @@
     {
       "name": "statusline-hub",
       "source": "./plugins/statusline-hub",
-      "description": "The shared status-line slot: one dispatcher and a hook registry, so several tools can draw the status line (soft: statusline; context-guard)."
+      "description": "The shared status-line slot: a dispatcher and hook registry, and a sensor record of context and plan usage that other plugins read, whatever draws the line (soft: statusline; context-guard)."
     },
     {
       "name": "dev-flow",
       "source": "./plugins/dev-flow",
-      "description": "Plan before you code, run deep research fan-outs, and keep a librarian that owns a repo's work (agents: scribe, scout, implementer, implementer-critical, implementer-deep, planner, planner-deep, reviewer, reviewer-light, cross-checker, cross-checker-deep) (soft: work-items; context-guard; statusline-hub; operator-interaction; research; sandbox; kit-dev; create-repo; ownership)."
+      "description": "Plan before you code, run deep research fan-outs, and keep a librarian that owns a repo's work (agents: scribe, scout, implementer, implementer-critical, implementer-deep, planner, planner-deep, reviewer, reviewer-light, cross-checker, cross-checker-deep) (soft: work-items; context-guard; statusline-hub; operator-interaction; research; sandbox; kit-dev; create-repo; ownership; external, soft: claude-analytics)."
     },
     {
       "name": "research",
@@ -38,7 +38,7 @@
     {
       "name": "work-items",
       "source": "./plugins/work-items",
-      "description": "Repo-durable work items with the wi CLI, plus the work-source provider interface (soft: statusline-hub; operator-interaction)."
+      "description": "Repo-durable work items with the wi CLI, a cross-repo review, and the work-source provider interface (soft: statusline-hub; operator-interaction)."
     },
     {
       "name": "chat",
@@ -48,12 +48,12 @@
     {
       "name": "sandbox",
       "source": "./plugins/sandbox",
-      "description": "Isolated execution in claude-sandbox containers, with a guard that keeps edits off the main checkout."
+      "description": "Set up and troubleshoot claude-sandbox containers, with a guard that keeps edits off the main checkout (external: claude-sandbox)."
     },
     {
       "name": "create-repo",
       "source": "./plugins/create-repo",
-      "description": "Start a new repo for a thread of work, with an agent session launched on it (external: claude-sandbox; soft: sandbox; dev-flow; kit-dev; operator-interaction)."
+      "description": "Start a new repo for a thread of work, with an agent session launched on it (external, soft: claude-sandbox; soft: sandbox; dev-flow; kit-dev; operator-interaction)."
     },
     {
       "name": "operator-interaction",
@@ -68,7 +68,7 @@
     {
       "name": "ralph",
       "source": "./plugins/ralph",
-      "description": "Unattended agent loops over a backlog, with backlog.yaml as the default work source (external: claude-sandbox; soft: sandbox; work-items)."
+      "description": "Unattended agent loops over a backlog, with backlog.yaml as the default work source (external, required: claude-sandbox; soft: sandbox; work-items)."
     }
   ]
 }

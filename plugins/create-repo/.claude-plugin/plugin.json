@@ -1,6 +1,6 @@
 {
   "name": "create-repo",
-  "description": "Start a new repo for a thread of work, with an agent session launched on it (external: claude-sandbox; soft: sandbox; dev-flow; kit-dev; operator-interaction).",
+  "description": "Start a new repo for a thread of work, with an agent session launched on it (external, soft: claude-sandbox; soft: sandbox; dev-flow; kit-dev; operator-interaction).",
   "author": {
     "name": "Kyle McFarlane"
   },

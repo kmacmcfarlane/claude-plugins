@@ -1,6 +1,6 @@
 {
   "name": "dev-flow",
-  "description": "Plan before you code, run deep research fan-outs, and keep a librarian that owns a repo's work (agents: scribe, scout, implementer, implementer-critical, implementer-deep, planner, planner-deep, reviewer, reviewer-light, cross-checker, cross-checker-deep) (soft: work-items; context-guard; statusline-hub; operator-interaction; research; sandbox; kit-dev; create-repo; ownership).",
+  "description": "Plan before you code, run deep research fan-outs, and keep a librarian that owns a repo's work (agents: scribe, scout, implementer, implementer-critical, implementer-deep, planner, planner-deep, reviewer, reviewer-light, cross-checker, cross-checker-deep) (soft: work-items; context-guard; statusline-hub; operator-interaction; research; sandbox; kit-dev; create-repo; ownership; external, soft: claude-analytics).",
   "author": {
     "name": "Kyle McFarlane"
   },

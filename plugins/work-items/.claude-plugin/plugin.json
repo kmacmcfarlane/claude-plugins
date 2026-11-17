@@ -1,6 +1,6 @@
 {
   "name": "work-items",
-  "description": "Repo-durable work items with the wi CLI, plus the work-source provider interface (soft: statusline-hub; operator-interaction).",
+  "description": "Repo-durable work items with the wi CLI, a cross-repo review, and the work-source provider interface (soft: statusline-hub; operator-interaction).",
   "author": {
     "name": "Kyle McFarlane"
   },

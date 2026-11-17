@@ -1,6 +1,6 @@
 {
   "name": "statusline-hub",
-  "description": "The shared status-line slot: one dispatcher and a hook registry, so several tools can draw the status line (soft: statusline; context-guard).",
+  "description": "The shared status-line slot: a dispatcher and hook registry, and a sensor record of context and plan usage that other plugins read, whatever draws the line (soft: statusline; context-guard).",
   "author": {
     "name": "Kyle McFarlane"
   },

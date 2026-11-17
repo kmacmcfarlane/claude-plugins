@@ -1,6 +1,6 @@
 {
   "name": "ralph",
-  "description": "Unattended agent loops over a backlog, with backlog.yaml as the default work source (external: claude-sandbox; soft: sandbox; work-items).",
+  "description": "Unattended agent loops over a backlog, with backlog.yaml as the default work source (external, required: claude-sandbox; soft: sandbox; work-items).",
   "author": {
     "name": "Kyle McFarlane"
   },

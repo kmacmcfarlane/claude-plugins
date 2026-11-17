@@ -9,7 +9,7 @@ are prose, so the rules are held by what their files say:
 - the owner section exists once and carries its load-bearing rules;
 - § When to ask points to it, and every skill that asks points to it;
 - the ledger knows the ASKED and ANSWERED entries;
-- the plugin's manifest declares the research skills' soft edge to the decisions skill.
+- the plugin's manifest declares the operator-interaction edge.
 
 deep-investigation asks through the same section, but it stays in dev-flow: dev-flow's
 tests/test_deep_investigation.py holds its no-dialog rule, and its
