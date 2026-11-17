@@ -7,7 +7,8 @@ plugins/*/.claude-plugin/plugin.json and every .claude-plugin/marketplace.json e
 - the summary, the text before the first " (", is at most SUMMARY_MAX characters;
 - the whole description is at most TOTAL_MAX characters;
 - the plugin.json description and the marketplace.json entry's are identical;
-- the dependency clause holds names only, no how-it-degrades prose (DEGRADE_PROSE).
+- the dependency clause holds names only: each entry, its kind head stripped, is a bare
+  name (KIND_HEAD, NAME_ENTRY), never how-it-degrades prose.
 
 Each check is a plain function returning a list of problems, and each is proved by a mutant:
 a deliberately bad description fed to it must fail. The mutants run anywhere; the scan of
@@ -37,13 +38,19 @@ SUMMARY_MAX = 120
 # description sits under 270.
 TOTAL_MAX = 420
 
-# How-it-degrades prose belongs in the README catalog cell and the skill text, never in
-# the description's dependency clause.
-DEGRADE_PROSE = ("whose ", "without which", "without it")
+# The dependency clause opens at the first parenthesis whose text starts with one of these
+# words, in any case, exactly as test_declared_edges.py finds it.
+CLAUSE_OPEN = re.compile(r"\((?=\s*(?:soft|requires|external|optional|hard)\b)", re.I)
 
-# The dependency clause opens at the first parenthesis starting with one of these words,
-# as test_declared_edges.py reads it.
-CLAUSE_OPEN = re.compile(r" \((?:soft|requires|external|optional|hard)\b")
+# Names only, held by shape rather than by a list of banned phrases: the clause is split
+# on ';', each entry loses its kind head, and what is left must be a bare name of one or
+# two words (letters, digits, '.', '-': `claude.ai Artifacts`, `node`), optionally marked
+# ", optional". Anything else, a comma clause or a sentence such as "without it nothing is
+# filed", is how-it-degrades prose, which belongs in the README catalog cell and the skill
+# text. Two words is the longest name today (claude.ai Artifacts).
+KIND_HEAD = re.compile(
+    r"^(?:soft:|requires\b|agents:|external(?:,\s*(?:soft|required|optional))?:)\s*")
+NAME_ENTRY = re.compile(r"^[A-Za-z0-9.\-]+( [A-Za-z0-9.\-]+)?(, optional)?$")
 
 
 def summary(desc):
@@ -52,9 +59,13 @@ def summary(desc):
 
 
 def dependency_clause(desc):
-    """The dependency clause, from its opening parenthesis to the end; '' when none."""
+    """The dependency clause's text inside its parentheses; '' when it has none."""
     m = CLAUSE_OPEN.search(desc)
-    return desc[m.start():] if m else ""
+    if not m:
+        return ""
+    body = desc[m.end():]
+    end = body.find(")")
+    return body[:end] if end >= 0 else body
 
 
 def check_summary(desc):
@@ -73,13 +84,20 @@ def check_identical(plugin_desc, market_desc):
     return []
 
 
-def check_no_degrade_prose(desc):
-    clause = dependency_clause(desc).lower()
-    return [f"dependency clause holds degrade prose {p!r}" for p in DEGRADE_PROSE if p in clause]
+def check_names_only(desc):
+    clause = dependency_clause(desc)
+    if not clause:
+        return []
+    problems = []
+    for raw in clause.split(";"):
+        name = KIND_HEAD.sub("", raw.strip()).strip()
+        if not NAME_ENTRY.match(name):
+            problems.append(f"dependency entry is not a bare name: {raw.strip()!r}")
+    return problems
 
 
 def check_one(desc):
-    return check_summary(desc) + check_total(desc) + check_no_degrade_prose(desc)
+    return check_summary(desc) + check_total(desc) + check_names_only(desc)
 
 
 GOOD = ("Do one thing well for the operator (agents: a, b) "
@@ -114,20 +132,25 @@ class Mutants(unittest.TestCase):
             "Summary (soft: dev-flow, without which the plan is a file).",
             "Summary (requires hub; soft: dev-flow; without it nothing is filed).",
             "Summary (external: some-repo, Without It the launch is plain).",
+            "Summary (Soft dependencies: work-items, whose wi files items).",
+            "Summary (soft: work-items, to file items when installed).",
         ):
             with self.subTest(bad=bad):
-                self.assertTrue(check_no_degrade_prose(bad))
+                self.assertTrue(check_names_only(bad))
 
     def test_degrade_words_outside_clause_pass(self):
-        # The words only count inside the dependency clause, not in the summary.
-        self.assertEqual(check_no_degrade_prose("Run tools whose output matters (soft: a)."), [])
+        # Only the dependency clause is held to names, not the summary.
+        self.assertEqual(check_names_only("Run tools whose output matters (soft: a)."), [])
 
     def test_external_kinds_pass(self):
         # An external entry's kind is a word, not prose: these forms stay allowed.
         for ok in ("Summary (external, required: claude-sandbox; soft: sandbox).",
                    "Summary (external, soft: claude-sandbox; soft: sandbox; dev-flow).",
                    "Summary (soft: a; b; external, soft: claude-analytics).",
-                   "Summary (external: claude-templates; claude-kit, optional; soft: a)."):
+                   "Summary (external: claude-templates; external, optional: claude-kit; "
+                   "soft: a).",
+                   "Summary (external, soft: claude.ai Artifacts; node).",
+                   "Summary (requires statusline-hub; soft: context-guard)."):
             with self.subTest(ok=ok):
                 self.assertEqual(check_one(ok), [])
 

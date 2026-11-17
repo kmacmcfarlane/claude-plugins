@@ -26,8 +26,10 @@ NOTES = [
     # dev-flow's librarian runs the card-record checker when node is present, and stores
     # the record after wi's own checks without it.
     ("dev-flow", "operator-interaction", ("decision-page", "checker", "without the checker")),
-    # research puts its asks to the operator per operator-interaction's guidance.
-    ("research", "operator-interaction", ("the research skills", "`decisions` skill")),
+    # research puts its asks to the operator per operator-interaction's guidance, and as a
+    # plain lettered list without it.
+    ("research", "operator-interaction", ("the research skills", "`decisions` skill",
+                                          "plain lettered list")),
 ]
 
 

@@ -227,12 +227,13 @@ optional `references/`, `scripts/`, `assets/`.
   plugin (not when adding skills to an existing plugin). Its `name` field, `kmacmcfarlane`,
   is **frozen**: it suffixes every plugin-data directory.
 - **Plugin descriptions**: a plugin's `description` is, in order, one summary sentence in
-  plain words, about 100 characters at most; then `(agents: …)` when the plugin ships
-  agents (their tests require the names); then the dependency clause, names only, each name
-  heading an entry as `plugins/kit-dev/tests/test_declared_edges.py` requires, e.g.
-  `(soft: a; b)`, `(requires X; soft: …)`, `(external: …; soft: …)`; an external entry
-  may carry its kind, `external, soft:` or `external, required:`. No how-it-degrades
-  prose: that goes in the README catalog cell and the skill text. The plugin.json and
+  plain words, about 100 characters, 120 at most; then `(agents: …)` when the plugin ships
+  agents (their tests require the names); then the dependency clause, names only (README
+  principle 4), each name heading an entry as
+  `plugins/kit-dev/tests/test_declared_edges.py` requires, e.g. `(soft: a; b)`,
+  `(requires X; soft: …)`. An external entry carries its kind, the same as its catalog
+  cell: `external:`, `external, soft:`, `external, required:` or `external, optional:`.
+  The plugin.json and
   marketplace.json descriptions are identical. Why: the plugin menu shows the whole
   description, and a long one overflows it (observed by the operator, 2026-11-17).
   `plugins/kit-dev/tests/test_description_length.py` caps the summary and the whole.

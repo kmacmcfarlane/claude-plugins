@@ -100,7 +100,7 @@ ALLOWED = {
     # kit-dev: the catalog-notes pin (d716) quotes a phrase research's catalog cell must
     # keep; it reads README text and uses no skill.
     ("kit-dev/tests/test_catalog_notes.py", "operator-interaction",
-     '("the research skills", "`decisions` skill")'):
+     '("the research skills", "`decisions` skill",'):
         "a pinned catalog phrase, not a use",
     # work-items: a credit to the step that closes items on landing (72ef WI-5); the other
     # provider of the interface and its grooming skill, declared from ralph's side (WI-1);
