@@ -118,7 +118,8 @@ Before writing any skill, consult `references/best-practices.md` for Anthropic's
      shape: expertise packs ("make Claude good at X") go to the `claude-expertise`
      marketplace; tooling for maintaining the kit itself goes to `kit-dev`; anything else
      goes to the plugin that owns its aim, and if no aim fits, a new plugin is an operator
-     decision. Ask the user if unclear.
+     decision (its description follows that `CLAUDE.md` § Conventions, Plugin
+     descriptions). Ask the user if unclear.
    - Create the directory and write the SKILL.md file.
    - If the skill needs supporting files, create those in the appropriate subdirectories.
 

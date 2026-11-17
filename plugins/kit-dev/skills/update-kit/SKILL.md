@@ -383,7 +383,9 @@ For `[A?]` skills classified as generic:
    `$PLUGINS/<plugin>/skills/<name>/` or `$EXPERTISE/<plugin>/skills/<name>/`
 2. If the routed plugin does not exist yet, **stop and ask** — creating a plugin is an
    operator decision (new aim → new plugin), and it needs a `.claude-plugin/plugin.json`, a
-   `marketplace.json` entry and a catalog row, none of which this skill invents
+   `marketplace.json` entry and a catalog row, none of which this skill invents; its
+   description follows the `claude-plugins` checkout's `CLAUDE.md` § Conventions, Plugin
+   descriptions
 3. Run genericization verification on each file in the skill
 4. Update the marketplace README catalog in the same commit if the change alters the shape of
    the marketplace (a new plugin, or a skill list a table states)

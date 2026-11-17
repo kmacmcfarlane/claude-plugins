@@ -145,7 +145,8 @@ Derive the current set with `ls ../claude-plugins/plugins` and
 
 - Every plugin has `.claude-plugin/plugin.json`; the marketplace index is
   `.claude-plugin/marketplace.json`. Adding or removing a plugin updates both it and the
-  README catalog, in the same commit.
+  README catalog, in the same commit. A plugin's description, the same in both files,
+  follows that repo's `CLAUDE.md` § Conventions, Plugin descriptions (short; names only).
 - Each skill is a directory under `plugins/<plugin>/skills/<name>/` containing at minimum
   `SKILL.md`, and the directory name must match the `name` in its frontmatter.
 - **Sync target: there is no single skills root.** An existing skill goes back to the plugin

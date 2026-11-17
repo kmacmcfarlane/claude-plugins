@@ -168,8 +168,8 @@ class StoreRecords(unittest.TestCase):
         # The card-record checker is operator-interaction's; the manifest declares that edge
         # by name only (descriptions stay short for the plugin menu, d2b0).
         desc = json.loads(MANIFEST.read_text())["description"]
-        clause = desc[desc.index("(soft:"):]
-        self.assertRegex(clause, r"[:;]\s*operator-interaction(?![\w-])")
+        m = re.search(r"\(soft:[^)]*[:;]\s*operator-interaction(?![\w-])", desc)
+        self.assertIsNotNone(m)
 
 
 if __name__ == "__main__":
