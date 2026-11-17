@@ -23,7 +23,7 @@
     {
       "name": "statusline-hub",
       "source": "./plugins/statusline-hub",
-      "description": "The shared status-line slot: a dispatcher and hook registry, and a sensor record of context and plan usage that other plugins read, whatever draws the line (soft: statusline; context-guard)."
+      "description": "The shared status-line slot: a dispatcher, a hook registry, and a usage record other plugins read (soft: statusline; context-guard)."
     },
     {
       "name": "dev-flow",

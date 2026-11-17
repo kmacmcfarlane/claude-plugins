@@ -26,11 +26,9 @@ REPO = KIT.parent.parent
 MARKETPLACE = REPO / ".claude-plugin" / "marketplace.json"
 IN_REPO = MARKETPLACE.is_file() and (REPO / "plugins").is_dir()
 
-# The rule asks for about 100. The longest summary today is statusline-hub's, 155
-# characters, because it names all three of its core functions (the dispatcher and hook
-# registry, and the sensor record other plugins read); every other summary is at most 117.
-# 160 holds that one with a little room and fails the next drift past it.
-SUMMARY_MAX = 160
+# The rule asks for about 100; the cap leaves room for a summary a little over that (the
+# longest today is 117), so the test fails a drift, not a carefully written sentence.
+SUMMARY_MAX = 120
 
 # The longest description today is dev-flow's, 414 characters: a summary, eleven agent
 # names (which test_agents.py requires in it), nine soft dependency names and one
