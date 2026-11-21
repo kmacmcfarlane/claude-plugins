@@ -18,6 +18,7 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 SCRIPTS = Path(__file__).resolve().parent.parent
 SKILL = SCRIPTS.parent
@@ -989,6 +990,91 @@ class Contract(Base):
         run("--repo", str(self.e.dir / "a"), "--json")
         run("--estate", "--dir", str(self.e.dir))
         self.assertEqual(tree_hash(self.e.dir), before)
+
+
+# -- hardened git: a sibling's config runs no program ----------------------------------------
+
+POINTER_TO_B = "Defined in b CLAIM.md § Boundaries / a"
+B_CLAIM = claim("b", boundaries=("## Boundaries\n\n### a\n\nRule: r.\n\n- the format — "
+                                 "Defined here\n  - Ours: x\n  - Theirs: y\n"))
+DROPPED = ("GIT_DIR", "GIT_WORK_TREE", "GIT_INDEX_FILE", "GIT_CONFIG", "GIT_CONFIG_GLOBAL",
+           "GIT_CONFIG_SYSTEM", "GIT_CONFIG_COUNT", "GIT_CONFIG_KEY_0", "GIT_CONFIG_VALUE_0",
+           "GIT_CONFIG_KEY_12", "GIT_CONFIG_VALUE_12")
+
+
+class GitHardening(Base):
+    def fsmonitor_estate(self):
+        """Sibling b's own config names an fsmonitor program that writes a marker; a's claim
+        points into b, so the check runs `ls-files` in b."""
+        self.marker = self.tmp / "fsmonitor-ran"
+        prog = self.tmp / "fsmonitor.sh"
+        prog.write_text(f"#!/bin/sh\ntouch '{self.marker}'\n", "utf-8")
+        prog.chmod(0o755)
+        b = self.e.repo("b", {"CLAIM.md": B_CLAIM})
+        git(b, "config", "core.fsmonitor", str(prog))
+        (b / "CLAIM.md").touch()  # a stat change, so the monitor is asked
+        self.e.repo("a", {"CLAIM.md": pointer_claim("a", POINTER_TO_B)})
+
+    def dangling(self):
+        return [f for f in self.flags_of("a") if f[0] == "DANGLING"]
+
+    def test_sibling_fsmonitor_does_not_run(self):
+        self.fsmonitor_estate()
+        self.assertEqual(self.dangling(), [])  # ls-files ran in b and found the file
+        self.assertFalse(self.marker.exists())
+
+    def test_mutant_unhardened_call_runs_the_fsmonitor(self):
+        # The same fixture through a call without the overrides: the marker is written, so
+        # the fixture is live and the test above proves the override.
+        self.fsmonitor_estate()
+        with mock.patch.object(cc, "GIT_CONFIG_OVERRIDES", ()):
+            self.assertEqual(self.dangling(), [])
+        self.assertTrue(self.marker.exists())
+
+    def test_argv_carries_the_overrides(self):
+        self.assertEqual(cc.git_argv("/r", "rev-parse"),
+                         ["git", "-c", "core.fsmonitor=false", "-c", "core.hooksPath=/dev/null",
+                          "-C", "/r", "rev-parse"])
+
+    def test_every_subprocess_goes_through_git(self):
+        src = (SCRIPTS / "claim_check.py").read_text("utf-8")
+        self.assertEqual(len(re.findall(r"\bsubprocess\.(run|Popen|call|check_\w+)\(", src)), 1)
+        self.assertNotIn("os.system", src)
+
+    def test_child_environment_drops_git_location_and_config_vars(self):
+        base = {"PATH": "/usr/bin", "HOME": "/h", "GIT_AUTHOR_NAME": "t", "LANG": "C"}
+        env = cc.git_env(dict(base, **{k: "x" for k in DROPPED}))
+        self.assertEqual(env, base)
+        self.assertNotIn("GIT_CONFIG_NOSYSTEM", env)
+
+    def test_child_environment_is_what_git_gets(self):
+        # Live: a GIT_INDEX_FILE (or GIT_DIR) in the caller's environment would make b's
+        # file look untracked; dropped, the pointer resolves.
+        self.e.repo("b", {"CLAIM.md": B_CLAIM})
+        self.e.repo("a", {"CLAIM.md": pointer_claim("a", POINTER_TO_B)})
+        planted = {"GIT_INDEX_FILE": str(self.tmp / "no-index"),
+                   "GIT_CONFIG_COUNT": "1", "GIT_CONFIG_KEY_0": "core.fsmonitor",
+                   "GIT_CONFIG_VALUE_0": "true"}
+        seen = []
+        real_run = subprocess.run
+
+        def spy(*a, **kw):
+            seen.append(kw.get("env"))
+            return real_run(*a, **kw)
+
+        with mock.patch.dict(os.environ, planted), \
+                mock.patch.object(cc.subprocess, "run", spy):
+            self.assertEqual(self.dangling(), [])
+        self.assertTrue(seen)
+        for env in seen:
+            self.assertIsNotNone(env)
+            self.assertFalse(set(planted) & set(env))
+            self.assertEqual(env.get("PATH"), os.environ.get("PATH"))
+            self.assertEqual(env.get("HOME"), os.environ.get("HOME"))
+        # Mutant: the caller's environment passed through unchanged makes it dangle.
+        with mock.patch.dict(os.environ, planted), \
+                mock.patch.object(cc, "git_env", lambda environ=None: dict(os.environ)):
+            self.assertIn(("DANGLING", "file", "a"), self.flags_of("a"))
 
 
 # -- no content: the sentinel ------------------------------------------------------------------
