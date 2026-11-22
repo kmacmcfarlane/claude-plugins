@@ -9,10 +9,12 @@ the pairs that include it; with --estate, every pair. The flags, the command lin
 contract are in its references/checks.md.
 
 It never writes, never opens the network, and never follows a symlink out of a repo or
-the sibling dir. It runs git with fixed arguments, drops git's stderr, reads git's stdout
-only for the two paths `rev-parse` prints (the top level and the common git dir), and
-judges `ls-files` by its exit code alone. It never prints text read from a file: a flag
-carries a fixed word, a location found on disk, and a section name from a fixed list.
+the sibling dir. It runs git with fixed arguments, the repo's fsmonitor and hooks turned
+off and git's repo- and config-locating variables dropped (see `git_argv`), drops git's
+stderr, reads git's stdout only for the two paths `rev-parse` prints (the top level and the
+common git dir), and judges `ls-files` by its exit code alone. It never prints text read
+from a file: a flag carries a fixed word, a location found on disk, and a section name from
+a fixed list.
 
 Exit codes: 0 no flag, 1 flags, 2 a usage error or a refusal, 3 an internal error.
 
@@ -86,12 +88,54 @@ def parse_date(text):
         return None
 
 
+# Every git call may run in a repo this script does not trust (a sibling a pointer names),
+# so that repo's own config must not make git run a program. A `-c` flag outranks every
+# config file:
+# - core.fsmonitor names a program git runs to list changed files, and `ls-files` runs it;
+#   false turns the monitor off.
+#     https://git-scm.com/docs/git-config#Documentation/git-config.txt-corefsmonitor
+#     https://git-scm.com/docs/githooks#_fsmonitor_watchman
+# - core.hooksPath=/dev/null disables every hook, as git-config documents, so a hook such
+#   as post-index-change (run whenever the index is written) cannot fire.
+#     https://git-scm.com/docs/git-config#Documentation/git-config.txt-corehooksPath
+#     https://git-scm.com/docs/githooks#_post_index_change
+# No pager starts: stdout is a pipe. The child environment drops the variables that point
+# git at another repo, index, object store or namespace, and every GIT_CONFIG* variable
+# but GIT_CONFIG_NOSYSTEM (config files, and config pairs given in the environment):
+#     https://git-scm.com/docs/git#_the_git_repository
+#     https://git-scm.com/docs/git-config#ENVIRONMENT
+# GIT_CEILING_DIRECTORIES and GIT_CONFIG_NOSYSTEM stay; so do PATH and HOME, so the user's
+# global safe.directory still applies (it is read only from protected configuration):
+#     https://git-scm.com/docs/git-config#Documentation/git-config.txt-safedirectory
+GIT_CONFIG_OVERRIDES = ("core.fsmonitor=false", "core.hooksPath=/dev/null")
+GIT_ENV_DROP = ("GIT_DIR", "GIT_WORK_TREE", "GIT_INDEX_FILE", "GIT_INDEX_VERSION",
+                "GIT_COMMON_DIR", "GIT_OBJECT_DIRECTORY", "GIT_ALTERNATE_OBJECT_DIRECTORIES",
+                "GIT_NAMESPACE", "GIT_DISCOVERY_ACROSS_FILESYSTEM", "GIT_DEFAULT_HASH")
+GIT_ENV_DROP_PREFIX = "GIT_CONFIG"
+GIT_ENV_KEEP = ("GIT_CONFIG_NOSYSTEM",)
+
+
+def git_argv(cwd, *args):
+    """The argv of a hardened git call in `cwd`."""
+    flags = [f for kv in GIT_CONFIG_OVERRIDES for f in ("-c", kv)]
+    return ["git", *flags, "-C", str(cwd), *args]
+
+
+def git_env(environ=None):
+    """The child environment of a git call: `environ` (default os.environ) less the
+    repo-, index- and config-locating variables."""
+    environ = os.environ if environ is None else environ
+    return {k: v for k, v in environ.items()
+            if k not in GIT_ENV_DROP
+            and (k in GIT_ENV_KEEP or not k.startswith(GIT_ENV_DROP_PREFIX))}
+
+
 def git(cwd, *args):
     """Run git with fixed arguments; (returncode, stdout). stderr is captured and dropped."""
     try:
-        r = subprocess.run(["git", "-C", str(cwd), *args], stdin=subprocess.DEVNULL,
+        r = subprocess.run(git_argv(cwd, *args), stdin=subprocess.DEVNULL,
                            stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                           timeout=GIT_TIMEOUT_S)
+                           env=git_env(), timeout=GIT_TIMEOUT_S)
     except (OSError, subprocess.SubprocessError):
         return None, ""
     return r.returncode, r.stdout.decode("utf-8", "surrogateescape").strip()

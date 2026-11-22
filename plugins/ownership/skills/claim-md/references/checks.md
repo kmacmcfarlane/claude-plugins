@@ -47,7 +47,15 @@ claim_check.py [--repo DIR] [--claim PATH] [--estate] [--dir DIR] [--today YYYY-
 - **Read only.** The script never writes and never opens the network. It runs git with fixed
   arguments, drops git's stderr, reads git's stdout only for the paths `rev-parse` prints
   (the top level and the common git dir), and judges `ls-files` (is a pointed-to file
-  tracked?, with literal pathspecs, so a name is never a glob) by its exit code alone.
+  tracked?, with literal pathspecs, so a name is never a glob) by its exit code alone. Every
+  git call turns off the repo's fsmonitor and hooks (`-c core.fsmonitor=false -c
+  core.hooksPath=/dev/null`), so a sibling's own config cannot make git run a program, and
+  drops the variables that point git at another repo, index, object store or config
+  (`GIT_DIR`, `GIT_WORK_TREE`, `GIT_INDEX_FILE`, `GIT_INDEX_VERSION`, `GIT_COMMON_DIR`,
+  `GIT_OBJECT_DIRECTORY`, `GIT_ALTERNATE_OBJECT_DIRECTORIES`, `GIT_NAMESPACE`,
+  `GIT_DISCOVERY_ACROSS_FILESYSTEM`, `GIT_DEFAULT_HASH`, and every `GIT_CONFIG*` variable
+  but `GIT_CONFIG_NOSYSTEM`). `GIT_CEILING_DIRECTORIES`, `GIT_CONFIG_NOSYSTEM`, `PATH` and
+  `HOME` stay, so a global `safe.directory` still applies.
 
 The thresholds are two named constants in the script: `STALE_DAYS = 180` and
 `PENDING_DAYS = 30`.
