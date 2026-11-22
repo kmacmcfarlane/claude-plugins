@@ -100,16 +100,19 @@ def parse_date(text):
 #     https://git-scm.com/docs/git-config#Documentation/git-config.txt-corehooksPath
 #     https://git-scm.com/docs/githooks#_post_index_change
 # No pager starts: stdout is a pipe. The child environment drops the variables that point
-# git at another repo, index or config file:
+# git at another repo, index, object store or namespace, and every GIT_CONFIG* variable
+# but GIT_CONFIG_NOSYSTEM (config files, and config pairs given in the environment):
 #     https://git-scm.com/docs/git#_the_git_repository
 #     https://git-scm.com/docs/git-config#ENVIRONMENT
-# PATH and HOME stay, so the user's global safe.directory still applies (it is read only
-# from protected configuration):
+# GIT_CEILING_DIRECTORIES and GIT_CONFIG_NOSYSTEM stay; so do PATH and HOME, so the user's
+# global safe.directory still applies (it is read only from protected configuration):
 #     https://git-scm.com/docs/git-config#Documentation/git-config.txt-safedirectory
 GIT_CONFIG_OVERRIDES = ("core.fsmonitor=false", "core.hooksPath=/dev/null")
-GIT_ENV_DROP = ("GIT_DIR", "GIT_WORK_TREE", "GIT_INDEX_FILE", "GIT_CONFIG",
-                "GIT_CONFIG_GLOBAL", "GIT_CONFIG_SYSTEM", "GIT_CONFIG_COUNT")
-GIT_ENV_DROP_PREFIXES = ("GIT_CONFIG_KEY_", "GIT_CONFIG_VALUE_")
+GIT_ENV_DROP = ("GIT_DIR", "GIT_WORK_TREE", "GIT_INDEX_FILE", "GIT_INDEX_VERSION",
+                "GIT_COMMON_DIR", "GIT_OBJECT_DIRECTORY", "GIT_ALTERNATE_OBJECT_DIRECTORIES",
+                "GIT_NAMESPACE", "GIT_DISCOVERY_ACROSS_FILESYSTEM", "GIT_DEFAULT_HASH")
+GIT_ENV_DROP_PREFIX = "GIT_CONFIG"
+GIT_ENV_KEEP = ("GIT_CONFIG_NOSYSTEM",)
 
 
 def git_argv(cwd, *args):
@@ -123,7 +126,8 @@ def git_env(environ=None):
     repo-, index- and config-locating variables."""
     environ = os.environ if environ is None else environ
     return {k: v for k, v in environ.items()
-            if k not in GIT_ENV_DROP and not k.startswith(GIT_ENV_DROP_PREFIXES)}
+            if k not in GIT_ENV_DROP
+            and (k in GIT_ENV_KEEP or not k.startswith(GIT_ENV_DROP_PREFIX))}
 
 
 def git(cwd, *args):

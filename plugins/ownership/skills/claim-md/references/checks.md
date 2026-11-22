@@ -50,10 +50,12 @@ claim_check.py [--repo DIR] [--claim PATH] [--estate] [--dir DIR] [--today YYYY-
   tracked?, with literal pathspecs, so a name is never a glob) by its exit code alone. Every
   git call turns off the repo's fsmonitor and hooks (`-c core.fsmonitor=false -c
   core.hooksPath=/dev/null`), so a sibling's own config cannot make git run a program, and
-  drops the variables that point git at another repo, index or config file (`GIT_DIR`,
-  `GIT_WORK_TREE`, `GIT_INDEX_FILE`, `GIT_CONFIG`, `GIT_CONFIG_GLOBAL`, `GIT_CONFIG_SYSTEM`,
-  `GIT_CONFIG_COUNT` and its `GIT_CONFIG_KEY_<n>` and `GIT_CONFIG_VALUE_<n>` pairs); `PATH`
-  and `HOME` stay, so a global `safe.directory` still applies.
+  drops the variables that point git at another repo, index, object store or config
+  (`GIT_DIR`, `GIT_WORK_TREE`, `GIT_INDEX_FILE`, `GIT_INDEX_VERSION`, `GIT_COMMON_DIR`,
+  `GIT_OBJECT_DIRECTORY`, `GIT_ALTERNATE_OBJECT_DIRECTORIES`, `GIT_NAMESPACE`,
+  `GIT_DISCOVERY_ACROSS_FILESYSTEM`, `GIT_DEFAULT_HASH`, and every `GIT_CONFIG*` variable
+  but `GIT_CONFIG_NOSYSTEM`). `GIT_CEILING_DIRECTORIES`, `GIT_CONFIG_NOSYSTEM`, `PATH` and
+  `HOME` stay, so a global `safe.directory` still applies.
 
 The thresholds are two named constants in the script: `STALE_DAYS = 180` and
 `PENDING_DAYS = 30`.

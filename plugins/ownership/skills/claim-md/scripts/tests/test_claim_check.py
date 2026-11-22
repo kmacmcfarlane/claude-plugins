@@ -6,6 +6,7 @@ Run from the skill's scripts/ dir:
 
     python3 -m unittest discover -s tests -q
 """
+import ast
 import contextlib
 import hashlib
 import io
@@ -997,9 +998,69 @@ class Contract(Base):
 POINTER_TO_B = "Defined in b CLAIM.md § Boundaries / a"
 B_CLAIM = claim("b", boundaries=("## Boundaries\n\n### a\n\nRule: r.\n\n- the format — "
                                  "Defined here\n  - Ours: x\n  - Theirs: y\n"))
-DROPPED = ("GIT_DIR", "GIT_WORK_TREE", "GIT_INDEX_FILE", "GIT_CONFIG", "GIT_CONFIG_GLOBAL",
-           "GIT_CONFIG_SYSTEM", "GIT_CONFIG_COUNT", "GIT_CONFIG_KEY_0", "GIT_CONFIG_VALUE_0",
-           "GIT_CONFIG_KEY_12", "GIT_CONFIG_VALUE_12")
+DROPPED = ("GIT_DIR", "GIT_WORK_TREE", "GIT_INDEX_FILE", "GIT_INDEX_VERSION", "GIT_COMMON_DIR",
+           "GIT_OBJECT_DIRECTORY", "GIT_ALTERNATE_OBJECT_DIRECTORIES", "GIT_NAMESPACE",
+           "GIT_DISCOVERY_ACROSS_FILESYSTEM", "GIT_DEFAULT_HASH",
+           # every GIT_CONFIG* but GIT_CONFIG_NOSYSTEM
+           "GIT_CONFIG", "GIT_CONFIG_GLOBAL", "GIT_CONFIG_SYSTEM", "GIT_CONFIG_COUNT",
+           "GIT_CONFIG_KEY_0", "GIT_CONFIG_VALUE_0", "GIT_CONFIG_KEY_12", "GIT_CONFIG_VALUE_12",
+           "GIT_CONFIG_PARAMETERS")
+KEPT = {"PATH": "/usr/bin", "HOME": "/h", "GIT_AUTHOR_NAME": "t", "LANG": "C",
+        "GIT_CEILING_DIRECTORIES": "/c", "GIT_CONFIG_NOSYSTEM": "1"}
+
+# Process-starting calls: (module, attribute or attribute prefix ending in "*").
+SPAWNERS = {"subprocess": ("*",),
+            "os": ("system", "popen", "exec*", "spawn*", "posix_spawn*"),
+            "pty": ("spawn",),
+            "asyncio": ("create_subprocess_*",)}
+
+
+def spawn_problems(src):
+    """Where `src` starts a process other than through the one hardened call: each problem
+    as a short string; [] when every process start is `git`'s subprocess call, its argv
+    `git_argv(...)` and its env `git_env(...)`."""
+    tree = ast.parse(src)
+    alias = {}  # local name -> module, for `import subprocess as sp`
+    problems = []
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            for a in node.names:
+                if a.name in SPAWNERS:
+                    alias[a.asname or a.name] = a.name
+        elif isinstance(node, ast.ImportFrom) and (node.module or "").split(".")[0] in (
+                "subprocess", "pty", "asyncio"):
+            problems.append(f"line {node.lineno}: from {node.module} import")
+
+    def spawner(call):
+        f = call.func
+        if not (isinstance(f, ast.Attribute) and isinstance(f.value, ast.Name)):
+            return False
+        mod = alias.get(f.value.id)
+        return mod is not None and any(
+            f.attr.startswith(p[:-1]) if p.endswith("*") else f.attr == p
+            for p in SPAWNERS[mod])
+
+    def is_call_to(node, name):
+        return (isinstance(node, ast.Call) and isinstance(node.func, ast.Name)
+                and node.func.id == name)
+
+    def visit(node, fn):
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            fn = node.name
+        if isinstance(node, ast.Call) and spawner(node):
+            where = f"line {node.lineno}"
+            if fn != "git":
+                problems.append(f"{where}: a process start outside def git")
+            elif not (node.args and is_call_to(node.args[0], "git_argv")):
+                problems.append(f"{where}: argv is not git_argv(...)")
+            elif not any(k.arg == "env" and is_call_to(k.value, "git_env")
+                         for k in node.keywords):
+                problems.append(f"{where}: no env=git_env(...)")
+        for child in ast.iter_child_nodes(node):
+            visit(child, fn)
+
+    visit(tree, None)
+    return problems
 
 
 class GitHardening(Base):
@@ -1036,16 +1097,47 @@ class GitHardening(Base):
                          ["git", "-c", "core.fsmonitor=false", "-c", "core.hooksPath=/dev/null",
                           "-C", "/r", "rev-parse"])
 
-    def test_every_subprocess_goes_through_git(self):
+    def test_every_process_start_is_the_hardened_git_call(self):
         src = (SCRIPTS / "claim_check.py").read_text("utf-8")
-        self.assertEqual(len(re.findall(r"\bsubprocess\.(run|Popen|call|check_\w+)\(", src)), 1)
-        self.assertNotIn("os.system", src)
+        self.assertEqual(spawn_problems(src), [])
+        call = "subprocess.run(git_argv(cwd, *args),"
+        self.assertEqual(src.count(call), 1)  # the anchors the mutants below edit
+        self.assertEqual(src.count("env=git_env(), "), 1)
+        mutants = {
+            "a process start outside git": src + "\n\ndef f():\n"
+                                                 "    return subprocess.getoutput('x')\n",
+            "from subprocess import": src.replace("import subprocess\n",
+                                                  "import subprocess\nfrom subprocess import run\n"),
+            "aliased module": src + "\nimport os as o\n\ndef f():\n    o.system('x')\n",
+            "argv not git_argv": src.replace(call, "subprocess.run(['git', *args],"),
+            "no env=": src.replace("env=git_env(), ", ""),
+        }
+        for name, mutant in mutants.items():
+            with self.subTest(mutant=name):
+                self.assertNotEqual(mutant, src)
+                self.assertNotEqual(spawn_problems(mutant), [])
 
     def test_child_environment_drops_git_location_and_config_vars(self):
-        base = {"PATH": "/usr/bin", "HOME": "/h", "GIT_AUTHOR_NAME": "t", "LANG": "C"}
-        env = cc.git_env(dict(base, **{k: "x" for k in DROPPED}))
-        self.assertEqual(env, base)
-        self.assertNotIn("GIT_CONFIG_NOSYSTEM", env)
+        env = cc.git_env(dict(KEPT, **{k: "x" for k in DROPPED}))
+        self.assertEqual(env, KEPT)  # GIT_CEILING_DIRECTORIES and GIT_CONFIG_NOSYSTEM kept
+
+    def test_planted_common_dir_changes_nothing(self):
+        # Live: GIT_COMMON_DIR naming another repo would make `rev-parse --git-common-dir`
+        # name that repo, so a's checkout would be taken for it; dropped, the result is the
+        # same as without it.
+        self.e.repo("b", {"CLAIM.md": B_CLAIM})
+        self.e.repo("a", {"CLAIM.md": pointer_claim("a", POINTER_TO_B)})
+        other = self.tmp / "z"
+        other.mkdir()
+        git(other, "init", "-q", "-b", "main")
+        planted = {"GIT_COMMON_DIR": str(other / ".git")}
+        clean = self.check("a")
+        with mock.patch.dict(os.environ, planted):
+            self.assertEqual(self.check("a"), clean)
+        # Mutant: the caller's environment passed through unchanged gives another result.
+        with mock.patch.dict(os.environ, planted), \
+                mock.patch.object(cc, "git_env", lambda environ=None: dict(os.environ)):
+            self.assertNotEqual(self.check("a"), clean)
 
     def test_child_environment_is_what_git_gets(self):
         # Live: a GIT_INDEX_FILE (or GIT_DIR) in the caller's environment would make b's
