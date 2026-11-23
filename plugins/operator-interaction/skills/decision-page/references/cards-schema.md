@@ -155,8 +155,9 @@ Each record field maps to a part of the `decisions` skill's card (its `reference
 - the folds: **Background** (`why`, then `whyask` with `class` first; the first of the bottom
   folds; closed, its summary is *why now:* and the first sentence of `why`, a slug as its
   number, which the runner's `bgsum` lint keeps to about 25 words), then **Attached**
-  (`attached`; F3, answers 264 (a), 291 (a) and 286 (b)): closed, its summary the count and the
-  titles, *2: title · title*; open, each attachment its own entry, closed, showing its title, a
+  (`attached`; F3, answers 264 (a), 291 (a) and 286 (b)): closed, its summary the count and
+  each title with where it is, *2: title (`path`) · title (in the record)* (§ An attachment,
+  *Where it is*); open, each attachment its own entry, closed, showing its title, where it is, a
   kind pill and its source line, and opening on a click to its body in its kind's shape
   (§ An attachment), then **Rejected alternatives** (`rejected`; F2, answer 286 (b)), the last: closed,
   its summary the count and the titles, *2: title · title*, a slug as its number; open, each
@@ -448,7 +449,20 @@ no headings or no rows or a row of another width or a cell holding a line break,
 check with no one-line `t` or a field it does not have, a status not one of the three, and a
 node with no decision number or name.
 
-**Every text is escaped** (the title, the source line, the pointer, prose, cells, steps,
+**Where it is** (fa1e; the operator's ruling of 2026-11-23, "examples or other attachments, if
+present, should be listed next to decisions at this level or higher for easy reference"): the
+fold's summary shows each title with where it is, *title (where)*, and each entry's head shows
+it after the title. It is read from the fields above, never a field of its own: a `link`'s
+`url`; a `summary`'s `pointer`; else the path, or `https://` address, that the source line
+(`src`, else an excerpt-shaped body's own `src`) opens with, any wrapping backticks or
+brackets and its line range (`:2210-2214`) dropped; else *in the record*, for material that
+lives only in the record. A path or pointer is drawn as code, an address as text, all of it
+escaped. So a writer whose attachment comes from a file opens `src` with the file's path, and
+any file or example the decision rests on is attached, never named only in the card's text: the
+runner's `unattached` lint names a file a card cites in a code span (in its title, TLDR,
+Context, What or Background) that no attachment holds.
+
+**Every text is escaped** (the title, where it is, the source line, the pointer, prose, cells, steps,
 statuses and nodes, through the same escaping as every field, the marks above rendered in
 them); an excerpt-shaped body is drawn by the code-block renderer, verbatim and never parsed.
 **Safety:** what a private page may carry is the attachments draft's rule: excerpts of code,

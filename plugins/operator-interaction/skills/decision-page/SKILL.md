@@ -155,7 +155,10 @@ The rules below are what the digest condenses:
   a comparison, check results, a runbook, how decisions wait on each other), set `attached`:
   each `{id, kind, title, src, body}` (`references/cards-schema.md` § An attachment: the ten
   kinds, each body's shape and its source line), shown in the **Attached** fold after
-  Background, each entry closed until opened; about six a card, never counted in the card in
+  Background, its summary and each entry's head showing where the attachment is (a file's path,
+  which its `src` opens with; a link's address; else *in the record*), each entry closed until
+  opened; any file or example the decision rests on is one, never named only in the card's
+  text; about six a card, never counted in the card in
   all, and nothing the decision needs moves into one. A text field links one with
   `[[att:id|label]]`. Never a secret's value, personal data or another party's private
   material in one: a secret is where it is kept and under which key,

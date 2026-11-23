@@ -229,13 +229,20 @@ default, a reference to one a link to it; 286 (b), with the operator's words, it
 second fold under the options, after ▸ Background and before ▸ Rejected alternatives, on a card
 whose decision rests on material it can only name (the code it changes, a log, a comparison,
 check results, a runbook, how decisions wait on each other). Its summary is
-`N: <title> · <title>`, the count and each title, in order:
-`▸ Attached — 2: Last night's write log · The write tests on the change`. `tell me attached`
-answers with it open, and `expand` and a block show it open; `tell me <title>` (`52: tell me
-the write log`) answers with the fold line and that one attachment under it. Open, each
-attachment is a bold head line, `**<title>** · *<kind>* — <its source line>`, then its body in
-the shape of its kind, and a blank line before each head line after the first, so a head is
-never read into the body above it:
+`N: <title> (<where>) · <title> (<where>)`, the count and each title with where it is, in
+order: `▸ Attached — 2: Last night's write log (`logs/write.log`) · The write tests
+(`tests/test_write.py`)`. **Where it is** (the operator's ruling of 2026-11-23: "examples or
+other attachments, if present, should be listed next to decisions at this level or higher for
+easy reference") is read from the record, never a new field: a `link`'s `url`; a `summary`'s
+`pointer`; else the path, or `https://` address, its source line (`src`, else its excerpt's
+own `src`) opens with, its line range dropped; else `in the record`, for material that lives
+only in the card's record. A path or pointer is written as `code`, an address as it stands,
+*in the record* in plain words. So a writer whose attachment comes from a file opens its `src`
+with the file's path. `tell me attached` answers with it open, and `expand` and a block show it
+open; `tell me <title>` (`52: tell me the write log`) answers with the fold line and that one
+attachment under it. Open, each attachment is a bold head line, `**<title>** (<where>) ·
+*<kind>* — <its source line>`, then its body in the shape of its kind, and a blank line before
+each head line after the first, so a head is never read into the body above it:
 
 | Kind | Its body in chat |
 |---|---|
@@ -249,7 +256,10 @@ never read into the body above it:
 | `depmap` | an indented list, a node a bullet, `- waits on: 41 (short name) — note`, its children indented two spaces under it |
 
 A link to an attachment in the card's text, `[[att:id|label]]` in the record, reads
-*label (attached)* in chat, and `tell me <label>` opens it. Nothing the decision needs moves into
+*label (attached)* in chat, and `tell me <label>` opens it. Any file, example or other material
+the decision rests on goes in the card's attachments, so the Attached line says where it is: it
+never appears only in prose before the card, or only in the Context (the cold read checks it,
+`references/worksheet.md` § The cold read). Nothing the decision needs moves into
 an attachment: the card stays readable with every fold closed. An attachment carries no
 secret's value (where it is kept and under which key, never the value: run the `decision-page`
 skill's secret grep on its lines before the card goes out), no personal data and nothing from
@@ -258,14 +268,14 @@ attachments as pointers only, a private repo's in plain words. The answer page f
 same way, second of its bottom folds, each attachment its own entry, closed.
 
 ````
-▾ Attached — 2: Last night's write log · The write tests on the change
-**Last night's write log** · *excerpt* — `logs/upload-1026.txt:2210-2214`
+▾ Attached — 2: Last night's write log (`logs/upload-1026.txt`) · The write tests on the change (`upload/write_test.go`)
+**Last night's write log** (`logs/upload-1026.txt`) · *excerpt* — `logs/upload-1026.txt:2210-2214`
 ```log
 02:14:07.112 write failed: retrying
 02:14:07.113 write failed: retrying
 ```
 
-**The write tests on the change** · *check results: 1 pass · 1 fail · 0 pending* — run on the review's branch this morning
+**The write tests on the change** (`upload/write_test.go`) · *check results: 1 pass · 1 fail · 0 pending* — `upload/write_test.go`, run on the review's branch this morning
 - **pass** a write that fails once succeeds on the retry
 - **fail** a disk that fails every write — 412 tries in one second
 ````
@@ -398,7 +408,7 @@ how it happens, who meets it and when, the before and after, in one to three sen
 2. …
 
 ▸ Background — why now: the first sentence of why it is up now, about 25 words at most
-▸ Attached — 2: an attachment's title · another's *(only where the decision rests on material)*
+▸ Attached — 2: an attachment's title (`its/path.md`) · another's (in the record) *(only where the decision rests on material)*
 ▸ Rejected alternatives — 1: an alternative weighed and not offered *(only where one was)*
 ```
 
@@ -564,8 +574,10 @@ how it happens, who meets it and when, the before and after, in one to three sen
   keeps *why now* and *why ask* as its own fields, as written; the fold shows them, and the
   card carries no separate why line.
 - **▸ Attached:** on a card whose decision rests on material it can only name, a closed fold
-  after ▸ Background, its summary the count and the titles (§ Folds). Each attachment is a
-  title, its kind, its source line and its body; none, no line.
+  after ▸ Background, its summary the count and each title with where it is: its path in
+  `code`, its address, or *in the record* (§ Folds). Each attachment is a title, where it is,
+  its kind, its source line and its body; none, no line. Any file, example or other material the
+  decision rests on is one of them, never named only in prose before the card or in the Context.
 - **▸ Rejected alternatives:** on a card that weighed alternatives it does not offer, the
   last line, a closed fold after ▸ Background, its summary the count and the titles (§ Folds).
   Each alternative is a short title and its reasons, one line each; none weighed, no line.
@@ -674,8 +686,8 @@ how it happens, who meets it and when, the before and after, in one to three sen
 **Why now:** …
 **Why ask:** *class* — …
 
-▾ Attached — 1: an attachment's title *(only where the decision rests on material)*
-**an attachment's title** · *its kind* — its source line
+▾ Attached — 1: an attachment's title (`its/path.md`) *(only where the decision rests on material)*
+**an attachment's title** (`its/path.md`) · *its kind* — its source line
 its body, in the shape of its kind (§ Folds)
 
 ▾ Rejected alternatives — 1: an alternative weighed and not offered *(only where one was)*
@@ -711,8 +723,8 @@ its body, in the shape of its kind (§ Folds)
 - Under them run any **To act on (x):** part, then a round ask's **If left:** and **A round
   costs:**, then any **If unanswered:**, as on a card; then the Background fold stands open, as § Folds places it, first after
   the options and their parts: `▾ Background — why now: …` with its **Why now:** and **Why
-  ask:** lines under it; then any Attached fold, open, each attachment's bold head line over its
-  body; then, last of the folds, any Rejected alternatives fold, open, each
+  ask:** lines under it; then any Attached fold, open, each attachment's bold head line, with
+  where it is, over its body; then, last of the folds, any Rejected alternatives fold, open, each
   title in bold over its reason bullets; only the read-back line, on a ⚠ block, follows them.
 - A block **includes** the basis drill-down (the tags and links), in its open Assumptions
   fold. `expand` on a block is
