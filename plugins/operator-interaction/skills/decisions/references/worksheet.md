@@ -59,7 +59,7 @@ goes on that option, never on the decision.
 | Novelty | seen before (a recurring decision, a template) / new | you |
 | Options diverge | the options lead to materially different outcomes / they converge (any would do) | you |
 | Options exist | yes / not yet — then it is an open question, not a decision | you |
-| Attached | the material the decision rests on that the card can only name (the code it changes, a log, a comparison, check results, a runbook, how decisions wait on each other), each its title, its kind and where it came from (a file's source line opening with its path, so the card shows where it is), or none; every file or example the card names is one of them: the card's ▸ Attached fold (`references/rendering.md` § Folds); nothing the decision needs, and never a secret's value | you |
+| Attached | the material the decision rests on that the card can only name (the code it changes, a log, a comparison, check results, a runbook, how decisions wait on each other), each its title, its kind and where it came from (a file's source line opening with its path, so the card shows where it is), or none; every file or example the decision rests on is one of them: the card's ▸ Attached fold (`references/rendering.md` § Folds); nothing the decision needs, and never a secret's value | you |
 | Rejected alternatives | each alternative you weighed and do not offer, a short title and why it was not offered, one line a reason, or none: the card's ▸ Rejected alternatives fold (`references/rendering.md` § Folds); one the operator might still pick is an option instead | you |
 | Assumptions | what the recommendation rests on that you did not check, each with its tripwire, the sign that would change the call; none for a call with no recommendation: the card's ▸ Assumptions fold, with the basis (`references/rendering.md` § Folds) | you |
 | Still open | what is not known yet about this decision, one line each, or nothing: the card's ▸ Open questions fold (`references/rendering.md` § Folds) | you |
@@ -223,10 +223,11 @@ from its **What:** bullets alone? A count with no list under it fails, unless th
 the set by a rule that picks out its members (*the pages that cite the retired setup guide*):
 that passes, since the reader can name each one from it. On a risk decision: does its
 **Likelihood:** name what it is the likelihood of, and give a fact or the evidence, never a
-bare *no data* or an estimate? If the card names material (a file, an example, a log, a test
-run, a draft), is that material listed in its ▸ Attached line, with where it is: a path, an
-address, or *in the record*? A file named only in the prose before the card, or only in its
-**Context:**, fails: add it to the card's attachments (`references/rendering.md` § Folds).
+bare *no data* or an estimate? Is every file or example the decision rests on (a file, an
+example, a log, a test run, a draft) listed in its ▸ Attached line, with where it is: a path,
+an address, or *in the record*? A file the decision rests on named only in the prose before
+the card, or only in its **Context:**, fails: add it to the card's attachments
+(`references/rendering.md` § Folds).
 
 Then check every label, number or acronym on it against SKILL.md § The floor, item 1: defined
 where it first appears — in its **Context:** — or replaced by its words; a source label

@@ -34,8 +34,8 @@
         Likelihood's seen and Best response? (F9), each rejected alternative's title (F2), and each attachment's
         title (F3), which the Attached fold's summary shows;
       - attachments (F3): more than ATT_CAP on a card, or an excerpt-shaped body past XC_LINES lines or XC_BYTES
-        bytes; a file the card names in a code span (its title, TLDR, Context, What or Background) that no
-        attachment is, by where it is (unattached; fa1e, the cold read's check);
+        bytes; a file the card names in a code span (its title, TLDR, Context or Background) that no
+        attachment is, by where it is, and that the Finding and the evidence do not cite (unattached; fa1e);
       - groups: a bundle (a layer with shared context) holding fewer than two cards; a layer title ending in
         · and numbers, which the page draws after the title itself (answer 365 (a));
       - the dependency order (03ab F7): a card placed before a card in its own layer that its dep names (deporder,
@@ -545,18 +545,23 @@ function attachedSize(c, say) {
 /* ---- material named but not attached (fa1e; the operator's ruling of 2026-11-23): a file the card names in a code span,
    in the texts the material is cited from, is listed in its Attached fold, where the fold's line shows where it is. A
    file is a path ending in a common file extension (a directory is not material); an attachment holds it when its place (page.attWhere) is that
-   path, or one ends in the other after a /. The Finding's where and the evidence are not read (each is itself a
-   citation, its source named where it stands), nor the items, the options and act, which name what is changed or run,
-   not what the decision rests on ---- */
+   path, or one ends in the other after a /, and when the Finding's where or excerpt src, or the evidence, names it
+   (each is itself a citation, its source named where it stands). Not read: the What part, the items, the options and
+   act, which name what is changed or run, not what the decision rests on; nor a capitalised name before .js (Node.js,
+   Vue.js), a product, not a file ---- */
 const FILE_EXT = /\.(md|txt|log|json|ya?ml|toml|ini|cfg|conf|csv|tsv|sql|xml|html?|css|js|mjs|cjs|ts|tsx|jsx|py|go|rs|rb|java|kt|c|h|cc|cpp|hpp|sh|bash|diff|patch|lock|env|pdf|png|svg)$/i;
-const CITED = ["t", "tldr", "context", "what", "why", "whyask"];
+const CITED = ["t", "tldr", "context", "why", "whyask"];
 function unattached(c, say) {
   const places = page.attachedOf(c).map(a => page.attWhere(a)).filter(w => w && w.path).map(w => w.v);
-  const holds = p => places.some(v => v === p || v.endsWith("/" + p) || p.endsWith("/" + v));
+  /* the Finding's where and its excerpt's src, and the evidence, cite their own sources: a file named there is held */
+  const f = page.findingOf(c);
+  const cites = [f && f.where, f && f.excerpt && typeof f.excerpt === "object" ? f.excerpt.src : null, ...textsOf(c.evidence)]
+    .filter(s => typeof s === "string").join("\n");
+  const holds = p => places.some(v => v === p || v.endsWith("/" + p) || p.endsWith("/" + v)) || cites.includes(p);
   const texts = CITED.flatMap(k => textsOf(c[k]).map(s => [k, s]));
   for (const [k, s] of texts) for (const m of s.matchAll(/`([^`\s]+)`/g)) {
-    const w = page.srcPlace(m[1]);
-    if (!w || !w.path || !FILE_EXT.test(w.v) || holds(w.v)) continue;
+    const w = page.srcPlace("`" + m[1] + "`");
+    if (!w || !w.path || !FILE_EXT.test(w.v) || /^[A-Z][A-Za-z0-9]*\.js$/.test(w.v) || holds(w.v)) continue;
     say("unattached " + w.v, "depth: " + k + " names " + w.v + ", which no attachment holds: attach it, its src opening with the path, so the Attached line shows where it is (the decisions skill's cold read); or leave it knowingly when the card does not rest on it");
   }
 }

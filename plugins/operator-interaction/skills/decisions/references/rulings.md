@@ -506,8 +506,8 @@ alternative not taken, in case practice argues for it.
   `.md` file gave its path only in the prose before the card, and the operator had to ask
   where the file was; item fa1e) — the ▸ Attached line names each attachment's title and where
   it is: a path in `code`, an address, or *in the record* for material that lives only in the
-  card's record, `▸ Attached — 2: Last night's write log (`logs/write.log`) · The write tests
-  (`tests/test_write.py`)`; a block's open fold carries it on each bold head line too, and the
+  card's record, ``▸ Attached — 2: Last night's write log (`logs/write.log`) · The write tests
+  (`tests/test_write.py`)``; a block's open fold carries it on each bold head line too, and the
   answer page shows it in the fold's summary and on each entry's head, escaped. Any file,
   example or other material the decision rests on goes in the card's attachments, never only
   in the prose before the card or only in its Context, and the cold read checks it. It amends
@@ -515,7 +515,10 @@ alternative not taken, in case practice argues for it.
   closed by default, nothing the decision needs moved into one, every kind's body shape.
   Designs made in planning and build, not the operator's: where it is read from the record's
   existing fields, never a new one (a `link`'s `url`, a `summary`'s `pointer`, else the path
-  or address its source line opens with, its line range dropped, else *in the record*); the
+  or address its source line opens with, its line or column ending dropped; *in the record*
+  only for an attachment with no source line, and no place shown for one whose source line
+  names none; a first word unquoted a path only from `/`, `~/` or `./`, or with both a `/` and a
+  file extension); the
   runner's `unattached` lint on a file a card cites in a code span that no attachment holds.
   Not taken: titles only, the summary as it stood, which leaves the operator to ask where a
   file is.

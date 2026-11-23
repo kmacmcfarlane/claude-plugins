@@ -1003,7 +1003,7 @@ for err := w.write(b); err != nil; err = w.write(b) {
 - (z) Decide later — *it waits; the merge waits on this finding*
 
 ▸ Background — why now: the merge waits on this finding, and a failing disk still draws a retry storm until then.
-▸ Attached — 3: Last night's write log (`logs/upload-1026.txt`) · The write tests on the change (`upload/write_test.go`) · Who a failing disk reaches (in the record)
+▸ Attached — 3: Last night's write log (`logs/upload-1026.txt`) · The write tests on the change (`upload/write_test.go`) · Who a failing disk reaches
 
 **53 — F9 (stale temp files) · Remove an aborted upload's temp file?**
 - whether an aborted upload's temporary file is deleted
@@ -1293,14 +1293,14 @@ cons to say why it lost; nor a (c) option that exists only to be argued against.
 
 ## 37. Attached, opened
 
-*Situation: decision 52 (§ 29) is on screen. Its last fold line, `▸ Attached — 3: Last night's write log (`logs/upload-1026.txt`) · The write tests on the change (`upload/write_test.go`) · Who a failing disk reaches (in the record)`,
+*Situation: decision 52 (§ 29) is on screen. Its last fold line, ``▸ Attached — 3: Last night's write log (`logs/upload-1026.txt`) · The write tests on the change (`upload/write_test.go`) · Who a failing disk reaches``,
 says what it carries. The operator replies "52: tell me attached"; the answer opens the fold.*
 
 *Read as: 52 → tell me (attached).*
 
 **52 — Attached**
 
-▾ Attached — 3: Last night's write log (`logs/upload-1026.txt`) · The write tests on the change (`upload/write_test.go`) · Who a failing disk reaches (in the record)
+▾ Attached — 3: Last night's write log (`logs/upload-1026.txt`) · The write tests on the change (`upload/write_test.go`) · Who a failing disk reaches
 **Last night's write log** (`logs/upload-1026.txt`) · *excerpt* — `logs/upload-1026.txt:2210-2214` `at 3f2a9c1`
 ```log
 02:14:07.112 write failed: retrying
@@ -1314,7 +1314,7 @@ says what it carries. The operator replies "52: tell me attached"; the answer op
 - **pass** a write that fails once succeeds on the retry
 - **fail** a disk that fails every write — 412 tries in one second, and no pause between them
 
-**Who a failing disk reaches** (in the record) · *who's affected* — the upload service's deploy map
+**Who a failing disk reaches** · *who's affected* — the upload service's deploy map
 
 | Who | Today | With (a) |
 |---|---|---|
@@ -1322,8 +1322,8 @@ says what it carries. The operator replies "52: tell me attached"; the answer op
 | the other servers | none | none |
 
 *Each attachment is its own entry: a bold head line with its title and where it is (its path in
-code, or *in the record* for material that lives only in the card's record), its kind and where
-it came from, then its body in its kind's shape, a blank line before each head after the first. The
+code; *in the record* for material with no source line; nothing where the source line names no
+place, as the deploy map's does), its kind and where it came from, then its body in its kind's shape, a blank line before each head after the first. The
 excerpt is fenced as on the Finding line, at most about 15 lines; the checks carry their tally
 in the head and one line each, led by the status; the table stands after a blank line, so it is
 never read into its head. The card itself stays readable with the fold closed: the finding and
