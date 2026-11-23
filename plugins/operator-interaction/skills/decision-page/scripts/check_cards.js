@@ -34,7 +34,8 @@
         Likelihood's seen and Best response? (F9), each rejected alternative's title (F2), and each attachment's
         title (F3), which the Attached fold's summary shows;
       - attachments (F3): more than ATT_CAP on a card, or an excerpt-shaped body past XC_LINES lines or XC_BYTES
-        bytes;
+        bytes; a file the card names in a code span (its title, TLDR, Context or Background) that no
+        attachment is, by where it is, and that the Finding and the evidence do not cite (unattached; fa1e);
       - groups: a bundle (a layer with shared context) holding fewer than two cards; a layer title ending in
         · and numbers, which the page draws after the title itself (answer 365 (a));
       - the dependency order (03ab F7): a card placed before a card in its own layer that its dep names (deporder,
@@ -87,14 +88,14 @@ function loadPage() {
   const start = html.indexOf("<script>"), end = html.indexOf(END_MARK);
   if (start < 0 || end < start) fail("the template has no page-free part (its script or the end-of-page-free-part marker is missing): " + tpl);
   try {
-    const page = vm.runInNewContext(html.slice(start + "<script>".length, end) + "\n;({check, recordProblems, bgFirst, assumeOf, proCon, planOf, prosCons, itemsOf, perOf, findingOf, scopeOf, likelihoodOf, bestOf, rejectedOf, rejWhy, attachedOf})", {});
+    const page = vm.runInNewContext(html.slice(start + "<script>".length, end) + "\n;({check, recordProblems, bgFirst, assumeOf, proCon, planOf, prosCons, itemsOf, perOf, findingOf, scopeOf, likelihoodOf, bestOf, rejectedOf, rejWhy, attachedOf, attWhere, srcPlace})", {});
     if (typeof page.check !== "function" || typeof page.recordProblems !== "function" || typeof page.bgFirst !== "function"
       || typeof page.assumeOf !== "function" || typeof page.proCon !== "function" || typeof page.planOf !== "function"
       || typeof page.prosCons !== "function" || typeof page.itemsOf !== "function" || typeof page.perOf !== "function"
       || typeof page.findingOf !== "function" || typeof page.scopeOf !== "function" || typeof page.likelihoodOf !== "function"
       || typeof page.bestOf !== "function" || typeof page.rejectedOf !== "function" || typeof page.rejWhy !== "function"
-      || typeof page.attachedOf !== "function")
-      throw new Error("no check(), recordProblems(), bgFirst(), assumeOf(), proCon(), planOf(), prosCons(), itemsOf(), perOf(), findingOf(), scopeOf(), likelihoodOf(), bestOf(), rejectedOf(), rejWhy() or attachedOf()");
+      || typeof page.attachedOf !== "function" || typeof page.attWhere !== "function" || typeof page.srcPlace !== "function")
+      throw new Error("no check(), recordProblems(), bgFirst(), assumeOf(), proCon(), planOf(), prosCons(), itemsOf(), perOf(), findingOf(), scopeOf(), likelihoodOf(), bestOf(), rejectedOf(), rejWhy(), attachedOf(), attWhere() or srcPlace()");
     return page;
   } catch (e) { fail("the template's page-free part does not load: " + why(e)); }
 }
@@ -541,6 +542,37 @@ function attachedSize(c, say) {
       say("attached " + i, "depth: attachment " + (i + 1) + " (" + a.title + ") is " + n + " lines, " + bytes + " bytes: keep an excerpt to about " + XC_LINES + " lines or " + XC_BYTES + " bytes; cut it and say in the text where the cut is and where the rest is, or leave it knowingly"); });
 }
 
+/* ---- material named but not attached (fa1e; the operator's ruling of 2026-11-23): a file the card names in a code span,
+   in the texts the material is cited from, is listed in its Attached fold, where the fold's line shows where it is. A
+   file is a path ending in a common file extension (a directory is not material); an attachment holds it when its place (page.attWhere) is that
+   path, or one ends in the other after a /, and when the Finding's where or excerpt src, or the evidence, names it
+   (each is itself a citation, its source named where it stands). Not read: the What part, the items, the options and
+   act, which name what is changed or run, not what the decision rests on; nor a capitalised name before .js (Node.js,
+   Vue.js), a product, not a file ---- */
+const FILE_EXT = /\.(md|txt|log|json|ya?ml|toml|ini|cfg|conf|csv|tsv|sql|xml|html?|css|js|mjs|cjs|ts|tsx|jsx|py|go|rs|rb|java|kt|c|h|cc|cpp|hpp|sh|bash|diff|patch|lock|env|pdf|png|svg)$/i;
+const CITED = ["t", "tldr", "context", "why", "whyask"];
+function unattached(c, say) {
+  const places = page.attachedOf(c).map(a => page.attWhere(a)).filter(w => w && w.path).map(w => w.v);
+  /* the Finding's where and its excerpt's src, and the evidence, cite their own sources: a file named there is held */
+  const f = page.findingOf(c);
+  const cites = [f && f.where, f && f.excerpt && typeof f.excerpt === "object" ? f.excerpt.src : null, ...textsOf(c.evidence)]
+    .filter(s => typeof s === "string").join("\n");
+  /* named in a citation as a whole path: not inside a longer name (a.md is not data.md), nor a longer path's tail
+     unless after a / */
+  const cited = p => { let i = cites.indexOf(p);
+    for (; i >= 0; i = cites.indexOf(p, i + 1)) {
+      const before = i ? cites[i - 1] : "", after = cites[i + p.length] || "";
+      if (!/[A-Za-z0-9_.~-]/.test(before) && !/[A-Za-z0-9_~\/-]/.test(after) && !(after === "." && /[A-Za-z0-9]/.test(cites[i + p.length + 1] || ""))) return true; }
+    return false; };
+  const holds = p => places.some(v => v === p || v.endsWith("/" + p) || p.endsWith("/" + v)) || cited(p);
+  const texts = CITED.flatMap(k => textsOf(c[k]).map(s => [k, s]));
+  for (const [k, s] of texts) for (const m of s.matchAll(/`([^`\s]+)`/g)) {
+    const w = page.srcPlace("`" + m[1] + "`");
+    if (!w || !w.path || !FILE_EXT.test(w.v) || /^[A-Z][A-Za-z0-9]*\.js$/.test(w.v) || holds(w.v)) continue;
+    say("unattached " + w.v, "depth: " + k + " names " + w.v + ", which no attachment holds: attach it and open its src with the file's path in backticks, so the Attached line shows where it is (the decisions skill's cold read); or leave it knowingly when the card does not rest on it");
+  }
+}
+
 /* ---- the source label's short name: plain words, about 2 to 6 ---- */
 function labelName(c, say) {
   /* the card's label, else its finding's (F7): either is shown with its short name */
@@ -646,6 +678,7 @@ function lintCard(c, w, sh, out) {
   /* the Attached fold (F3): its titles, which its summary shows; the rest sits in the closed fold */
   terms(page.attachedOf(c).map(a => a.title), " (attached)");
   attachedSize(c, say);
+  unattached(c, say);
   /* the Pros and Cons rows are visible too, though not in the flat part's budget: the cold read covers them */
   terms(opts(c).flatMap(o => page.proCon(o).map(r => r[1])), " (pros and cons)");
   /* and each option's view (F5), which picking the option opens: its plan in brief and its Pros | Cons table */

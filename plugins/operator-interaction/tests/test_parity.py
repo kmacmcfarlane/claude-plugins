@@ -6,6 +6,8 @@ read the rulings, the page's text and, under node, the page and its pre-publish 
 
 - *Both surfaces*: the ruling, its date and its alternative not taken, in both skills;
 - the page forms of the card rules that landed chat-only at first, each with its ruling.
+- each attachment with where it is (fa1e): the page's Attached summary says what the chat
+  line says for the same records.
 
 Each check is a function returning its problems, run on the real files (no problems) and on a
 mutated copy (a problem), so a check that cannot fail does not pass for one.
@@ -992,6 +994,63 @@ class GroupNumbersText(unittest.TestCase):
                          ["the doc fallback does not say it"])
         self.assertEqual(group_numbers_text_problems(r, sk, sc, ru, fb.replace("`<title> · <numbers> —", "`<title> —")),
                          ["the doc fallback does not say it"])
+
+
+
+# ---- each attachment with where it is (fa1e; the operator's ruling of 2026-11-23): the page's Attached summary, its
+# tags read as chat marks (a <code> span as backticks), says what gallery § 37's chat line says, for the same records
+
+GALLERY = PLUGIN / "skills" / "decisions" / "references" / "gallery.md"
+# gallery § 37's three attachments, as the record holds them
+WHERE_RECORDS = [
+    {"kind": "excerpt", "title": "Last night's write log", "src": "`logs/upload-1026.txt:2210-2214` `at 3f2a9c1`",
+     "body": {"lang": "log", "text": "02:14:07.112 write failed: retrying"}},
+    {"kind": "checks", "title": "The write tests on the change",
+     "src": "`upload/write_test.go`, run on the review's branch this morning",
+     "body": [{"s": "fail", "t": "a disk that fails every write"}]},
+    {"kind": "matrix", "title": "Who a failing disk reaches", "src": "the upload service's deploy map",
+     "body": {"cols": ["Who", "Today"], "rows": [["uploads on that server", "stall"]]}},
+]
+
+
+def chat_attached_summary(gallery):
+    """The summary of gallery § 37's open Attached line, after its dash."""
+    sec = gallery[gallery.index("## 37. Attached, opened"):]
+    line = next(x for x in sec.splitlines() if x.startswith("▾ Attached — "))
+    return line[len("▾ Attached — "):]
+
+
+def page_attached_summary(script=None):
+    """The page's Attached summary for WHERE_RECORDS, its <code> spans as backticks and its entities read."""
+    from test_finding import one
+    import html as htmllib
+    d = example()
+    c = next(x for x in d["cards"] if x["n"] == 41)
+    c["attached"] = json.loads(json.dumps(WHERE_RECORDS))
+    c["evidence"] = "Build logs for both failed publishes show the same stale cache directory."
+    h = one(d, script)["cards"]["41"]["card"]
+    m = re.search(r'<summary>Attached <span class="fsum">(.*?)</span></summary>', h)
+    if not m:
+        return ""
+    s = m.group(1).replace("<code>", "`").replace("</code>", "`")
+    return htmllib.unescape(re.sub(r"<[^>]+>", "", s))
+
+
+@unittest.skipUnless(NODE, "node is not installed")
+class AttachedWhereParity(unittest.TestCase):
+
+    def test_the_page_and_the_chat_line_say_the_same(self):
+        chat = chat_attached_summary(GALLERY.read_text())
+        self.assertEqual(page_attached_summary(), chat)
+        self.assertTrue(chat.endswith("· Who a failing disk reaches (in the record)"), chat)
+        # mutants: a source line naming no place showing none; the path drawn without code; the chat
+        # line's place dropped
+        self.assertNotEqual(page_attached_summary(page_free_script().replace(
+            "return (s&&srcPlace(s))||{record:true}};", "return s?srcPlace(s):{record:true}};", 1)), chat)
+        self.assertNotEqual(page_attached_summary(page_free_script().replace(
+            "w.path?'<code>'+esc(w.v)+'</code>':esc(w.v)};", "esc(w.v)};", 1)), chat)
+        g = GALLERY.read_text().replace(" (`upload/write_test.go`) · Who", " · Who")
+        self.assertNotEqual(page_attached_summary(), chat_attached_summary(g))
 
 
 if __name__ == "__main__":

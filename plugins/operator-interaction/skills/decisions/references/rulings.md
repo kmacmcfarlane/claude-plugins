@@ -499,6 +499,29 @@ alternative not taken, in case practice argues for it.
   skill's grep step running the same patterns without node; the `attached` lint (six a card, an
   excerpt about 80 lines or 4 KB); the id lint reading every shown text but an excerpt, the
   titles alone in the cold read, and none of it in the card in all.
+- **Each attachment listed with where it is, card and block, both surfaces** (2026-11-23, the
+  operator's feedback, "Examples or other attachments, if present, should be listed next to
+  decisions at this level or higher for easy reference", *this level or higher* being the card
+  and the block, on chat and the answer page; raised after a card that rested on an example
+  `.md` file gave its path only in the prose before the card, and the operator had to ask
+  where the file was; item fa1e) — the ▸ Attached line names each attachment's title and where
+  it is: a path in `code`, an address, or *in the record* for material that lives only in the
+  card's record, ``▸ Attached — 2: Last night's write log (`logs/write.log`) · The write tests
+  (`tests/test_write.py`)``; a block's open fold carries it on each bold head line too, and the
+  answer page shows it in the fold's summary and on each entry's head, escaped. Any file,
+  example or other material the decision rests on goes in the card's attachments, never only
+  in the prose before the card or only in its Context, and the cold read checks it. It amends
+  the 2026-10-20 Attached ruling's summary (titles alone) and keeps the rest: each attachment
+  closed by default, nothing the decision needs moved into one, every kind's body shape.
+  Designs made in planning and build, not the operator's: where it is read from the record's
+  existing fields, never a new one (a `link`'s `url`, a `summary`'s `pointer`, else the path
+  or address its source line opens with, its line or column ending dropped; *in the record*
+  whenever neither a path nor an address is found, the body being carried in the record; a
+  first word a path in backticks holding a `/` or a file extension, and unquoted only from `/`,
+  `~/` or `./`, or with both a `/` and a file extension); the
+  runner's `unattached` lint on a file a card cites in a code span that no attachment holds.
+  Not taken: titles only, the summary as it stood, which leaves the operator to ask where a
+  file is.
 - **The v5 order, both surfaces** (2026-10-22, the operator's v5 ordering, item 9168: Finding,
   then Open questions, then Assumptions with tripwires, then the Impact; an option's view Plan
   in brief, the Pros | Cons table, then the facets; unknowns become Open questions) — a card

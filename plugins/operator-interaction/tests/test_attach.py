@@ -25,6 +25,11 @@ Five parts:
   after the first and before a table;
 - the kind list, one list in the page, the upgrader, the schema, the digest and the chat rules.
 
+Where each attachment is (fa1e, the operator's ruling of 2026-11-23) runs through the parts: the
+page's summary and each entry's head show it, escaped; the runner's `unattached` lint names a file a
+card cites that no attachment holds; the chat summary and each open head carry it, the head's the
+same as its summary's; the cold read, the skills, the record and the ruling say it.
+
 Each check is proved by a mutation: a broken template, runner, upgrader or text fails it.
 
 Run from the plugin dir: python3 -m unittest discover -s tests -q
@@ -134,11 +139,13 @@ class AttachPage(unittest.TestCase):
         res = one(example())
         self.assertEqual(res["bad"], [])
         f = fold(res["cards"]["41"]["card"])
-        self.assertTrue(f.startswith('<details class="pane"><summary>Attached <span class="fsum">3: The second failed build · '
-                                     'Where the build could run · A trial CI build on a branch</span></summary>'), f[:300])
+        # the example's source lines are prose: they name no path or address, so each is in the record (review r2)
+        self.assertTrue(f.startswith('<details class="pane"><summary>Attached <span class="fsum">3: The second failed build '
+                                     '(in the record) · Where the build could run (in the record) · A trial CI build on a '
+                                     'branch (in the record)</span></summary>'), f[:400])
         self.assertEqual(f.count('<details class="att"'), 3)
         self.assertIn('<details class="att" id="att-41-log"><summary><span class="at">The second failed build</span>'
-                      '<span class="pill akind">excerpt</span><span class="asrc">', f)
+                      '<span class="awhere">(in the record)</span><span class="pill akind">excerpt</span><span class="asrc">', f)
         self.assertEqual(fold(res["cards"]["42"]["card"]), "")
         self.assertEqual(fold(res["cards"]["43"]["card"]), "")
         # mutant: the fold left out of the card
@@ -169,7 +176,7 @@ class AttachPage(unittest.TestCase):
     def test_the_summary_counts_and_names_each_title(self):
         d = with_att(SAMPLES["table"], dict(SAMPLES["steps"], title="Undo [[42]]'s `move`"))
         f = fold(one(d)["cards"]["41"]["card"])
-        self.assertIn('<span class="fsum">2: Homes · Undo 42&#39;s <code>move</code></span></summary>', f)
+        self.assertIn('<span class="fsum">2: Homes (in the record) · Undo 42&#39;s <code>move</code> (in the record)</span></summary>', f)
         self.assertNotIn("<button", f[:f.index("</summary>")])
         # mutant: the count dropped
         f = fold(one(d, mutant_page("'+as.length+': '+as.map", "'+as.map"))["cards"]["41"]["card"])
@@ -236,9 +243,114 @@ class AttachPage(unittest.TestCase):
                          ("<span><span class=\"stt\">'+fmt(x.t)+'</span>", "<span><span class=\"stt\">'+x.t+'</span>"),
                          ("(isTxt(x.name)?' · '+fmtPlain(x.name):'')", "(isTxt(x.name)?' · '+x.name:'')"),
                          ("<span class=\"at\">'+fmtPlain(a.title)+'</span>'", "<span class=\"at\">'+a.title+'</span>'"),
-                         ("'<span class=\"pill akind\">'+esc(ATT_KINDS[a.kind])", "'<span class=\"pill akind\">'+a.title")):
+                         ("'<span class=\"pill akind\">'+esc(ATT_KINDS[a.kind])", "'<span class=\"pill akind\">'+a.title"),
+                         ("w.path?'<code>'+esc(w.v)+'</code>':esc(w.v)};", "w.path?'<code>'+w.v+'</code>':w.v};")):
             with self.subTest(old[:40]):
                 self.assertTrue(problems(mutant_page(old, new)))
+
+    def test_where_it_is_shows_in_the_summary_and_each_head(self):
+        """fa1e (the operator's ruling of 2026-11-23, review r1): each title with where it is, in the fold's
+        summary and on each entry's head: a link's url, a summary's pointer (code only when it reads as a path),
+        else the path or address its source line opens with, its line or column ending dropped; else in the record
+        (review r2: a prose source line too)."""
+        bare = {k: v for k, v in SAMPLES["excerpt"].items() if k != "src"}
+        cases = [
+            (SAMPLES["excerpt"], "<code>upload/handler.go</code>"),
+            (dict(SAMPLES["excerpt"], src="`logs/upload-1026.txt:2210-2214` `at 3f2a9c1`"), "<code>logs/upload-1026.txt</code>"),
+            (dict(bare, body={"text": "x", "src": "upload/h.go:4 at 3f2a9c1"}), "<code>upload/h.go</code>"),
+            (SAMPLES["link"], "https://status.example.com/history"),
+            (SAMPLES["summary"], "the metrics board&#39;s upload panel"),
+            (dict(SAMPLES["summary"], pointer="`docs/full.md` in the repo"), "<code>docs/full.md</code>"),
+            (dict(SAMPLES["example"], src="examples/retry.md, the worked example"), "<code>examples/retry.md</code>"),
+            (dict(SAMPLES["checks"], src="https://ci.example.com/runs/5 at noon"), "https://ci.example.com/runs/5"),
+            (dict(SAMPLES["checks"], src="run on a branch this morning"), "in the record"),
+            (dict(SAMPLES["checks"], src="CI/CD pipeline, last night"), "in the record"),
+            (dict(SAMPLES["checks"], src="logs/a.txt: the tail"), "<code>logs/a.txt</code>"),
+            (SAMPLES["table"], "in the record"),
+        ]
+
+        def problems(script=None):
+            out = []
+            for a, want in cases:
+                res = one(with_att(a), script)
+                if res["bad"]:
+                    out.append("%s: refused %s" % (a["title"], res["bad"]))
+                    continue
+                f = fold(res["cards"]["41"]["card"])
+                summ = f[:f.index("</summary>")]
+                title = a["title"].replace("'", "&#39;")
+                s_want = title + (" (" + want + ")" if want else "") + "</span>"
+                h_want = '<span class="at">' + title + '</span>' + (
+                    '<span class="awhere">(' + want + ')</span>' if want else '<span class="pill akind">')
+                if '<span class="fsum">1: ' + s_want not in summ:
+                    out.append("%s: summary %r" % (a["title"], summ[-160:]))
+                if h_want not in f:
+                    out.append("%s: head" % a["title"])
+            return out
+        self.assertEqual(problems(), [])
+        # mutants: the summary without where; the head without it; the line ending kept; a link's url, a summary's
+        # pointer and the source line each not read; the path no longer drawn as code; a pointer always code; a
+        # source line naming no place showing none; an unquoted first word with a / always a path; the trailing
+        # colon kept
+        for old, new in (("+(whereHtml(a)?' ('+whereHtml(a)+')':'')).join(\" · \")", ").join(\" · \")"),
+                         ("    +(whereHtml(a)?'<span class=\"awhere\">('+whereHtml(a)+')</span>':'')\n", ""),
+                         ('t=t.replace(ATT_END,"");', ""),
+                         ('if(a.kind==="link"&&typeof a.url', 'if(false&&typeof a.url'),
+                         ('if(a.kind==="summary"&&isTxt(a.pointer)', 'if(false&&isTxt(a.pointer)'),
+                         ("return (s&&srcPlace(s))||{record:true}};", "return {record:true}};"),
+                         ("w.path?'<code>'+esc(w.v)+'</code>':esc(w.v)};", "esc(w.v)};"),
+                         ("return w&&w.path?w:{v:a.pointer.trim(),path:false}}", "return {v:a.pointer.trim(),path:true}}"),
+                         ("return (s&&srcPlace(s))||{record:true}};", "return s?srcPlace(s):{record:true}};"),
+                         ("(t.includes(\"/\")&&ATT_EXT.test(t))", "t.includes(\"/\")"),
+                         (".replace(/[)\"',;.:]+$/,\"\")", ".replace(/[)\"',;.]+$/,\"\")")):
+            with self.subTest(old[:40]):
+                self.assertTrue(problems(mutant_page(old, new)))
+
+    def test_what_reads_as_a_path(self):
+        """review r1: an unquoted first word is a path only from /, ~/ or ./, or with both a / and a file
+        extension; a word in backticks is one with a / or an extension; :L, :L-L, :L:C and #L… endings dropped."""
+        cases = {
+            "CI/CD": None, "and/or": None, "client/server": None, "24/7": None, "n/a": None, "Node.js": None,
+            "the upload service's deploy map": None,
+            "logs/a.txt:12:5": "logs/a.txt", "src/a.py#L10-L20": "src/a.py", "src/a.py#L10": "src/a.py",
+            "`C:/x/a.txt`": "C:/x/a.txt", "/etc/app/env": "/etc/app/env", "~/notes/plan": "~/notes/plan",
+            "./run.sh": "./run.sh", "`README.md`": "README.md", "upload/h.go:40-45 at 3f2a9c1": "upload/h.go",
+            "logs/a.txt: the tail": "logs/a.txt", "/etc/app/env:": "/etc/app/env", "./bin/run": "./bin/run",
+        }
+        harness = r"""
+const cs=JSON.parse(require("fs").readFileSync(0,"utf8"));
+process.stdout.write(JSON.stringify(cs.map(s=>{const w=srcPlace(s);return w&&w.path?w.v:null})));
+"""
+
+        def run(script):
+            out = subprocess.run([shutil.which("node"), "-e", script + harness], input=json.dumps(list(cases)),
+                                 capture_output=True, text=True, timeout=60)
+            self.assertEqual(out.returncode, 0, out.stderr[:300])
+            got = dict(zip(cases, json.loads(out.stdout)))
+            return {k: (got[k], v) for k, v in cases.items() if got[k] != v}
+        self.assertEqual(run(page_free_script()), {})
+        # mutants: an unquoted word with a / alone a path; an extension alone a path; backticks not read; the
+        # column and anchor endings kept
+        for old, new in (("(t.includes(\"/\")&&ATT_EXT.test(t))", "t.includes(\"/\")"),
+                         ("(t.includes(\"/\")&&ATT_EXT.test(t))", "ATT_EXT.test(t)"),
+                         (".replace(/[)\"',;.:]+$/,\"\")", ".replace(/[)\"',;.]+$/,\"\")"),
+                         ("/^(?:\\/|~\\/|\\.\\/)/.test(t)", "/^(?:~\\/|\\.\\/)/.test(t)"),
+                         ("/^(?:\\/|~\\/|\\.\\/)/.test(t)", "/^(?:\\/|\\.\\/)/.test(t)"),
+                         ("/^(?:\\/|~\\/|\\.\\/)/.test(t)", "/^(?:\\/|~\\/)/.test(t)"),
+                         ("const m=/^\\(?`([^`]+)`/.exec(x);", "const m=null;"),
+                         ("(?::[0-9]+(?:[-:][0-9]+)?|#L[0-9]+(?:-L?[0-9]+)?)$", "(?::[0-9]+(?:-[0-9]+)?)$")):
+            with self.subTest(new[:40]):
+                self.assertTrue(run(mutant_page(old, new)))
+
+    def test_where_it_is_is_escaped(self):
+        for v in HOSTILE:
+            f = fold(one(with_att(dict(SAMPLES["summary"], pointer=v)))["cards"]["41"]["card"])
+            self.assertNotIn("<script", f)
+            self.assertNotIn("<img", f)
+            self.assertIn("(&lt;", f[:f.index("</summary>")])
+        f = fold(one(with_att(dict(SAMPLES["summary"], pointer=HOSTILE[0])),
+                     mutant_page("w.path?'<code>'+esc(w.v)+'</code>':esc(w.v)};", "w.path?'<code>'+esc(w.v)+'</code>':w.v};"))["cards"]["41"]["card"])
+        self.assertIn("<script", f)
 
     def test_none_is_not_shown(self):
         for v in ([], [dict(SAMPLES["table"], title="none")]):
@@ -692,6 +804,89 @@ class AttachRunner(unittest.TestCase):
         js = mutant_runner('if (a.kind !== "example" && !shownSrc(a.src)', 'if (false && !shownSrc(a.src)')
         self.assertNotIn("has no source line", runner(d, script=js)[1])
 
+    def test_a_file_the_card_names_is_attached(self):
+        """fa1e: a file the card cites in a code span (title, TLDR, Context, Background) that no attachment
+        holds lints, until one holds it by where it is."""
+        d = example()
+        card(d, 42)["context"] += " The worked example is in `docs/examples/redirects.md`."
+        out = runner(d)[1]
+        line = ("lint: card 42: depth: context names docs/examples/redirects.md, which no attachment holds: attach it "
+                "and open its src with the file's path in backticks, so the Attached line shows where it is")
+        self.assertIn(line, out)
+        for src in ("docs/examples/redirects.md", "`docs/examples/redirects.md:1-20` at 3f2a9c1", "examples/redirects.md"):
+            with self.subTest(src):
+                d2 = copy.deepcopy(d)
+                card(d2, 42)["attached"] = [{"kind": "example", "title": "A redirect", "form": "narrative", "src": src,
+                                             "body": "a page moved, its old address redirected"}]
+                self.assertNotIn("no attachment holds", runner(d2)[1])
+        # not read: a directory, an address, a file in the evidence or in an option
+        for k, v in (("context", "Clear `.cache/1e00` first."), ("context", "See `https://example.com/a.md`."),
+                     ("evidence", "observed: `build/moved.txt` lists them")):
+            with self.subTest(v):
+                d2 = example()
+                card(d2, 42)[k] = v
+                self.assertNotIn("no attachment holds", runner(d2)[1])
+        d2 = example()
+        card(d2, 42)["options"][0]["title"] = "Move it to `docs/new.md`"
+        self.assertNotIn("no attachment holds", runner(d2)[1])
+        # review r1: held when the Finding (its where or its excerpt's src) or the evidence names it; What is not
+        # read; a capitalised name before .js is a product. Card 51's shape: the file in What, Context and the
+        # finding's where
+        d51 = example()
+        c = card(d51, 43)
+        c["what"] = "whether the theme in `theme/colors.toml` changes."
+        c["context"] += " The colours are set in `theme/colors.toml`."
+        self.assertNotIn("no attachment holds", runner(d51)[1])
+        for k, v in (("what", "Rebuild `docs/examples/redirects.md`."), ("context", "The site runs on `Node.js`."),
+                     ("context", "It uses `Vue.js` for menus.")):
+            with self.subTest(v):
+                d2 = example()
+                card(d2, 42)[k] = v
+                self.assertNotIn("no attachment holds", runner(d2)[1])
+        d2 = example()
+        card(d2, 42)["context"] += " See `build/moved.txt`."
+        card(d2, 42)["evidence"] = "observed: build/moved.txt lists them"
+        self.assertNotIn("no attachment holds", runner(d2)[1])
+        js = mutant_runner(" || cited(p);", ";")
+        self.assertIn("context names theme/colors.toml, which no attachment holds", runner(d51, script=js)[1])
+        self.assertIn("context names build/moved.txt, which no attachment holds", runner(d2, script=js)[1])
+        # review r2: a citation holds a file only as a whole path: a.md is not held by data.md
+        part = example()
+        card(part, 42)["context"] += " See `a.md`."
+        card(part, 42)["evidence"] = "observed: data.md lists them"
+        self.assertIn("context names a.md, which no attachment holds", runner(part)[1])
+        self.assertNotIn("context names a.md", runner(part, script=mutant_runner(" || cited(p);", " || cites.includes(p);"))[1])
+        whole = copy.deepcopy(part)
+        card(whole, 42)["evidence"] = "observed: a.md lists them"
+        self.assertNotIn("context names a.md", runner(whole)[1])
+        # each part of the citations alone holds the file: the Finding's where, its excerpt's src
+        # (the evidence, which names the file too, says it in other words here)
+        only_where = copy.deepcopy(d51)
+        card(only_where, 43)["finding"]["excerpt"]["src"] = "as published"
+        card(only_where, 43)["evidence"] = "Checked: only the theme file sets the accent colour."
+        only_src = copy.deepcopy(d51)
+        card(only_src, 43)["finding"]["where"] = "the theme file, lines 3 to 6"
+        card(only_src, 43)["evidence"] = "Checked: only the theme file sets the accent colour."
+        for name, d3, old in (("where", only_where, "[f && f.where, "), ("excerpt src", only_src, ", f && f.excerpt && typeof f.excerpt === \"object\" ? f.excerpt.src : null")):
+            with self.subTest(name):
+                self.assertNotIn("no attachment holds", runner(d3)[1])
+                js = mutant_runner(old, "[" if name == "where" else "")
+                self.assertIn("context names theme/colors.toml", runner(d3, script=js)[1])
+        node = example()
+        card(node, 42)["context"] += " The site runs on `Node.js`."
+        self.assertIn("context names Node.js", runner(node, script=mutant_runner(" || /^[A-Z][A-Za-z0-9]*\\.js$/.test(w.v)", ""))[1])
+        what = example()
+        card(what, 42)["what"] = "Rebuild `docs/examples/redirects.md`."
+        self.assertIn("what names docs/examples/redirects.md", runner(what, script=mutant_runner(
+            'const CITED = ["t", "tldr", "context", "why", "whyask"];', 'const CITED = ["t", "tldr", "context", "what", "why", "whyask"];'))[1])
+        # mutants: the lint never run; an attachment never holding the file
+        self.assertNotIn("no attachment holds", runner(d, script=mutant_runner("  unattached(c, say);\n", ""))[1])
+        held = copy.deepcopy(d)
+        card(held, 42)["attached"] = [{"kind": "table", "title": "t", "src": "docs/examples/redirects.md",
+                                       "body": {"cols": ["a"], "rows": [["b"]]}}]
+        self.assertNotIn("no attachment holds", runner(held)[1])
+        self.assertIn(line, runner(held, script=mutant_runner("|| holds(w.v)) continue;", ") continue;"))[1])
+
     def test_a_page_with_excerpts_names_its_repos(self):
         self.assertNotIn("lede", runner(example())[1])
         d = example()
@@ -842,14 +1037,19 @@ class AttachKitRegression(unittest.TestCase):
 # the gallery's cards with an Attached line
 ATTACHED_CARDS = {52, 53, 86}
 ATT_NAME = "Attached"
-HEAD = re.compile(r"^\*\*([^*].*?)\*\* · \*([^*]+)\*( — .+)?$")
+HEAD = re.compile(r"^\*\*([^*].*?)\*\*(?: \((.+?)\))? · \*([^*]+)\*( — .+)?$")
+# where an attachment is (fa1e): a path or pointer in code, an https:// address, or in the record
+WHERE = re.compile(r"^(?:`[^`]+`|https://\S+|in the record|[^`/]+)$")
+TITLE_WHERE = re.compile(r"^(.+?) \(([^()]*(?:\([^()]*\)[^()]*)*)\)$")
 
 
 def att_problems(where, body, block=False):
     """A view's Attached fold against the rules: one at most; after ▸ Background, before any
     ▸ Rejected alternatives; its summary `N: title · title`, N the titles' count; closed on a card,
     open in a block, where each attachment is a bold head line in the summary's order, a blank
-    line before each head after the first, and a table only after a blank line."""
+    line before each head after the first, and a table only after a blank line. Each summary title
+    and each head carries where the attachment is (fa1e): `(<path in code>)`, `(<https address>)` or
+    `(in the record)`, a head's the same as its summary's."""
     at = [i for i, x in enumerate(body) if (m := FOLD.match(x)) and m.group(2) == ATT_NAME]
     if not at:
         return []
@@ -872,7 +1072,20 @@ def att_problems(where, body, block=False):
     s = re.match(r"^(\d+): (\S.*)$", m.group(3).replace(" *(only where the decision rests on material)*", ""))
     if not s:
         return out + [where + ": the summary is not 'N: title · title'"]
-    titles = s.group(2).split(" · ")
+    titles, places = [], []
+    for x in s.group(2).split(" · "):
+        tw = TITLE_WHERE.match(x)
+        if not tw:
+            out.append(where + ": the summary's %r does not say where it is" % x)
+            titles.append(x)
+            places.append(None)
+        elif not WHERE.match(tw.group(2)):
+            out.append(where + ": the summary's %r says where it is in no form of the three" % x)
+            titles.append(tw.group(1))
+            places.append(tw.group(2))
+        else:
+            titles.append(tw.group(1))
+            places.append(tw.group(2))
     if int(s.group(1)) != len(titles):
         out.append(where + ": the summary counts %s and names %d" % (s.group(1), len(titles)))
     if block:
@@ -892,6 +1105,9 @@ def att_problems(where, body, block=False):
             if h:
                 if heads and (j == 0 or part[j - 1].strip()):
                     out.append(where + ": no blank line before the head of %s" % h.group(1))
+                if h.group(1) in titles and h.group(2) != places[titles.index(h.group(1))]:
+                    out.append(where + ": the head of %s says it is at %r, the summary %r"
+                               % (h.group(1), h.group(2), places[titles.index(h.group(1))]))
                 heads.append(h.group(1))
             elif x.startswith("|") and j and not part[j - 1].startswith("|") and part[j - 1].strip():
                 out.append(where + ": a table with no blank line before it")
@@ -911,7 +1127,8 @@ class AttachChat(unittest.TestCase):
         self.assertTrue(any(x.startswith("▾ Attached — 1: ") for x in block))
         self.assertEqual(att_problems("rendering.md block", block, block=True), [])
         lines = text.splitlines()
-        k = lines.index("▾ Attached — 2: Last night's write log · The write tests on the change")
+        k = lines.index("▾ Attached — 2: Last night's write log (`logs/upload-1026.txt`) · "
+                        "The write tests on the change (`upload/write_test.go`)")
         self.assertEqual(lines[k - 1], "````")
         ex = lines[k - 1:lines.index("````", k)]
         self.assertEqual(att_problems("rendering.md § Folds", ["▸ Background — why now: x"] + ex, block=True), [])
@@ -954,15 +1171,57 @@ class AttachChat(unittest.TestCase):
             "no summary": body[:k] + ["▸ Attached — Last night's write log"] + body[k + 1:],
             "open on a card": body[:k] + ["▾" + body[k][1:]] + body[k + 1:],
             "twice": body[:k + 1] + [body[k]] + body[k + 1:],
+            # fa1e: a title with no place, a place of no recognised form, a path written bare
+            "a title with no place": body[:k] + [body[k].replace(" (`upload/write_test.go`)", "")] + body[k + 1:],
+            "a bare path": body[:k] + [body[k].replace("(`upload/write_test.go`)", "(upload/write_test.go)")] + body[k + 1:],
         }
         for name, b in mutants.items():
             with self.subTest(name):
                 self.assertTrue(att_problems("mutant", b), name)
 
+    def test_a_head_says_where_it_is_as_its_summary_does(self):
+        """fa1e: in an open fold each head carries where it is, the same place as its summary's title."""
+        text = GALLERY.read_text()
+        sec = text[text.index("## 37. Attached, opened"):]
+        lines = sec.splitlines()
+        k = next(i for i, x in enumerate(lines) if x.startswith("▾ Attached — "))
+        end = next(i for i in range(k, len(lines)) if lines[i].startswith("*Each attachment"))
+        body = ["▸ Background — why now: x"] + lines[k:end]
+        self.assertEqual(att_problems("§ 37", body, block=True), [])
+        self.assertTrue(any(x.startswith("**Last night's write log** (`logs/upload-1026.txt`) · *excerpt*") for x in body))
+        # mutants: a head with no place; a head whose place is not its summary's
+        h = next(i for i, x in enumerate(body) if x.startswith("**The write tests"))
+        for name, line in (("no place", body[h].replace(" (`upload/write_test.go`)", "")),
+                           ("another place", body[h].replace("(`upload/write_test.go`)", "(`upload/other_test.go`)"))):
+            with self.subTest(name):
+                self.assertTrue(att_problems("§ 37", body[:h] + [line] + body[h + 1:], block=True))
+        # the templates' block, its head too
+        block = fenced(RENDERING.read_text(), "**N — Title as a question?** ⚠ one-way")
+        self.assertIn("**an attachment's title** (`its/path.md`) · *its kind* — its source line", block)
+
     def test_the_skills_the_record_the_worksheet_and_the_ruling_say_it(self):
         skill = " ".join(SKILL_MD.read_text().split())
-        self.assertIn("the ▸ Attached fold line (their count and titles)", skill)
-        self.assertIn("then any Attached fold open, each attachment's bold head line over its body", skill)
+        self.assertIn("the ▸ Attached fold line (their count, and each title with where it is", skill)
+        self.assertIn("then any Attached fold open, each attachment's bold head line, with where it is, over its body", skill)
+        rendering = " ".join(RENDERING.read_text().split())
+        self.assertIn("Any file, example or other material the decision rests on goes in the card's attachments", rendering)
+        self.assertIn("A path in `code`, other words as they stand, an address as it stands, *in the record* in plain words.", rendering)
+        self.assertIn("Whenever neither a path nor an address is found (no source line, or one that names no place", rendering)
+        self.assertIn("opens `src` with the file's path in backticks", rendering)
+        self.assertIn("in backticks, holding a `/` or a file extension", rendering)
+        self.assertNotIn("(`logs/write.log`) · The write tests (`tests/test_write.py`)`.", rendering)
+        worksheet = " ".join((REFS / "worksheet.md").read_text().split())
+        cold = worksheet[worksheet.index("## The cold read"):]
+        self.assertIn("Is every file or example the decision rests on (a file, an example, a log, a test run, a draft) "
+                      "listed in its ▸ Attached line, with where it is", cold)
+        self.assertIn("every file or example the decision rests on is one of them", worksheet)
+        self.assertIn("**Where it is** (fa1e;", (SKILL / "references" / "cards-schema.md").read_text())
+        self.assertIn("Where it is comes from these fields, never one of its own (fa1e)", RECORD.read_text())
+        rulings = " ".join((REFS / "rulings.md").read_text().split())
+        self.assertIn("- **Each attachment listed with where it is, card and block, both surfaces** (2026-11-23, the operator's "
+                      "feedback, \"Examples or other attachments, if present, should be listed next to decisions at this "
+                      "level or higher for easy reference\"", rulings)
+        self.assertIn("Not taken: titles only", rulings)
         page_skill = " ".join(PAGE_SKILL.read_text().split())
         self.assertIn("set `attached`: each `{id, kind, title, src, body}`", page_skill)
         self.assertIn("**The secret grep.**", page_skill)
@@ -973,7 +1232,7 @@ class AttachChat(unittest.TestCase):
         self.assertIn("- **Attached, a fold of its own, both surfaces** (2026-10-20, answer 264 (a)",
                       (REFS / "rulings.md").read_text())
         self.assertIn("| any other attachment | `attached`, as it stands", (REFS / "legacy-cards.md").read_text())
-        self.assertIn("**Attached**: each attachment's title on a bold line",
+        self.assertIn("**Attached**: each attachment's title on a bold line with where it is",
                       " ".join((SKILL / "references" / "fallback.md").read_text().split()))
 
     def test_no_invisible_separator_in_the_sources(self):

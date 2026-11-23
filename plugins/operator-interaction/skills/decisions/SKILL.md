@@ -206,7 +206,9 @@ Smallest to largest, each showing more of the impact in facet order (templates i
   on under its own option; chat puts both after the options; on the page a decision the
   dependency line names that is on the page opens its card on a click); then the ▸ Background fold line (why now and
   why ask), then, on a card whose decision rests on material it can only name, the
-  ▸ Attached fold line (their count and titles), and last, on a card that weighed
+  ▸ Attached fold line (their count, and each title with where it is: a path, an address,
+  or *in the record*; any file or example the decision rests on is listed there, never only in
+  the prose before the card), and last, on a card that weighed
   alternatives it does not offer, the ▸ Rejected alternatives fold line (their count and
   titles). A part with nothing to say is left out; what is shown keeps this order. There is
   no Rec line, the recommended option being the bold one. Its **Context:** is one or two
@@ -223,7 +225,7 @@ Smallest to largest, each showing more of the impact in facet order (templates i
   then each option's *plan in brief:* and its `Pros | Cons` table; then any To act on part
   and round lines; then the Background fold
   open, why now and why ask on two lines, then any Attached fold open, each attachment's bold
-  head line over its body, then any Rejected alternatives fold open, each title in bold over
+  head line, with where it is, over its body, then any Rejected alternatives fold open, each title in bold over
   its reasons as bullets; and, on a ⚠ block, the read-back line last.
 
 **The line-only rule.** A decision may stay a list line only when all of these hold: the
