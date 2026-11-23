@@ -539,10 +539,10 @@ const attIds=c=>new Set(attachedOf(c).map(a=>a.id).filter(x=>typeof x==="string"
    be listed next to decisions at this level or higher for easy reference"), read from the record, never a field of its
    own: a link's url; a summary's pointer (as code when it reads as a path, else as plain text); else the path, or
    https:// address, its source line (src, else an excerpt-shaped body's own src) opens with, its line or column
-   ending dropped (:12, :12-20, :12:5, #L10-L20). A first word in backticks is a path; unquoted, only one that starts
-   with /, ~/ or ./, or holds both a / and a file extension (never CI/CD, and/or, 24/7, n/a or Node.js). With no
-   source line at all the place is "in the record" ({record: true}); a source line that names no place shows none
-   (null). {v, path}: path true when v is drawn as code. srcPlace reads one text's opening path or address; the
+   ending dropped (:12, :12-20, :12:5, #L10-L20, or a bare trailing colon). A first word in backticks, holding a / or a
+   file extension, is a path; unquoted, only one that starts with /, ~/ or ./, or holds both a / and a file extension
+   (never CI/CD, and/or, 24/7, n/a or Node.js). Whenever neither a path nor an address is found, the place is "in the
+   record" ({record: true}), where the body is carried. {v, path}: path true when v is drawn as code. srcPlace reads one text's opening path or address; the
    runner's unattached lint reads a card's code spans with it too */
 /* the source line's text: src, else an excerpt-shaped body's own src, else "" */
 const srcText=a=>isTxt(a.src)&&shown(a.src)?a.src:xcOk(a.body)&&isTxt(a.body.src)&&shown(a.body.src)?a.body.src:"";
@@ -552,7 +552,7 @@ const ATT_EXT=/\.[A-Za-z][A-Za-z0-9]{0,7}$/;
 const ATT_END=/(?::[0-9]+(?:[-:][0-9]+)?|#L[0-9]+(?:-L?[0-9]+)?)$/;
 const srcPlace=s=>{if(!isTxt(s))return null;const x=s.trim();let t,q=false;
   const m=/^\(?`([^`]+)`/.exec(x);
-  if(m){t=m[1].trim();q=true}else{t=(x.split(/\s+/)[0]||"");let p;do{p=t;t=t.replace(/^[("']+/,"").replace(/[)"',;.]+$/,"")}while(t!==p)}
+  if(m){t=m[1].trim();q=true}else{t=(x.split(/\s+/)[0]||"");let p;do{p=t;t=t.replace(/^[("']+/,"").replace(/[)"',;.:]+$/,"")}while(t!==p)}
   if(/^https:\/\//.test(t))return ATT_URL.test(t)?{v:t,path:false}:null;
   t=t.replace(ATT_END,"");
   if(!t||!/[A-Za-z0-9]/.test(t)||!ATT_PATH.test(t))return null;
@@ -563,9 +563,9 @@ const attWhere=a=>{
   if(a.kind==="summary"&&isTxt(a.pointer)&&shown(a.pointer)&&!LINE_BREAK.test(a.pointer)){
     const w=srcPlace(a.pointer);return w&&w.path?w:{v:a.pointer.trim(),path:false}}
   const s=srcText(a);
-  return s?srcPlace(s):{record:true}};
+  return (s&&srcPlace(s))||{record:true}};
 /* where it is, as the fold's summary and the entry's head show it: a path in code, other words and an address as they
-   stand, "in the record" with no source line; "" (no place shown) when the source line names none; escaped */
+   stand, else "in the record"; escaped */
 const whereHtml=a=>{const w=attWhere(a);return !w?"":w.record?"in the record":w.path?'<code>'+esc(w.v)+'</code>':esc(w.v)};
 const attSum=c=>{const as=attachedOf(c);
   return as.length?' <span class="fsum">'+as.length+': '+as.map(a=>code(esc(a.title.trim().replace(ATT_LINK,"$2").replace(/\[\[([0-9]+)\]\]/g,"$1")))+(whereHtml(a)?' ('+whereHtml(a)+')':'')).join(" · ")+'</span>':""};

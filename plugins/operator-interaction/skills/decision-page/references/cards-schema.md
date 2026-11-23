@@ -455,12 +455,13 @@ fold's summary shows each title with where it is, *title (where)*, and each entr
 it after the title. It is read from the fields above, never a field of its own: a `link`'s
 `url`; a `summary`'s `pointer`; else the path, or `https://` address, that the source line
 (`src`, else an excerpt-shaped body's own `src`) opens with, any wrapping brackets and its
-line or column ending (`:2210-2214`, `:12:5`, `#L10-L20`) dropped. That first word is a path
-when it is in backticks, or, unquoted, when it starts with `/`, `~/` or `./`, or holds both a
-`/` and a file extension (never `CI/CD`, `and/or`, `24/7`, `n/a` or `Node.js`). With no source
-line at all the place is *in the record*; with a source line that names no place, none is
-shown. A path is drawn as code; a pointer that reads as a path too, any other pointer as
-plain text; an address as text; all of it escaped. So a writer whose attachment comes from a file opens `src` with the file's path, and
+line or column ending (`:2210-2214`, `:12:5`, `#L10-L20`, a bare trailing `:`) dropped. That
+first word is a path when it is in backticks, holding a `/` or a file extension, or, unquoted,
+when it starts with `/`, `~/` or `./`, or holds both a `/` and a file extension (never `CI/CD`,
+`and/or`, `24/7`, `n/a` or `Node.js`). Whenever neither a path nor an address is found, the
+place is *in the record*, where the body is carried. A path is drawn as code; a pointer that
+reads as a path too, any other pointer as plain text; an address as text; all of it escaped.
+So a writer whose attachment comes from a file opens `src` with the file's path in backticks, and
 any file or example the decision rests on is attached, never named only in the card's text: the
 runner's `unattached` lint names a file a card cites in a code span (in its title, TLDR,
 Context or Background) that no attachment holds and that neither the Finding (its `where` or

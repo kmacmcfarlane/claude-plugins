@@ -557,12 +557,19 @@ function unattached(c, say) {
   const f = page.findingOf(c);
   const cites = [f && f.where, f && f.excerpt && typeof f.excerpt === "object" ? f.excerpt.src : null, ...textsOf(c.evidence)]
     .filter(s => typeof s === "string").join("\n");
-  const holds = p => places.some(v => v === p || v.endsWith("/" + p) || p.endsWith("/" + v)) || cites.includes(p);
+  /* named in a citation as a whole path: not inside a longer name (a.md is not data.md), nor a longer path's tail
+     unless after a / */
+  const cited = p => { let i = cites.indexOf(p);
+    for (; i >= 0; i = cites.indexOf(p, i + 1)) {
+      const before = i ? cites[i - 1] : "", after = cites[i + p.length] || "";
+      if (!/[A-Za-z0-9_.~-]/.test(before) && !/[A-Za-z0-9_~\/-]/.test(after) && !(after === "." && /[A-Za-z0-9]/.test(cites[i + p.length + 1] || ""))) return true; }
+    return false; };
+  const holds = p => places.some(v => v === p || v.endsWith("/" + p) || p.endsWith("/" + v)) || cited(p);
   const texts = CITED.flatMap(k => textsOf(c[k]).map(s => [k, s]));
   for (const [k, s] of texts) for (const m of s.matchAll(/`([^`\s]+)`/g)) {
     const w = page.srcPlace("`" + m[1] + "`");
     if (!w || !w.path || !FILE_EXT.test(w.v) || /^[A-Z][A-Za-z0-9]*\.js$/.test(w.v) || holds(w.v)) continue;
-    say("unattached " + w.v, "depth: " + k + " names " + w.v + ", which no attachment holds: attach it, its src opening with the path, so the Attached line shows where it is (the decisions skill's cold read); or leave it knowingly when the card does not rest on it");
+    say("unattached " + w.v, "depth: " + k + " names " + w.v + ", which no attachment holds: attach it and open its src with the file's path in backticks, so the Attached line shows where it is (the decisions skill's cold read); or leave it knowingly when the card does not rest on it");
   }
 }
 

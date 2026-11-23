@@ -236,17 +236,16 @@ other attachments, if present, should be listed next to decisions at this level 
 easy reference") is read from the record, never a new field: a `link`'s `url`; a `summary`'s
 `pointer`; else the path, or `https://` address, its source line (`src`, else its excerpt's
 own `src`) opens with, its line or column ending dropped (`:12`, `:12-20`, `:12:5`, `#L10-L20`).
-A first word counts as a path when it is wrapped in backticks, or, unquoted, when it starts with
-`/`, `~/` or `./`, or holds both a `/` and a file extension (`logs/a.txt`; never `CI/CD`,
-`and/or`, `24/7` or `Node.js`). An attachment with no source line at all lives only in the
-card's record: its place is *in the record*. One whose source line names no place (*the upload
-service's deploy map*) shows none: its title stands alone in the summary and on its head. A
-path in `code`, other words as they stand, an address as it stands, *in the record* in plain
-words. So a writer whose attachment comes from a file opens its `src` with the file's path,
-in backticks. `tell me attached` answers with it open, and `expand` and a block show it
+A first word counts as a path when it is in backticks, holding a `/` or a file extension, or,
+unquoted, when it starts with `/`, `~/` or `./`, or holds both a `/` and a file extension
+(`logs/a.txt`; never `CI/CD`, `and/or`, `24/7` or `Node.js`). Whenever neither a path nor an
+address is found (no source line, or one that names no place, *the upload service's deploy
+map*), the place is *in the record*, where the body is carried. A path in `code`, other words
+as they stand, an address as it stands, *in the record* in plain words. So a writer whose
+attachment comes from a file opens `src` with the file's path in backticks. `tell me attached` answers with it open, and `expand` and a block show it
 open; `tell me <title>` (`52: tell me the write log`) answers with the fold line and that one
 attachment under it. Open, each attachment is a bold head line, `**<title>** (<where>) ·
-*<kind>* — <its source line>` (no `(<where>)` where it shows none), then its body in the shape of its kind, and a blank line before
+*<kind>* — <its source line>`, then its body in the shape of its kind, and a blank line before
 each head line after the first, so a head is never read into the body above it:
 
 | Kind | Its body in chat |

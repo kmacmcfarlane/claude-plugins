@@ -1042,11 +1042,11 @@ class AttachedWhereParity(unittest.TestCase):
     def test_the_page_and_the_chat_line_say_the_same(self):
         chat = chat_attached_summary(GALLERY.read_text())
         self.assertEqual(page_attached_summary(), chat)
-        self.assertTrue(chat.endswith("· Who a failing disk reaches"), chat)
-        # mutants: a source line naming no place read as in the record; the path drawn without code; the chat
+        self.assertTrue(chat.endswith("· Who a failing disk reaches (in the record)"), chat)
+        # mutants: a source line naming no place showing none; the path drawn without code; the chat
         # line's place dropped
         self.assertNotEqual(page_attached_summary(page_free_script().replace(
-            "return s?srcPlace(s):{record:true}};", "return (s&&srcPlace(s))||{record:true}};", 1)), chat)
+            "return (s&&srcPlace(s))||{record:true}};", "return s?srcPlace(s):{record:true}};", 1)), chat)
         self.assertNotEqual(page_attached_summary(page_free_script().replace(
             "w.path?'<code>'+esc(w.v)+'</code>':esc(w.v)};", "esc(w.v)};", 1)), chat)
         g = GALLERY.read_text().replace(" (`upload/write_test.go`) · Who", " · Who")

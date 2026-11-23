@@ -516,9 +516,9 @@ alternative not taken, in case practice argues for it.
   Designs made in planning and build, not the operator's: where it is read from the record's
   existing fields, never a new one (a `link`'s `url`, a `summary`'s `pointer`, else the path
   or address its source line opens with, its line or column ending dropped; *in the record*
-  only for an attachment with no source line, and no place shown for one whose source line
-  names none; a first word unquoted a path only from `/`, `~/` or `./`, or with both a `/` and a
-  file extension); the
+  whenever neither a path nor an address is found, the body being carried in the record; a
+  first word a path in backticks holding a `/` or a file extension, and unquoted only from `/`,
+  `~/` or `./`, or with both a `/` and a file extension); the
   runner's `unattached` lint on a file a card cites in a code span that no attachment holds.
   Not taken: titles only, the summary as it stood, which leaves the operator to ask where a
   file is.
