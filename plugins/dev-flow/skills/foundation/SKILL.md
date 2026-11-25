@@ -90,8 +90,10 @@ numbered list. Run the prompt list (`references/prompt-list.md`): it always runs
 the operator has nothing left to add, or holds the rest.
 
 **Scope is the claim.** When `ownership:claim-md` is in the session's skill list, write or
-propose the scope through it. Ask its answer mode who owns each aspect at the edge. Ask its
-write mode for a shape-checked draft of the repo's `CLAIM.md`, built from the scope: the
+propose the scope through it. Ask its answer mode who owns each aspect at the edge. When its
+write mode asks for the split to be agreed first (a new claim, or a scope that spans several
+repos), put that split proposal in this phase's question round, and ask for the draft only
+after its answer. Ask its write mode for a shape-checked draft of the repo's `CLAIM.md`, built from the scope: the
 areas, the `## Not ours` lines, a `## Boundaries` entry for each row of the neighbours
 table, and `## Interfaces` naming each contract the repo will define, with its location;
 an interface's terms (`references/moves.md` § The rows) are drafted at phase 2 and approved

@@ -113,8 +113,9 @@ Any other heading is allowed, and the check ignores it.
    that noticed raises it as a decision. It never settles the split by acting.
 5. **A split not yet made goes to factor-analysis**, the factoring skill of the kit-dev
    plugin, when it is installed: it analyses how a repo should be factored and stages the
-   decisions. A claim is written after the operator rules on them. Without it, apply tests
-   1 to 4 in the session, and put an unclear split to the operator.
+   decisions. Without it, apply tests 1 to 4 in the session. Either way the split is put to
+   the operator as a high-level proposal, and no claim is drafted before the operator
+   agrees it (`estate.md` § The split proposal).
 
 ## 7. Changing a claim
 
