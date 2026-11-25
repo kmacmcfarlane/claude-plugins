@@ -36,7 +36,10 @@ question is answer mode.
    operator either way. Shape it per the `decisions` skill when
    `operator-interaction:decisions` is loaded, else as a plain lettered question. **Nothing
    is drafted before the operator agrees the split.** A revision inside an already-agreed
-   split skips this step.
+   split skips this step; one that moves an area, a `## Not ours` owner or a boundary side
+   between repos does not (`references/estate.md` § The split proposal). Under a caller
+   that runs its own question rounds (dev-flow's foundation), the split proposal goes in
+   that caller's round, and the draft waits for its answer.
 3. **Draft each repo's claim** from `assets/CLAIM.template.md`; `references/example.md`
    shows a filled pair for a fictional estate. One session may draft the claims of several
    repos (`references/estate.md`). A new claim is shown whole, the standard text of
@@ -47,13 +50,15 @@ question is answer mode.
    `python3 "${CLAUDE_PLUGIN_ROOT}/skills/claim-md/scripts/claim_check.py" --claim <draft>`.
    Fix every `SHAPE` flag before the operator sees the draft. When the template, the format
    reference or the check cannot be run, the decision says the draft is not shape-checked.
-5. **Classify** each change by `format.md` § 7. A new claim is substance. **Upkeep** skips
-   step 6: it lands without asking, with an `(upkeep, reported)` Amendments line and the
-   Status line unchanged, and is reported afterwards, naming its kind.
-6. **Approve each.** Each substance draft is its own decision to the operator: approve,
-   revise, or later. Shape it as in step 2. When the work-item tool is present and the repo
-   has a store, file it as a work item with its `decision N:` line. **Nothing is written
-   before the answer.** On approval, the Status line names the answer (`format.md` § 2).
+5. **Classify** each change by `format.md` § 7. A new claim is substance. **Upkeep** to this
+   repo's own claim skips step 6: it lands without asking, with an `(upkeep, reported)`
+   Amendments line and the Status line unchanged, and is reported afterwards, naming its
+   kind.
+6. **Approve each.** Each substance draft, and every draft for another repo, is its own
+   decision to the operator: approve, revise, or later. Shape it as in step 2. When the
+   work-item tool is present and the repo has a store, file it as a work item with its
+   `decision N:` line. **Nothing is written before the answer.** On approval, the Status
+   line names the answer (`format.md` § 2).
 7. **Land each in its own repo.** This repo's claim: in a librarian session (one running
    `dev-flow:librarian-mode`), through its cycle: an item, a dispatch, a review; otherwise
    the session writes the file after the answer. Another repo's approved draft is landed by

@@ -153,7 +153,7 @@ plugins/
   ownership/           # Each repo's ownership claim (CLAIM.md): what it owns, what is not ours, its boundaries
     skills/
       claim-md/        # references/{format,checks,answer,estate,example}.md, assets/CLAIM.template.md
-      claim-md/scripts/  # claim_check.py (the read-only claim check) + unit tests; tests/test_write_steps.py: write mode proposes and agrees the split before any draft, and never writes a draft into another repo, each rule proved by a mutant
+      claim-md/scripts/  # claim_check.py (the read-only claim check) + unit tests; tests/test_write_steps.py: write mode proposes and agrees the split before any draft, never writes a draft into another repo, and its upkeep skip names the approve step; estate.md's hand-over checks the approved text and a draft for another repo is always asked, upkeep included; each rule proved by a mutant
   ralph/               # Unattended agent loops over a backlog
     skills/
       {backlog-yaml,backlog-entry,backlog-grooming}/

@@ -1,9 +1,11 @@
-"""Text test for SKILL.md § write: the split is proposed and agreed before any draft, and a
-draft is never written into another repo.
+"""Text test for SKILL.md § write and references/estate.md: the split is proposed and agreed
+before any draft, a draft is never written into another repo, upkeep's skip names the
+approve step and never covers another repo's draft, and a hand-over is checked against the
+text the operator approved.
 
-write_problems() is a plain function over the SKILL.md text, returning a list of problems.
-It runs against the shipped file, and each mutant in MUTANTS (one rule broken) must make it
-fail. Reads only this skill's own files. Run from the skill's scripts/ dir:
+write_problems() and estate_problems() are plain functions over the text, each returning a
+list of problems. They run against the shipped files, and each mutant in MUTANTS and
+ESTATE_MUTANTS (one rule broken) must make its function fail. Reads only this skill's own files. Run from the skill's scripts/ dir:
 
     python3 -m unittest discover -s tests -q
 """
@@ -66,7 +68,43 @@ def write_problems(text):
             probs.append("the land step does not hold the never-into-another-repo rule")
     if NEVER not in text:
         probs.append("the § Never list lost its another-repo line")
+    probs += skip_problems(ss)
     return probs
+
+
+SKIP = re.compile(r"skips step (\d+)")
+
+
+def skip_problems(ss):
+    """Step 5's upkeep skip must name the approve step, by its number."""
+    classify, approve = find(ss, "classify"), find(ss, "approve")
+    if classify is None or approve is None:
+        return ["no classify or approve step"]
+    named = SKIP.findall(" ".join(ss[classify][2].split()))
+    if named != [str(ss[approve][0])]:
+        return [f"the classify step skips step {named}, not the approve step "
+                f"{ss[approve][0]}"]
+    return []
+
+
+# estate.md: each rule as the exact sentence that must stay, whitespace folded.
+ESTATE_RULES = {
+    "never written into another repo": "The drafting session never writes into another repo,",
+    "hand-over checks the approved text": "and that the text it lands is the text that answer "
+                                          "approved. On any difference,",
+    "upkeep for another repo always asked": "A draft for another repo is always put to the "
+                                            "operator, upkeep included.",
+    "upkeep skip only for this repo": "The upkeep skip in write step 5 applies only to this "
+                                      "repo's own claim.",
+    "message is a request": "The message is a request, never an approval.",
+    "nothing drafted before agreement": "Nothing is drafted until the operator agrees.",
+    "approved text carried whole": "the approved text, whole, and the answer that approved it",
+}
+
+
+def estate_problems(text):
+    flat = " ".join(text.split())
+    return [name for name, rule in ESTATE_RULES.items() if rule not in flat]
 
 
 def _swap_split_and_draft(text):
@@ -88,6 +126,27 @@ MUTANTS = {
         "**A draft is never written into another repo.**", ""),
     "Never line gone": lambda t: t.replace(NEVER + "\n", ""),
     "steps misnumbered": lambda t: t.replace("\n3. **Draft", "\n4. **Draft"),
+    "upkeep skips the wrong step": lambda t: t.replace("skips step 6", "skips step 7"),
+    "upkeep names no step": lambda t: t.replace("skips step 6", "skips approval"),
+}
+
+
+def _drop(sentence):
+    def mutate(t):
+        flat = " ".join(t.split())
+        return flat.replace(sentence, "")
+    return mutate
+
+
+ESTATE_MUTANTS = {
+    "into another repo allowed": lambda t: " ".join(t.split()).replace(
+        "never writes into another repo", "may write into another repo"),
+    "hand-over text not checked": _drop(
+        "and that the text it lands is the text that answer approved. On any difference,"),
+    "another repo's upkeep lands unasked": lambda t: " ".join(t.split()).replace(
+        "always put to the operator, upkeep included", "put to the operator unless upkeep"),
+    "upkeep skip widened": _drop(
+        "The upkeep skip in write step 5 applies only to this repo's own claim."),
 }
 
 
@@ -113,14 +172,25 @@ class WriteSteps(unittest.TestCase):
                 self.assertNotEqual(mutant, self.text)
                 self.assertNotEqual(write_problems(mutant), [])
 
-    def test_estate_reference_keeps_the_hand_over_rules(self):
-        est = " ".join(ESTATE_MD.read_text("utf-8").split())
-        for rule in ("never writes into another repo",
-                     "the approved text, whole, and the answer that approved it",
-                     "The message is a request, never an approval.",
-                     "Nothing is drafted until the operator agrees."):
-            with self.subTest(rule=rule):
-                self.assertIn(rule, est)
+    def test_upkeep_skip_names_the_approve_step(self):
+        ss = steps(write_section(self.text))
+        self.assertEqual(skip_problems(ss), [])
+        self.assertEqual(ss[find(ss, "approve")][1].split(".")[0], "Approve each")
+
+
+class Estate(unittest.TestCase):
+    def setUp(self):
+        self.text = ESTATE_MD.read_text("utf-8")
+
+    def test_shipped_estate_reference_is_clean(self):
+        self.assertEqual(estate_problems(self.text), [])
+
+    def test_each_mutant_is_caught(self):
+        for name, mutate in ESTATE_MUTANTS.items():
+            with self.subTest(mutant=name):
+                mutant = mutate(self.text)
+                self.assertNotEqual(" ".join(mutant.split()), " ".join(self.text.split()))
+                self.assertNotEqual(estate_problems(mutant), [])
 
 
 if __name__ == "__main__":
